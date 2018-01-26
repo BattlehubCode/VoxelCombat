@@ -1,0 +1,151 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{0C70845B-91B2-4720-9B7F-24E2A7C3245E}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Battlehub.VoxelCombat</RootNamespace>
+    <AssemblyName>Battlehub.VoxelCombat.Server</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;SERVER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="log4net, Version=2.0.8.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <HintPath>..\packages\log4net.2.0.8\lib\net45-full\log4net.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="protobuf-net">
+      <HintPath>..\..\..\Assets\Battlehub\VoxelCombat\Deps\protobuf-net.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Helpers\Reflection.cs">
+      <Link>Helpers\Reflection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Helpers\Serializer.cs">
+      <Link>Helpers\Serializer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Helpers\TypeModelCreator.cs">
+      <Link>Helpers\TypeModelCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\AttackTaskProcessor.cs">
+      <Link>MatchEngine\Bot\AttackTaskProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\BotController.cs">
+      <Link>MatchEngine\Bot\BotController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\BotStrategy.cs">
+      <Link>MatchEngine\Bot\BotStrategy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\ChooseTaskProcessor.cs">
+      <Link>MatchEngine\Bot\ChooseTaskProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\ConvertTaskProcessor.cs">
+      <Link>MatchEngine\Bot\ConvertTaskProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\EatTaskProcessor.cs">
+      <Link>MatchEngine\Bot\EatTaskProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\GrowTaskProcessor.cs">
+      <Link>MatchEngine\Bot\GrowTaskProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\SearchTaskProcessor.cs">
+      <Link>MatchEngine\Bot\SearchTaskProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\Split4TaskProcessor.cs">
+      <Link>MatchEngine\Bot\Split4TaskProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\SplitTaskProcessor.cs">
+      <Link>MatchEngine\Bot\SplitTaskProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\PathFinder.cs">
+      <Link>MatchEngine\PathFinder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Server\MatchEngine.cs">
+      <Link>MatchEngine\Server\MatchEngine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Server\MatchFactory.cs">
+      <Link>MatchEngine\Server\MatchFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Server\MatchPlayerController.cs">
+      <Link>MatchEngine\Server\MatchPlayerController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Server\MatchUnitController.cs">
+      <Link>MatchEngine\Server\MatchUnitController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Server\ReplaySystem.cs">
+      <Link>MatchEngine\Server\ReplaySystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskRunner.cs">
+      <Link>MatchEngine\TaskRunner.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\VoxelAbilities.cs">
+      <Link>MatchEngine\VoxelAbilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\VoxelData.cs">
+      <Link>MatchEngine\VoxelData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\VoxelDataController.cs">
+      <Link>MatchEngine\VoxelDataController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Pool.cs">
+      <Link>Pool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\IGameServer.cs">
+      <Link>Server\IGameServer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\LowProtocol.cs">
+      <Link>MatchEngine\Server\LowProtocol.cs</Link>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Server\ChatServerImpl.cs" />
+    <Compile Include="Server\ClientSocket.cs" />
+    <Compile Include="Server\DB.cs" />
+    <Compile Include="Server\GameServerContainer.cs" />
+    <Compile Include="Server\GameServerImpl.cs" />
+    <Compile Include="Server\MatchServerContainer.cs" />
+    <Compile Include="Server\MatchServerImpl.cs" />
+    <Compile Include="Server\ServerContainer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
