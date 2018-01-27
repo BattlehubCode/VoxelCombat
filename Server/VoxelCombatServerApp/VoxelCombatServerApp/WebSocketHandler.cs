@@ -53,6 +53,11 @@ namespace Battlehub.VoxelCombat
             await CloseAsync();
         }
 
+        public void Update()
+        {
+
+        }
+
         private async AsyncTask CloseAsync()
         {
             await m_semaphore.WaitAsync();
@@ -162,6 +167,7 @@ namespace Battlehub.VoxelCombat
                 Log.Error("Unhandled exception " + e.ToString(), e);
             }
         }
+
 
         public async AsyncTask WebSocketRequestHandlerImpl(AspNetWebSocketContext webSocketContext)
         {

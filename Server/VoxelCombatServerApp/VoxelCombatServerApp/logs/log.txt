@@ -1,0 +1,184 @@
+INFO  2018-01-27 09:19:30,409  1022ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 09:19:30,824  1437ms GameServerContainer    RegisterClient         - Register Client f3bbbb50-530a-4881-8a23-d9c250d823f7
+INFO  2018-01-27 09:28:37,331  1024ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 09:28:37,735  1428ms GameServerContainer    RegisterClient         - Register Client 05227f56-364a-42a4-999f-411a30acc1ab
+ERROR 2018-01-27 09:45:11,565 995258ms GameServer             MoveNext               - В данный момент невозможно запустить асинхронную операцию. Её можно только запустить в асинхронном обработчике или модуле или во время выполнения определенных событий в жизненном цикле страницы. Если такое исключение возникло при выполнении страницы, проверьте помечается ли страница как <%@ Page Async="true" %>. Это исключение может означать попытку вызвать метод async void, который обычно не поддерживается в обработке запросов ASP.NET. Вместо этого асинхронный метод должен вернуть задачу и объект должен ожидать этого.
+System.InvalidOperationException: В данный момент невозможно запустить асинхронную операцию. Её можно только запустить в асинхронном обработчике или модуле или во время выполнения определенных событий в жизненном цикле страницы. Если такое исключение возникло при выполнении страницы, проверьте помечается ли страница как <%@ Page Async="true" %>. Это исключение может означать попытку вызвать метод async void, который обычно не поддерживается в обработке запросов ASP.NET. Вместо этого асинхронный метод должен вернуть задачу и объект должен ожидать этого.
+   в System.Web.AspNetSynchronizationContext.OperationStarted()
+   в System.Runtime.CompilerServices.AsyncVoidMethodBuilder.Create()
+   в Battlehub.VoxelCombat.ClientSocket.Open(String serverUrl)
+   в Battlehub.VoxelCombat.LowProtocol`1.Enable() в E:\Development\GitHub\VoxelCombat\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\LowProtocol.cs:строка 200
+   в Battlehub.VoxelCombat.MatchServerClient.SetClientsDisconnected(Guid[] disconnectedClientIds, ServerEventHandler callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\MatchServerContainer.cs:строка 200
+   в Battlehub.VoxelCombat.GameServerImpl.KickPlayers(Room room, ServerEventHandler callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 1090
+   в Battlehub.VoxelCombat.GameServerImpl.DestroyRoom(Guid clientId, Guid roomId, ServerEventHandler`1 callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 828
+   в Battlehub.VoxelCombat.GameServerImpl.Logoff(Guid clientId, Guid[] playerIds, ServerEventHandler`1 callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 350
+   в Battlehub.VoxelCombat.GameServerImpl.UnregisterClient(Guid clientId, ServerEventHandler callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 85
+   в Battlehub.VoxelCombat.GameServerContainer.OnUnregisterClientSafe(ILowProtocol protocol, Guid clientId) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerContainer.cs:строка 320
+   в Battlehub.VoxelCombat.ServerContainer.UnregisterConnection(ILowProtocol client) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\ServerContainer.cs:строка 201
+   в Battlehub.VoxelCombat.GameServer.UnregisterConnection(ILowProtocol socket) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServerApp\GameServer.ashx.cs:строка 23
+   в Battlehub.VoxelCombat.WebSocketHandler.<CloseAsync>d__26.MoveNext() в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServerApp\WebSocketHandler.cs:строка 81
+INFO  2018-01-27 09:46:11,305 1054998ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 09:46:11,705 1055397ms GameServerContainer    RegisterClient         - Register Client 216453f0-e2af-4d76-9ad6-5a7a66d3b9b7
+ERROR 2018-01-27 09:46:11,732 1055425ms GameServerContainer    MainThread             - Ссылка на объект не указывает на экземпляр объекта.
+System.NullReferenceException: Ссылка на объект не указывает на экземпляр объекта.
+   в Battlehub.VoxelCombat.MatchServerClient.Update(Single time) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\MatchServerContainer.cs:строка 247
+   в Battlehub.VoxelCombat.GameServerImpl.Update(Single time) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 1630
+   в Battlehub.VoxelCombat.GameServerContainer.OnTick(TimeSpan elapsed) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerContainer.cs:строка 334
+   в Battlehub.VoxelCombat.ServerContainer.MainThread() в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\ServerContainer.cs:строка 278
+INFO  2018-01-27 09:50:14,350   988ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 09:50:14,772  1410ms GameServerContainer    RegisterClient         - Register Client 0d0d8b5a-159c-437e-b931-df39f127fb93
+INFO  2018-01-27 09:54:19,069   605ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 09:54:19,473  1008ms GameServerContainer    RegisterClient         - Register Client 5bba0061-e924-4947-9dfd-e39f9772aece
+INFO  2018-01-27 10:04:10,983  9183ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 10:04:11,406  9605ms GameServerContainer    RegisterClient         - Register Client 2be295e7-c4a0-4cc0-be5a-531829eb883b
+ERROR 2018-01-27 10:10:02,022 360222ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Unknow status code, InnerError = [Error(17): System.UriFormatException: Недопустимый URI: Невозможно определить формат URI.
+   в System.Uri.CreateThis(String uri, Boolean dontEscape, UriKind uriKind)
+   в System.Uri..ctor(String uriString)
+   в Battlehub.VoxelCombat.ClientSocket.<SocketThread>d__26.MoveNext()]]
+ERROR 2018-01-27 10:10:14,185 372385ms GameServerContainer    MainThread             - Ссылка на объект не указывает на экземпляр объекта.
+System.NullReferenceException: Ссылка на объект не указывает на экземпляр объекта.
+   в Battlehub.VoxelCombat.MatchServerClient.Update(Single time)
+   в Battlehub.VoxelCombat.GameServerImpl.Update(Single time)
+   в Battlehub.VoxelCombat.GameServerContainer.OnTick(TimeSpan elapsed)
+   в Battlehub.VoxelCombat.ServerContainer.MainThread()
+INFO  2018-01-27 10:10:19,157 377357ms GameServerContainer    UnregisterConnection   - Unregister Connection for client 2be295e7-c4a0-4cc0-be5a-531829eb883b
+INFO  2018-01-27 10:10:44,907  1001ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 10:10:45,338  1431ms GameServerContainer    RegisterClient         - Register Client cbfc5845-83d0-4877-9be7-93804dfd3999
+INFO  2018-01-27 10:55:27,262  1017ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 10:55:27,710  1465ms GameServerContainer    RegisterClient         - Register Client 5ddeff0c-d1a1-4254-b948-7f5f889b7f3c
+INFO  2018-01-27 11:07:06,243  1004ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 11:07:06,647  1408ms GameServerContainer    RegisterClient         - Register Client c9002576-f87f-417d-a42d-66522b608151
+ERROR 2018-01-27 11:11:41,318 276079ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Failed, InnerError = [Error(17): System.UriFormatException: Недопустимый URI: Невозможно определить формат URI.
+   в System.Uri.CreateThis(String uri, Boolean dontEscape, UriKind uriKind)
+   в System.Uri..ctor(String uriString)
+   в Battlehub.VoxelCombat.ClientSocket.<SocketThread>d__26.MoveNext() в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\ClientSocket.cs:строка 121]]
+ERROR 2018-01-27 11:12:33,457 328218ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Failed, InnerError = [Error(17): System.UriFormatException: Недопустимый URI: Невозможно определить формат URI.
+   в System.Uri.CreateThis(String uri, Boolean dontEscape, UriKind uriKind)
+   в System.Uri..ctor(String uriString)
+   в Battlehub.VoxelCombat.ClientSocket.<SocketThread>d__26.MoveNext() в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\ClientSocket.cs:строка 121]]
+INFO  2018-01-27 11:12:53,028 347789ms GameServerContainer    UnregisterConnection   - Unregister Connection for client c9002576-f87f-417d-a42d-66522b608151
+INFO  2018-01-27 11:14:33,999   981ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 11:14:34,403  1385ms GameServerContainer    RegisterClient         - Register Client ce7f5a1a-2ad6-45b4-8413-0b775a07efbc
+ERROR 2018-01-27 11:20:51,392 378374ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Failed, InnerError = [Error(17): System.ArgumentException: Поддерживаются только коды URI, начинающиеся с "ws://" или "wss://".
+Имя параметра: uri
+   в System.Net.WebSockets.ClientWebSocket.ConnectAsync(Uri uri, CancellationToken cancellationToken)
+   в Battlehub.VoxelCombat.ClientSocket.<SocketThread>d__26.MoveNext() в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\ClientSocket.cs:строка 121]]
+ERROR 2018-01-27 11:21:27,718 414700ms GameServer             MoveNext               - В данный момент невозможно запустить асинхронную операцию. Её можно только запустить в асинхронном обработчике или модуле или во время выполнения определенных событий в жизненном цикле страницы. Если такое исключение возникло при выполнении страницы, проверьте помечается ли страница как <%@ Page Async="true" %>. Это исключение может означать попытку вызвать метод async void, который обычно не поддерживается в обработке запросов ASP.NET. Вместо этого асинхронный метод должен вернуть задачу и объект должен ожидать этого.
+System.InvalidOperationException: В данный момент невозможно запустить асинхронную операцию. Её можно только запустить в асинхронном обработчике или модуле или во время выполнения определенных событий в жизненном цикле страницы. Если такое исключение возникло при выполнении страницы, проверьте помечается ли страница как <%@ Page Async="true" %>. Это исключение может означать попытку вызвать метод async void, который обычно не поддерживается в обработке запросов ASP.NET. Вместо этого асинхронный метод должен вернуть задачу и объект должен ожидать этого.
+   в System.Web.AspNetSynchronizationContext.OperationStarted()
+   в System.Runtime.CompilerServices.AsyncVoidMethodBuilder.Create()
+   в Battlehub.VoxelCombat.ClientSocket.Open(String serverUrl)
+   в Battlehub.VoxelCombat.LowProtocol`1.Enable() в E:\Development\GitHub\VoxelCombat\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\LowProtocol.cs:строка 197
+   в Battlehub.VoxelCombat.MatchServerClient.SetClientsDisconnected(Guid[] disconnectedClientIds, ServerEventHandler callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\MatchServerContainer.cs:строка 200
+   в Battlehub.VoxelCombat.GameServerImpl.KickPlayers(Room room, ServerEventHandler callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 1091
+   в Battlehub.VoxelCombat.GameServerImpl.<>c__DisplayClass69_0.<DestroyRoom>b__0(Error destroyBotError, Guid[] g, Room r) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 824
+   в Battlehub.VoxelCombat.GameServerImpl.DestroyBots(Guid clientId, Guid[] botIds, Boolean raiseGlobalEvent, ServerEventHandler`2 callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 1260
+   в Battlehub.VoxelCombat.GameServerImpl.DestroyRoom(Guid clientId, Guid roomId, ServerEventHandler`1 callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 810
+   в Battlehub.VoxelCombat.GameServerImpl.Logoff(Guid clientId, Guid[] playerIds, ServerEventHandler`1 callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 350
+   в Battlehub.VoxelCombat.GameServerImpl.UnregisterClient(Guid clientId, ServerEventHandler callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 85
+   в Battlehub.VoxelCombat.GameServerContainer.OnUnregisterClientSafe(ILowProtocol protocol, Guid clientId) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerContainer.cs:строка 320
+   в Battlehub.VoxelCombat.ServerContainer.UnregisterConnection(ILowProtocol client) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\ServerContainer.cs:строка 201
+   в Battlehub.VoxelCombat.GameServer.UnregisterConnection(ILowProtocol socket) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServerApp\GameServer.ashx.cs:строка 23
+   в Battlehub.VoxelCombat.WebSocketHandler.<CloseAsync>d__27.MoveNext() в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServerApp\WebSocketHandler.cs:строка 86
+INFO  2018-01-27 11:22:04,882 451864ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 11:22:05,176 452158ms GameServerContainer    RegisterClient         - Register Client dab7958e-d68f-4b12-9e92-4f869f3091b6
+INFO  2018-01-27 11:22:15,118 462101ms GameServerContainer    UnregisterConnection   - Unregister Connection for client dab7958e-d68f-4b12-9e92-4f869f3091b6
+INFO  2018-01-27 11:22:28,342 475325ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 11:22:28,670 475653ms GameServerContainer    RegisterClient         - Register Client 9cb2d90d-21a6-4cdd-8598-9e5174db26b8
+INFO  2018-01-27 11:22:36,015 482998ms GameServerContainer    UnregisterConnection   - Unregister Connection for client 9cb2d90d-21a6-4cdd-8598-9e5174db26b8
+INFO  2018-01-27 11:22:49,532 496514ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 11:22:49,855 496838ms GameServerContainer    RegisterClient         - Register Client 5cb37293-f766-4913-af83-8c3a9eb937ff
+INFO  2018-01-27 11:22:54,833 501816ms GameServerContainer    UnregisterConnection   - Unregister Connection for client 5cb37293-f766-4913-af83-8c3a9eb937ff
+INFO  2018-01-27 11:23:07,881 514864ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 11:23:08,193 515175ms GameServerContainer    RegisterClient         - Register Client 79f2e63d-f266-43fe-ab7d-a928f694c485
+INFO  2018-01-27 11:23:08,713 515696ms GameServerContainer    UnregisterConnection   - Unregister Connection for client 79f2e63d-f266-43fe-ab7d-a928f694c485
+INFO  2018-01-27 11:23:59,288 566271ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 11:23:59,671 566654ms GameServerContainer    RegisterClient         - Register Client d4d53d5b-5066-4709-9547-d56686263af8
+ERROR 2018-01-27 11:24:05,059 572042ms GameServerContainer    MainThread             - Элемент с тем же ключом уже был добавлен.
+System.ArgumentException: Элемент с тем же ключом уже был добавлен.
+   в System.ThrowHelper.ThrowArgumentException(ExceptionResource resource)
+   в System.Collections.Generic.Dictionary`2.Insert(TKey key, TValue value, Boolean add)
+   в System.Collections.Generic.Dictionary`2.Add(TKey key, TValue value)
+   в Battlehub.VoxelCombat.GameServerImpl.<>c__DisplayClass51_0.<SignUp>b__0(Error getPlayerError, Player player) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 245
+   в Battlehub.VoxelCombat.InMemoryDB.GetPlayer(String name, String password, Action`2 callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\DB.cs:строка 38
+   в Battlehub.VoxelCombat.GameServerImpl.GetPlayer(String name, String password, Action`2 callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 99
+   в Battlehub.VoxelCombat.GameServerImpl.SignUp(String name, String password, Guid clientId, ServerEventHandler`1 callback) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerImpl.cs:строка 200
+   в Battlehub.VoxelCombat.GameServerContainer.OnRequest(ILowProtocol sender, LowRequestArgs request) в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\GameServerContainer.cs:строка 159
+   в Battlehub.VoxelCombat.ServerContainer.MainThread() в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\ServerContainer.cs:строка 275
+INFO  2018-01-27 11:28:18,631   586ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 11:28:19,103  1058ms GameServerContainer    RegisterClient         - Register Client 1077e015-3b6a-4d02-8a67-2f90f5479446
+ERROR 2018-01-27 11:29:18,932 60888ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Failed, InnerError = [Error(17): System.ArgumentException: Поддерживаются только коды URI, начинающиеся с "ws://" или "wss://".
+Имя параметра: uri
+   в System.Net.WebSockets.ClientWebSocket.ConnectAsync(Uri uri, CancellationToken cancellationToken)
+   в Battlehub.VoxelCombat.ClientSocket.<SocketThread>d__26.MoveNext() в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\ClientSocket.cs:строка 121]]
+ERROR 2018-01-27 11:31:20,050 182006ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Failed, InnerError = [Error(17): System.ArgumentException: Поддерживаются только коды URI, начинающиеся с "ws://" или "wss://".
+Имя параметра: uri
+   в System.Net.WebSockets.ClientWebSocket.ConnectAsync(Uri uri, CancellationToken cancellationToken)
+   в Battlehub.VoxelCombat.ClientSocket.<SocketThread>d__26.MoveNext() в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\ClientSocket.cs:строка 121]]
+ERROR 2018-01-27 11:31:37,362 199318ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Failed, InnerError = [Error(17): System.ArgumentException: Поддерживаются только коды URI, начинающиеся с "ws://" или "wss://".
+Имя параметра: uri
+   в System.Net.WebSockets.ClientWebSocket.ConnectAsync(Uri uri, CancellationToken cancellationToken)
+   в Battlehub.VoxelCombat.ClientSocket.<SocketThread>d__26.MoveNext() в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\ClientSocket.cs:строка 121]]
+INFO  2018-01-27 11:36:51,063   985ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 11:36:51,477  1399ms GameServerContainer    RegisterClient         - Register Client 18cc1c2c-f0b4-4423-be1e-da85e91b1827
+ERROR 2018-01-27 11:38:19,640 89562ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Failed, InnerError = [Error(15): Request Timeout]]
+ERROR 2018-01-27 11:38:27,674 97595ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Failed, InnerError = [Error(15): Request Timeout]]
+ERROR 2018-01-27 11:39:10,289 140211ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Failed, InnerError = [Error(15): Request Timeout]]
+INFO  2018-01-27 11:39:34,307 164228ms GameServerContainer    UnregisterConnection   - Unregister Connection for client 18cc1c2c-f0b4-4423-be1e-da85e91b1827
+ERROR 2018-01-27 11:39:46,308 176230ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Failed, InnerError = [Error(15): Request Timeout]]
+WARN  2018-01-27 11:39:46,321 176242ms GameServerContainer    econdaryThread>b__36_0 - Send message failed
+INFO  2018-01-27 11:39:49,186 179108ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 11:39:49,863 179784ms GameServerContainer    RegisterClient         - Register Client 5d473850-673e-45fc-ab16-c7dc221299f5
+ERROR 2018-01-27 11:43:12,498 382420ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Failed, InnerError = [Error(15): Request Timeout]]
+INFO  2018-01-27 11:49:23,734  1164ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 11:49:24,187  1617ms GameServerContainer    RegisterClient         - Register Client 54786add-26f9-4a65-adf9-aa1cfb88567c
+ERROR 2018-01-27 11:50:22,827 60257ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Failed, InnerError = [Error(15): Request Timeout]]
+INFO  2018-01-27 12:08:17,754  1077ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 12:08:21,824  5146ms GameServerContainer    RegisterClient         - Register Client 89a82b7a-bd91-4dbb-bbf3-de1aa61ac372
+ERROR 2018-01-27 12:08:56,707 40029ms GameServerImpl         <DestroyRoom>b__1      - KickPlayers. This operation should never fail. But id does Error(14): Failed to leave room. See inner error, InnerError = [Error(14): Failed, InnerError = [Error(17): System.Net.WebSockets.WebSocketException (0x80004005): Невозможно соединиться с удаленным сервером ---> System.Net.WebException: Удаленный сервер возвратил ошибку: (404) Не найден.
+   в System.Net.HttpWebRequest.EndGetResponse(IAsyncResult asyncResult)
+   в System.Threading.Tasks.TaskFactory`1.FromAsyncCoreLogic(IAsyncResult iar, Func`2 endFunction, Action`1 endAction, Task`1 promise, Boolean requiresSynchronization)
+--- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+   в System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   в System.Net.WebSockets.ClientWebSocket.<ConnectAsyncCore>d__21.MoveNext()
+   в System.Net.WebSockets.ClientWebSocket.<ConnectAsyncCore>d__21.MoveNext()
+--- Конец трассировка стека из предыдущего расположения, где возникло исключение ---
+   в System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   в System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   в System.Runtime.CompilerServices.TaskAwaiter.GetResult()
+   в Battlehub.VoxelCombat.ClientSocket.<SocketThread>d__26.MoveNext() в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServer\Server\ClientSocket.cs:строка 121]]
+INFO  2018-01-27 12:09:10,841 54163ms GameServerContainer    UnregisterConnection   - Unregister Connection for client 89a82b7a-bd91-4dbb-bbf3-de1aa61ac372
+INFO  2018-01-27 18:29:44,204  1034ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 18:29:44,654  1484ms GameServerContainer    RegisterClient         - Register Client 017e7b3f-b75c-433b-9ac0-a8c084156e1b
+INFO  2018-01-27 18:30:54,358 71188ms GameServerContainer    UnregisterConnection   - Unregister Connection for client 017e7b3f-b75c-433b-9ac0-a8c084156e1b
+INFO  2018-01-27 18:31:08,124 84954ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 18:31:08,525 85356ms GameServerContainer    RegisterClient         - Register Client 895a6624-2f4b-418f-8c23-ea43d025a924
+INFO  2018-01-27 18:36:57,217   400ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 18:37:00,011  3193ms GameServerContainer    RegisterClient         - Register Client a0f2f089-4ee8-42a8-b028-186b738c15ba
+INFO  2018-01-27 18:43:31,406 394589ms GameServerContainer    UnregisterConnection   - Unregister Connection for client a0f2f089-4ee8-42a8-b028-186b738c15ba
+INFO  2018-01-27 18:43:31,460 394643ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 18:43:32,493 395676ms GameServerContainer    RegisterClient         - Register Client 48168eeb-0cb1-481c-89dd-c5e1221c20ad
+WARN  2018-01-27 18:43:33,895 397078ms GameServerContainer    econdaryThread>b__36_0 - Send message failed
+WARN  2018-01-27 18:43:34,614 397797ms GameServerContainer    econdaryThread>b__36_0 - Send message failed
+INFO  2018-01-27 18:45:45,137 528320ms GameServerContainer    UnregisterConnection   - Unregister Connection for client 48168eeb-0cb1-481c-89dd-c5e1221c20ad
+INFO  2018-01-27 18:46:02,138 545321ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 18:46:02,855 546038ms GameServerContainer    RegisterClient         - Register Client 88390db3-c124-45f6-a44e-a5f32a8cfbc4
+INFO  2018-01-27 18:57:12,933 1216116ms GameServerContainer    UnregisterConnection   - Unregister Connection for client 88390db3-c124-45f6-a44e-a5f32a8cfbc4
+WARN  2018-01-27 18:57:13,072 1216255ms GameServerContainer    econdaryThread>b__36_0 - Send message failed
+ERROR 2018-01-27 18:57:13,072 1216255ms GameServer             MoveNext               - Доступ к ликвидированному объекту невозможен.
+Имя объекта: "System.Web.WebSockets.AspNetWebSocket".
+System.ObjectDisposedException: Доступ к ликвидированному объекту невозможен.
+Имя объекта: "System.Web.WebSockets.AspNetWebSocket".
+   в System.Web.WebSockets.AspNetWebSocket.ThrowIfDisposed()
+   в System.Web.WebSockets.AspNetWebSocket.get_State()
+   в Battlehub.VoxelCombat.WebSocketHandler.<SendAsync>d__28.MoveNext() в E:\Development\GitHub\VoxelCombat\Server\VoxelCombatServerApp\VoxelCombatServerApp\WebSocketHandler.cs:строка 112
+WARN  2018-01-27 18:57:13,096 1216279ms GameServerContainer    econdaryThread>b__36_0 - Send message failed
+INFO  2018-01-27 18:58:06,773 1269955ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 18:58:07,478 1270660ms GameServerContainer    RegisterClient         - Register Client 622b078d-1984-4c72-a603-c47b003b9d39
+INFO  2018-01-27 18:59:46,125 1369308ms GameServerContainer    UnregisterConnection   - Unregister Connection for client 622b078d-1984-4c72-a603-c47b003b9d39
+INFO  2018-01-27 19:01:40,440   393ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 19:01:41,125  1078ms GameServerContainer    RegisterClient         - Register Client 0d382bbd-b90e-4531-a26b-5031a11d6303
+INFO  2018-01-27 19:04:44,600 184553ms GameServerContainer    UnregisterConnection   - Unregister Connection for client 0d382bbd-b90e-4531-a26b-5031a11d6303
+INFO  2018-01-27 19:05:46,636 246589ms GameServerContainer    RegisterConnection     - Register Connection
+INFO  2018-01-27 19:05:47,333 247286ms GameServerContainer    RegisterClient         - Register Client 823ac134-c5a0-477a-8c85-03ee3f89d7cc

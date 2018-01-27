@@ -11,8 +11,6 @@ namespace Battlehub.VoxelCombat
 
         void GetReplay(ServerEventHandler<ReplayData, Room> callback);
 
-        void SetClientsDisconnected(Guid[] disconnectedClinetIds, ServerEventHandler callback);
-
         void Update(float time);
     }
 
@@ -20,15 +18,13 @@ namespace Battlehub.VoxelCombat
     public class MatchServerClient : IMatchServerClient
     {
         private string m_url;
-
-        private ClientSocket m_socket;
         private ILowProtocol m_protocol;
         private Action m_call;
         private Action<Error> m_response;
 
         public MatchServerClient(string url, Guid roomId)
         {
-            m_url = string.Format("{0}?roomId={1}&identity={2}&cmd=", m_url, roomId, ServerContainer.ServerIdentity);
+            m_url = string.Format("{0}?roomId={1}&identity={2}&cmd=", url, roomId, ServerContainer.ServerIdentity);
         }
 
         private void OnError(ILowProtocol sender, SocketErrorArgs args)
@@ -81,7 +77,6 @@ namespace Battlehub.VoxelCombat
             }
  
             LowProtocol<ClientSocket> protocol = new LowProtocol<ClientSocket>(m_url);
-            m_socket = protocol.Socket;
             m_protocol = protocol;
             m_protocol.Enabled += OnEnabled;
             m_protocol.SocketError += OnError;
@@ -123,7 +118,9 @@ namespace Battlehub.VoxelCombat
             {
                 throw new InvalidOperationException();
             }
-            m_protocol = new LowProtocol<ClientSocket>(m_url);
+
+            LowProtocol<ClientSocket> protocol = new LowProtocol<ClientSocket>(m_url);
+            m_protocol = protocol;
             m_protocol.Enabled += OnEnabled;
             m_protocol.SocketError += OnError;
             m_protocol.Disabled += OnDisabled;
@@ -158,47 +155,6 @@ namespace Battlehub.VoxelCombat
             m_protocol.Enable();
         }
 
-        public void SetClientsDisconnected(Guid[] disconnectedClientIds, ServerEventHandler callback)
-        {
-            if (m_protocol != null)
-            {
-                throw new InvalidOperationException();
-            }
-
-            m_protocol = new LowProtocol<ClientSocket>(m_url);
-            m_protocol.Enabled += OnEnabled;
-            m_protocol.SocketError += OnError;
-            m_protocol.Disabled += OnDisabled;
-
-            m_response = externalError =>
-            {
-                callback(externalError);
-            };
-
-            m_call = () =>
-            {
-                RemoteCall rpc = new RemoteCall(RemoteCall.Proc.SetClientsDisconnected, ServerContainer.ServerIdentity, RemoteArg.Create(disconnectedClientIds));
-
-                Call(rpc, (error, remoteResult) =>
-                {
-                    m_response = externalError =>
-                    {
-                        if (externalError != null)
-                        {
-                            callback(externalError);
-                        }
-                        else
-                        {
-                            callback(error);
-                        }
-                    };
-
-                    m_protocol.Disable();
-                });
-            };
-
-            m_protocol.Enable();
-        }
 
         private void Call(RemoteCall rpc, Action<Error, RemoteResult> callback)
         {
@@ -222,10 +178,10 @@ namespace Battlehub.VoxelCombat
                 }
                 else
                 {
-                    result = null;
+                    result = new RemoteResult();
                     if (requestError == LowProtocol<ClientSocket>.ErrorTimeout)
                     {
-                        error = new Error(StatusCode.ConnectionTimeout);
+                        error = new Error(StatusCode.RequestTimeout);
                     }
                     else if (requestError == LowProtocol<ClientSocket>.ErrorClosed)
                     {
@@ -244,7 +200,6 @@ namespace Battlehub.VoxelCombat
 
         public void Update(float time)
         {
-            m_socket.Update();
             m_protocol.UpdateTime(time);    
         } 
     }
@@ -263,6 +218,31 @@ namespace Battlehub.VoxelCombat
         protected override void OnRegisterClientSafe(ILowProtocol protocol, Guid clientId)
         {
             base.OnRegisterClientSafe(protocol, clientId);
+            if(m_matchServer != null)
+            {
+                m_matchServer.RegisterClient(clientId, error =>
+                {
+                    if(m_matchServer.HasError(error))
+                    {
+                        Log.Error("m_matchServer.RegisterClient. This method should never fail but it does.. " + error.ToString());
+                    };
+                });
+            }
+        }
+
+        protected override void OnUnregisterClientSafe(ILowProtocol protocol, Guid clientId)
+        {
+            base.OnUnregisterClientSafe(protocol, clientId);
+            if(m_matchServer != null)
+            {
+                m_matchServer.UnregisterClient(clientId, error =>
+                {
+                    if (m_matchServer.HasError(error))
+                    {
+                        Log.Error("m_matchServer.UnregisterClient. This method should never fail but it does.. " + error.ToString());
+                    };
+                });
+            }
         }
 
         protected override void OnBeforeRun()
@@ -312,14 +292,17 @@ namespace Battlehub.VoxelCombat
 
             if(m_matchServer != null)
             {
-                m_gameLoop.Destroy();
-
                 m_matchServer.Tick -= OnTick;
                 m_matchServer.ReadyToPlayAll -= OnReadyToPlayAll;
                 m_matchServer.Paused -= OnPaused;
                 m_matchServer.Ping -= OnPing;
 
                 m_matchServer = null;
+            }
+
+            if(m_gameLoop != null)
+            {
+                m_gameLoop.Destroy();
                 m_gameLoop = null;
             }
         }
@@ -330,6 +313,18 @@ namespace Battlehub.VoxelCombat
             if(m_gameLoop != null)
             {
                 m_gameLoop.Update((float)elapsed.TotalSeconds);
+            }
+            else
+            {
+                if(m_matchServer != null)
+                {
+                    const int WaitSeconds = 5;
+                    if (elapsed.TotalSeconds > WaitSeconds)
+                    {
+                        m_gameLoop = (ILoop)m_matchServer;
+                        m_gameLoop.Start();
+                    }
+                }
             }
         }
 
@@ -381,7 +376,7 @@ namespace Battlehub.VoxelCombat
                             {
                                 MatchServerImpl matchServer = new MatchServerImpl(m_path, room, clientIds, players, replay);
                                 m_matchServer = matchServer;
-                                m_gameLoop = matchServer;
+                              
                                 m_matchServer.Tick += OnTick;
                                 m_matchServer.ReadyToPlayAll += OnReadyToPlayAll;
                                 m_matchServer.Paused += OnPaused;
@@ -393,15 +388,9 @@ namespace Battlehub.VoxelCombat
                     }
                     break;
                 case RemoteCall.Proc.GetReplay:
-                    m_matchServer.GetReplay(rpc.ClientId, (error, replayData) =>
+                    m_matchServer.GetReplay(rpc.ClientId, (error, replayData, room) =>
                     {
-                        Return(sender, request, error, RemoteArg.Create(replayData));
-                    });
-                    break;
-                case RemoteCall.Proc.SetClientsDisconnected:
-                    m_matchServer.SetClientDisconnected(rpc.ClientId, rpc.Get<Guid[]>(0), error =>
-                    {
-                        Return(sender, request, error);
+                        Return(sender, request, error, RemoteArg.Create(replayData), RemoteArg.Create(room));
                     });
                     break;
                 case RemoteCall.Proc.DownloadMapData:

@@ -118,6 +118,11 @@ namespace Battlehub.VoxelCombat
         {
             m_ws.SendAsync(data, completed);
         }
+
+        public void Update()
+        {
+
+        }
     }
 
 }

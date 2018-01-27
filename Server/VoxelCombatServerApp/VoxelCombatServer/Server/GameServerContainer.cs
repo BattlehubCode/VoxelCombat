@@ -326,6 +326,7 @@ namespace Battlehub.VoxelCombat
             });
         }
 
+     
         protected override void OnTick(TimeSpan elapsed)
         {
             base.OnTick(elapsed);

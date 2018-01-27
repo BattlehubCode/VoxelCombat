@@ -85,7 +85,11 @@ namespace Battlehub.VoxelCombat
         public event ServerEventHandler<bool> Paused;
         public event ServerEventHandler<bool> ConnectionStateChanged;
 
-        public bool IsConnected { get { return true; } }
+        public bool IsConnected
+        {
+            get;
+            private set;
+        }
 
  
         private IGlobalState m_gState;
@@ -126,6 +130,34 @@ namespace Battlehub.VoxelCombat
 
             enabled = false; //Will be set to true when match engine will be ready
         }
+        private void OnEnable()
+        {
+            Connect();
+        }
+
+        private void OnDisable()
+        {
+            Disconnect();
+        }
+
+        public void Connect()
+        {
+            IsConnected = true;
+            if (ConnectionStateChanged != null)
+            {
+                ConnectionStateChanged(new Error(StatusCode.OK), true);
+            }
+        }
+
+        public void Disconnect()
+        {
+            IsConnected = false;
+            if (ConnectionStateChanged != null)
+            {
+                ConnectionStateChanged(new Error(StatusCode.OK), false);
+            }
+        }
+
 
         public void Init()
         {
@@ -498,7 +530,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void GetReplay(Guid clientId, ServerEventHandler<ReplayData> callback)
+        public void GetReplay(Guid clientId, ServerEventHandler<ReplayData, Room> callback)
         {
             ReplayData replay = m_replay.Save();
             Error error = new Error(StatusCode.OK);
@@ -509,13 +541,13 @@ namespace Battlehub.VoxelCombat
             }
             if (Lag == 0)
             {
-                callback(error, replay);
+                callback(error, replay, m_room);
             }
             else
             {
                 m_job.Submit(() => { Thread.Sleep(Lag); return null; }, result =>
                 {
-                    callback(error, replay);
+                    callback(error, replay, m_room);
                 });
             }
         }

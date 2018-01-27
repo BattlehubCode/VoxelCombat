@@ -130,17 +130,20 @@ namespace Battlehub.VoxelCombat
         private long m_tick;
         private PingTimer m_pingTimer;
         private bool m_initialized;
+        private bool m_initializationStarted;
 
         private Player m_neutralPlayer;
         private Guid m_serverIdentity = new Guid(ConfigurationManager.AppSettings["ServerIdentity"]);
 
 
-        private readonly HashSet<Guid> m_readyToPlay;
+        private readonly HashSet<Guid> m_registeredClients;
+        private readonly HashSet<Guid> m_readyToPlayClients;
         private readonly Dictionary<Guid, Dictionary<Guid, Player>> m_clientIdToPlayers;
         private readonly Dictionary<Guid, Player> m_players;
         private Dictionary<Guid, VoxelAbilities[]> m_abilities;
         private IBotController[] m_bots;
         private Room m_room;
+        private ReplayData m_replayData;
         
         private string m_persistentDataPath;
 
@@ -151,18 +154,20 @@ namespace Battlehub.VoxelCombat
             get { throw new NotSupportedException(); }
         }
 
-        public MatchServerImpl(string persistentDataPath, Room room, Guid[] clientIds, Player[] players, ReplayData replay)
+        public MatchServerImpl(string persistentDataPath,  Room room, Guid[] clientIds, Player[] players, ReplayData replay)
         {
             m_persistentDataPath = persistentDataPath;
             m_room = room;
+            m_replayData = replay;
 
-            m_readyToPlay = new HashSet<Guid>();
+            m_registeredClients = new HashSet<Guid>();
+            m_readyToPlayClients = new HashSet<Guid>();
             m_clientIdToPlayers = new Dictionary<Guid, Dictionary<Guid, Player>>();
-            for(int i = 0; i < clientIds.Length; ++i)
+            for (int i = 0; i < clientIds.Length; ++i)
             {
                 Guid clientId = clientIds[i];
                 Dictionary<Guid, Player> idToPlayer;
-                if(!m_clientIdToPlayers.TryGetValue(clientId, out idToPlayer))
+                if (!m_clientIdToPlayers.TryGetValue(clientId, out idToPlayer))
                 {
                     idToPlayer = new Dictionary<Guid, Player>();
                     m_clientIdToPlayers.Add(clientId, idToPlayer);
@@ -173,23 +178,19 @@ namespace Battlehub.VoxelCombat
             }
 
             m_players = players.ToDictionary(p => p.Id);
-
+           
             //Adding neutral player to room
             m_neutralPlayer = new Player();
             m_neutralPlayer.BotType = BotType.Neutral;
             m_neutralPlayer.Name = "Neutral";
             m_neutralPlayer.Id = Guid.NewGuid();
 
-            Init(replay);
-
-            enabled = false; //Will be set to true when match engine will be ready
         }
 
         private void Init(ReplayData replay)
         {
             Dictionary<Guid, Player> idToPlayer = new Dictionary<Guid, Player>();
             idToPlayer.Add(m_neutralPlayer.Id, m_neutralPlayer);
-            m_clientIdToPlayers.Add(m_serverIdentity, idToPlayer);
             m_players.Add(m_neutralPlayer.Id, m_neutralPlayer);
 
             if(!m_room.Players.Contains(m_neutralPlayer.Id))
@@ -251,12 +252,49 @@ namespace Battlehub.VoxelCombat
 
         public void RegisterClient(Guid clientId, ServerEventHandler callback)
         {
-            throw new NotSupportedException();
+            if(!m_registeredClients.Contains(clientId))
+            {
+                m_registeredClients.Add(clientId);
+            }
+            callback(new Error(StatusCode.OK));
         }
 
         public void UnregisterClient(Guid clientId, ServerEventHandler callback)
         {
-            throw new NotSupportedException();
+            m_registeredClients.Remove(clientId);
+
+            Dictionary<Guid, Player> disconnectedPlayers;
+            if (m_clientIdToPlayers.TryGetValue(clientId, out disconnectedPlayers))
+            {
+                foreach (Guid playerId in disconnectedPlayers.Keys)
+                {
+#warning Fix Engine to handle LeaveRoom command without removing PlayerControllers. Just change colors or destroy units
+                    if (m_initialized)
+                    {
+                        Cmd cmd = new Cmd(CmdCode.LeaveRoom, -1);
+                        //m_replay.Record(playerId, cmd, m_tick);
+                        //m_engine.Submit(playerId, cmd);    
+                    }
+                }
+
+                m_readyToPlayClients.Remove(clientId);
+                m_clientIdToPlayers.Remove(clientId);
+
+                if(!m_initialized)
+                {
+                    Error error = new Error(StatusCode.OK);
+                    m_pingTimer.OnClientDisconnected(clientId, () => OnPingPongCompleted(error, clientId));
+
+                    if (!HasError(error))
+                    {
+                        TryToInitEngine(callback);
+                    }
+                    else
+                    {
+                        callback(error);
+                    }
+                }
+            }
         }
 
         public void DownloadMapData(Guid clientId, ServerEventHandler<MapData> callback)
@@ -329,59 +367,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void SetClientDisconnected(Guid clientId, Guid[] disconnectedClients, ServerEventHandler callback)
-        {
-            Error error = new Error(StatusCode.OK);
-            if (!m_clientIdToPlayers.ContainsKey(clientId))
-            {
-                error.Code = StatusCode.NotRegistered;
-                callback(error);
-                return;
-            }
-
-            if(clientId != m_serverIdentity)
-            {
-                if(disconnectedClients.Length != 1 || disconnectedClients[0] != clientId)
-                {
-                    error.Code = StatusCode.NotAuthorized;
-                    callback(error);
-                    return;
-                }
-            }
-            
-            for (int i = 0; i < disconnectedClients.Length; ++i)
-            {
-                Guid disconnectedClientId = disconnectedClients[i];
-
-                Dictionary<Guid, Player> disconnectedPlayers;
-                if(m_clientIdToPlayers.TryGetValue(disconnectedClientId, out disconnectedPlayers))
-                {
-                    foreach(Guid playerId in disconnectedPlayers.Keys)
-                    {
-#warning Fix Engine to handle LeaveRoom command without removing PlayerControllers. Just change colors or destroy units
-                        if (m_initialized)
-                        {
-                            Cmd cmd = new Cmd(CmdCode.LeaveRoom, -1);
-                            //m_replay.Record(playerId, cmd, m_tick);
-                            //m_engine.Submit(playerId, cmd);    
-                        }
-                    }
-                    
-                    m_clientIdToPlayers.Remove(disconnectedClientId);
-                    m_pingTimer.OnClientDisconnected(disconnectedClientId, () => OnPingPongCompleted(error, clientId));
-                }
-            }
-
-            if(!HasError(error))
-            {
-                TryToInitEngine(callback);
-            }
-            else
-            {
-                callback(error);
-            }
-
-        }
 
         public void ReadyToPlay(Guid clientId, ServerEventHandler callback)
         {
@@ -393,9 +378,9 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            if (!m_readyToPlay.Contains(clientId))
+            if (!m_readyToPlayClients.Contains(clientId))
             {
-                m_readyToPlay.Add(clientId);
+                m_readyToPlayClients.Add(clientId);
             }
 
             TryToInitEngine(callback);
@@ -449,8 +434,8 @@ namespace Battlehub.VoxelCombat
             }
 
             callback(error);
-             
-            RTTInfo rttInfo = m_pingTimer.Pong(clientId, () => OnPingPongCompleted(error, clientId));
+
+            RTTInfo rttInfo = m_pingTimer.Pong (clientId, () => OnPingPongCompleted(error, clientId));
             m_pingTimer.Ping(clientId);
             if (Ping != null)
             {
@@ -506,7 +491,6 @@ namespace Battlehub.VoxelCombat
             }
 
             RaiseReadyToPlayAll(error, players, abilities);
-
         }
 
         private void RaiseReadyToPlayAll(Error error, Player[] players, VoxelAbilities[][] abilities)
@@ -552,13 +536,13 @@ namespace Battlehub.VoxelCombat
             callback(error);
         }
 
-        public void GetReplay(Guid clientId, ServerEventHandler<ReplayData> callback)
+        public void GetReplay(Guid clientId, ServerEventHandler<ReplayData, Room> callback)
         {
             Error error = new Error(StatusCode.OK);
-            if (!m_clientIdToPlayers.ContainsKey(clientId))
+            if (!m_clientIdToPlayers.ContainsKey(clientId) && clientId != m_serverIdentity)
             {
                 error.Code = StatusCode.NotRegistered;
-                callback(error, null);
+                callback(error, null, null);
                 return;
             }
 
@@ -568,12 +552,12 @@ namespace Battlehub.VoxelCombat
                 error.Code = StatusCode.NotAllowed;
                 error.Message = "Match was not initialized";
             }
-            callback(error, replay);
+            callback(error, replay, m_room);
         }
 
         private void TryToInitEngine(ServerEventHandler callback)
         {
-            if (m_engine == null && m_readyToPlay.Count > 0 && m_readyToPlay.Count == m_clientIdToPlayers.Count)
+            if (!m_initializationStarted && m_engine == null && m_readyToPlayClients.Count > 0 && m_readyToPlayClients.Count == m_clientIdToPlayers.Count)
             {
                 InitEngine(callback);
             }
@@ -585,8 +569,10 @@ namespace Battlehub.VoxelCombat
 
         private void InitEngine(ServerEventHandler callback)
         {
+            m_initializationStarted = true;
             DownloadMapData(m_room.MapInfo.Id, (Error error, MapData mapData) =>
             {
+                m_initializationStarted = false;
                 if (HasError(error))
                 {
                     if (callback != null)
@@ -638,6 +624,27 @@ namespace Battlehub.VoxelCombat
                     }
                 }
             });
+        }
+
+        public void Start()
+        {
+            List<Guid> notRegisteredClients = new List<Guid>();
+            foreach(KeyValuePair<Guid, Dictionary<Guid, Player>> kvp in m_clientIdToPlayers)
+            {
+                if(!m_registeredClients.Contains(kvp.Key))
+                {
+                    notRegisteredClients.Add(kvp.Key);
+                }               
+            }
+
+            for(int i = 0; i < notRegisteredClients.Count; ++i)
+            {
+                m_clientIdToPlayers.Remove(notRegisteredClients[i]);
+            }          
+
+            Init(m_replayData);
+
+            enabled = false;
         }
 
         public void Update(float time)

@@ -21,7 +21,6 @@ namespace Battlehub.VoxelCombat
             get { return m_isOpening; }
         }
 
-
         public event SocketEvent Closed;
         public event SocketEvent<SocketErrorArgs> Error;
         public event SocketEvent<byte[]> Message;
@@ -133,7 +132,7 @@ namespace Battlehub.VoxelCombat
             }
             catch (Exception e)
             {
-                m_isOpening = false;
+                 m_isOpening = false;
 
                 Dispatch(() =>
                 {

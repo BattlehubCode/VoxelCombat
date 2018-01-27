@@ -68,23 +68,13 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        public void GetReplay(Guid clientId, ServerEventHandler<ReplayData> callback)
+        public void GetReplay(Guid clientId, ServerEventHandler<ReplayData, Room> callback)
         {
             RemoteCall rpc = new RemoteCall(
                 RemoteCall.Proc.GetReplay,
                 clientId);
 
-            Call(rpc, (error, result) => callback(error, result.Get<ReplayData>(0)));
-        }
-
-        public void SetClientDisconnected(Guid clientId, Guid[] disconnectClients, ServerEventHandler callback)
-        {
-            RemoteCall rpc = new RemoteCall(
-                RemoteCall.Proc.SetClientsDisconnected,
-                clientId,
-                RemoteArg.Create(disconnectClients));
-
-            Call(rpc, (error, result) => callback(error));
+            Call(rpc, (error, result) => callback(error, result.Get<ReplayData>(0), result.Get<Room>(1)));
         }
 
         public void Pause(Guid clientId, bool pause, ServerEventHandler callback)

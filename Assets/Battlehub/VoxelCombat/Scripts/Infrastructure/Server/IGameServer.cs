@@ -275,7 +275,6 @@ namespace Battlehub.VoxelCombat
 
             CreateMatch,
             GetReplay,
-            SetClientsDisconnected,
             ReadyToPlay,
             Submit,
             Pong,
@@ -496,6 +495,7 @@ namespace Battlehub.VoxelCombat
                 return true;
             }
         }
+
         [ProtoMember(6)]
         public bool IsLaunched;
         [ProtoMember(7)]
@@ -652,6 +652,7 @@ namespace Battlehub.VoxelCombat
 
     public interface ILoop
     {
+        void Start();
         void Update(float time);
         void Destroy();
     }
@@ -868,7 +869,7 @@ namespace Battlehub.VoxelCombat
         public const int NotRegistered = 12;// Client was not registered
         public const int AlreadyJoined = 13;
         public const int Failed = 14;
-        public const int ConnectionTimeout = 15;
+        public const int RequestTimeout = 15;
         public const int ConnectionClosed = 16;
         public const int ConnectionError = 17;
         public const int AlreadyLaunched = 18;
@@ -910,8 +911,20 @@ namespace Battlehub.VoxelCombat
                     return "Not Registered";
                 case AlreadyJoined:
                     return "Alread Joined";
+                case Failed:
+                    return "Failed";
+                case RequestTimeout:
+                    return "Request Timeout";
+                case ConnectionClosed:
+                    return "Connection Closed";
+                case ConnectionError:
+                    return "Connection Error";
+                case AlreadyLaunched:
+                    return "Already Launched";
+                case NotReady:
+                    return "Not Ready";
                 default:
-                    return "Unknow status code";
+                    return "Unknown status code";
                     
             }
         }
@@ -980,6 +993,13 @@ namespace Battlehub.VoxelCombat
         void UnregisterClient(Guid clientId, ServerEventHandler callback);
 
         void CancelRequests();
+
+#if !SERVER
+        void Connect();
+
+        void Disconnect();
+#endif
+
     }
 
     public interface IMatchServer : IServer
@@ -1035,13 +1055,11 @@ namespace Battlehub.VoxelCombat
         /// </summary>
         void Submit(Guid clientId, Guid playerId, Cmd cmd, ServerEventHandler callback);
 
-        void SetClientDisconnected(Guid clientId, Guid[] disconnectedClients, ServerEventHandler callback);
-
         void Pong(Guid clientId, ServerEventHandler callback);
 
         void Pause(Guid clientId, bool pause, ServerEventHandler callback);
 
-        void GetReplay(Guid clientId, ServerEventHandler<ReplayData> callback);
+        void GetReplay(Guid clientId, ServerEventHandler<ReplayData, Room> callback);
     }
 
 

@@ -48,7 +48,8 @@ namespace Battlehub.VoxelCombat
 
         public bool IsConnected
         {
-            get { return true; }
+            get;
+            private set;
         }
 
         [SerializeField]
@@ -83,6 +84,34 @@ namespace Battlehub.VoxelCombat
 
             LoadPlayers();
             m_gState.SetValue("LocalGameServer.m_players", m_players);
+        }
+
+        private void OnEnable()
+        {
+            Connect();
+        }
+
+        private void OnDisable()
+        {
+            Disconnect();
+        }
+
+        public void Connect()
+        {
+            IsConnected = true;
+            if(ConnectionStateChanged != null)
+            {
+                ConnectionStateChanged(new Error(StatusCode.OK), true);
+            }
+        }
+
+        public void Disconnect()
+        {
+            IsConnected = false;
+            if (ConnectionStateChanged != null)
+            {
+                ConnectionStateChanged(new Error(StatusCode.OK), false);
+            }
         }
 
         public bool HasError(Error error)
@@ -1089,7 +1118,7 @@ namespace Battlehub.VoxelCombat
 
         public void SaveReplay(Guid clientId, string name, ServerEventHandler callback)
         {
-            m_matchServer.GetReplay(clientId, (error, replayData) =>
+            m_matchServer.GetReplay(clientId, (error, replayData, room) =>
             {
                 if (HasError(error))
                 {

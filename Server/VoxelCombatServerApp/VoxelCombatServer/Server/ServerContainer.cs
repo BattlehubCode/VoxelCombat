@@ -243,7 +243,7 @@ namespace Battlehub.VoxelCombat
 
             while (true)
             {
-                QueuedMessage message;
+                QueuedMessage message = null;
                 lock (m_incomingMessages)
                 {
                     if (!m_isMainThreadRunning)
@@ -254,28 +254,34 @@ namespace Battlehub.VoxelCombat
                         break;
                     }
 
-                    if (m_incomingMessages.Count == 0)
+                    //if (m_incomingMessages.Count == 0)
+                    //{
+                    //    /*The thread that currently owns the lock on the specified object invokes this method in order to release the object so that another thread can access it. The caller is blocked while waiting to reacquire the lock. This method is called when the caller needs to wait for a state change that will occur as a result of another thread's operations.*/
+                    //    Monitor.Wait(m_incomingMessages);
+                    //    continue;
+                    //}
+                    if(m_incomingMessages.Count > 0)
                     {
-                        /*The thread that currently owns the lock on the specified object invokes this method in order to release the object so that another thread can access it. The caller is blocked while waiting to reacquire the lock. This method is called when the caller needs to wait for a state change that will occur as a result of another thread's operations.*/
-                        Monitor.Wait(m_incomingMessages);
-                        continue;
+                        message = m_incomingMessages.Dequeue(); 
                     }
-
-                    message = m_incomingMessages.Dequeue();
                 }
 
                 try
                 {
-                    if (message.IsRequest)
+                    if(message != null)
                     {
-                        OnRequest(message.Sender, message.Request);
+                        if (message.IsRequest)
+                        {
+                            OnRequest(message.Sender, message.Request);
+                        }
+                        else
+                        {
+                            OnMessage(message.Sender, message.Message);
+                        }
                     }
-                    else
-                    {
-                        OnMessage(message.Sender, message.Message);
-                    }
-
+                  
                     OnTick(stopWatch.Elapsed);
+                    Thread.Sleep(10);
                 }
                 catch (Exception e)
                 {

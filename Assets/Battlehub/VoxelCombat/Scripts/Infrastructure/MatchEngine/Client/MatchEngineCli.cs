@@ -22,6 +22,7 @@ namespace Battlehub.VoxelCombat
         /// Possible Error -> StatusCode.HighPing, should be handled without animation
         /// </summary>
         event MatchEngineCliEvent<long, CommandsBundle> ExecuteCommands;
+        event MatchEngineCliEvent Error;
         event MatchEngineCliEvent Stopped;
         event MatchEngineCliEvent<bool> Paused;
 
@@ -31,7 +32,6 @@ namespace Battlehub.VoxelCombat
         
         void ReadyToPlay(MatchEngineCliEvent callback);
 
-        void SetClientDisconnected(MatchEngineCliEvent callback);
 
         void Pause(bool pause, MatchEngineCliEvent callback);
 
@@ -49,6 +49,7 @@ namespace Battlehub.VoxelCombat
         /// Possible Error -> StatusCode.HighPing, should be handled without animation
         /// </summary>
         public event MatchEngineCliEvent<long, CommandsBundle> ExecuteCommands;
+        public event MatchEngineCliEvent Error;
         public event MatchEngineCliEvent Stopped;
         public event MatchEngineCliEvent<bool> Paused;
 
@@ -69,12 +70,9 @@ namespace Battlehub.VoxelCombat
             m_matchServer.ReadyToPlayAll += OnReadyToPlayAll;
             m_matchServer.Ping += OnPing;
             m_matchServer.Paused += OnPaused;
-            
-            enabled = false;
-        }
+            m_matchServer.ConnectionStateChanged += OnConnectionStateChanged;
 
-        private void Start()
-        {
+            enabled = false;
         }
 
         private void OnDestroy()
@@ -85,6 +83,7 @@ namespace Battlehub.VoxelCombat
                 m_matchServer.ReadyToPlayAll -= OnReadyToPlayAll;
                 m_matchServer.Ping -= OnPing;
                 m_matchServer.Paused -= OnPaused;
+                m_matchServer.ConnectionStateChanged -= OnConnectionStateChanged;
             }
         }
 
@@ -110,8 +109,6 @@ namespace Battlehub.VoxelCombat
                     }
                     else if (m_tick > commands.Tick)
                     {
-
-
                         error.Code = StatusCode.HighPing;
                         while(commands != null && m_tick > commands.Tick)
                         {
@@ -170,11 +167,6 @@ namespace Battlehub.VoxelCombat
             m_matchServer.ReadyToPlay(m_gSettings.ClientId, error => callback(error));
         }
 
-        public void SetClientDisconnected(MatchEngineCliEvent callback)
-        {
-            m_matchServer.SetClientDisconnected(m_gSettings.ClientId, new[] { m_gSettings.ClientId }, error => callback(error));
-        }
-
         public void Pause(bool pause, MatchEngineCliEvent callback)
         {
             if(!m_isInitialized)
@@ -193,7 +185,8 @@ namespace Battlehub.VoxelCombat
             {
                 if (m_matchServer.HasError(error))
                 {
-                    Disconnect(error);
+                    Error(error);
+                    m_matchServer.Disconnect();
                     return;
                 }
             });
@@ -203,7 +196,8 @@ namespace Battlehub.VoxelCombat
         {
             if(m_matchServer.HasError(error))
             {
-                Disconnect(error);
+                Error(error);
+                m_matchServer.Disconnect();
                 return;
             }
 
@@ -214,10 +208,10 @@ namespace Battlehub.VoxelCombat
         {
             if (m_matchServer.HasError(error))
             {
-                Disconnect(error);
+                Error(error);
+                m_matchServer.Disconnect();
                 return;
             }
-
 
             enabled = true; //update method will be called
             m_isInitialized = true;
@@ -232,7 +226,8 @@ namespace Battlehub.VoxelCombat
         {
             if(m_matchServer.HasError(error))
             {
-                Stopped(error);
+                Error(error);
+                m_matchServer.Disconnect();
                 return;
             }
 
@@ -258,15 +253,24 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void Disconnect(Error cause)
+        private void OnConnectionStateChanged(Error error, bool connected)
         {
-            m_matchServer.SetClientDisconnected(m_gSettings.ClientId, new[] { m_gSettings.ClientId }, error =>
+            if (connected)
             {
+                if (m_isInitialized)
+                {
+                    enabled = true;
+                }
+            }
+            else
+            {
+                enabled = false;
+
                 if(Stopped != null)
                 {
-                    Stopped(cause);
+                    Stopped(error);
                 }
-            });
+            }
         }
 
     }

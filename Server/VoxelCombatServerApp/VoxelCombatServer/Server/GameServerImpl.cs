@@ -807,44 +807,39 @@ namespace Battlehub.VoxelCombat
                     RoomsListChanged(new Error(StatusCode.OK), new ServerEventArgs { Except = clientId });
                 }
 
-                DestroyBots(clientId, botsWillLeaveRoom.ToArray(), false, (e, g, r) =>
+                DestroyBots(clientId, botsWillLeaveRoom.ToArray(), false, (destroyBotError, g, r) =>
                 {
-                    if (HasError(e))
+                    if (HasError(destroyBotError))
                     {
                         error.Code = StatusCode.Failed;
                         error.Message = "Failed to destroy bot. See inner error";
-                        error.InnerError = e;
+                        error.InnerError = destroyBotError;
 
                         Log.Error("DestroyBots. This operation should never fail. But id does " + error.ToString());
+
+                        callback(error, roomId);
                     }
-                });
-
-                if(HasError(error))
-                {
-                    callback(error, roomId);
-                    return;
-                }
-
-                KickPlayers(room, e =>
-                {
-                    if (HasError(e))
+                    else
                     {
-                        error.Code = StatusCode.Failed;
-                        error.Message = "Failed to leave room. See inner error";
-                        error.InnerError = e;
+                        KickPlayers(room, kickError =>
+                        {
+                            if (HasError(kickError))
+                            {
+                                error.Code = StatusCode.Failed;
+                                error.Message = "Failed to leave room. See inner error";
+                                error.InnerError = kickError;
+                                Log.Error("KickPlayers. This operation should never fail. But id does " + error.ToString());
+                            }
+
+                            callback(error, roomId);
+                        });
                     }
-
-                    Log.Error("KickPlayers. This operation should never fail. But id does " + error.ToString());
                 });
-
-                if(HasError(error))
-                {
-                    callback(error, roomId);
-                    return;
-                }
             }
-
-            callback(error, roomId);
+            else
+            {
+                callback(error, roomId);
+            }
         }
 
         public void GetRoom(Guid clientId, ServerEventHandler<Room> callback)
@@ -1020,44 +1015,9 @@ namespace Battlehub.VoxelCombat
             Room room;
             if (m_roomsByClientId.TryGetValue(clientId, out room))
             {
-                if (LeftRoom != null)
-                {
-                    LeftRoom(new Error(StatusCode.OK), new ServerEventArgs<Guid[], Room>(loggedInPlayers.Select(p => p.Id).ToArray(), room)
-                    {
-                        Targets = GetTargets(senderId, room)
-                    });
-                }
-
-                foreach (Player player in loggedInPlayers)
-                {
-                    room.Players.Remove(player.Id);
-                    room.ReadyToLaunchPlayers.Remove(player.Id);
-                }
-
-                m_roomsByClientId.Remove(clientId);
-
-                if (room.IsLaunched)
-                {
-                    MatchServerClient matchServerClient = new MatchServerClient(m_matchServerUrl, room.Id);
-                    m_matchServerClients.Add(matchServerClient);
-                    matchServerClient.SetClientsDisconnected(new[] { clientId }, setClientDisconnectedError =>
-                    {
-                        m_matchServerClients.Remove(matchServerClient);
-                        if (HasError(setClientDisconnectedError))
-                        {
-                            error.Code = StatusCode.Failed;
-                            error.InnerError = setClientDisconnectedError;
-                        }
-
-                        m_replaysByClientId.Remove(clientId);
-                        callback(error);
-                    });
-                }
-                else
-                {
-                    m_replaysByClientId.Remove(clientId);
-                    callback(error);
-                }
+                LeaveRoom(senderId, clientId, loggedInPlayers, room);
+                m_replaysByClientId.Remove(clientId);
+                callback(error);
             }
             else
             {
@@ -1065,7 +1025,26 @@ namespace Battlehub.VoxelCombat
                 callback(error);
             }
         }
-        
+
+        private void LeaveRoom(Guid senderId, Guid clientId, List<Player> loggedInPlayers, Room room)
+        {
+            if (LeftRoom != null)
+            {
+                LeftRoom(new Error(StatusCode.OK), new ServerEventArgs<Guid[], Room>(loggedInPlayers.Select(p => p.Id).ToArray(), room)
+                {
+                    Targets = GetTargets(senderId, room)
+                });
+            }
+
+            foreach (Player player in loggedInPlayers)
+            {
+                room.Players.Remove(player.Id);
+                room.ReadyToLaunchPlayers.Remove(player.Id);
+            }
+
+            m_roomsByClientId.Remove(clientId);
+        }
+
         private void KickPlayers(Room room, ServerEventHandler callback)
         {
             HashSet<Guid> disconnectedClients = new HashSet<Guid>();
@@ -1085,21 +1064,8 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            MatchServerClient matchServerClient = new MatchServerClient(m_matchServerUrl, room.Id);
-            m_matchServerClients.Add(matchServerClient);
-            matchServerClient.SetClientsDisconnected(disconnectedClients.ToArray(), setClientDisconnectedError =>
-            {
-                m_matchServerClients.Remove(matchServerClient);
-                Error error = new Error(StatusCode.OK);
-                if (HasError(setClientDisconnectedError))
-                {
-                    error.Code = StatusCode.Failed;
-                    error.InnerError = setClientDisconnectedError;
-                }
-
-                room.Players.Clear();
-                callback(error);
-            });
+            room.Players.Clear();
+            callback(new Error(StatusCode.OK));
         }
 
         public void CreateBot(Guid clientId, string botName, BotType botType, ServerEventHandler<Guid, Room> callback)
@@ -1570,7 +1536,6 @@ namespace Battlehub.VoxelCombat
             m_matchServerClients.Add(matchServerClient);
             matchServerClient.GetReplay((getReplayError, replayData, originalRoom) =>
             {
-
                 m_matchServerClients.Remove(matchServerClient);
 
                 if (HasError(getReplayError))
@@ -1623,6 +1588,11 @@ namespace Battlehub.VoxelCombat
 
         private List<IMatchServerClient> m_matchServerClients = new List<IMatchServerClient>();
  
+        public void Start()
+        {
+
+        }
+
         public void Update(float time)
         {
             for(int i = 0; i < m_matchServerClients.Count; ++i)

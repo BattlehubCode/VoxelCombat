@@ -39,6 +39,8 @@ namespace Battlehub.VoxelCombat
         void Close();
 
         void Send(byte[] data, Action<bool> completed);
+
+        void Update();
     }
 
     public delegate void ProtocolEventHandler(ILowProtocol sender);
@@ -145,11 +147,6 @@ namespace Battlehub.VoxelCombat
 
         private readonly Queue<RequestTimeout> m_timeoutQueue = new Queue<RequestTimeout>();
         private readonly Dictionary<int, RequestData> m_pendingRequests = new Dictionary<int, RequestData>();
-
-        public T Socket
-        {
-            get { return (T)m_socket; }
-        }
      
         public LowProtocol(string serverUrl, float timeout = 15)
         {
@@ -210,6 +207,7 @@ namespace Battlehub.VoxelCombat
 
         public void UpdateTime(float time)
         {
+            m_socket.Update();
             m_time = time;
             while(m_timeoutQueue.Count > 0 && m_timeoutQueue.Peek().T <= time)
             {

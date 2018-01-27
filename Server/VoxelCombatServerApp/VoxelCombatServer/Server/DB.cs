@@ -26,6 +26,7 @@ namespace Battlehub.VoxelCombat
             };
 
             m_playersByName.Add(name, player);
+            m_playersByGuid.Add(guid, player); 
             callback(new Error(StatusCode.OK), player);
         }
 

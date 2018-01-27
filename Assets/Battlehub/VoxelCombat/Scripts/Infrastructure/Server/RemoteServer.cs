@@ -27,12 +27,12 @@ namespace Battlehub.VoxelCombat
             m_protocol.Message += OnMessage;
         }
 
-        protected virtual void OnEnable()
+        public void Connect()
         {
             m_protocol.Enable();
         }
 
-        protected virtual void OnDisable()
+        public void Disconnect()
         {
             if (m_protocol != null)
             {
@@ -40,6 +40,17 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        protected virtual void OnEnable()
+        {
+            Connect();
+        }
+
+        protected virtual void OnDisable()
+        {
+            Disconnect();
+        }
+
+       
         protected virtual void OnDestroy()
         {
             if (m_protocol != null)
@@ -50,6 +61,11 @@ namespace Battlehub.VoxelCombat
                 m_protocol.SocketError -= OnSocketError;
                 m_protocol.Message -= OnMessage;
             }
+        }
+
+        protected virtual void Update()
+        {
+            m_protocol.UpdateTime(Time.time);
         }
 
         protected virtual void OnEnabled(ILowProtocol sender)
@@ -133,7 +149,7 @@ namespace Battlehub.VoxelCombat
                     result = new RemoteResult();
                     if (requestError == LowProtocol<Socket>.ErrorTimeout)
                     {
-                        error = new Error(StatusCode.ConnectionTimeout);
+                        error = new Error(StatusCode.RequestTimeout);
                     }
                     else if (requestError == LowProtocol<Socket>.ErrorClosed)
                     {

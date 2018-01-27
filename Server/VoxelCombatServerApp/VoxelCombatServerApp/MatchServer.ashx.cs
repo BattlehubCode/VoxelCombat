@@ -106,7 +106,7 @@ namespace Battlehub.VoxelCombat
                             return;
                         }
 
-                        if(cmd == "create")
+                        if (cmd == "create")
                         {
                             if (!m_containers.ContainsKey(roomId))
                             {
@@ -117,6 +117,12 @@ namespace Battlehub.VoxelCombat
                                 m_lastCheckedTime.Add(roomId, DateTime.UtcNow);
                             }
                         }
+                    }
+
+                    if(!m_containers.ContainsKey(roomId))
+                    {
+                        context.Response.StatusCode = 404;
+                        return;
                     }
                 }
                 else

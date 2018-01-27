@@ -2,3 +2,15 @@
 Art 
 Build
 VoxelCombat/Assets/Build.meta
+
+Library
+Server/VoxelCombatServerApp/packages
+
+
+Server/VoxelCombatServerApp/VoxelCombatServer/bin
+
+Server/VoxelCombatServerApp/VoxelCombatServer/obj
+
+Server/VoxelCombatServerApp/VoxelCombatServerApp/bin
+
+Server/VoxelCombatServerApp/VoxelCombatServerApp/obj

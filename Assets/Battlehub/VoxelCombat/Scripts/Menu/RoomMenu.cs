@@ -123,7 +123,7 @@ namespace Battlehub.VoxelCombat
 
         private void OnEnable()
         {
-            
+            m_isReady = false;
             m_root.SetActive(true);
             GetAndDataBind();
         }
@@ -426,7 +426,7 @@ namespace Battlehub.VoxelCombat
 
         private void OutputError(Error error)
         {
-            Debug.LogWarning(StatusCode.ToString(error.Code) + " " + error.Message);
+            Debug.LogWarning(StatusCode.ToString(error.Code) + " " + error.ToString());
             m_errorNotification.Show(StatusCode.ToString(error.Code) + " " + error.Message);
         }
 

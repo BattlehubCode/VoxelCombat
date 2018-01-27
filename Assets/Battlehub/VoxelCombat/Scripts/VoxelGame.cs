@@ -244,6 +244,7 @@ namespace Battlehub.VoxelCombat
 
             m_engine = Dependencies.MatchEngine;
             m_engine.Started += OnEngineStarted;
+            m_engine.Error += OnEngineError;
             m_engine.Stopped += OnEngineStopped;
             m_engine.Ping += OnEnginePing;
             m_engine.Paused += OnEnginePaused;
@@ -251,6 +252,7 @@ namespace Battlehub.VoxelCombat
             m_engine.ExecuteCommands += OnEngineCommands;
         }
 
+   
         private void Start()
         {
             DownloadMapFromServer();
@@ -261,6 +263,7 @@ namespace Battlehub.VoxelCombat
             if(m_engine != null)
             {
                 m_engine.Started -= OnEngineStarted;
+                m_engine.Error -= OnEngineError;
                 m_engine.Stopped -= OnEngineStopped;
                 m_engine.Ping -= OnEnginePing;
                 m_engine.Paused -= OnEnginePaused;
@@ -365,6 +368,11 @@ namespace Battlehub.VoxelCombat
             {
                 m_playerStats[i] = new PlayerStats(true, m_playerControllers[i].UnitsCount);
             }
+        }
+
+        private void OnEngineError(Error error)
+        {
+            m_notification.ShowError(error);
         }
 
         private void OnEngineStopped(Error error)
