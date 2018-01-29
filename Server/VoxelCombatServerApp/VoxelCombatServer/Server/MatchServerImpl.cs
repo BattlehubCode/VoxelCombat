@@ -112,12 +112,12 @@ namespace Battlehub.VoxelCombat
             ConnectionStateChanged(new Error(), true);
         }
 
-        private readonly ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilities[][], Room> m_readyToPlayAllArgs = new ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilities[][], Room>();
+        private readonly ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], Room> m_readyToPlayAllArgs = new ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], Room>();
         private readonly ServerEventArgs<CommandsBundle> m_tickArgs = new ServerEventArgs<CommandsBundle>();
         private readonly ServerEventArgs<RTTInfo> m_pingArgs = new ServerEventArgs<RTTInfo>();
         private readonly ServerEventArgs<bool> m_pausedArgs = new ServerEventArgs<bool>();
 
-        public event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilities[][], Room>> ReadyToPlayAll;
+        public event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], Room>> ReadyToPlayAll;
         public event ServerEventHandler<ServerEventArgs<CommandsBundle>> Tick;
         public event ServerEventHandler<ServerEventArgs<RTTInfo>> Ping;
         public event ServerEventHandler<ServerEventArgs<bool>> Paused;
@@ -166,15 +166,17 @@ namespace Battlehub.VoxelCombat
             for (int i = 0; i < clientIds.Length; ++i)
             {
                 Guid clientId = clientIds[i];
-                Dictionary<Guid, Player> idToPlayer;
-                if (!m_clientIdToPlayers.TryGetValue(clientId, out idToPlayer))
+                if(clientId != Guid.Empty)
                 {
-                    idToPlayer = new Dictionary<Guid, Player>();
-                    m_clientIdToPlayers.Add(clientId, idToPlayer);
+                    Dictionary<Guid, Player> idToPlayer;
+                    if (!m_clientIdToPlayers.TryGetValue(clientId, out idToPlayer))
+                    {
+                        idToPlayer = new Dictionary<Guid, Player>();
+                        m_clientIdToPlayers.Add(clientId, idToPlayer);
+                    }
+                    Player player = players[i];
+                    idToPlayer.Add(player.Id, player);
                 }
-
-                Player player = players[i];
-                idToPlayer.Add(player.Id, player);
             }
 
             m_players = players.ToDictionary(p => p.Id);
@@ -215,11 +217,14 @@ namespace Battlehub.VoxelCombat
 
         public void Destroy()
         {
+            enabled = false;
+
             m_room.Players.Remove(m_neutralPlayer.Id);
 
             if (m_engine != null)
             {
                 MatchFactory.DestroyMatchEngine(m_engine);
+                m_engine = null;
             }
         }
 
@@ -306,6 +311,11 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
+            DownloadMapData(callback);
+        }
+
+        private void DownloadMapData(ServerEventHandler<MapData> callback)
+        {
             DownloadMapDataById(m_room.MapInfo.Id, (error, mapDataBytes) =>
             {
                 MapData mapData = null;
@@ -320,7 +330,7 @@ namespace Battlehub.VoxelCombat
                 {
                     error = new Error(StatusCode.UnhandledException) { Message = e.ToString() };
                 }
-                  
+
                 callback(error, mapData);
             });
         }
@@ -355,7 +365,7 @@ namespace Battlehub.VoxelCombat
                 error.Code = StatusCode.OK;
                 try
                 {
-                    byte[] mapDataBytes = File.ReadAllBytes(filePath);
+                    mapData = File.ReadAllBytes(filePath);
                 }
                 catch (Exception e)
                 {
@@ -452,12 +462,17 @@ namespace Battlehub.VoxelCombat
             //Some clients will look -50 ms to the past and some clients will look -500 ms or more to the past.
             //Is this a big deal? Don't know... Further investigation and playtest needed
 
+            if(m_engine == null)
+            {
+                throw new InvalidOperationException("m_engine == null");
+            }
+
             enabled = true;
             m_initialized = true;
 
 
             Player[] players;
-            VoxelAbilities[][] abilities;
+            VoxelAbilitiesArray[] abilities;
             if (m_room != null)
             {
                 error.Code = StatusCode.OK;
@@ -466,7 +481,7 @@ namespace Battlehub.VoxelCombat
                 List<IBotController> bots = new List<IBotController>();
 
                 //Will override or
-                abilities = new VoxelAbilities[m_room.Players.Count][];
+                abilities = new VoxelAbilitiesArray[m_room.Players.Count];
                 for (int i = 0; i < m_room.Players.Count; ++i)
                 {
                     Player player = m_players[m_room.Players[i]];
@@ -487,13 +502,13 @@ namespace Battlehub.VoxelCombat
                 error.Code = StatusCode.NotFound;
                 error.Message = "Room not found";
                 players = new Player[0];
-                abilities = new VoxelAbilities[0][];
+                abilities = new VoxelAbilitiesArray[0];
             }
 
             RaiseReadyToPlayAll(error, players, abilities);
         }
 
-        private void RaiseReadyToPlayAll(Error error, Player[] players, VoxelAbilities[][] abilities)
+        private void RaiseReadyToPlayAll(Error error, Player[] players, VoxelAbilitiesArray[] abilities)
         {
             if (ReadyToPlayAll != null)
             {
@@ -570,7 +585,7 @@ namespace Battlehub.VoxelCombat
         private void InitEngine(ServerEventHandler callback)
         {
             m_initializationStarted = true;
-            DownloadMapData(m_room.MapInfo.Id, (Error error, MapData mapData) =>
+            DownloadMapData((Error error, MapData mapData) =>
             {
                 m_initializationStarted = false;
                 if (HasError(error))

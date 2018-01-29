@@ -12,6 +12,7 @@ namespace Battlehub.VoxelCombat
 
     public interface IMatchEngineCli
     {
+        event MatchEngineCliEvent ReadyToStart;
         /// <summary>
         /// All Players, Local Players, Abilities, Room
         /// </summary>
@@ -28,7 +29,7 @@ namespace Battlehub.VoxelCombat
 
         bool HasError(Error error);
 
-        void DownloadMapData(MatchEngineCliEvent<MapData> callback);
+        void  DownloadMapData(MatchEngineCliEvent<MapData> callback);
         
         void ReadyToPlay(MatchEngineCliEvent callback);
 
@@ -42,6 +43,8 @@ namespace Battlehub.VoxelCombat
 
     public class MatchEngineCli : MonoBehaviour, IMatchEngineCli
     {
+
+        public event MatchEngineCliEvent ReadyToStart;
         public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], Room> Started;
         public event MatchEngineCliEvent<RTTInfo> Ping;
 
@@ -257,9 +260,19 @@ namespace Battlehub.VoxelCombat
         {
             if (connected)
             {
+                if(HasError(error))
+                {
+                    Error(error);
+                    return;
+                }
+
                 if (m_isInitialized)
                 {
                     enabled = true;
+                }
+                else
+                {
+                    ReadyToStart(error);
                 }
             }
             else

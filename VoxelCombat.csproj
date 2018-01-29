@@ -396,8 +396,8 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\Socket.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\CommonUIZone.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\CommonUIZoneSetter.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\INotification.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\Notification.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\NotificationPopup.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\PlayerUIZone.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\ProgressIndicator.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\VoxelUIInputProvider.cs" />

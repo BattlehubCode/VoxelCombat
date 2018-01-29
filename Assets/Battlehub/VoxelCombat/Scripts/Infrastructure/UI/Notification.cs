@@ -7,6 +7,9 @@ using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
+
+ 
+
     public class Notification : MonoBehaviour, INotification
     {
         private static Notification m_notificationRoot;
@@ -154,11 +157,13 @@ namespace Battlehub.VoxelCombat
         public void ShowError(string error, GameObject selectOnClose = null)
         {
             Show(error, selectOnClose);
+            Debug.LogError(error);
         }
 
         public void ShowError(Error error, GameObject selectOnClose = null)
         {
             Show(error.ToString(), selectOnClose);
+            Debug.LogError(error.ToString());
         }
 
         public INotification GetChild(int index)

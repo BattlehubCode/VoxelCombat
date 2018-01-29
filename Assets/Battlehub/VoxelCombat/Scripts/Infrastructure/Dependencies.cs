@@ -24,13 +24,9 @@ namespace Battlehub.VoxelCombat
             m_gameServer = FindObjectOfType<RemoteGameServer>();
             m_matchServer = FindObjectOfType<RemoteMatchServer>();
             m_navigation = FindObjectOfType<Navigation>();
-            m_notification = FindObjectOfType<NotificationPopup>();
             m_eventSystemManager = FindObjectOfType<EventSystemManager>();
-            if(m_notification == null)
-            {
-                m_notification = FindObjectOfType<Notification>();
-            }
-
+            m_notification = FindObjectOfType<Notification>();
+            
             UnitSelection[] selection = FindObjectsOfType<UnitSelection>();
             if(selection.Length > 0)
             {

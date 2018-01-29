@@ -148,7 +148,7 @@ namespace Battlehub.VoxelCombat
         private readonly Queue<RequestTimeout> m_timeoutQueue = new Queue<RequestTimeout>();
         private readonly Dictionary<int, RequestData> m_pendingRequests = new Dictionary<int, RequestData>();
      
-        public LowProtocol(string serverUrl, float timeout = 15)
+        public LowProtocol(string serverUrl, float timeout = 60)
         {
             m_timeout = timeout;
             if(m_timeout < 0)

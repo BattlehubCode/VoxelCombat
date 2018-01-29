@@ -1008,7 +1008,7 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// Raised when match started and all players called ReadyToPlay method 
         /// </summary>
-        event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilities[][], Room>> ReadyToPlayAll;
+        event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], Room>> ReadyToPlayAll;
 
         //event ServerEventHandler<Guid[], Room> LeftRoom;  This event will be raised using Tick command
 

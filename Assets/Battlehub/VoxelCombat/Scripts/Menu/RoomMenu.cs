@@ -415,6 +415,7 @@ namespace Battlehub.VoxelCombat
                 m_progress.IsVisible = false;
                 if(!m_gameServer.HasError(error) || error.Code == StatusCode.AlreadyLaunched)
                 {
+                    m_room = room;
                     GetPlayersAndDataBind();
                 }
                 else

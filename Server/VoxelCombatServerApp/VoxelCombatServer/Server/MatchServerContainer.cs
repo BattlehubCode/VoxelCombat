@@ -76,7 +76,7 @@ namespace Battlehub.VoxelCombat
                 throw new InvalidOperationException();
             }
  
-            LowProtocol<ClientSocket> protocol = new LowProtocol<ClientSocket>(m_url);
+            LowProtocol<ClientSocket> protocol = new LowProtocol<ClientSocket>(m_url + "create");
             m_protocol = protocol;
             m_protocol.Enabled += OnEnabled;
             m_protocol.SocketError += OnError;
@@ -260,7 +260,7 @@ namespace Battlehub.VoxelCombat
             Broadcast(RemoteEvent.Evt.Pause, error, args, RemoteArg.Create(args.Arg));
         }
 
-        private void OnReadyToPlayAll(Error error, ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilities[][], Room> args)
+        private void OnReadyToPlayAll(Error error, ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], Room> args)
         {
             Dictionary<Guid, Dictionary<Guid, Player>> clientIdToPlayers = args.Arg2;
             foreach(KeyValuePair<Guid, Dictionary<Guid, Player>> kvp in clientIdToPlayers)
@@ -350,7 +350,6 @@ namespace Battlehub.VoxelCombat
                 throw;
             }
 
-
             switch (rpc.Procedure)
             {
                 case RemoteCall.Proc.RegisterClient:
@@ -372,7 +371,7 @@ namespace Battlehub.VoxelCombat
                             Player[] players = rpc.Get<Player[]>(2);
                             ReplayData replay = rpc.Get<ReplayData>(3);
 
-                            if (m_matchServer != null)
+                            if (m_matchServer == null) 
                             {
                                 MatchServerImpl matchServer = new MatchServerImpl(m_path, room, clientIds, players, replay);
                                 m_matchServer = matchServer;
@@ -388,6 +387,7 @@ namespace Battlehub.VoxelCombat
                     }
                     break;
                 case RemoteCall.Proc.GetReplay:
+                 
                     m_matchServer.GetReplay(rpc.ClientId, (error, replayData, room) =>
                     {
                         Return(sender, request, error, RemoteArg.Create(replayData), RemoteArg.Create(room));

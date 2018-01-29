@@ -91,7 +91,7 @@ namespace Battlehub.VoxelCombat
         {
             if (ConnectionStateChanged != null)
             {
-                ConnectionStateChanged(new Error(StatusCode.UnhandledException) { Message = args.Message }, false);
+                ConnectionStateChanged(new Error(StatusCode.ConnectionError) { Message = args.Message }, false);
             }
         }
 

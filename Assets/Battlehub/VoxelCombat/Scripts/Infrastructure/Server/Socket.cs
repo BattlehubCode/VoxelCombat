@@ -52,9 +52,9 @@ namespace Battlehub.VoxelCombat
                 throw new InvalidOperationException("Socket is not opened. m_ws == null");
             }
 
-            if(!IsOpened)
+            if(!IsOpened && !IsOpening)
             {
-                throw new InvalidOperationException("Socket is not opened");
+                return;
             }
 
             m_ws.CloseAsync();
@@ -107,6 +107,11 @@ namespace Battlehub.VoxelCombat
                 m_isOpened = false;
                 m_isOpening = false;
 
+                if(!e.WasClean)
+                {
+                    UnityEngine.Debug.LogWarning("Socket Closed With Error Code: " + e.Code + " " + e.Reason);
+                }
+                
                 if (Closed != null)
                 {
                     Closed(this);

@@ -7,6 +7,9 @@ namespace Battlehub.Dispatcher
 {
     public class Dispatcher : MonoBehaviour
     {
+        [SerializeField]
+        private bool m_dontDestroyOnLoad = true;
+
         private Dispatcher m_current;
         public static Dispatcher Current
         {
@@ -34,13 +37,31 @@ namespace Battlehub.Dispatcher
 
         private void Awake()
         {
-            if (Current != null)
+            if(m_dontDestroyOnLoad)
             {
-                Destroy(Current);
-            }
+                DontDestroyOnLoad(gameObject);
 
-            Current = this;
-            m_wait = new Queue<Action>();
+                if(Current == null)
+                {
+                    Current = this;
+                    m_wait = new Queue<Action>();
+                }
+                else
+                {
+                    Destroy(gameObject); 
+                }
+            }
+            else
+            {
+                if (Current != null)
+                {
+                    Destroy(Current);
+                }
+
+                Current = this;
+                m_wait = new Queue<Action>();
+            }
+           
         }
 
         private void FixedUpdate()

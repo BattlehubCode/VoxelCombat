@@ -184,7 +184,12 @@ namespace Battlehub.VoxelCombat
             Call(rpc, (error, result) =>
             {
                 byte[] mapDataBin = result.Get<byte[]>(0);
-                MapData mapData = ProtobufSerializer.Deserialize<MapData>(mapDataBin);
+                MapData mapData = null;
+
+                if(mapDataBin != null && !HasError(error))
+                {
+                    mapData = ProtobufSerializer.Deserialize<MapData>(mapDataBin);
+                }
 
                 callback(error, mapData);
             });
@@ -204,11 +209,17 @@ namespace Battlehub.VoxelCombat
             Call(rpc, (error, result) =>
             {
                 ByteArray[] mapInfoBin = result.Get<ByteArray[]>(0);
-                MapInfo[] mapsInfo = new MapInfo[mapInfoBin.Length];
-                for (int i = 0; i < mapsInfo.Length; ++i)
+
+                MapInfo[] mapsInfo = null;
+                if(mapInfoBin != null && !HasError(error))
                 {
-                    mapsInfo[i] = ProtobufSerializer.Deserialize<MapInfo>(mapInfoBin[i]);
+                    mapsInfo = new MapInfo[mapInfoBin.Length];
+                    for (int i = 0; i < mapsInfo.Length; ++i)
+                    {
+                        mapsInfo[i] = ProtobufSerializer.Deserialize<MapInfo>(mapInfoBin[i]);
+                    }
                 }
+               
                 callback(error, mapsInfo);
             });
         }
@@ -256,10 +267,15 @@ namespace Battlehub.VoxelCombat
             Call(rpc, (error, result) =>
             {
                 ByteArray[] replayInfoBin = result.Get<ByteArray[]>(0);
-                ReplayInfo[] replayInfo = new ReplayInfo[replayInfoBin.Length];
-                for(int i = 0; i < replayInfo.Length; ++i)
+                ReplayInfo[] replayInfo = null; 
+                if(replayInfo != null && !HasError(error))
                 {
-                    replayInfo[i] = ProtobufSerializer.Deserialize<ReplayInfo>(replayInfoBin[i]);
+
+                    replayInfo = new ReplayInfo[replayInfoBin.Length];
+                    for (int i = 0; i < replayInfo.Length; ++i)
+                    {
+                        replayInfo[i] = ProtobufSerializer.Deserialize<ReplayInfo>(replayInfoBin[i]);
+                    }
                 }
                 callback(error, replayInfo);
             });
@@ -349,7 +365,10 @@ namespace Battlehub.VoxelCombat
             {
                 Guid playerId = result.Get<Guid>(0);
 
-                m_localPlayers.Add(playerId);
+                if(!HasError(error))
+                {
+                    m_localPlayers.Add(playerId);
+                }
 
                 callback(error, playerId);
             });
@@ -367,7 +386,10 @@ namespace Battlehub.VoxelCombat
             {
                 Guid playerId = result.Get<Guid>(0);
 
-                m_localPlayers.Add(playerId);
+                if (!HasError(error))
+                {
+                    m_localPlayers.Add(playerId);
+                }
 
                 callback(error, playerId);
             });
@@ -385,13 +407,17 @@ namespace Battlehub.VoxelCombat
             {
                 playerIds = result.Get<Guid[]>(0);
 
-                if(playerIds != null)
+                if (!HasError(error))
                 {
-                    for (int i = 0; i < playerIds.Length; ++i)
+                    if (playerIds != null)
                     {
-                        m_localPlayers.Remove(playerIds[i]);
+                        for (int i = 0; i < playerIds.Length; ++i)
+                        {
+                            m_localPlayers.Remove(playerIds[i]);
+                        }
                     }
                 }
+              
 
                 callback(error, playerIds);
             });
@@ -408,8 +434,10 @@ namespace Battlehub.VoxelCombat
             {
                 playerId = result.Get<Guid>(0);
 
-                m_localPlayers.Remove(playerId);
-
+                if (!HasError(error))
+                {
+                    m_localPlayers.Remove(playerId);
+                }
                 callback(error, playerId);
             });
         }

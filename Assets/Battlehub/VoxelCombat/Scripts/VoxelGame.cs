@@ -243,6 +243,7 @@ namespace Battlehub.VoxelCombat
             m_gSettings = Dependencies.Settings;
 
             m_engine = Dependencies.MatchEngine;
+            m_engine.ReadyToStart += OnEngineReadyToStart;
             m_engine.Started += OnEngineStarted;
             m_engine.Error += OnEngineError;
             m_engine.Stopped += OnEngineStopped;
@@ -252,16 +253,11 @@ namespace Battlehub.VoxelCombat
             m_engine.ExecuteCommands += OnEngineCommands;
         }
 
-   
-        private void Start()
-        {
-            DownloadMapFromServer();
-        }
-
         private void OnDestroy()
         {
             if(m_engine != null)
             {
+                m_engine.ReadyToStart -= OnEngineReadyToStart;
                 m_engine.Started -= OnEngineStarted;
                 m_engine.Error -= OnEngineError;
                 m_engine.Stopped -= OnEngineStopped;
@@ -271,6 +267,17 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        private void OnEngineReadyToStart(Error error)
+        {
+            if(m_engine.HasError(error))
+            {
+                m_notification.ShowError(error);
+            }
+            else
+            {
+                DownloadMapFromServer();
+            }
+        }
 
         private void DownloadMapFromServer()
         {
@@ -282,13 +289,20 @@ namespace Battlehub.VoxelCombat
                 if(m_engine.HasError(error))
                 {
 #if DEBUG
-                    m_notification.ShowError(error);
-                    TestGameInit.Init(null, 2, 0, () =>
-                    //TestGameInit.Init(null, 4, 4, () =>
+                    if (error.Code != StatusCode.NotFound)
                     {
-                        DownloadMapFromServer();
-                    },
-                    e2 => m_notification.ShowError(e2));
+                        m_notification.ShowError(error);
+                    }
+                    else
+                    {
+                        TestGameInit.Init(null, 2, 0, () =>
+                        //TestGameInit.Init(null, 4, 4, () =>
+                        {
+                            DownloadMapFromServer();
+                        },
+                        e2 => m_notification.ShowError(e2));
+                    }
+                  
 #else
                     m_notification.ShowError(error);
 #endif

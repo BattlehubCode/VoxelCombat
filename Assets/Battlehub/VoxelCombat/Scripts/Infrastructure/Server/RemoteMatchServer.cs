@@ -63,7 +63,12 @@ namespace Battlehub.VoxelCombat
             Call(rpc, (error, result) =>
             {
                 byte[] mapDataBin = result.Get<byte[]>(0);
-                MapData mapData = ProtobufSerializer.Deserialize<MapData>(mapDataBin);
+                MapData mapData = null;
+                if(mapDataBin != null && !HasError(error))
+                {
+                    mapData = ProtobufSerializer.Deserialize<MapData>(mapDataBin);
+                }
+
                 callback(error, mapData);
             });
         }

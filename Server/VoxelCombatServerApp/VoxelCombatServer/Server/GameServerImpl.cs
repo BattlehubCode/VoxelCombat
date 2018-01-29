@@ -799,7 +799,7 @@ namespace Battlehub.VoxelCombat
 
                 if (RoomDestroyed != null)
                 {
-                    RoomDestroyed(new Error(StatusCode.OK), new ServerEventArgs { Targets = GetTargets(clientId, room) });
+                    RoomDestroyed(new Error(StatusCode.OK), new ServerEventArgs { Except = clientId, Targets = GetTargets(clientId, room) });
                 }
 
                 if (RoomsListChanged != null)
@@ -974,6 +974,7 @@ namespace Battlehub.VoxelCombat
                             {
                                 JoinedRoom(new Error(StatusCode.OK), new ServerEventArgs<Guid[], Room>(loggedInPlayers.Select(p => p.Id).ToArray(), room)
                                 {
+                                    Except = clientId,
                                     Targets = GetTargets(clientId, room)
                                 });
                             }
@@ -1032,6 +1033,7 @@ namespace Battlehub.VoxelCombat
             {
                 LeftRoom(new Error(StatusCode.OK), new ServerEventArgs<Guid[], Room>(loggedInPlayers.Select(p => p.Id).ToArray(), room)
                 {
+                    Except = clientId,
                     Targets = GetTargets(senderId, room)
                 });
             }
@@ -1144,6 +1146,7 @@ namespace Battlehub.VoxelCombat
                         {
                             JoinedRoom(new Error(StatusCode.OK), new ServerEventArgs<Guid[], Room>(botIds, room)
                             {
+                                Except = clientId,
                                 Targets = GetTargets(clientId, room)
                             });
                         }
@@ -1203,6 +1206,7 @@ namespace Battlehub.VoxelCombat
                     {
                         LeftRoom(new Error(StatusCode.OK), new ServerEventArgs<Guid[], Room>(botIds, room)
                         {
+                            Except = clientId,
                             Targets = GetTargets(clientId, room)
                         });
                     }
@@ -1254,7 +1258,7 @@ namespace Battlehub.VoxelCombat
                 if(room.IsLaunched)
                 {
                     error.Code = StatusCode.AlreadyLaunched;
-                    error.Message = "Already Lauched";
+                    error.Message = "Already Launched";
                     callback(error, room);
                     return;
                 }
@@ -1281,7 +1285,7 @@ namespace Battlehub.VoxelCombat
 
                 if(ReadyToLaunch != null)
                 {
-                    ReadyToLaunch(error, new ServerEventArgs<Room>(room) { Targets = GetTargets(clientId, room) });
+                    ReadyToLaunch(error, new ServerEventArgs<Room>(room) { Except = clientId, Targets = GetTargets(clientId, room) });
                 }
             }
 
@@ -1349,7 +1353,7 @@ namespace Battlehub.VoxelCombat
                             }
                             else
                             {
-                                clientIds.Add(Guid.NewGuid());
+                                clientIds.Add(Guid.Empty);
                             }
                         }
 
@@ -1357,22 +1361,23 @@ namespace Battlehub.VoxelCombat
                         matchServerClient.CreateMatch(room, clientIds.ToArray(), players, replay, createMatchError =>
                         {
                             m_matchServerClients.Remove(matchServerClient);
+
+                            string matchServerUrl = string.Format("{0}?roomId={1}", m_matchServerUrl, room.Id);
+
                             if (!HasError(createMatchError))
                             {
                                 room.IsLaunched = true;
-
-                                string matchServerUrl = string.Format("{0}?roomId={1}", m_matchServerUrl, room.Id);
-
                                 if (Launched != null)
                                 {
                                     Launched(error, new ServerEventArgs<string>(matchServerUrl)
                                     {
+                                        Except = clientId,
                                         Targets = GetTargets(clientId, room)
                                     });
                                 }
                             }
 
-                            callback(createMatchError, m_matchServerUrl);
+                            callback(createMatchError, matchServerUrl);
                         });
                     }
                 });
