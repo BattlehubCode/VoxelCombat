@@ -20,10 +20,13 @@ namespace Battlehub.VoxelCombat
             m_container = GameServerContainer.Instance;
             m_container.Run();
 
+            MatchServer.StartGCThread();
         }
 
         void Application_End()
         {
+            MatchServer.StopGCThread();
+
             m_container.Stop();
         }
 

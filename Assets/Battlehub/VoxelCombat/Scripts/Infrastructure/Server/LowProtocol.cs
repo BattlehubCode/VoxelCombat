@@ -148,12 +148,13 @@ namespace Battlehub.VoxelCombat
         private readonly Queue<RequestTimeout> m_timeoutQueue = new Queue<RequestTimeout>();
         private readonly Dictionary<int, RequestData> m_pendingRequests = new Dictionary<int, RequestData>();
      
-        public LowProtocol(string serverUrl, float timeout = 60)
+        public LowProtocol(string serverUrl, float time, float timeout = 30)
         {
+            m_time = time;
             m_timeout = timeout;
             if(m_timeout < 0)
             {
-                m_timeout = 0; //never
+                m_timeout = float.MaxValue; //never
             }
             m_serverUrl = serverUrl;
             m_socket = new T();
@@ -170,11 +171,8 @@ namespace Battlehub.VoxelCombat
                 throw new InvalidOperationException("opened socked is expected");
             }
             m_isEnabled = true;
-            m_timeout = 0;
-            if (m_timeout < 0)
-            {
-                m_timeout = 0; //never
-            }
+            m_timeout = float.MaxValue;
+            
             m_socket = socket;
             m_socket.Error += OnSocketError;
             m_socket.Message += OnSocketMessage;

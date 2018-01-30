@@ -218,7 +218,6 @@ namespace Battlehub.VoxelCombat
                 if (path[path.Length - 1].MapPos == to.MapPos)
                 {
                     //path found
-
                     if (ctx.FindAll)
                     {
                         ctx.AllFoundData.Add(toData);

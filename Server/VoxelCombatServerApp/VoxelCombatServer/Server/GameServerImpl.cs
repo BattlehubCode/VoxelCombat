@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Battlehub.VoxelCombat
 {
-    public class GameServerImpl : IGameServer, ILoop
+    public class GameServerImpl : IGameServer,  ILoop
     {
         protected readonly ILog Log;
 
@@ -43,6 +43,7 @@ namespace Battlehub.VoxelCombat
         private readonly string m_persistentDataPath;
         private readonly string m_matchServerUrl;
         private IDB m_db;
+        private ITimeService m_time;
 
         public GameServerImpl(string persistentDataPath, string matchServerUrl)
         {
@@ -316,6 +317,7 @@ namespace Battlehub.VoxelCombat
             Player loggedInPlayer = loggedInPlayers.Where(p => p.Id == playerId).FirstOrDefault();
             if (loggedInPlayer != null)
             {
+              
                 m_playerToClientId.Remove(playerId);
                 loggedInPlayers.Remove(loggedInPlayer);
                 m_stats.PlayersCount--;
@@ -325,10 +327,8 @@ namespace Battlehub.VoxelCombat
                     LoggedOff(error, new ServerEventArgs<Guid[]>(new[] { playerId }) { Except = clientId });
                 }
             }
-            else
-            {
-                callback(error, playerId);
-            }
+
+            callback(error, playerId);
         }
 
         public void Logoff(Guid clientId, Guid[] playerIds, ServerEventHandler<Guid[]> callback)
@@ -1326,7 +1326,7 @@ namespace Battlehub.VoxelCombat
                     return;
                 }
 
-                MatchServerClient matchServerClient = new MatchServerClient(m_matchServerUrl, room.Id);
+                MatchServerClient matchServerClient = new MatchServerClient(m_time, m_matchServerUrl, room.Id);
                 GetPlayers(room.Players.ToArray(), (getPlayersError, players) =>
                 {
                     if (HasError(getPlayersError))
@@ -1537,7 +1537,7 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            MatchServerClient matchServerClient = new MatchServerClient(m_matchServerUrl, room.Id);
+            MatchServerClient matchServerClient = new MatchServerClient(m_time, m_matchServerUrl, room.Id);
             m_matchServerClients.Add(matchServerClient);
             matchServerClient.GetReplay((getReplayError, replayData, originalRoom) =>
             {
@@ -1593,16 +1593,17 @@ namespace Battlehub.VoxelCombat
 
         private List<IMatchServerClient> m_matchServerClients = new List<IMatchServerClient>();
  
-        public void Start()
+        public bool Start(ITimeService time)
         {
-
+            m_time = time;
+            return true;
         }
 
-        public void Update(float time)
+        public void Update()
         {
-            for(int i = 0; i < m_matchServerClients.Count; ++i)
+            for (int i = 0; i < m_matchServerClients.Count; ++i)
             {
-                m_matchServerClients[i].Update(time);
+                m_matchServerClients[i].Update();
             }
         }
 

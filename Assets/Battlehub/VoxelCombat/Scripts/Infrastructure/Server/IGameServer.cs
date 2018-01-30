@@ -650,10 +650,18 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+    public interface ITimeService
+    {
+        float Time
+        {
+            get;
+        }
+    }
+
     public interface ILoop
     {
-        void Start();
-        void Update(float time);
+        bool Start(ITimeService time);
+        void Update();
         void Destroy();
     }
 

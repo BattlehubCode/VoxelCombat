@@ -32,6 +32,10 @@ namespace Battlehub.VoxelCombat
             base.OnBeforeRun();
 
             m_gameServer = new GameServerImpl(m_path, m_matchServerUrl);
+
+            ILoop loop = (ILoop)m_gameServer;
+            loop.Start(this);
+
             m_gameServer.LoggedIn += OnLoggedIn;
             m_gameServer.LoggedOff += OnLoggedOff;
             m_gameServer.RoomsListChanged += OnRoomsListChanged;
@@ -46,8 +50,9 @@ namespace Battlehub.VoxelCombat
         {
             base.OnAfterStop();
 
-            ((ILoop)m_gameServer).Destroy();
-
+            ILoop loop = (ILoop)m_gameServer;
+            loop.Destroy();
+           
             m_gameServer.LoggedIn -= OnLoggedIn;
             m_gameServer.LoggedOff -= OnLoggedOff;
             m_gameServer.RoomsListChanged -= OnRoomsListChanged;
@@ -327,12 +332,12 @@ namespace Battlehub.VoxelCombat
         }
 
      
-        protected override void OnTick(TimeSpan elapsed)
+        protected override void OnTick()
         {
-            base.OnTick(elapsed);
+            base.OnTick();
 
             ILoop loop = (ILoop)m_gameServer;
-            loop.Update((float)elapsed.TotalSeconds);
+            loop.Update();
         }
     }
 

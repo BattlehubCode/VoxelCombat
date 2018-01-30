@@ -210,7 +210,7 @@ namespace Battlehub.VoxelCombat
             {
                 ByteArray[] mapInfoBin = result.Get<ByteArray[]>(0);
 
-                MapInfo[] mapsInfo = null;
+                MapInfo[] mapsInfo = new MapInfo[0];
                 if(mapInfoBin != null && !HasError(error))
                 {
                     mapsInfo = new MapInfo[mapInfoBin.Length];
@@ -267,10 +267,9 @@ namespace Battlehub.VoxelCombat
             Call(rpc, (error, result) =>
             {
                 ByteArray[] replayInfoBin = result.Get<ByteArray[]>(0);
-                ReplayInfo[] replayInfo = null; 
+                ReplayInfo[] replayInfo = new ReplayInfo[0]; 
                 if(replayInfo != null && !HasError(error))
                 {
-
                     replayInfo = new ReplayInfo[replayInfoBin.Length];
                     for (int i = 0; i < replayInfo.Length; ++i)
                     {
@@ -444,7 +443,7 @@ namespace Battlehub.VoxelCombat
 
         public void SavePlayersStats(ServerEventHandler callback)
         {
-            throw new NotImplementedException();
+            Debug.LogWarning("SavePlayersStats is not implemented");
         }
 
         public void SaveReplay(Guid clientId, string name, ServerEventHandler callback)

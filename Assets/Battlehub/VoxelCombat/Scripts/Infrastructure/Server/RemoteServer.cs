@@ -20,7 +20,7 @@ namespace Battlehub.VoxelCombat
         protected virtual void Awake()
         {  
             m_settings = Dependencies.Settings;
-            m_protocol = new LowProtocol<Socket>(ServerUrl);
+            m_protocol = new LowProtocol<Socket>(ServerUrl, Time.time);
             m_protocol.Enabled += OnEnabled;
             m_protocol.Disabled += OnDisabled;
             m_protocol.SocketError += OnSocketError;
@@ -126,6 +126,7 @@ namespace Battlehub.VoxelCombat
 
         protected void Call(RemoteCall rpc, Action<Error, RemoteResult> callback)
         {
+            RemoteCall.Proc proc = rpc.Procedure;
             byte[] rpcSerialized = ProtobufSerializer.Serialize(rpc);
             m_protocol.BeginRequest(rpcSerialized, null, (requestError, response, userState) =>
             {
@@ -141,7 +142,7 @@ namespace Battlehub.VoxelCombat
                     catch (Exception e)
                     {
                         result = new RemoteResult();
-                        error = new Error(StatusCode.UnhandledException) { Message = e.ToString() };
+                        error = new Error(StatusCode.UnhandledException) { Message = string.Format("Procedure {0}", proc) + " " + e.ToString() };
                     }
                 }
                 else
@@ -150,10 +151,12 @@ namespace Battlehub.VoxelCombat
                     if (requestError == LowProtocol<Socket>.ErrorTimeout)
                     {
                         error = new Error(StatusCode.RequestTimeout);
+                        error.Message = string.Format("Request Timeout - Procedure {0}", proc);
                     }
                     else if (requestError == LowProtocol<Socket>.ErrorClosed)
                     {
                         error = new Error(StatusCode.ConnectionClosed);
+                        error.Message = string.Format("Request Error - Procedure {0}", proc);
                     }
                     else
                     {

@@ -51,7 +51,7 @@ namespace Battlehub.VoxelCombat
                 {
                     Handle = "Select Target",
                     Target = InputControlType.Action3,					
-					Source = KeyCodeButton( KeyCode.Return )
+					Source = KeyCodeButton( KeyCode.A )
                 },
                 new InputControlMapping
                 {
@@ -109,8 +109,13 @@ namespace Battlehub.VoxelCombat
                     Handle = "Submit",
                     Target = InputControlType.Button19,
                     Source = KeyCodeButton(KeyCode.Return)
-                }
-
+                },
+                new InputControlMapping
+                {
+                    Handle = "Back",
+                    Target = InputControlType.Back,
+                    Source = KeyCodeButton( KeyCode.Escape )
+                },
             };
 
             AnalogMappings = new[]

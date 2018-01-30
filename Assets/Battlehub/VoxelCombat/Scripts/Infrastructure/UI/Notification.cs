@@ -7,9 +7,6 @@ using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
-
- 
-
     public class Notification : MonoBehaviour, INotification
     {
         private static Notification m_notificationRoot;
@@ -26,7 +23,7 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private Text m_text;
 
-        private GameObject m_selectOnClose;
+        private Action m_doOnClose;
 
         private readonly List<Notification> m_children = new List<Notification>();
 
@@ -80,20 +77,10 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+
         public void Show(string text, GameObject selectOnClose = null)
         {
-            m_root.SetActive(true);
-            m_text.text = text;
-
-            for(int i = 0; i < m_deactivate.Length; ++i)
-            {
-                m_deactivate[i].SetActive(false);
-            }
-
-            m_coSelect = CoSelect();
-            StartCoroutine(m_coSelect);
-            
-            m_selectOnClose = selectOnClose;
+            ShowWithAction(text, () => SelectOnClose(selectOnClose));
         }
 
         private IEnumerator CoSelect()
@@ -123,30 +110,38 @@ namespace Battlehub.VoxelCombat
         {
             Close();
 
-            if (m_selectOnClose != null && m_selectOnClose.activeInHierarchy)
+            if(m_doOnClose != null)
             {
-                IndependentSelectable.Select(m_selectOnClose.gameObject);
+                m_doOnClose();
+            }
+        }
+
+        private void SelectOnClose(GameObject selectOnClose)
+        {
+            if (selectOnClose != null && selectOnClose.activeInHierarchy)
+            {
+                IndependentSelectable.Select(selectOnClose.gameObject);
             }
             else
             {
                 IndependentSelectable selectable = m_closeButton.GetComponent<IndependentSelectable>();
-                if(selectable != null)
+                if (selectable != null)
                 {
                     Selectable nextSelectable = selectable.FindSelectableOnDown();
-                    if(nextSelectable == null)
+                    if (nextSelectable == null)
                     {
                         nextSelectable = selectable.FindSelectableOnLeft();
-                        if(nextSelectable == null)
+                        if (nextSelectable == null)
                         {
                             nextSelectable = selectable.FindSelectableOnRight();
-                            if(nextSelectable == null)
+                            if (nextSelectable == null)
                             {
                                 nextSelectable = selectable.FindSelectableOnUp();
                             }
                         }
                     }
 
-                    if(nextSelectable != null)
+                    if (nextSelectable != null)
                     {
                         IndependentSelectable.Select(nextSelectable.gameObject);
                     }
@@ -182,6 +177,34 @@ namespace Battlehub.VoxelCombat
             }
 
             return null;
+        }
+
+        public void ShowWithAction(string text, Action onClose = null)
+        {
+            m_root.SetActive(true);
+            m_text.text = text;
+
+            for (int i = 0; i < m_deactivate.Length; ++i)
+            {
+                m_deactivate[i].SetActive(false);
+            }
+
+            m_coSelect = CoSelect();
+            StartCoroutine(m_coSelect);
+
+            m_doOnClose = onClose;
+        }
+
+        public void ShowErrorWithAction(string error, Action onClose = null)
+        {
+            ShowWithAction(error, onClose);
+            Debug.LogError(error);
+        }
+
+        public void ShowErrorWithAction(Error error, Action onClose = null)
+        {
+            ShowWithAction(error.ToString(), onClose);
+            Debug.LogError(error);
         }
     }
 

@@ -92,9 +92,7 @@ namespace Battlehub.VoxelCombat
 
         private void FixedUpdate()
         {
-
-            float delta = Time.fixedTime - m_prevTickTime;
-            if (delta >= GameConstants.MatchEngineTick)
+            while ((Time.fixedTime - m_prevTickTime) >= GameConstants.MatchEngineTick)
             {
                 //Exec commands from current tick
                 if(m_commands.Count != 0)
@@ -145,13 +143,8 @@ namespace Battlehub.VoxelCombat
                         }
                     }
                 }
-
                 m_tick++;
-                if (m_tick % 100 == 0)
-                {
-                  //  Debug.Log("Client Tick " + m_tick + " Time " + Time.fixedTime);
-                }
-                m_prevTickTime = Time.fixedTime;
+                m_prevTickTime += GameConstants.MatchEngineTick;
             }
         }
 
@@ -178,6 +171,10 @@ namespace Battlehub.VoxelCombat
             }
 
             enabled = !pause;
+            if(enabled)
+            {
+                m_prevTickTime = Time.fixedTime;
+            }
 
             m_matchServer.Pause(m_gSettings.ClientId, pause, error => callback(error));
         }
@@ -217,6 +214,8 @@ namespace Battlehub.VoxelCombat
             }
 
             enabled = true; //update method will be called
+            m_prevTickTime = Time.fixedTime;
+            
             m_isInitialized = true;
 
             if (Started != null)
@@ -269,6 +268,7 @@ namespace Battlehub.VoxelCombat
                 if (m_isInitialized)
                 {
                     enabled = true;
+                    m_prevTickTime = Time.fixedTime;
                 }
                 else
                 {

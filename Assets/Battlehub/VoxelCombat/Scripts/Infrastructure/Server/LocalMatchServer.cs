@@ -430,6 +430,7 @@ namespace Battlehub.VoxelCombat
                     //Is this a big deal? Don't know... Further investigation and playtest needed
 
                     enabled = true;
+                    m_prevTickTime = Time.fixedTime;
                     m_initialized = true;
 
                     m_room = m_gState.GetValue<Room>("LocalGameServer.m_room");
@@ -507,6 +508,10 @@ namespace Battlehub.VoxelCombat
             else
             {
                 enabled = !pause;
+                if(enabled)
+                {
+                    m_prevTickTime = Time.fixedTime;
+                }
             }
 
             if (Lag == 0)
@@ -603,7 +608,7 @@ namespace Battlehub.VoxelCombat
                         }
                         engine.CompletePlayerRegistration();
                  
-                        m_prevTickTime = 0;
+                        m_prevTickTime = Time.fixedTime;
 
                         m_engine = engine;
 
@@ -646,8 +651,7 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            float delta = Time.fixedTime - m_prevTickTime;
-            if (delta >= GameConstants.MatchEngineTick)
+            while ((Time.fixedTime - m_prevTickTime) >= GameConstants.MatchEngineTick)
             {
                 m_replay.Tick(m_engine, m_tick);
 
@@ -661,7 +665,7 @@ namespace Battlehub.VoxelCombat
                 }
 
                 m_tick++;
-                m_prevTickTime = Time.fixedTime;
+                m_prevTickTime += GameConstants.MatchEngineTick;
             }
         }
 

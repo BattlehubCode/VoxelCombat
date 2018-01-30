@@ -18,6 +18,8 @@ namespace Battlehub.VoxelCombat
         private INavigation m_navigation;
         private IConsole m_console;
         private INotification m_notification;
+        private IGameServer m_gameServer;
+        private IGlobalSettings m_gSettings;
 
         private int m_localPlayerIndex;
         public int LocalPlayerIndex
@@ -34,11 +36,13 @@ namespace Battlehub.VoxelCombat
 
         private void Awake()
         {
+            m_gSettings = Dependencies.Settings;
             m_gameState = Dependencies.GameState;
             m_inputManager = Dependencies.InputManager;
             m_navigation = Dependencies.Navigation;
             m_console = Dependencies.Console;
             m_notification = Dependencies.Notification;
+            m_gameServer = Dependencies.GameServer;
 
             m_gameState.Completed += OnGameCompleted;
             m_gameState.IsPausedChanged += OnIsPausedChanged;
@@ -95,9 +99,10 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            if /*(m_inputManager.GetButtonDown(InputAction.ToggleMenu, LocalPlayerIndex) ||*/
+            
+            if ( /*m_inputManager.GetButtonDown(InputAction.ToggleMenu, LocalPlayerIndex) ||*/
                 (m_inputManager.GetButtonDown(InputAction.Action0, LocalPlayerIndex) ||
-                 m_inputManager.GetButtonDown(InputAction.Action9, LocalPlayerIndex))
+                 m_inputManager.GetButtonDown(InputAction.Action9, LocalPlayerIndex)))
             {
                 m_gameState.IsMenuOpened(LocalPlayerIndex, !m_gameState.IsMenuOpened(LocalPlayerIndex));
 
@@ -175,7 +180,21 @@ namespace Battlehub.VoxelCombat
                     m_helpPanel.IsOpened = true;
                     break;
                 case 3: //back to menu
-                    m_navigation.Navigate("Menu", "MainMenu", null);
+
+                    m_gameServer.LeaveRoom(m_gSettings.ClientId, error =>
+                    {
+                        if (m_gameServer.HasError(error))
+                        {
+                            m_notification.ShowErrorWithAction(error, () =>
+                            {
+                                m_navigation.Navigate("Menu", "MainMenu", null);
+                            });
+                        }
+                        else
+                        {
+                            m_navigation.Navigate("Menu", "MainMenu", null);
+                        }    
+                    });
                     break;
                 case 4: //quit
                     m_console.Write("quit");

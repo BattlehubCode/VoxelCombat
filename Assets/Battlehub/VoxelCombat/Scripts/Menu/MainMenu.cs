@@ -30,7 +30,10 @@ namespace Battlehub.VoxelCombat
         private void Awake()
         {
             m_navigation = Dependencies.Navigation;
+        }
 
+        private void Start()
+        {
             m_compaignButton.onClick.AddListener(OnCompaignClick);
             m_multiplayerButton.onClick.AddListener(OnMultiplayerClick);
             m_replaysButton.onClick.AddListener(OnReplaysClick);
@@ -68,6 +71,11 @@ namespace Battlehub.VoxelCombat
 
         private void OnDisable()
         {
+            EventSystem eventSystem = IndependentSelectable.GetEventSystem(m_multiplayerButton.gameObject);
+            if(eventSystem != null)
+            {
+                eventSystem.SetSelectedGameObject(null);
+            }
             if (m_root != null)
             {
                 m_root.SetActive(false);

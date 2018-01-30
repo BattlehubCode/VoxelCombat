@@ -7,7 +7,7 @@ using System.Configuration;
 
 namespace Battlehub.VoxelCombat
 {
-    public abstract class ServerContainer
+    public abstract class ServerContainer : ITimeService
     {
         public static readonly Guid ServerIdentity = new Guid(ConfigurationManager.AppSettings["ServerIdentity"]);
 
@@ -58,6 +58,12 @@ namespace Battlehub.VoxelCombat
    
         private bool m_isMainThreadRunning;
         private bool m_isSecondaryThreadRunning;
+
+        private Stopwatch m_stopwatch;
+        public float Time
+        {
+            get { return m_stopwatch.ElapsedMilliseconds / 1000.0f; }
+        }
 
         protected ServerContainer()
         {
@@ -238,7 +244,7 @@ namespace Battlehub.VoxelCombat
 
         private void MainThread()
         {
-            Stopwatch stopWatch = Stopwatch.StartNew();
+            m_stopwatch = Stopwatch.StartNew();
             OnBeforeRun();
 
             while (true)
@@ -249,7 +255,7 @@ namespace Battlehub.VoxelCombat
                     if (!m_isMainThreadRunning)
                     {
                         m_incomingMessages.Clear();
-                        stopWatch.Stop();
+                        m_stopwatch.Stop();
                         OnAfterStop();
                         break;
                     }
@@ -280,8 +286,8 @@ namespace Battlehub.VoxelCombat
                         }
                     }
                   
-                    OnTick(stopWatch.Elapsed);
-                    Thread.Sleep(10);
+                    OnTick();
+            
                 }
                 catch (Exception e)
                 {
@@ -293,9 +299,9 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        protected virtual void OnTick(TimeSpan elapsed)
+        protected virtual void OnTick()
         {
-
+        
         }
 
         protected abstract void OnRequest(ILowProtocol sender, LowRequestArgs request);

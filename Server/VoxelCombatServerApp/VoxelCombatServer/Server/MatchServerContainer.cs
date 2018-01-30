@@ -11,7 +11,7 @@ namespace Battlehub.VoxelCombat
 
         void GetReplay(ServerEventHandler<ReplayData, Room> callback);
 
-        void Update(float time);
+        void Update();
     }
 
 
@@ -21,9 +21,11 @@ namespace Battlehub.VoxelCombat
         private ILowProtocol m_protocol;
         private Action m_call;
         private Action<Error> m_response;
+        private ITimeService m_time;
 
-        public MatchServerClient(string url, Guid roomId)
+        public MatchServerClient(ITimeService time, string url, Guid roomId)
         {
+            m_time = time;
             m_url = string.Format("{0}?roomId={1}&identity={2}&cmd=", url, roomId, ServerContainer.ServerIdentity);
         }
 
@@ -76,7 +78,7 @@ namespace Battlehub.VoxelCombat
                 throw new InvalidOperationException();
             }
  
-            LowProtocol<ClientSocket> protocol = new LowProtocol<ClientSocket>(m_url + "create");
+            LowProtocol<ClientSocket> protocol = new LowProtocol<ClientSocket>(m_url + "create", m_time.Time);
             m_protocol = protocol;
             m_protocol.Enabled += OnEnabled;
             m_protocol.SocketError += OnError;
@@ -119,7 +121,7 @@ namespace Battlehub.VoxelCombat
                 throw new InvalidOperationException();
             }
 
-            LowProtocol<ClientSocket> protocol = new LowProtocol<ClientSocket>(m_url);
+            LowProtocol<ClientSocket> protocol = new LowProtocol<ClientSocket>(m_url, m_time.Time);
             m_protocol = protocol;
             m_protocol.Enabled += OnEnabled;
             m_protocol.SocketError += OnError;
@@ -198,9 +200,9 @@ namespace Battlehub.VoxelCombat
             requestSent => { });
         }
 
-        public void Update(float time)
+        public void Update()
         {
-            m_protocol.UpdateTime(time);    
+            m_protocol.UpdateTime(m_time.Time);    
         } 
     }
 
@@ -307,22 +309,26 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        protected override void OnTick(TimeSpan elapsed)
+        protected override void OnTick()
         {
-            base.OnTick(elapsed);
+            base.OnTick();
+
             if(m_gameLoop != null)
             {
-                m_gameLoop.Update((float)elapsed.TotalSeconds);
+                m_gameLoop.Update();
             }
             else
             {
                 if(m_matchServer != null)
                 {
-                    const int WaitSeconds = 5;
-                    if (elapsed.TotalSeconds > WaitSeconds)
+                    const int WaitSeconds = 20;
+                    if (Time > WaitSeconds)
                     {
                         m_gameLoop = (ILoop)m_matchServer;
-                        m_gameLoop.Start();
+                        if(!m_gameLoop.Start(this))
+                        {
+                            m_gameLoop = null;
+                        }
                     }
                 }
             }
@@ -373,7 +379,7 @@ namespace Battlehub.VoxelCombat
 
                             if (m_matchServer == null) 
                             {
-                                MatchServerImpl matchServer = new MatchServerImpl(m_path, room, clientIds, players, replay);
+                                MatchServerImpl matchServer = new MatchServerImpl(this, m_path, room, clientIds, players, replay);
                                 m_matchServer = matchServer;
                               
                                 m_matchServer.Tick += OnTick;
