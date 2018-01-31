@@ -287,7 +287,6 @@ namespace Battlehub.VoxelCombat
                     }
                   
                     OnTick();
-            
                 }
                 catch (Exception e)
                 {

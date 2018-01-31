@@ -5,6 +5,8 @@ namespace Battlehub.VoxelCombat
 {
     public interface IMatchView
     {
+        event Action<Guid, Cmd> OnSubmitted;
+
         int PlayersCount
         {
             get;

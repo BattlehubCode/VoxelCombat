@@ -349,19 +349,25 @@ namespace Battlehub.VoxelCombat
             m_voxelMap.Map.DestroyExtraPlayers(players.Length);
             m_voxelMap.IsOn = true;
 
-            m_localPlayers = localPlayers;
-            m_isContextActionInProgress = new bool[m_localPlayers.Length];
-            m_isMenuOpened = new bool[m_localPlayers.Length];
+       
             m_players = players;
 
             m_voxelAbilities = voxelAbilities.Select(va => va.Abilities.ToDictionary(a => a.Type)).ToArray();            
 
             if(IsReplay)
             {
+                m_localPlayers = new[] { Guid.Empty };
+                m_isContextActionInProgress = new bool[m_localPlayers.Length];
+                m_isMenuOpened = new bool[m_localPlayers.Length];
+
                 m_gameView.Initialize(1, true);
             }
             else
             {
+                m_localPlayers = localPlayers;
+                m_isContextActionInProgress = new bool[m_localPlayers.Length];
+                m_isMenuOpened = new bool[m_localPlayers.Length];
+
                 m_gameView.Initialize(m_localPlayers.Length, true);
             }
 

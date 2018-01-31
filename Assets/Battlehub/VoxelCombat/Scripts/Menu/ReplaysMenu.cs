@@ -1,4 +1,5 @@
 ﻿using Battlehub.UIControls;
+using System;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -31,12 +32,15 @@ namespace Battlehub.VoxelCombat
         private INavigation m_navigation;
 
         private ReplayInfo[] m_replays;
+        private Room m_room;
 
 
         private void Awake()
         {
             m_navigation = Dependencies.Navigation;
             m_gameServer = Dependencies.GameServer;
+
+
             m_gSettings = Dependencies.Settings;
             m_progress = Dependencies.Progress;
 
@@ -54,6 +58,8 @@ namespace Battlehub.VoxelCombat
             m_replaysListBox.SelectionChanged += OnSelectionChanged;
             m_replaysListBox.Submit += OnReplaysListBoxSubmit;
             m_replaysListBox.Cancel += OnReplaysListBoxCancel;
+
+
         }
 
         private void OnEnable()
@@ -73,14 +79,14 @@ namespace Battlehub.VoxelCombat
                 }
 
                 m_replays = replays.OrderByDescending(r => r.DateTime).ToArray();
-                DataBindMaps();
+                DataBindReplays();
 
                 IndependentSelectable.Select(m_replaysListBox.gameObject);
                 m_replaysListBox.IsFocused = true;
             });
         }
 
-        private void DataBindMaps()
+        private void DataBindReplays()
         {
             m_replaysListBox.Items = m_replays;
         }
@@ -160,74 +166,122 @@ namespace Battlehub.VoxelCombat
             text.text = string.Format("{0} [{1}]", replayInfo.Name, new System.DateTime(replayInfo.DateTime).ToLocalTime().ToString());
         }
 
-        private void OnMapModeChanged(int index)
-        {
-            DataBindMaps();
-        }
-
         private void OnCreateButtonClick()
         {
             m_progress.IsVisible = true;
-            ReplayInfo replayInfo = (ReplayInfo)m_replaysListBox.SelectedItem;
-
-            m_gameServer.CreateRoom(m_gSettings.ClientId, replayInfo.MapId, GameMode.Replay, (error, room) =>
+            DetroyRoomIfCreated(() =>
             {
-                if (m_gameServer.HasError(error))
-                {
-                    m_progress.IsVisible = false;
-                    OutputError(error);
-                    return;
-                }
+                ReplayInfo replayInfo = (ReplayInfo)m_replaysListBox.SelectedItem;
 
-                BotType[] botTypes = new BotType[replayInfo.PlayerNames.Length];
-                for(int i = 0; i < botTypes.Length; ++i)
+                m_gameServer.CreateRoom(m_gSettings.ClientId, replayInfo.MapId, GameMode.Replay, (error, room) =>
                 {
-                    botTypes[i] = BotType.Replay;
-                }
-
-                m_gameServer.CreateBots(m_gSettings.ClientId, replayInfo.PlayerNames, botTypes, (error2, guids2, room2) =>
-                {
-                    m_progress.IsVisible = false;
-                    if (m_gameServer.HasError(error2))
+                    if (m_gameServer.HasError(error))
                     {
-                        OutputError(error2);
+                        m_progress.IsVisible = false;
+                        OutputError(error);
                         return;
                     }
 
-                    m_gameServer.Launch(m_gSettings.ClientId, (error3, serverUrl) =>
+                    m_room = room;
+
+                    BotType[] botTypes = new BotType[replayInfo.PlayerNames.Length];
+                    for (int i = 0; i < botTypes.Length; ++i)
                     {
-                        if (m_gameServer.HasError(error3))
+                        botTypes[i] = BotType.Replay;
+                    }
+
+                    m_gameServer.CreateBots(m_gSettings.ClientId, replayInfo.PlayerNames, botTypes, (error2, guids2, room2) =>
+                    {
+
+                        if (m_gameServer.HasError(error2))
                         {
-                            OutputError(error3);
+                            m_progress.IsVisible = false;
+                            OutputError(error2);
                             return;
                         }
 
-                        m_gameServer.SetReplay(m_gSettings.ClientId, replayInfo.Id, error4 =>
-                        {
-                            if (m_gameServer.HasError(error4))
-                            {
-                                OutputError(error4);
-                                return;
-                            }
-
-                            m_navigation.ClearHistory();
-                            m_navigation.Navigate("Game");
-                        });
+                        m_room = room2;
+                        Launch();
                     });
+                });
+            },
+            error =>
+            {
+                m_progress.IsVisible = false;
+                OutputError(error);
+            });
+
+        }
+
+        private void Launch()
+        {
+            ReplayInfo replayInfo = (ReplayInfo)m_replaysListBox.SelectedItem;
+            m_gameServer.SetReplay(m_gSettings.ClientId, replayInfo.Id, error4 =>
+            {
+                m_progress.IsVisible = false;
+                if (m_gameServer.HasError(error4))
+                {
+                    OutputError(error4);
+                    return;
+                }
+
+                m_gameServer.Launch(m_gSettings.ClientId, (error, serverUrl) =>
+                {
+                    if (m_gameServer.HasError(error))
+                    {
+                        m_progress.IsVisible = false;
+                        OutputError(error);
+                        return;
+                    }
+
+                    m_gSettings.MatchServerUrl = serverUrl;
+
+                    m_navigation.ClearHistory();
+                    m_navigation.Navigate("Game");
                 });
             });
         }
 
         private void OnGoBack()
         {
-            Debug.Assert(m_navigation.CanGoBack);
-            m_navigation.GoBack();
+            DetroyRoomIfCreated(() => m_navigation.GoBack(), error => OutputError(error, () => m_navigation.GoBack()));
         }
 
-        private void OutputError(Error error)
+        private void OutputError(Error error, Action action = null)
         {
-            Debug.LogWarning(StatusCode.ToString(error.Code) + " " + error.Message);
-            m_errorNotification.Show(StatusCode.ToString(error.Code) + " " + error.Message);
+            m_errorNotification.ShowErrorWithAction(error, action);
+        }
+
+        private void DetroyRoomIfCreated(Action done, Action<Error> onError)
+        {
+            m_gameServer.GetRoom(m_gSettings.ClientId, (error, room) =>
+            {
+                if(m_gameServer.HasError(error) && error.Code != StatusCode.NotFound)
+                {
+                    onError(error);
+                    return;
+                }
+
+                m_room = room;
+
+                if (m_room != null)
+                {
+                    m_gameServer.DestroyRoom(m_gSettings.ClientId, m_room.Id, (error2, guid) =>
+                    {
+                        if (m_gameServer.HasError(error2))
+                        {
+                            onError(error2);
+                            return;
+                        }
+
+                        done();
+                    });
+                }
+                else
+                {
+                    done();
+                }
+            });     
         }
     }
 }

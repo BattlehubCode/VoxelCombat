@@ -154,12 +154,12 @@ namespace Battlehub.VoxelCombat
             get { throw new NotSupportedException(); }
         }
 
-        public MatchServerImpl(ITimeService timeService, string persistentDataPath, Room room, Guid[] clientIds, Player[] players, ReplayData replay)
+        public MatchServerImpl(ITimeService timeService, string persistentDataPath, Guid creatorClientId, Room room, Guid[] clientIds, Player[] players, ReplayData replay)
         {
             m_time = timeService;
             m_persistentDataPath = persistentDataPath;
             m_room = room;
-
+            m_room.CreatorClientId = creatorClientId;
 
             m_registeredClients = new HashSet<Guid>();
             m_readyToPlayClients = new HashSet<Guid>();
@@ -220,6 +220,7 @@ namespace Battlehub.VoxelCombat
 
             if (m_engine != null)
             {
+                m_engine.OnSubmitted -= OnEngineCommandSubmitted;
                 MatchFactory.DestroyMatchEngine(m_engine);
                 m_engine = null;
             }
@@ -303,9 +304,21 @@ namespace Battlehub.VoxelCombat
         {
             if (!m_clientIdToPlayers.ContainsKey(clientId))
             {
-                Error error = new Error(StatusCode.NotRegistered);
-                callback(error, null);
-                return;
+                if (m_room != null)
+                {
+                    if (m_room.CreatorClientId != clientId && m_room.Mode != GameMode.Replay)
+                    {
+                        Error error = new Error(StatusCode.NotRegistered);
+                        callback(error, null);
+                        return;
+                    }
+                }
+                else
+                {
+                    Error error = new Error(StatusCode.NotRegistered);
+                    callback(error, null);
+                    return;
+                }
             }
 
             DownloadMapData(callback);
@@ -336,9 +349,21 @@ namespace Battlehub.VoxelCombat
         {
             if (!m_clientIdToPlayers.ContainsKey(clientId))
             {
-                Error error = new Error(StatusCode.NotRegistered);
-                callback(error, null);
-                return;
+                if (m_room != null)
+                {
+                    if (m_room.CreatorClientId != clientId && m_room.Mode != GameMode.Replay)
+                    {
+                        Error error = new Error(StatusCode.NotRegistered);
+                        callback(error, null);
+                        return;
+                    }
+                }
+                else
+                {
+                    Error error = new Error(StatusCode.NotRegistered);
+                    callback(error, null);
+                    return;
+                }
             }
 
             DownloadMapDataById(m_room.MapInfo.Id, callback);
@@ -377,17 +402,31 @@ namespace Battlehub.VoxelCombat
 
         public void ReadyToPlay(Guid clientId, ServerEventHandler callback)
         {
-            Error error = new Error(StatusCode.OK);
             if (!m_clientIdToPlayers.ContainsKey(clientId))
             {
-                error.Code = StatusCode.NotRegistered;
-                callback(error);
-                return;
+                if (m_room != null)
+                {
+                    if (m_room.CreatorClientId != clientId && m_room.Mode != GameMode.Replay)
+                    {
+                        Error error = new Error(StatusCode.NotRegistered);
+                        callback(error);
+                        return;
+                    }
+                }
+                else
+                {
+                    Error error = new Error(StatusCode.NotRegistered);
+                    callback(error);
+                    return;
+                }
             }
 
-            if (!m_readyToPlayClients.Contains(clientId))
+            if(m_room == null || m_room.Mode != GameMode.Replay)
             {
-                m_readyToPlayClients.Add(clientId);
+                if (!m_readyToPlayClients.Contains(clientId))
+                {
+                    m_readyToPlayClients.Add(clientId);
+                }
             }
 
             TryToInitEngine(callback);
@@ -422,12 +461,16 @@ namespace Battlehub.VoxelCombat
                 }
                 else
                 {
-                    m_replay.Record(playerId, cmd, m_tick);
                     m_engine.Submit(playerId, cmd); // if I will use RTT Ticks then it will be possible to reverse order of commands sent by client (which is BAD!)
                 }
             }
 
             callback(error);
+        }
+
+        private void OnEngineCommandSubmitted(Guid playerId, Cmd cmd)
+        {
+            m_replay.Record(playerId, cmd, m_tick);
         }
 
         public void Pong(Guid clientId, ServerEventHandler callback)
@@ -571,7 +614,7 @@ namespace Battlehub.VoxelCombat
 
         private void TryToInitEngine(ServerEventHandler callback)
         {
-            if (!m_initializationStarted && m_engine == null && m_readyToPlayClients.Count > 0 && m_readyToPlayClients.Count == m_clientIdToPlayers.Count)
+            if (!m_initializationStarted && m_engine == null && (m_room != null && m_room.Mode == GameMode.Replay ||  m_readyToPlayClients.Count > 0 && m_readyToPlayClients.Count == m_clientIdToPlayers.Count))
             {
                 InitEngine(callback);
             }
@@ -619,25 +662,39 @@ namespace Battlehub.VoxelCombat
                     }
                     engine.CompletePlayerRegistration();
 
+                    if(m_engine != null)
+                    {
+                        m_engine.OnSubmitted -= OnEngineCommandSubmitted;
+                    }
                 
                     m_engine = engine;
+                    m_engine.OnSubmitted += OnEngineCommandSubmitted;
 
                     if (callback != null)
                     {
                         callback(error);
                     }
 
-                    m_pingTimer.PingAll();
-
-                    if (Ping != null)
+                    if(m_room.Mode != GameMode.Replay)
                     {
-                        m_pingArgs.Arg = new RTTInfo();
-                        m_pingArgs.Except = Guid.Empty;
-                        Ping(new Error(StatusCode.OK), m_pingArgs);
+                        m_pingTimer.PingAll();
+
+                        if (Ping != null)
+                        {
+                            m_pingArgs.Arg = new RTTInfo();
+                            m_pingArgs.Except = Guid.Empty;
+                            Ping(new Error(StatusCode.OK), m_pingArgs);
+                        }
                     }
+                    else
+                    {
+                        OnPingPongCompleted(new Error(StatusCode.OK), m_room.CreatorClientId);
+                    }
+                   
                 }
             });
         }
+
 
         public bool Start(ITimeService time)
         {

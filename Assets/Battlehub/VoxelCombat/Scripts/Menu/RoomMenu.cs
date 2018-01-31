@@ -393,7 +393,7 @@ namespace Battlehub.VoxelCombat
                 m_progress.IsVisible = false;
                 if (m_gameServer.HasError(error))
                 {
-                    OutputError(error);
+                    OutputError(error, () => m_navigation.GoBack());
                     return;
                 }
                 m_navigation.GoBack();
@@ -425,10 +425,9 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        private void OutputError(Error error)
+        private void OutputError(Error error, Action action = null)
         {
-            Debug.LogWarning(StatusCode.ToString(error.Code) + " " + error.ToString());
-            m_errorNotification.Show(StatusCode.ToString(error.Code) + " " + error.Message);
+            m_errorNotification.ShowErrorWithAction(error, action);
         }
 
     }

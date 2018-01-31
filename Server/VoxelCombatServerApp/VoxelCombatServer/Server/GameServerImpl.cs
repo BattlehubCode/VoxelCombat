@@ -603,10 +603,24 @@ namespace Battlehub.VoxelCombat
             List<Player> loggedInPlayers;
             if (!m_players.TryGetValue(clientId, out loggedInPlayers))
             {
-                error.Code = StatusCode.NotRegistered;
-                callback(error, null);
-                return;
+                Room room;
+                if(m_roomsByClientId.TryGetValue(clientId, out room))
+                {
+                    if(room.CreatorClientId != clientId && room.Mode != GameMode.Replay)
+                    {
+                        error.Code = StatusCode.NotRegistered;
+                        callback(error, null);
+                        return;
+                    }
+                }
+                else
+                {
+                    error.Code = StatusCode.NotRegistered;
+                    callback(error, null);
+                    return;
+                }
             }
+
 
             if (loggedInPlayers.Count == 0)
             {
@@ -795,17 +809,7 @@ namespace Battlehub.VoxelCombat
                     }
                 }
 
-                m_roomsById.Remove(roomId);
-
-                if (RoomDestroyed != null)
-                {
-                    RoomDestroyed(new Error(StatusCode.OK), new ServerEventArgs { Except = clientId, Targets = GetTargets(clientId, room) });
-                }
-
-                if (RoomsListChanged != null)
-                {
-                    RoomsListChanged(new Error(StatusCode.OK), new ServerEventArgs { Except = clientId });
-                }
+           
 
                 DestroyBots(clientId, botsWillLeaveRoom.ToArray(), false, (destroyBotError, g, r) =>
                 {
@@ -829,6 +833,20 @@ namespace Battlehub.VoxelCombat
                                 error.Message = "Failed to leave room. See inner error";
                                 error.InnerError = kickError;
                                 Log.Error("KickPlayers. This operation should never fail. But id does " + error.ToString());
+                            }
+                            else
+                            {
+                                m_roomsById.Remove(roomId);
+
+                                if (RoomDestroyed != null)
+                                {
+                                    RoomDestroyed(new Error(StatusCode.OK), new ServerEventArgs { Except = clientId, Targets = GetTargets(clientId, room) });
+                                }
+
+                                if (RoomsListChanged != null)
+                                {
+                                    RoomsListChanged(new Error(StatusCode.OK), new ServerEventArgs { Except = clientId });
+                                }
                             }
 
                             callback(error, roomId);
@@ -912,7 +930,7 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            Room[] rooms = m_roomsById.Values.Skip(page * count).Take(count).ToArray();
+            Room[] rooms = m_roomsById.Values.Where(r => r.Mode != GameMode.Replay).Skip(page * count).Take(count).ToArray();
             callback(error, rooms);
         }
 
@@ -937,6 +955,13 @@ namespace Battlehub.VoxelCombat
             if (m_roomsByClientId.TryGetValue(clientId, out room))
             {
                 error.Code = StatusCode.AlreadyJoined;
+                callback(error, room);
+                return;
+            }
+
+            if(room.Mode == GameMode.Replay)
+            {
+                error.Code = StatusCode.NotAllowed;
                 callback(error, room);
                 return;
             }
@@ -1066,6 +1091,8 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
+            m_roomsByClientId.Remove(room.CreatorClientId);
+            m_replaysByClientId.Remove(room.CreatorClientId);
             room.Players.Clear();
             callback(new Error(StatusCode.OK));
         }
@@ -1358,7 +1385,7 @@ namespace Battlehub.VoxelCombat
                         }
 
                         m_matchServerClients.Add(matchServerClient);
-                        matchServerClient.CreateMatch(room, clientIds.ToArray(), players, replay, createMatchError =>
+                        matchServerClient.CreateMatch(room.CreatorClientId, room, clientIds.ToArray(), players, replay, createMatchError =>
                         {
                             m_matchServerClients.Remove(matchServerClient);
 

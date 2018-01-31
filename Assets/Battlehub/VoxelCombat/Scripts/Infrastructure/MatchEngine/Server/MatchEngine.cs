@@ -465,7 +465,7 @@ namespace Battlehub.VoxelCombat
     public class MatchEngine : IMatchEngine
     {
         //private const bool EnableLog = true;
-
+        public event Action<Guid, Cmd> OnSubmitted;
         private readonly Dictionary<Guid, IMatchPlayerController> m_idToPlayers = new Dictionary<Guid, IMatchPlayerController>();
         private readonly IMatchPlayerController[] m_players;
         private readonly Guid[] m_playerGuids;
@@ -615,6 +615,10 @@ namespace Battlehub.VoxelCombat
             if (m_idToPlayers.TryGetValue(playerId, out playerController))
             {
                 playerController.Submit(cmd);
+            }
+            if(OnSubmitted != null)
+            {
+                OnSubmitted(playerId, cmd);
             }
         }
 

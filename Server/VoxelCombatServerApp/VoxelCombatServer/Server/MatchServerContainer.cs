@@ -7,7 +7,7 @@ namespace Battlehub.VoxelCombat
 {
     public interface IMatchServerClient
     {
-        void CreateMatch(Room room,  Guid[] clientIds, Player[] players, ReplayData replay, ServerEventHandler callback);
+        void CreateMatch(Guid creatorClientId, Room room,  Guid[] clientIds, Player[] players, ReplayData replay, ServerEventHandler callback);
 
         void GetReplay(ServerEventHandler<ReplayData, Room> callback);
 
@@ -71,7 +71,7 @@ namespace Battlehub.VoxelCombat
             m_response = null;
         }
 
-        public void CreateMatch(Room room, Guid[] clientIds, Player[] players, ReplayData replay, ServerEventHandler callback)
+        public void CreateMatch(Guid creatorClientId, Room room, Guid[] clientIds, Player[] players, ReplayData replay, ServerEventHandler callback)
         {
             if(m_protocol != null)
             {
@@ -91,7 +91,7 @@ namespace Battlehub.VoxelCombat
 
             m_call = () =>
             {
-                RemoteCall rpc = new RemoteCall(RemoteCall.Proc.CreateMatch, ServerContainer.ServerIdentity, RemoteArg.Create(room), RemoteArg.Create(clientIds), RemoteArg.Create(players), RemoteArg.Create(replay));
+                RemoteCall rpc = new RemoteCall(RemoteCall.Proc.CreateMatch, ServerContainer.ServerIdentity, RemoteArg.Create(creatorClientId), RemoteArg.Create(room), RemoteArg.Create(clientIds), RemoteArg.Create(players), RemoteArg.Create(replay));
 
                 Call(rpc, (error, remoteResult) =>
                 {
@@ -264,19 +264,34 @@ namespace Battlehub.VoxelCombat
 
         private void OnReadyToPlayAll(Error error, ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], Room> args)
         {
-            Dictionary<Guid, Dictionary<Guid, Player>> clientIdToPlayers = args.Arg2;
-            foreach(KeyValuePair<Guid, Dictionary<Guid, Player>> kvp in clientIdToPlayers)
+            Room room = args.Arg4;
+            if (room.Mode == GameMode.Replay)
             {
-                Guid clientId = kvp.Key;
-                Dictionary<Guid, Player> players = kvp.Value;
-
-                Send(RemoteEvent.Evt.ReadyToPlayAll, error, clientId,
-                    RemoteArg.Create(args.Arg),
-                    RemoteArg.Create(players.Keys.ToArray()),
-                    RemoteArg.Create(args.Arg3),
-                    RemoteArg.Create(args.Arg4));
-
+                Send(RemoteEvent.Evt.ReadyToPlayAll, error, room.CreatorClientId,
+                        RemoteArg.Create(args.Arg),
+                        RemoteArg.Create(new Guid[0]),
+                        RemoteArg.Create(args.Arg3),
+                        RemoteArg.Create(args.Arg4));
             }
+            else
+            {
+                Dictionary<Guid, Dictionary<Guid, Player>> clientIdToPlayers = args.Arg2;
+                foreach (KeyValuePair<Guid, Dictionary<Guid, Player>> kvp in clientIdToPlayers)
+                {
+                    Guid clientId = kvp.Key;
+                    Dictionary<Guid, Player> players = kvp.Value;
+
+                    Send(RemoteEvent.Evt.ReadyToPlayAll, error, clientId,
+                        RemoteArg.Create(args.Arg),
+                        RemoteArg.Create(players.Keys.ToArray()),
+                        RemoteArg.Create(args.Arg3),
+                        RemoteArg.Create(args.Arg4));
+
+                }
+            }
+         
+
+         
         }
 
         private RemoteEvent m_tickEvent = new RemoteEvent() { Event = RemoteEvent.Evt.Tick, Args = new[] { new RemoteArg<CommandsBundle>() } };
@@ -321,7 +336,7 @@ namespace Battlehub.VoxelCombat
             {
                 if(m_matchServer != null)
                 {
-                    const int WaitSeconds = 20;
+                    const int WaitSeconds = 5;
                     if (Time > WaitSeconds)
                     {
                         m_gameLoop = (ILoop)m_matchServer;
@@ -372,14 +387,15 @@ namespace Battlehub.VoxelCombat
                         }
                         else
                         {
-                            Room room = rpc.Get<Room>(0);
-                            Guid[] clientIds = rpc.Get<Guid[]>(1);
-                            Player[] players = rpc.Get<Player[]>(2);
-                            ReplayData replay = rpc.Get<ReplayData>(3);
+                            Guid creatorClientId = rpc.Get<Guid>(0);
+                            Room room = rpc.Get<Room>(1);
+                            Guid[] clientIds = rpc.Get<Guid[]>(2);
+                            Player[] players = rpc.Get<Player[]>(3);
+                            ReplayData replay = rpc.Get<ReplayData>(4);
 
                             if (m_matchServer == null) 
                             {
-                                MatchServerImpl matchServer = new MatchServerImpl(this, m_path, room, clientIds, players, replay);
+                                MatchServerImpl matchServer = new MatchServerImpl(this, m_path, creatorClientId, room, clientIds, players, replay);
                                 m_matchServer = matchServer;
                               
                                 m_matchServer.Tick += OnTick;
