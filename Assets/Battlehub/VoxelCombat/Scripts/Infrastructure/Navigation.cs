@@ -15,7 +15,15 @@ namespace Battlehub.VoxelCombat
 
         void ClearHistory();
 
-        
+        string Current
+        {
+            get;
+        }
+
+        GameObject CurrentMenu
+        {
+            get;
+        }
 
         void Navigate(string target);
 
@@ -40,6 +48,15 @@ namespace Battlehub.VoxelCombat
         private Stack<string> m_localNavigationStack = new Stack<string>();
 
         private string m_current;
+        public string Current
+        {
+            get { return m_current; }
+        }
+
+        public GameObject CurrentMenu
+        {
+            get { return m_menus.Where(m => m.name == m_current).FirstOrDefault(); }
+        }
 
         public Dictionary<string, object> Args
         {
@@ -52,6 +69,7 @@ namespace Battlehub.VoxelCombat
             get { return m_gState.GetValue<string>("Battlehub.VoxelCombat.Navigation.target"); }
             set { m_gState.SetValue("Battlehub.VoxelCombat.Navigation.target", value); }
         }
+
 
         private void Awake()
         {

@@ -255,9 +255,9 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void OnConnectionStateChanged(Error error, bool connected)
+        private void OnConnectionStateChanged(Error error, ValueChangedArgs<bool> args)
         {
-            if (connected)
+            if (args.NewValue)
             {
                 if(HasError(error))
                 {

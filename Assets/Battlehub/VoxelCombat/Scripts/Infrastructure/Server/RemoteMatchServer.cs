@@ -15,6 +15,17 @@ namespace Battlehub.VoxelCombat
             get { return m_settings.MatchServerUrl; }
         }
 
+        protected override void Awake()
+        {
+            if (!Dependencies.RemoteGameServer.IsConnected)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
+            base.Awake();
+        }
+
         protected override void OnMessage(ILowProtocol sender, byte[] args)
         {
             RemoteEvent evt = ProtobufSerializer.Deserialize<RemoteEvent>(args);

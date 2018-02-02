@@ -36,14 +36,15 @@ namespace Battlehub.VoxelCombat
 
         private void Start()
         {
-            if (m_notificationRoot == null)
-            {
-                m_notificationRoot = this;
-            }
+            
         }
 
         private void OnEnable()
         {
+            if (m_notificationRoot == null)
+            {
+                m_notificationRoot = this;
+            }
             if (m_notificationRoot != null && m_notificationRoot != this)
             {
                 m_notificationRoot.m_children.Add(this);

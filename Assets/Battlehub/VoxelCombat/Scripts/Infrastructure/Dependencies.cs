@@ -20,9 +20,12 @@ namespace Battlehub.VoxelCombat
             m_gameView = FindObjectOfType<GameView>();
             m_settings = FindObjectOfType<GlobalSettings>();
             m_matchEngine = FindObjectOfType<MatchEngineCli>();
-            m_chatServer = FindObjectOfType<RemoteChatServer>();
-            m_gameServer = FindObjectOfType<RemoteGameServer>();
-            m_matchServer = FindObjectOfType<RemoteMatchServer>();
+            m_remoteChatServer = FindObjectOfType<RemoteChatServer>();
+            m_localChatServer = null;
+            m_remoteGameServer = FindObjectOfType<RemoteGameServer>();
+            m_localGameServer = FindObjectOfType<LocalGameServer>();
+            m_remoteMatchServer = FindObjectOfType<RemoteMatchServer>();
+            m_localMatchServer = FindObjectOfType<LocalMatchServer>();
             m_navigation = FindObjectOfType<Navigation>();
             m_eventSystemManager = FindObjectOfType<EventSystemManager>();
             m_notification = FindObjectOfType<Notification>();
@@ -55,9 +58,12 @@ namespace Battlehub.VoxelCombat
             m_gameView = null;
             m_settings = null;
             m_matchEngine = null;
-            m_chatServer = null;
-            m_gameServer = null;
-            m_matchServer = null;
+            m_remoteChatServer = null;
+            m_localChatServer = null;
+            m_remoteGameServer = null;
+            m_localGameServer = null;
+            m_remoteMatchServer = null;
+            m_localMatchServer = null;
             m_navigation = null;
             m_notification = null;
             m_unitSelection = null;
@@ -109,22 +115,85 @@ namespace Battlehub.VoxelCombat
             get { return m_matchEngine; }
         }
 
-        private static IChatServer m_chatServer;
+        private static IChatServer m_remoteChatServer;
+        public static IChatServer RemoteChatServer
+        {
+            get { return m_remoteChatServer; }
+        }
+
+        private static IChatServer m_localChatServer;
+        public static IChatServer LocalChatServer
+        {
+            get { return m_localChatServer; }
+        }
+
         public static IChatServer ChatServer
         {
-            get { return m_chatServer; }
+            get
+            {
+                if(m_remoteChatServer.IsConnected)
+                {
+                    return m_remoteChatServer;
+                }
+                else
+                {
+                    return m_localChatServer;
+                }
+            }
         }
 
-        private static IGameServer m_gameServer;
+        private static IGameServer m_remoteGameServer;
+        public static IGameServer RemoteGameServer
+        {
+            get { return m_remoteGameServer; }
+        }
+
+        private static IGameServer m_localGameServer;
+        public static IGameServer LocalGameServer
+        {
+            get { return m_localGameServer; }
+        }
+
         public static IGameServer GameServer
         {
-            get { return m_gameServer; }
+            get
+            {
+                if(m_remoteGameServer.IsConnected)
+                {
+                    return m_remoteGameServer;
+                }
+                else
+                {
+                    return m_localGameServer;
+                }
+            }
         }
 
-        private static IMatchServer m_matchServer;
+        private static IMatchServer m_localMatchServer;
+        public static IMatchServer LocalMatchServer
+        {
+            get { return m_localMatchServer; }
+        }
+
+        private static IMatchServer m_remoteMatchServer;
+        public static IMatchServer RemoteMatchServer
+        {
+            get { return m_remoteMatchServer; }
+        }
+
         public static IMatchServer MatchServer
         {
-            get { return m_matchServer; }
+            get
+            {
+                if (m_remoteGameServer.IsConnected) //This is not mistake
+                {
+                    return m_remoteMatchServer;
+                }
+                else
+                {
+                    return m_localMatchServer;
+                }
+            }
         }
 
         private static IGlobalSettings m_settings;

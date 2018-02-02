@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
-    public class ReplaysMenu : MonoBehaviour
+    public class ReplaysMenu : BaseMenuBehaviour
     {
         [SerializeField]
         private GameObject m_root;
@@ -34,12 +34,12 @@ namespace Battlehub.VoxelCombat
         private ReplayInfo[] m_replays;
         private Room m_room;
 
-
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
+
             m_navigation = Dependencies.Navigation;
             m_gameServer = Dependencies.GameServer;
-
 
             m_gSettings = Dependencies.Settings;
             m_progress = Dependencies.Progress;
@@ -58,12 +58,11 @@ namespace Battlehub.VoxelCombat
             m_replaysListBox.SelectionChanged += OnSelectionChanged;
             m_replaysListBox.Submit += OnReplaysListBoxSubmit;
             m_replaysListBox.Cancel += OnReplaysListBoxCancel;
-
-
         }
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
             m_root.SetActive(true);
             m_goBackButton.interactable = m_navigation.CanGoBack;
 
@@ -91,16 +90,18 @@ namespace Battlehub.VoxelCombat
             m_replaysListBox.Items = m_replays;
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
             if (m_root != null)
             {
                 m_root.SetActive(false);
             }
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
             if (m_root != null)
             {
                 m_root.SetActive(false);
@@ -124,7 +125,6 @@ namespace Battlehub.VoxelCombat
                 m_createButton.onClick.RemoveListener(OnCreateButtonClick);
             }
         }
-
 
         private void Update()
         {
@@ -192,7 +192,6 @@ namespace Battlehub.VoxelCombat
 
                     m_gameServer.CreateBots(m_gSettings.ClientId, replayInfo.PlayerNames, botTypes, (error2, guids2, room2) =>
                     {
-
                         if (m_gameServer.HasError(error2))
                         {
                             m_progress.IsVisible = false;

@@ -45,6 +45,8 @@ namespace Battlehub.VoxelCombat
 
         int GetDeviceIndex(object device);
 
+        bool IsSuspended(int index);
+
         void Resume(int index);
 
         void Suspend(int index);
@@ -226,11 +228,14 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        
-
         public int GetDeviceIndex(object device)
         {
             return -1;
+        }
+
+        public bool IsSuspended(int index)
+        {
+            throw new NotImplementedException();
         }
 
         public void ResumeAll()

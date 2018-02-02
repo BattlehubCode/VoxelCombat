@@ -126,6 +126,7 @@ namespace Battlehub.VoxelCombat
         private IProgressIndicator m_progress;
         private IGameServer m_gameServer;
         private IGlobalSettings m_gSettings;
+        private IVoxelInputManager m_inputManager;
 
         private Player m_player;
 
@@ -137,8 +138,11 @@ namespace Battlehub.VoxelCombat
             m_progress = Dependencies.Progress;
             m_gameServer = Dependencies.GameServer;
             m_gSettings = Dependencies.Settings;
+            m_inputManager = Dependencies.InputManager;
 
-
+            m_disableButton.gameObject.SetActive(m_inputManager.DeviceCount > 1);
+            m_inputManager.DeviceEnabled += OnDeviceEnabled;
+            m_inputManager.DeviceDisabled += OnDeviceDisabled;
 
             m_loginPanel.Login += OnLogin;
             m_loginPanel.LoginCancel += OnLoginCancel;
@@ -146,7 +150,16 @@ namespace Battlehub.VoxelCombat
             m_signUpPanel.LoginCancel += OnLoginCancel;
         }
 
-        
+        private void OnDeviceEnabled(int arg)
+        {
+            m_disableButton.gameObject.SetActive(m_inputManager.DeviceCount > 1);
+        }
+
+        private void OnDeviceDisabled(int arg)
+        {
+            m_disableButton.gameObject.SetActive(m_inputManager.DeviceCount > 1);
+        }
+
         private void OnEnable()
         {
             SelectFirstButton();
@@ -269,6 +282,12 @@ namespace Battlehub.VoxelCombat
 
         private void OnDestroy()
         {   
+            if(m_inputManager != null)
+            {
+                m_inputManager.DeviceEnabled -= OnDeviceEnabled;
+                m_inputManager.DeviceDisabled -= OnDeviceDisabled;
+            }
+
             if (m_loginPanel != null)
             {
                 m_loginPanel.Login -= OnLogin;

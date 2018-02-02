@@ -83,7 +83,14 @@ namespace Battlehub.VoxelCombat
         public event ServerEventHandler<CommandsBundle> Tick;
         public event ServerEventHandler<RTTInfo> Ping;
         public event ServerEventHandler<bool> Paused;
-        public event ServerEventHandler<bool> ConnectionStateChanged;
+        public event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
+        public event ServerEventHandler ConnectionStateChanging;
+
+        public bool IsConnectionStateChanging
+        {
+            get;
+            private set;
+        }
 
         public bool IsConnected
         {
@@ -117,9 +124,15 @@ namespace Battlehub.VoxelCombat
 
         private void Awake()
         {
+            if(Dependencies.RemoteGameServer.IsConnected)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
             m_gState = Dependencies.State;
             m_job = Dependencies.Job;
-
+    
             //Adding neutral player to room
             m_neutralPlayer = new Player();
             m_neutralPlayer.BotType = BotType.Neutral;
@@ -142,19 +155,29 @@ namespace Battlehub.VoxelCombat
 
         public void Connect()
         {
+            if (ConnectionStateChanging != null)
+            {
+                ConnectionStateChanging(new Error(StatusCode.OK));
+            }
+            bool wasConnected = IsConnected;
             IsConnected = true;
             if (ConnectionStateChanged != null)
             {
-                ConnectionStateChanged(new Error(StatusCode.OK), true);
+                ConnectionStateChanged(new Error(StatusCode.OK), new ValueChangedArgs<bool>(wasConnected, IsConnected));
             }
         }
 
         public void Disconnect()
         {
+            if (ConnectionStateChanging != null)
+            {
+                ConnectionStateChanging(new Error(StatusCode.OK));
+            }
+            bool wasConnected = IsConnected;
             IsConnected = false;
             if (ConnectionStateChanged != null)
             {
-                ConnectionStateChanged(new Error(StatusCode.OK), false);
+                ConnectionStateChanged(new Error(StatusCode.OK), new ValueChangedArgs<bool>(wasConnected, IsConnected));
             }
         }
 

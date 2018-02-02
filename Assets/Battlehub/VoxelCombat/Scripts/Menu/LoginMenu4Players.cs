@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
@@ -9,6 +10,9 @@ namespace Battlehub.VoxelCombat
     {
         [SerializeField]
         private GameObject m_root;
+
+        [SerializeField]
+        private Button m_connectButton;
 
         [SerializeField]
         private GameObject m_p01Panel;
@@ -36,7 +40,7 @@ namespace Battlehub.VoxelCombat
         private IVoxelInputManager m_inputManager;
         private INotification m_notification;
         private INavigation m_navigation;
-        private IGameServer m_gameServer;
+        private IGameServer m_remoteGameServer;
         private IGlobalSettings m_gSettings;
         private IProgressIndicator m_progress;
 
@@ -47,52 +51,19 @@ namespace Battlehub.VoxelCombat
             m_inputManager = Dependencies.InputManager;
             m_notification = Dependencies.Notification;
             m_navigation = Dependencies.Navigation;
-            m_gameServer = Dependencies.GameServer;
+            m_remoteGameServer = Dependencies.RemoteGameServer;
             m_gSettings = Dependencies.Settings;
             m_progress = Dependencies.Progress;
-            m_gameServer.ConnectionStateChanged += OnConnectionStateChanged;
-            if(!m_gameServer.IsConnected)
-            {
-                m_progress.IsVisible = true;
-            }
-            else
-            {
-                GetPlayers();
-            }
+
+         
             m_slots = new[]{ m_p0Panel.transform, m_p1Panel.transform, m_p2Panel.transform, m_p3Panel.transform };
-        }
 
-        private void OnConnectionStateChanged(Error error, bool connected)
-        {
-            m_progress.IsVisible = false;
-
-            if (connected)
-            {
-                if (m_gameServer.HasError(error))
-                {
-                    m_notification.ShowError(error);
-                }
-                else
-                {
-                    GetPlayers();
-                }
-            }
-            else
-            {
-                if(m_gameServer.HasError(error))
-                {
-                    m_notification.ShowError(error);
-                }
-                else
-                {
-                    m_notification.ShowError("Connection lost");
-                }
-            }
+            m_connectButton.onClick.AddListener(OnConnectButtonClick);
         }
 
         private void Start()
         {
-            for(int i = 0; i < m_playerMenu.Length; ++i)
+            for (int i = 0; i < m_playerMenu.Length; ++i)
             {
                 m_playerMenu[i].Go += OnGo;
                 m_playerMenu[i].CancelGo += OnCancelGo;
@@ -104,19 +75,124 @@ namespace Battlehub.VoxelCombat
 
         private void OnEnable()
         {
+            m_remoteGameServer.ConnectionStateChanging += OnConnectionStateChanging;
+            m_remoteGameServer.ConnectionStateChanged += OnConnectionStateChanged;
+
+            m_inputManager.IsInInitializationState = true;
+
             m_root.SetActive(true);
 
-            if(m_gameServer.IsConnected)
+            HandleDevicesChange();
+
+            if (m_remoteGameServer.IsConnectionStateChanging)
+            {
+                m_progress.IsVisible = true;
+            }
+            else
             {
                 GetPlayers();
+            }
+
+            if (m_inputManager != null)
+            {
+                m_inputManager.DeviceEnabled += OnDeviceEnabled;
+                m_inputManager.DeviceDisabled += OnDeviceDisabled;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (m_remoteGameServer != null)
+            {
+                m_remoteGameServer.ConnectionStateChanging -= OnConnectionStateChanging;
+                m_remoteGameServer.ConnectionStateChanged -= OnConnectionStateChanged;
+            }
+
+            if (m_root != null)
+            {
+                m_root.SetActive(false);
+            }
+
+            if (m_inputManager != null)
+            {
+                m_inputManager.IsInInitializationState = false;
+                m_inputManager.DeviceEnabled -= OnDeviceEnabled;
+                m_inputManager.DeviceDisabled -= OnDeviceDisabled;
+            }
+   
+        }
+
+        private void OnDestroy()
+        {
+            for (int i = 0; i < m_playerMenu.Length; ++i)
+            {
+                if (m_playerMenu[i] != null)
+                {
+                    m_playerMenu[i].Go -= OnGo;
+                    m_playerMenu[i].CancelGo -= OnCancelGo;
+                    m_playerMenu[i].LoggedIn -= OnLoggedIn;
+                    m_playerMenu[i].LoggedOff -= OnLoggedOff;
+                    m_playerMenu[i].Disabled -= OnPlayerMenuDisabled;
+                }
+            }
+
+        
+            if (m_connectButton != null)
+            {
+                m_connectButton.onClick.RemoveListener(OnConnectButtonClick);
+            }
+        }
+
+        private void OnConnectButtonClick()
+        {
+            if(m_remoteGameServer.IsConnected)
+            {
+                m_remoteGameServer.Disconnect();
+            }
+            else
+            {
+                m_remoteGameServer.Connect();
+            }
+        }
+
+        private void OnConnectionStateChanging(Error error)
+        {
+            m_progress.IsVisible = true;
+        }
+
+        private void OnConnectionStateChanged(Error error, ValueChangedArgs<bool> args)
+        {
+            m_progress.IsVisible = false;
+
+            if (args.NewValue)
+            {
+                if (m_remoteGameServer.HasError(error))
+                {
+                    m_notification.ShowError(error);
+                }
+                else
+                {
+                    GetPlayers();
+                }
+            }
+            else
+            {
+                if (m_remoteGameServer.HasError(error))
+                {
+                    m_notification.ShowError(error);
+                }
+                else
+                {
+                    m_notification.ShowError("You are offline. Server is not connected.", m_connectButton.gameObject);
+
+                    GetPlayers();
+                }
             }
         }
 
         private void GetPlayers()
         {
             m_progress.IsVisible = true;
-
-            m_inputManager.IsInInitializationState = true;
 
             m_readyToGo = 0;
 
@@ -125,17 +201,15 @@ namespace Battlehub.VoxelCombat
                 m_playerMenu[i].LocalPlayerIndex = i;
             }
 
-            m_gameServer.GetPlayers(m_gSettings.ClientId, (error, players) =>
+            IGameServer gameServer = Dependencies.GameServer;
+            gameServer.GetPlayers(m_gSettings.ClientId, (error, players) =>
             {
-                if (m_gameServer.HasError(error))
+                if (gameServer.HasError(error))
                 {
                     m_progress.IsVisible = false;
                     m_notification.ShowError(error);
                     return;
                 }
-
-                m_inputManager.DeviceEnabled += OnDeviceEnabled;
-                m_inputManager.DeviceDisabled += OnDeviceDisabled;
 
                 HandleDevicesChange();
 
@@ -153,10 +227,10 @@ namespace Battlehub.VoxelCombat
                         logoffPlayers.Add(players[i].Id);
                     }
 
-                    m_gameServer.Logoff(m_gSettings.ClientId, logoffPlayers.ToArray(), (error2, playerIds) =>
+                    gameServer.Logoff(m_gSettings.ClientId, logoffPlayers.ToArray(), (error2, playerIds) =>
                     {
                         m_progress.IsVisible = false;
-                        if (m_gameServer.HasError(error2))
+                        if (gameServer.HasError(error2))
                         {
                             m_notification.ShowError(error2);
                             return;
@@ -168,41 +242,6 @@ namespace Battlehub.VoxelCombat
                     m_progress.IsVisible = false;
                 }
             });
-        }
-
-        private void OnDisable()
-        {
-            if(m_root != null)
-            {
-                m_root.SetActive(false);
-            }
-
-            if(m_inputManager != null)
-            {
-                m_inputManager.IsInInitializationState = false;
-                m_inputManager.DeviceEnabled -= OnDeviceEnabled;
-                m_inputManager.DeviceDisabled -= OnDeviceDisabled;
-            }
-        }
-
-        private void OnDestroy()
-        {
-            for (int i = 0; i < m_playerMenu.Length; ++i)
-            {
-                if(m_playerMenu[i] != null)
-                {
-                    m_playerMenu[i].Go -= OnGo;
-                    m_playerMenu[i].CancelGo -= OnCancelGo;
-                    m_playerMenu[i].LoggedIn -= OnLoggedIn;
-                    m_playerMenu[i].LoggedOff -= OnLoggedOff;
-                    m_playerMenu[i].Disabled -= OnPlayerMenuDisabled;
-                }
-            }
-
-            if(m_gameServer != null)
-            {
-                m_gameServer.ConnectionStateChanged -= OnConnectionStateChanged;
-            }
         }
 
         private void OnDeviceEnabled(int index)
@@ -222,10 +261,11 @@ namespace Battlehub.VoxelCombat
                 IProgressIndicator progress = m_progress.GetChild(index);
                 progress.IsVisible = true;
 
-                m_gameServer.Logoff(m_gSettings.ClientId, player.Id, (error, playerId) =>
+                IGameServer gameServer = Dependencies.GameServer;
+                gameServer.Logoff(m_gSettings.ClientId, player.Id, (error, playerId) =>
                 {
                     progress.IsVisible = false;
-                    if (m_gameServer.HasError(error))
+                    if (gameServer.HasError(error))
                     {
                         m_notification.ShowError(error);
                         return;
@@ -306,7 +346,7 @@ namespace Battlehub.VoxelCombat
             m_p01Panel.SetActive(m_inputManager.DeviceCount > 0);
             m_p23Panel.SetActive(m_inputManager.DeviceCount > 2);
 
-            m_p0Panel.SetActive(m_inputManager.DeviceCount > 0);
+            m_p0Panel.SetActive (m_inputManager.DeviceCount > 0);
             m_p1Panel.SetActive(m_inputManager.DeviceCount > 1);
             m_p2Panel.SetActive(m_inputManager.DeviceCount > 2);
             m_p3Panel.SetActive(m_inputManager.DeviceCount > 3);

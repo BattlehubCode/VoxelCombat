@@ -13,11 +13,13 @@
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Unity Subset v3.5</TargetFrameworkProfile>
-    <CompilerResponseFile></CompilerResponseFile>
+    <CompilerResponseFile>
+    </CompilerResponseFile>
     <UnityProjectType>Game:1</UnityProjectType>
     <UnityBuildTarget>StandaloneWindows64:19</UnityBuildTarget>
     <UnityVersion>2017.2.1f1</UnityVersion>
-    <RootNamespace></RootNamespace>
+    <RootNamespace>
+    </RootNamespace>
     <LangVersion>4</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -396,6 +398,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\Socket.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\CommonUIZone.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\CommonUIZoneSetter.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\ConnectionButton.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\INotification.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\Notification.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\PlayerUIZone.cs" />
@@ -408,6 +411,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\MapEditor\MapEditorPrefab.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\MapEditor\MouseOrbit.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\MapEditor\VoxelMapEditor.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Menu\BaseMenuBehaviour.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Menu\ButtonsPanel.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Menu\CreateRoomMenu.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Menu\GameResultsPanel.cs" />

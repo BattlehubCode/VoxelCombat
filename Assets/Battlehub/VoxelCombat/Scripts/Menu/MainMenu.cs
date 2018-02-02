@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
-    public class MainMenu : MonoBehaviour
+    public class MainMenu : BaseMenuBehaviour
     {
         [SerializeField]
         private Button m_compaignButton;
@@ -26,10 +26,14 @@ namespace Battlehub.VoxelCombat
         private InputProvider m_inputProvider;
 
         private INavigation m_navigation;
+        private IGameServer m_remoteGameServer;
+        private IProgressIndicator m_progress;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             m_navigation = Dependencies.Navigation;
+            m_remoteGameServer = Dependencies.RemoteGameServer;
         }
 
         private void Start()
@@ -40,8 +44,9 @@ namespace Battlehub.VoxelCombat
             m_goBackButton.onClick.AddListener(OnGoBack);
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
             if(m_compaignButton != null)
             {
                 m_compaignButton.onClick.RemoveListener(OnCompaignClick);
@@ -63,14 +68,17 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
             m_root.SetActive(true);
             IndependentSelectable.Select(m_multiplayerButton.gameObject);
         }
 
-        private void OnDisable()
+
+        protected override void OnDisable()
         {
+            base.OnDisable();
             EventSystem eventSystem = IndependentSelectable.GetEventSystem(m_multiplayerButton.gameObject);
             if(eventSystem != null)
             {

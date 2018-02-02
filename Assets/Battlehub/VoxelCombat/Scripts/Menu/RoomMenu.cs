@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
-    public class RoomMenu : MonoBehaviour
+    public class RoomMenu : BaseMenuBehaviour
     {
         private static readonly string[] m_playerNames =
         {
@@ -73,8 +73,9 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             m_progress = Dependencies.Progress;
             m_gSettings = Dependencies.Settings;
             m_navigation = Dependencies.Navigation;
@@ -91,8 +92,9 @@ namespace Battlehub.VoxelCombat
             UpdateButtonsState();
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
             if(m_backButton != null)
             {
                 m_backButton.onClick.RemoveListener(OnBackClick);
@@ -117,19 +119,20 @@ namespace Battlehub.VoxelCombat
             {
                 m_gameServer.JoinedRoom -= OnJoinedRoom;
                 m_gameServer.ReadyToLaunch -= OnReadyToLaunch;
-                
             }
         }
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
             m_isReady = false;
             m_root.SetActive(true);
             GetAndDataBind();
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
             if(m_root != null)
             {
                 m_root.SetActive(false);
@@ -170,7 +173,6 @@ namespace Battlehub.VoxelCombat
                 }
             }
         }
-
 
         private void OnReadyToLaunch(Error error, Room room)
         {

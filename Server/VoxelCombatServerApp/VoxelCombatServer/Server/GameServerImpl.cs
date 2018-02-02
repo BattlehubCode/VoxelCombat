@@ -12,7 +12,7 @@ namespace Battlehub.VoxelCombat
 
         private void GetRidOfWarnings()
         {
-            ConnectionStateChanged(new Error(), true);
+            ConnectionStateChanged(new Error(), new ValueChangedArgs<bool>(false, false));
         }
 
         public event ServerEventHandler<ServerEventArgs<Guid>> LoggedIn;
@@ -23,8 +23,8 @@ namespace Battlehub.VoxelCombat
         public event ServerEventHandler<ServerEventArgs> RoomsListChanged;
         public event ServerEventHandler<ServerEventArgs<Room>> ReadyToLaunch;
         public event ServerEventHandler<ServerEventArgs<string>> Launched;
-        public event ServerEventHandler<bool> ConnectionStateChanged;
-
+        public event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
+        public event ServerEventHandler ConnectionStateChanging;
 
         private readonly Dictionary<Guid, Guid> m_replaysByClientId = new Dictionary<Guid, Guid>();
         private readonly Dictionary<Guid, Room> m_roomsByClientId = new Dictionary<Guid, Room>();
@@ -35,9 +35,14 @@ namespace Battlehub.VoxelCombat
         private readonly Dictionary<Guid, Player> m_bots = new Dictionary<Guid, Player>();
         private readonly ServerStats m_stats = new ServerStats();
 
+        public bool IsConnectionStateChanging
+        {
+            get { throw new NotSupportedException(); }
+        }
+
         public bool IsConnected
         {
-            get { throw new NotImplementedException(); }
+            get { throw new NotSupportedException(); }
         }
 
         private readonly string m_persistentDataPath;
@@ -67,7 +72,6 @@ namespace Battlehub.VoxelCombat
         {
             callback(new Error { Code = StatusCode.OK });
         }
-
 
         //Must call callback synchroniously
         public void RegisterClient(Guid clientId, ServerEventHandler callback)
@@ -808,8 +812,6 @@ namespace Battlehub.VoxelCombat
                         playersWillLeaveRoom.Add(playerId);  
                     }
                 }
-
-           
 
                 DestroyBots(clientId, botsWillLeaveRoom.ToArray(), false, (destroyBotError, g, r) =>
                 {

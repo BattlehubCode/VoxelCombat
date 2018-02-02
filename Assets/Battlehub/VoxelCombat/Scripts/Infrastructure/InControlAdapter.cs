@@ -8,6 +8,7 @@ using System;
 
 namespace Battlehub.VoxelCombat
 {
+    //[DefaultExecutionOrder(-3000)]
     public class InControlAdapter : MonoBehaviour, IVoxelInputManager
     {
         private const string DevicesPersistentKey = "InControlAdapter.Devices";
@@ -19,6 +20,7 @@ namespace Battlehub.VoxelCombat
         private List<InputDevice> m_devices;
         private List<InputDevice> m_lastDisabledDevices;
         private IGlobalState m_gState;
+        private IProgressIndicator m_progress;
 
         private static readonly Dictionary<InputAction, InputControlType> m_mapping =
             new Dictionary<InputAction, InputControlType>
@@ -85,12 +87,13 @@ namespace Battlehub.VoxelCombat
 
         public int DeviceCount
         {
-            get { return m_devices.Count; }
+            get { return m_devices != null ? m_devices.Count : 0; }
         }
 
         private void Start()
         {
             m_gState = Dependencies.State;
+            m_progress = Dependencies.Progress;
 
             InputManager.OnDeviceAttached += OnDeviceAttached;
             InputManager.OnDeviceDetached += OnDeviceDetached;
@@ -226,8 +229,37 @@ namespace Battlehub.VoxelCombat
                 return false;
             }
 
-
             return m_devices[index].Name == InControlKeyboardProfile.ProfileName;
+        }
+
+        public bool IsSuspended(int index)
+        {
+            if (m_devices == null || m_devices.Count == 0)
+            {
+                return true;
+            }
+
+            if(index < 0)
+            {
+                bool allSuspended = true;
+                for(int i = 0; i < m_devices.Count; ++i)
+                {
+                    InputDevice device = m_devices[i];
+                    if(device != null && !device.IsSuspended)
+                    {
+                        allSuspended = false;
+                        break;
+                    }
+                }
+                return allSuspended;
+            }
+
+            if(index >= m_devices.Count)
+            {
+                return true;
+            }
+
+            return m_devices[index].IsSuspended;
         }
 
         public void Resume(int index)
@@ -264,8 +296,7 @@ namespace Battlehub.VoxelCombat
                 {
                     Suspend(i);
                 }
-            }
-            
+            } 
         }
 
         public void ResumeAll()
@@ -329,6 +360,11 @@ namespace Battlehub.VoxelCombat
                 {
                     return false;
                 }
+            }
+
+            if(IsSuspended(player))
+            {
+                return false;
             }
 
             if(IsKeyboardAndMouse(player))
@@ -554,7 +590,11 @@ namespace Battlehub.VoxelCombat
                         {
                             if(m_lastDisabledDevices == null || !m_lastDisabledDevices.Contains(device))
                             {
-                                device.IsSuspended = false;
+                                if(!m_progress.IsVisible)
+                                {
+                                    device.IsSuspended = false;
+                                }
+                               
                                 m_devices.Add(device);
                                 if (DeviceEnabled != null)
                                 {

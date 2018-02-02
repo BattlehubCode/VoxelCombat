@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
-    public class MultiplayerMenu : MonoBehaviour
+    public class MultiplayerMenu : BaseMenuBehaviour
     {
         [SerializeField]
         private Button m_joinButton;
@@ -24,8 +24,11 @@ namespace Battlehub.VoxelCombat
 
         private INavigation m_navigation;
 
-        private void Awake()
+
+        protected override void Awake()
         {
+            base.Awake();
+
             m_navigation = Dependencies.Navigation;
 
             m_joinButton.onClick.AddListener(OnJoinClick);
@@ -33,8 +36,10 @@ namespace Battlehub.VoxelCombat
             m_goBackButton.onClick.AddListener(OnGoBack);
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
+
             if (m_joinButton != null)
             {
                 m_joinButton.onClick.RemoveListener(OnJoinClick);
@@ -51,14 +56,18 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
+
             m_root.SetActive(true);
             IndependentSelectable.Select(m_joinButton.gameObject);
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
+
             if (m_root != null)
             {
                 m_root.SetActive(false);

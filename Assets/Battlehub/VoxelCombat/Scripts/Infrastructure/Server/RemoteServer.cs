@@ -3,10 +3,15 @@ using UnityEngine;
 
 namespace Battlehub.VoxelCombat
 {
+
     public abstract class RemoteServer : MonoBehaviour, IServer
     {
-        public event ServerEventHandler<bool> ConnectionStateChanged;
+        public event ServerEventHandler ConnectionStateChanging;
+        public event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
 
+        public bool IsConnectionStateChanging { get; private set; }
+
+        private bool m_wasConnected;
         public bool IsConnected { get { return m_protocol != null && m_protocol.IsEnabled; } }
 
         private ILowProtocol m_protocol;
@@ -20,6 +25,9 @@ namespace Battlehub.VoxelCombat
         protected virtual void Awake()
         {  
             m_settings = Dependencies.Settings;
+
+            m_wasConnected = false;
+
             m_protocol = new LowProtocol<Socket>(ServerUrl, Time.time);
             m_protocol.Enabled += OnEnabled;
             m_protocol.Disabled += OnDisabled;
@@ -29,13 +37,29 @@ namespace Battlehub.VoxelCombat
 
         public void Connect()
         {
+            m_wasConnected = IsConnected;
+
+            IsConnectionStateChanging = true;
+
+            if (ConnectionStateChanging != null)
+            {
+                ConnectionStateChanging(new Error(StatusCode.OK));
+            }
             m_protocol.Enable();
         }
 
         public void Disconnect()
         {
+            m_wasConnected = IsConnected;
+
             if (m_protocol != null)
             {
+                IsConnectionStateChanging = true;
+
+                if (ConnectionStateChanging != null)
+                {
+                    ConnectionStateChanging(new Error(StatusCode.OK));
+                }
                 m_protocol.Disable();
             }
         }
@@ -72,27 +96,39 @@ namespace Battlehub.VoxelCombat
         {
             RegisterClient(m_settings.ClientId, error =>
             {
+                IsConnectionStateChanging = false;
+
                 if (ConnectionStateChanged != null)
                 {
-                    ConnectionStateChanged(error, true);
+                    ConnectionStateChanged(error, new ValueChangedArgs<bool>(m_wasConnected, true));
                 }
+
+                m_wasConnected = true;
             });
         }
 
         protected virtual void OnDisabled(ILowProtocol sender)
         {
+            IsConnectionStateChanging = false;
+
             if (ConnectionStateChanged != null)
             {
-                ConnectionStateChanged(new Error(StatusCode.OK), false);
+                ConnectionStateChanged(new Error(StatusCode.OK), new ValueChangedArgs<bool>(m_wasConnected, false));
             }
+
+            m_wasConnected = false;
         }
 
         protected virtual void OnSocketError(ILowProtocol sender, SocketErrorArgs args)
         {
+            IsConnectionStateChanging = false;
+
             if (ConnectionStateChanged != null)
             {
-                ConnectionStateChanged(new Error(StatusCode.ConnectionError) { Message = args.Message }, false);
+                ConnectionStateChanged(new Error(StatusCode.ConnectionError) { Message = args.Message }, new ValueChangedArgs<bool>(m_wasConnected, false));
             }
+
+            m_wasConnected = false;
         }
 
         protected virtual void OnMessage(ILowProtocol sender, byte[] args)

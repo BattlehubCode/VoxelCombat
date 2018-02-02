@@ -53,8 +53,10 @@ namespace Battlehub.VoxelCombat
                     {
                         m_inputManager.Resume(m_index);
                     }
-                    
-                    m_target.SetActive(value);
+                    if (m_target != null)
+                    {
+                        m_target.SetActive(value);
+                    }
                     m_counter--;
                 }
                 else if(m_counter == 0 && value)
@@ -68,7 +70,11 @@ namespace Battlehub.VoxelCombat
                         m_inputManager.Suspend(m_index);
                     }
 
-                    m_target.SetActive(value);
+                    if(m_target != null)
+                    {
+                        m_target.SetActive(value);
+                    }
+                
                     m_counter++;
                 }
                 else
@@ -101,17 +107,13 @@ namespace Battlehub.VoxelCombat
             m_counter = 0;
         }
 
-        private void Start()
-        {    
-            if(m_root == null)
+        private void OnEnable()
+        {
+            if (m_root == null)
             {
                 m_root = this;
             }
-        }
-
-        private void OnEnable()
-        {
-            if(m_root != null && m_root != this)
+            if (m_root != null && m_root != this)
             {
                 m_root.m_children.Add(this);
                 for (int i = 0; i < m_root.m_children.Count; ++i)

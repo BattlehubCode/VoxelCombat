@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
-    public class CreateRoomMenu : MonoBehaviour
+    public class CreateRoomMenu : BaseMenuBehaviour
     {
         [SerializeField]
         private GameObject m_root;
@@ -40,8 +40,9 @@ namespace Battlehub.VoxelCombat
         {
             get { return (GameMode)(1 << m_modeDropDown.value); }
         }
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             m_navigation = Dependencies.Navigation;
             m_gameServer = Dependencies.GameServer;
             m_gSettings = Dependencies.Settings;
@@ -67,8 +68,9 @@ namespace Battlehub.VoxelCombat
             
         }
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
             m_root.SetActive(true);
             m_goBackButton.interactable = m_navigation.CanGoBack;
 
@@ -104,21 +106,19 @@ namespace Battlehub.VoxelCombat
             
         }
 
-        private void DataBindMaps()
+     
+        protected override void OnDisable()
         {
-            m_mapsListBox.Items = m_maps.Where(m => (m.SupportedModes & SelectedGameMode) != 0).ToArray();
-        }
-
-        private void OnDisable()
-        {
+            base.OnDisable();
             if (m_root != null)
             {
                 m_root.SetActive(false);
             }
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
             if(m_root != null)
             {
                 m_root.SetActive(false);
@@ -164,6 +164,10 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        private void DataBindMaps()
+        {
+            m_mapsListBox.Items = m_maps.Where(m => (m.SupportedModes & SelectedGameMode) != 0).ToArray();
+        }
 
         private void OnSelectionChanged(object sender, SelectionChangedArgs e)
         {

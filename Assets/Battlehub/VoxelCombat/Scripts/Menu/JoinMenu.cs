@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
-    public class JoinMenu : MonoBehaviour
+    public class JoinMenu : BaseMenuBehaviour
     {
         [SerializeField]
         private GameObject m_root;
@@ -34,8 +34,10 @@ namespace Battlehub.VoxelCombat
         private INavigation m_navigation;
         private Room[] m_rooms;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
+
             m_navigation = Dependencies.Navigation;
             m_gameServer = Dependencies.GameServer;
             m_gSettings = Dependencies.Settings;
@@ -57,8 +59,10 @@ namespace Battlehub.VoxelCombat
             m_roomsListBox.Cancel += OnMapsListBoxCancel;
         }
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
+       
             m_root.SetActive(true);
             m_goBackButton.interactable = m_navigation.CanGoBack;
 
@@ -99,16 +103,18 @@ namespace Battlehub.VoxelCombat
             m_roomsListBox.Items = m_rooms;
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
             if (m_root != null)
             {
                 m_root.SetActive(false);
             }
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
             if (m_root != null)
             {
                 m_root.SetActive(false);

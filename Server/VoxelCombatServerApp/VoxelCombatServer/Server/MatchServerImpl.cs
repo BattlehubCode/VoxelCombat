@@ -109,7 +109,7 @@ namespace Battlehub.VoxelCombat
     {
         private void GetRidOfWarnings()
         {
-            ConnectionStateChanged(new Error(), true);
+            ConnectionStateChanged(new Error(), new ValueChangedArgs<bool>(false, false));
         }
 
         private readonly ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], Room> m_readyToPlayAllArgs = new ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], Room>();
@@ -121,7 +121,8 @@ namespace Battlehub.VoxelCombat
         public event ServerEventHandler<ServerEventArgs<CommandsBundle>> Tick;
         public event ServerEventHandler<ServerEventArgs<RTTInfo>> Ping;
         public event ServerEventHandler<ServerEventArgs<bool>> Paused;
-        public event ServerEventHandler<bool> ConnectionStateChanged;
+        public event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
+        public event ServerEventHandler ConnectionStateChanging;
 
         private IMatchEngine m_engine;
         private IReplaySystem m_replay;
@@ -148,6 +149,11 @@ namespace Battlehub.VoxelCombat
 
         private bool enabled;
         private ITimeService m_time;
+
+        public bool IsConnectionStateChanging
+        {
+            get { throw new NotSupportedException(); }
+        }
 
         public bool IsConnected
         {
@@ -211,6 +217,8 @@ namespace Battlehub.VoxelCombat
                 m_replay.Load(replay);
             }
         }
+
+  
 
         public void Destroy()
         {

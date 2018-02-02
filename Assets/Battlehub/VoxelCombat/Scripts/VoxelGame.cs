@@ -399,7 +399,7 @@ namespace Battlehub.VoxelCombat
         {
             if(m_engine.HasError(error))
             {
-                return;
+                m_notification.ShowError(error);
             }
 
             Debug.Log("Engine Disconnected");

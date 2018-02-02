@@ -988,9 +988,34 @@ namespace Battlehub.VoxelCombat
         public float RTTMax; //
     }
 
+    public class ValueChangedArgs<T>
+    {
+        public T OldValue
+        {
+            get;
+            private set;
+        }
+
+        public T NewValue
+        {
+            get;
+            private set;
+        }
+
+        public ValueChangedArgs(T oldValue, T newValue)
+        {
+            OldValue = oldValue;
+            NewValue = newValue;
+        }
+    }
+
     public interface IServer
     {
-        event ServerEventHandler<bool> ConnectionStateChanged;
+        event ServerEventHandler ConnectionStateChanging;
+
+        event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
+
+        bool IsConnectionStateChanging { get; }
 
         bool IsConnected { get; }
 
@@ -1086,7 +1111,7 @@ namespace Battlehub.VoxelCombat
         public string Message;
     }
 
-    public interface IChatServer
+    public interface IChatServer : IServer
     {
         event ServerEventHandler<ChatMessage> MessageReceived;
 

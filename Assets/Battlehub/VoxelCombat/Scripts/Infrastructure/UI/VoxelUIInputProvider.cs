@@ -167,6 +167,11 @@ namespace Battlehub.VoxelCombat
 
         public override bool IsMouseButtonDown(int button)
         {
+            if(m_input.IsSuspended(m_localPlayerIndex))
+            {
+                return false;
+            }
+
             if(m_isKeyboardAndMouse || m_localPlayerIndex < 0)
             {
                 return Input.GetMouseButtonDown(button); 
@@ -178,6 +183,11 @@ namespace Battlehub.VoxelCombat
         {
             get
             {
+                if(m_input.IsSuspended(m_localPlayerIndex))
+                {
+                    return false;
+                }
+
                 if(m_isKeyboardAndMouse || m_localPlayerIndex < 0)
                 {
                     return Input.mousePresent;

@@ -17,7 +17,8 @@ namespace Battlehub.VoxelCombat
         public event ServerEventHandler RoomsListChanged;
         public event ServerEventHandler<Room> ReadyToLaunch;
         public event ServerEventHandler<string> Launched;
-        public event ServerEventHandler<bool> ConnectionStateChanged;
+        public event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
+        public event ServerEventHandler ConnectionStateChanging;
 
         private void GetRidOfWarnings()
         {
@@ -26,9 +27,11 @@ namespace Battlehub.VoxelCombat
             JoinedRoom(new Error(), null, null);
             LeftRoom(new Error(), null, null);
             RoomsListChanged(new Error());
+            RoomDestroyed(new Error());
             ReadyToLaunch(new Error(), null);
             Launched(new Error(), null);
-            ConnectionStateChanged(new Error(), true);
+            ConnectionStateChanged(new Error(), new ValueChangedArgs<bool>(false, false));
+            ConnectionStateChanging(new Error());
         }
 
         private IMatchServer m_matchServer;
@@ -44,6 +47,12 @@ namespace Battlehub.VoxelCombat
         {
             get { return m_gState.GetValue<Room>("LocalGameServer.m_room"); }
             set { m_gState.SetValue("LocalGameServer.m_room", value); }
+        }
+
+        public bool IsConnectionStateChanging
+        {
+            get;
+            private set;
         }
 
         public bool IsConnected
@@ -98,19 +107,21 @@ namespace Battlehub.VoxelCombat
 
         public void Connect()
         {
+            bool wasConnected = IsConnected;
             IsConnected = true;
             if(ConnectionStateChanged != null)
             {
-                ConnectionStateChanged(new Error(StatusCode.OK), true);
+                ConnectionStateChanged(new Error(StatusCode.OK), new ValueChangedArgs<bool>(wasConnected, IsConnected));
             }
         }
 
         public void Disconnect()
         {
+            bool wasConnected = IsConnected;
             IsConnected = false;
             if (ConnectionStateChanged != null)
             {
-                ConnectionStateChanged(new Error(StatusCode.OK), false);
+                ConnectionStateChanged(new Error(StatusCode.OK), new ValueChangedArgs<bool>(wasConnected, IsConnected));
             }
         }
 

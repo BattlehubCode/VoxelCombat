@@ -121,6 +121,11 @@ namespace Battlehub.VoxelCombat
 
         public void Send(byte[] data, Action<bool> completed)
         {
+            if(m_ws == null)
+            {
+                completed(false);
+                return;
+            }
             m_ws.SendAsync(data, completed);
         }
 
