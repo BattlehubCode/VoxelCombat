@@ -552,7 +552,6 @@ namespace Battlehub.VoxelCombat
             throw new NotSupportedException();
         }
 
-
         public void UploadMap(Guid clientId, MapInfo mapInfo, byte[] mapData, ServerEventHandler callback)
         {
             Error error = new Error(StatusCode.OK);

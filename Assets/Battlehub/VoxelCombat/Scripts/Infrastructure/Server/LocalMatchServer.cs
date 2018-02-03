@@ -124,15 +124,14 @@ namespace Battlehub.VoxelCombat
 
         private void Awake()
         {
-            if(Dependencies.RemoteGameServer.IsConnected)
+            if (Dependencies.RemoteGameServer.IsConnected)
             {
                 gameObject.SetActive(false);
                 return;
             }
-
             m_gState = Dependencies.State;
             m_job = Dependencies.Job;
-    
+         
             //Adding neutral player to room
             m_neutralPlayer = new Player();
             m_neutralPlayer.BotType = BotType.Neutral;
@@ -242,10 +241,20 @@ namespace Battlehub.VoxelCombat
 
         private void OnDestroy()
         {
-            m_gState.SetValue("LocalGameServer.m_replay", null);
+            if(m_gState != null)
+            {
+                m_gState.SetValue("LocalGameServer.m_replay", null);
+            }
 
-            m_players.Remove(m_neutralPlayer.Id);
-            m_room.Players.Remove(m_neutralPlayer.Id);
+            if(m_players != null)
+            {
+                m_players.Remove(m_neutralPlayer.Id);
+            }
+
+            if(m_room != null)
+            {
+                m_room.Players.Remove(m_neutralPlayer.Id);
+            }
 
             if (m_engine != null)
             {

@@ -11,6 +11,11 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private ConnectionButton m_connectionButton;
 
+        protected virtual IGameServer GameServer
+        {
+            get { return Dependencies.GameServer; }
+        }
+
         protected virtual void Awake()
         {
             if (m_connectionButton == null)

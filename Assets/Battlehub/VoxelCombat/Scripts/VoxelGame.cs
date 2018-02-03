@@ -397,15 +397,20 @@ namespace Battlehub.VoxelCombat
 
         private void OnEngineStopped(Error error)
         {
-            if(m_engine.HasError(error))
-            {
-                m_notification.ShowError(error);
-            }
-
-            Debug.Log("Engine Disconnected");
+            m_progress.IsVisible = false;
 
             if(m_playerControllers != null)
             {
+                if (m_engine.HasError(error))
+                {
+                    m_notification.ShowError("Disconnected from server: " + error);
+                }
+                else
+                {
+                    m_notification.ShowError("Disconnected from server");
+                }
+
+
                 for (int i = 0; i < m_playerControllers.Length; ++i)
                 {
                     IMatchPlayerControllerCli playerController = m_playerControllers[i];
@@ -415,6 +420,23 @@ namespace Battlehub.VoxelCombat
                     }
                 }
                 m_playerControllers = null;
+            }
+            else
+            {
+                if (m_engine.HasError(error))
+                {
+                    m_notification.ShowErrorWithAction("Disconnected from server: " + error, () =>
+                    {
+                        Dependencies.Navigation.Navigate("Menu", "LoginMenu4Players", null);
+                    });
+                }
+                else
+                {
+                    m_notification.ShowErrorWithAction("Disconnected from server", () =>
+                    {
+                        Dependencies.Navigation.Navigate("Menu", "LoginMenu4Players", null);
+                    });
+                }
             }
         }
 

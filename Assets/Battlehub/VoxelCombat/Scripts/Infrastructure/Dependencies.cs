@@ -22,14 +22,22 @@ namespace Battlehub.VoxelCombat
             m_matchEngine = FindObjectOfType<MatchEngineCli>();
             m_remoteChatServer = FindObjectOfType<RemoteChatServer>();
             m_localChatServer = null;
-            m_remoteGameServer = FindObjectOfType<RemoteGameServer>();
-            m_localGameServer = FindObjectOfType<LocalGameServer>();
             m_remoteMatchServer = FindObjectOfType<RemoteMatchServer>();
             m_localMatchServer = FindObjectOfType<LocalMatchServer>();
             m_navigation = FindObjectOfType<Navigation>();
             m_eventSystemManager = FindObjectOfType<EventSystemManager>();
             m_notification = FindObjectOfType<Notification>();
-            
+
+            if (m_remoteGameServer == null)
+            {
+                m_remoteGameServer = FindObjectOfType<RemoteGameServer>();
+            }
+
+            if(m_localGameServer == null)
+            {
+                m_localGameServer = FindObjectOfType<LocalGameServer>();
+            }
+
             UnitSelection[] selection = FindObjectsOfType<UnitSelection>();
             if(selection.Length > 0)
             {
@@ -60,8 +68,8 @@ namespace Battlehub.VoxelCombat
             m_matchEngine = null;
             m_remoteChatServer = null;
             m_localChatServer = null;
-            m_remoteGameServer = null;
-            m_localGameServer = null;
+            //m_remoteGameServer = null;
+            //m_localGameServer = null;
             m_remoteMatchServer = null;
             m_localMatchServer = null;
             m_navigation = null;

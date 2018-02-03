@@ -17,6 +17,8 @@ namespace Battlehub.VoxelCombat
 
         private IVoxelGame m_gameState;
 
+        private IGameServer m_gameServer;
+
         public string ResultText
         {
             get { return m_resultTxt.text; }
@@ -31,7 +33,8 @@ namespace Battlehub.VoxelCombat
                 base.IsOpened = value;
 
                 m_gameState = Dependencies.GameState;
-                Sequence[SaveReplayAction].interactable = !m_gameState.IsReplay;
+                m_gameServer = Dependencies.GameServer;
+                Sequence[SaveReplayAction].interactable = !m_gameState.IsReplay && m_gameServer.IsConnected;
                 Sequence[SaveReplayAction].gameObject.SetActive(!m_gameState.IsReplay);
 
                 m_saveReplayPanel.IsOpened = false;
@@ -40,7 +43,7 @@ namespace Battlehub.VoxelCombat
 
         private void Awake()
         {
-            
+            m_gameServer = Dependencies.GameServer;
             m_saveReplayPanel.Action += OnSaveReplayAction;
         }
 

@@ -15,9 +15,11 @@ namespace Battlehub.VoxelCombat
         private Button m_button;
 
         private IGameServer m_remoteGameServer;
-        // Use this for initialization
+        private INotification m_notification;
+
         private void Start()
         {
+            m_notification = Dependencies.Notification;
             m_remoteGameServer = Dependencies.RemoteGameServer;
             UpdateButtonState();
             m_remoteGameServer.ConnectionStateChanging += OnConnectionStateChanging;
@@ -35,6 +37,7 @@ namespace Battlehub.VoxelCombat
 
         private void OnConnectionStateChanging(Error error)
         {
+            m_notification.Close();
             UpdateButtonState();
         }
 

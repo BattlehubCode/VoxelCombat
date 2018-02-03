@@ -28,7 +28,6 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private InputProvider m_inputProvider;
 
-        private IGameServer m_gameServer;
         private IGlobalSettings m_gSettings;
         private IProgressIndicator m_progress;
         private INavigation m_navigation;
@@ -39,7 +38,6 @@ namespace Battlehub.VoxelCombat
             base.Awake();
 
             m_navigation = Dependencies.Navigation;
-            m_gameServer = Dependencies.GameServer;
             m_gSettings = Dependencies.Settings;
             m_progress = Dependencies.Progress;
 
@@ -68,21 +66,21 @@ namespace Battlehub.VoxelCombat
 
             m_roomsListBox.Items = null;
             m_progress.IsVisible = true;
-            m_gameServer.GetPlayers(m_gSettings.ClientId, (error, players) =>
+            GameServer.GetPlayers(m_gSettings.ClientId, (error, players) =>
             {
                 m_progress.IsVisible = false;
-                if (m_gameServer.HasError(error))
+                if (GameServer.HasError(error))
                 {
                     OutputError(error);
                     return;
                 }
 
                 m_progress.IsVisible = true;
-                m_gameServer.GetRooms(m_gSettings.ClientId, 0, 100, (error2, rooms) =>
+                GameServer.GetRooms(m_gSettings.ClientId, 0, 100, (error2, rooms) =>
                 {
 
                     m_progress.IsVisible = false;
-                    if (m_gameServer.HasError(error2))
+                    if (GameServer.HasError(error2))
                     {
                         OutputError(error2);
                         return;
@@ -186,10 +184,10 @@ namespace Battlehub.VoxelCombat
         {
             m_progress.IsVisible = true;
             Room room = (Room)m_roomsListBox.SelectedItem;
-            m_gameServer.JoinRoom(m_gSettings.ClientId, room.Id, (error, result) =>
+            GameServer.JoinRoom(m_gSettings.ClientId, room.Id, (error, result) =>
             {
                 m_progress.IsVisible = false;
-                if (m_gameServer.HasError(error))
+                if (GameServer.HasError(error))
                 {
                     OutputError(error);
                     return;

@@ -28,7 +28,6 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private InputProvider m_inputProvider;
 
-        private IGameServer m_gameServer;
         private IGlobalSettings m_gSettings;
         private IProgressIndicator m_progress;
         private INavigation m_navigation;
@@ -44,7 +43,6 @@ namespace Battlehub.VoxelCombat
         {
             base.Awake();
             m_navigation = Dependencies.Navigation;
-            m_gameServer = Dependencies.GameServer;
             m_gSettings = Dependencies.Settings;
             m_progress = Dependencies.Progress;
 
@@ -76,21 +74,21 @@ namespace Battlehub.VoxelCombat
 
             m_mapsListBox.Items = null;
             m_progress.IsVisible = true;
-            m_gameServer.GetPlayers(m_gSettings.ClientId, (error, players) =>
+            GameServer.GetPlayers(m_gSettings.ClientId, (error, players) =>
             {
                 m_progress.IsVisible = false;
-                if (m_gameServer.HasError(error))
+                if (GameServer.HasError(error))
                 {
                     OutputError(error);
                     return;
                 }
 
                 m_progress.IsVisible = true;
-                m_gameServer.GetMaps(m_gSettings.ClientId, (error2, mapsInfo) =>
+                GameServer.GetMaps(m_gSettings.ClientId, (error2, mapsInfo) =>
                 {
 
                     m_progress.IsVisible = false;
-                    if (m_gameServer.HasError(error2))
+                    if (GameServer.HasError(error2))
                     {
                         OutputError(error2);
                         return;
@@ -106,7 +104,6 @@ namespace Battlehub.VoxelCombat
             
         }
 
-     
         protected override void OnDisable()
         {
             base.OnDisable();
@@ -203,10 +200,10 @@ namespace Battlehub.VoxelCombat
         {
             m_progress.IsVisible = true;
             MapInfo mapInfo = (MapInfo)m_mapsListBox.SelectedItem;
-            m_gameServer.CreateRoom(m_gSettings.ClientId, mapInfo.Id, SelectedGameMode, (error, room) =>
+            GameServer.CreateRoom(m_gSettings.ClientId, mapInfo.Id, SelectedGameMode, (error, room) =>
             {
                 m_progress.IsVisible = false;
-                if(m_gameServer.HasError(error))
+                if(GameServer.HasError(error))
                 {
                     OutputError(error);
                     return;

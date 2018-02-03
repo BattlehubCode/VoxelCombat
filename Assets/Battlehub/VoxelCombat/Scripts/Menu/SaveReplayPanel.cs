@@ -101,6 +101,12 @@ namespace Battlehub.VoxelCombat
         {
             if(index == SaveIndex)
             {
+                if(!m_gameServer.IsConnected)
+                {
+                    m_notification.ShowError("Game Server disconnected. Unable to save replay.");
+                    return;
+                }
+
                 m_progress.IsVisible = true;
                 m_gameServer.SaveReplay(m_gSettings.ClientId, m_inputField.text, error =>
                 {

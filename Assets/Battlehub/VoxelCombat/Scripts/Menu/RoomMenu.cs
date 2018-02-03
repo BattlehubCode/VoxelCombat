@@ -49,8 +49,7 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private InputProvider m_inputProvider;
 
-        private IProgressIndicator m_progress;
-        private IGameServer m_gameServer;
+        private IProgressIndicator m_progress; 
         private IGlobalSettings m_gSettings;
         private INavigation m_navigation;
         
@@ -69,7 +68,7 @@ namespace Battlehub.VoxelCombat
                     return false;
                 }
 
-                return m_gameServer.IsLocal(m_gSettings.ClientId, m_room.CreatorPlayerId);
+                return GameServer.IsLocal(m_gSettings.ClientId, m_room.CreatorPlayerId);
             }
         }
 
@@ -80,9 +79,8 @@ namespace Battlehub.VoxelCombat
             m_gSettings = Dependencies.Settings;
             m_navigation = Dependencies.Navigation;
 
-            m_gameServer = Dependencies.GameServer;
-            m_gameServer.JoinedRoom += OnJoinedRoom;
-            m_gameServer.ReadyToLaunch += OnReadyToLaunch;
+            Dependencies.RemoteGameServer.JoinedRoom += OnJoinedRoom;
+            Dependencies.RemoteGameServer.ReadyToLaunch += OnReadyToLaunch;
 
             m_backButton.onClick.AddListener(OnBackClick);
             m_goButton.onClick.AddListener(OnGoClick);
@@ -115,10 +113,10 @@ namespace Battlehub.VoxelCombat
                 m_removeBotButton.onClick.RemoveListener(OnRemoveBotClick);
             }
 
-            if(m_gameServer != null)
+            if(Dependencies.RemoteGameServer != null)
             {
-                m_gameServer.JoinedRoom -= OnJoinedRoom;
-                m_gameServer.ReadyToLaunch -= OnReadyToLaunch;
+                Dependencies.RemoteGameServer.JoinedRoom -= OnJoinedRoom;
+                Dependencies.RemoteGameServer.ReadyToLaunch -= OnReadyToLaunch;
             }
         }
 
@@ -183,10 +181,10 @@ namespace Battlehub.VoxelCombat
         private void Launch()
         {
             m_progress.IsVisible = true;
-            m_gameServer.Launch(m_gSettings.ClientId, (error, serverUrl) =>
+            GameServer.Launch(m_gSettings.ClientId, (error, serverUrl) =>
             {
                 m_progress.IsVisible = false;
-                if (m_gameServer.HasError(error))
+                if (GameServer.HasError(error))
                 {
                     if(error.Code == StatusCode.NotReady)
                     {
@@ -249,10 +247,10 @@ namespace Battlehub.VoxelCombat
         private void GetRoom(Action done)
         {
             m_progress.IsVisible = true;
-            m_gameServer.GetRoom(m_gSettings.ClientId, (error, room) =>
+            GameServer.GetRoom(m_gSettings.ClientId, (error, room) =>
             {
                 m_progress.IsVisible = false;
-                if(m_gameServer.HasError(error))
+                if(GameServer.HasError(error))
                 {
                     OutputError(error);
                     return;
@@ -266,10 +264,10 @@ namespace Battlehub.VoxelCombat
         private void GetPlayers(Action done)
         {
             m_progress.IsVisible = true;
-            m_gameServer.GetPlayers(m_gSettings.ClientId, m_room.Id, (error, players) =>
+            GameServer.GetPlayers(m_gSettings.ClientId, m_room.Id, (error, players) =>
             {
                 m_progress.IsVisible = false;
-                if (m_gameServer.HasError(error))
+                if (GameServer.HasError(error))
                 {
                     OutputError(error);
                     return;
@@ -346,10 +344,10 @@ namespace Battlehub.VoxelCombat
             Debug.Assert(m_players.Length < m_room.MapInfo.MaxPlayers);
 
             m_progress.IsVisible = true;
-            m_gameServer.CreateBot(m_gSettings.ClientId, m_playerNames[m_players.Length], BotType.Hard, (error, botId, room) =>
+            GameServer.CreateBot(m_gSettings.ClientId, m_playerNames[m_players.Length], BotType.Hard, (error, botId, room) =>
             {
                 m_progress.IsVisible = false;
-                if(m_gameServer.HasError(error))
+                if(GameServer.HasError(error))
                 {
                     OutputError(error);
                     return;
@@ -371,10 +369,10 @@ namespace Battlehub.VoxelCombat
             }
             Debug.Assert(m_players.Any(p => p.BotType != BotType.None));
             m_progress.IsVisible = true;
-            m_gameServer.DestroyBot(m_gSettings.ClientId, m_players.Last(p => p.BotType != BotType.None).Id, (error, botId, room) =>
+            GameServer.DestroyBot(m_gSettings.ClientId, m_players.Last(p => p.BotType != BotType.None).Id, (error, botId, room) =>
             {
                 m_progress.IsVisible = false;
-                if (m_gameServer.HasError(error))
+                if (GameServer.HasError(error))
                 {
                     OutputError(error);
                     return;
@@ -388,12 +386,12 @@ namespace Battlehub.VoxelCombat
 
         private void OnBackClick()
         {
-            m_gameServer.CancelRequests();
+            GameServer.CancelRequests();
             m_progress.IsVisible = true;
-            m_gameServer.DestroyRoom(m_gSettings.ClientId, m_room.Id, (error, roomId) =>
+            GameServer.DestroyRoom(m_gSettings.ClientId, m_room.Id, (error, roomId) =>
             {
                 m_progress.IsVisible = false;
-                if (m_gameServer.HasError(error))
+                if (GameServer.HasError(error))
                 {
                     OutputError(error, () => m_navigation.GoBack());
                     return;
@@ -412,10 +410,10 @@ namespace Battlehub.VoxelCombat
             m_isReady = !m_isReady;
             UpdateButtonsState();
             m_progress.IsVisible = true;
-            m_gameServer.SetReadyToLaunch(m_gSettings.ClientId, m_isReady, (error, room) =>
+            GameServer.SetReadyToLaunch(m_gSettings.ClientId, m_isReady, (error, room) =>
             {
                 m_progress.IsVisible = false;
-                if(!m_gameServer.HasError(error) || error.Code == StatusCode.AlreadyLaunched)
+                if(!GameServer.HasError(error) || error.Code == StatusCode.AlreadyLaunched)
                 {
                     m_room = room;
                     GetPlayersAndDataBind();

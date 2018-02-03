@@ -24,7 +24,6 @@ namespace Battlehub.VoxelCombat
 
         private INavigation m_navigation;
 
-
         protected override void Awake()
         {
             base.Awake();

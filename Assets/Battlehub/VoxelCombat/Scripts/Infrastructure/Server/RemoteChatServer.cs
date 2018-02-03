@@ -5,6 +5,18 @@ namespace Battlehub.VoxelCombat
 {
     public class RemoteChatServer : MonoBehaviour, IChatServer
     {
+        private void GetRidOfWarnings()
+        {
+            ConnectionStateChanged(new Error(), null);
+            ConnectionStateChanging(new Error());
+            MessageReceived(new Error(), null);
+        }
+   
+
+        public event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
+        public event ServerEventHandler ConnectionStateChanging;
+        public event ServerEventHandler<ChatMessage> MessageReceived;
+
         public bool IsConnected
         {
             get
@@ -20,10 +32,6 @@ namespace Battlehub.VoxelCombat
                 throw new NotImplementedException();
             }
         }
-
-        public event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
-        public event ServerEventHandler ConnectionStateChanging;
-        public event ServerEventHandler<ChatMessage> MessageReceived;
 
         public void CancelRequests()
         {

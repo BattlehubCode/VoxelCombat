@@ -180,21 +180,27 @@ namespace Battlehub.VoxelCombat
                     m_helpPanel.IsOpened = true;
                     break;
                 case 3: //back to menu
-
-                    m_gameServer.LeaveRoom(m_gSettings.ClientId, error =>
+                    if(m_gameServer.IsConnected)
                     {
-                        if (m_gameServer.HasError(error))
+                        m_gameServer.LeaveRoom(m_gSettings.ClientId, error =>
                         {
-                            m_notification.ShowErrorWithAction(error, () =>
+                            if (m_gameServer.HasError(error))
+                            {
+                                m_notification.ShowErrorWithAction(error, () =>
+                                {
+                                    m_navigation.Navigate("Menu", "MainMenu", null);
+                                });
+                            }
+                            else
                             {
                                 m_navigation.Navigate("Menu", "MainMenu", null);
-                            });
-                        }
-                        else
-                        {
-                            m_navigation.Navigate("Menu", "MainMenu", null);
-                        }    
-                    });
+                            }
+                        });
+                    }
+                    else
+                    {
+                        m_navigation.Navigate("Menu", "LoginMenu4Players", null);
+                    }
                     break;
                 case 4: //quit
                     m_console.Write("quit");

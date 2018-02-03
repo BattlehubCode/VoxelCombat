@@ -34,7 +34,7 @@ namespace Battlehub.VoxelCombat
                 catch(Exception  e)
                 {
 #if UNITY_EDITOR
-                    UnityEngine.Debug.LogErrorFormat("model.Add({0}, true) failed", type.FullName);
+                    UnityEngine.Debug.LogErrorFormat("model.Add({0}, true) failed {1}", type.FullName, e);
 #endif
                     throw;
                 }

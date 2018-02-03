@@ -27,20 +27,25 @@ namespace Battlehub.VoxelCombat
 
         private readonly List<Notification> m_children = new List<Notification>();
 
+        private IVoxelInputManager m_inputManager;
+
         private IEnumerator m_coSelect;
 
         private void Awake()
         {
             m_closeButton.onClick.AddListener(OnCloseClick);
-        }
 
-        private void Start()
-        {
-            
+            m_inputManager = Dependencies.InputManager;
+            m_inputManager.DeviceEnabled += OnDeviceEnabled;
+            m_inputManager.DeviceDisabled += OnDeviceDisabled;
+
+            m_closeButton.transform.parent.gameObject.SetActive(m_inputManager.DeviceCount > 0);
         }
 
         private void OnEnable()
         {
+
+            m_closeButton.transform.parent.gameObject.SetActive(m_inputManager.DeviceCount > 0);
             if (m_notificationRoot == null)
             {
                 m_notificationRoot = this;
@@ -67,7 +72,13 @@ namespace Battlehub.VoxelCombat
 
         private void OnDestroy()
         {
-            if(m_closeButton != null)
+            if(m_inputManager != null)
+            {
+                m_inputManager.DeviceEnabled -= OnDeviceEnabled;
+                m_inputManager.DeviceDisabled -= OnDeviceDisabled;
+            }
+
+            if (m_closeButton != null)
             {
                 m_closeButton.onClick.RemoveListener(OnCloseClick);
             }
@@ -76,6 +87,16 @@ namespace Battlehub.VoxelCombat
             {
                 m_notificationRoot = null;
             }
+        }
+
+        private void OnDeviceDisabled(int arg)
+        {
+            m_closeButton.transform.parent.gameObject.SetActive(m_inputManager.DeviceCount > 0);
+        }
+
+        private void OnDeviceEnabled(int arg)
+        {
+            m_closeButton.transform.parent.gameObject.SetActive(m_inputManager.DeviceCount > 0);
         }
 
 
@@ -88,12 +109,14 @@ namespace Battlehub.VoxelCombat
         {
             yield return new WaitForEndOfFrame();
             IndependentSelectable.Select(m_closeButton.gameObject);
-
         }
 
         public void Close()
         {
-            m_root.SetActive(false);
+            if(m_root != null)
+            {
+                m_root.SetActive(false);
+            }
 
             for (int i = 0; i < m_deactivate.Length; ++i)
             {
@@ -182,6 +205,7 @@ namespace Battlehub.VoxelCombat
 
         public void ShowWithAction(string text, Action onClose = null)
         {
+            m_closeButton.transform.parent.gameObject.SetActive(m_inputManager.DeviceCount > 0);
             m_root.SetActive(true);
             m_text.text = text;
 

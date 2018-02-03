@@ -26,14 +26,13 @@ namespace Battlehub.VoxelCombat
         private InputProvider m_inputProvider;
 
         private INavigation m_navigation;
-        private IGameServer m_remoteGameServer;
+     
         private IProgressIndicator m_progress;
 
         protected override void Awake()
         {
             base.Awake();
             m_navigation = Dependencies.Navigation;
-            m_remoteGameServer = Dependencies.RemoteGameServer;
         }
 
         private void Start()

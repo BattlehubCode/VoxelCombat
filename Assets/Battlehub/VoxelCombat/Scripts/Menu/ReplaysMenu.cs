@@ -25,8 +25,7 @@ namespace Battlehub.VoxelCombat
 
         [SerializeField]
         private InputProvider m_inputProvider;
-
-        private IGameServer m_gameServer;
+ 
         private IGlobalSettings m_gSettings;
         private IProgressIndicator m_progress;
         private INavigation m_navigation;
@@ -39,7 +38,6 @@ namespace Battlehub.VoxelCombat
             base.Awake();
 
             m_navigation = Dependencies.Navigation;
-            m_gameServer = Dependencies.GameServer;
 
             m_gSettings = Dependencies.Settings;
             m_progress = Dependencies.Progress;
@@ -68,10 +66,10 @@ namespace Battlehub.VoxelCombat
 
             m_replaysListBox.Items = null;
             m_progress.IsVisible = true;
-            m_gameServer.GetReplays(m_gSettings.ClientId, (error, replays) =>
+            GameServer.GetReplays(m_gSettings.ClientId, (error, replays) =>
             {
                 m_progress.IsVisible = false;
-                if (m_gameServer.HasError(error))
+                if (GameServer.HasError(error))
                 {
                     OutputError(error);
                     return;
@@ -173,9 +171,9 @@ namespace Battlehub.VoxelCombat
             {
                 ReplayInfo replayInfo = (ReplayInfo)m_replaysListBox.SelectedItem;
 
-                m_gameServer.CreateRoom(m_gSettings.ClientId, replayInfo.MapId, GameMode.Replay, (error, room) =>
+                GameServer.CreateRoom(m_gSettings.ClientId, replayInfo.MapId, GameMode.Replay, (error, room) =>
                 {
-                    if (m_gameServer.HasError(error))
+                    if (GameServer.HasError(error))
                     {
                         m_progress.IsVisible = false;
                         OutputError(error);
@@ -190,9 +188,9 @@ namespace Battlehub.VoxelCombat
                         botTypes[i] = BotType.Replay;
                     }
 
-                    m_gameServer.CreateBots(m_gSettings.ClientId, replayInfo.PlayerNames, botTypes, (error2, guids2, room2) =>
+                    GameServer.CreateBots(m_gSettings.ClientId, replayInfo.PlayerNames, botTypes, (error2, guids2, room2) =>
                     {
-                        if (m_gameServer.HasError(error2))
+                        if (GameServer.HasError(error2))
                         {
                             m_progress.IsVisible = false;
                             OutputError(error2);
@@ -215,18 +213,18 @@ namespace Battlehub.VoxelCombat
         private void Launch()
         {
             ReplayInfo replayInfo = (ReplayInfo)m_replaysListBox.SelectedItem;
-            m_gameServer.SetReplay(m_gSettings.ClientId, replayInfo.Id, error4 =>
+            GameServer.SetReplay(m_gSettings.ClientId, replayInfo.Id, error4 =>
             {
                 m_progress.IsVisible = false;
-                if (m_gameServer.HasError(error4))
+                if (GameServer.HasError(error4))
                 {
                     OutputError(error4);
                     return;
                 }
 
-                m_gameServer.Launch(m_gSettings.ClientId, (error, serverUrl) =>
+                GameServer.Launch(m_gSettings.ClientId, (error, serverUrl) =>
                 {
-                    if (m_gameServer.HasError(error))
+                    if (GameServer.HasError(error))
                     {
                         m_progress.IsVisible = false;
                         OutputError(error);
@@ -253,9 +251,9 @@ namespace Battlehub.VoxelCombat
 
         private void DetroyRoomIfCreated(Action done, Action<Error> onError)
         {
-            m_gameServer.GetRoom(m_gSettings.ClientId, (error, room) =>
+            GameServer.GetRoom(m_gSettings.ClientId, (error, room) =>
             {
-                if(m_gameServer.HasError(error) && error.Code != StatusCode.NotFound)
+                if(GameServer.HasError(error) && error.Code != StatusCode.NotFound)
                 {
                     onError(error);
                     return;
@@ -265,9 +263,9 @@ namespace Battlehub.VoxelCombat
 
                 if (m_room != null)
                 {
-                    m_gameServer.DestroyRoom(m_gSettings.ClientId, m_room.Id, (error2, guid) =>
+                    GameServer.DestroyRoom(m_gSettings.ClientId, m_room.Id, (error2, guid) =>
                     {
-                        if (m_gameServer.HasError(error2))
+                        if (GameServer.HasError(error2))
                         {
                             onError(error2);
                             return;

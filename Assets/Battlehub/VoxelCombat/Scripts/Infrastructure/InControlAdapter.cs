@@ -87,7 +87,16 @@ namespace Battlehub.VoxelCombat
 
         public int DeviceCount
         {
-            get { return m_devices != null ? m_devices.Count : 0; }
+            get
+            {
+                if(m_devices == null)
+                {
+                    m_gState = Dependencies.State;
+                    m_devices = m_gState.GetValue<List<InputDevice>>(DevicesPersistentKey);
+                }
+                
+                return m_devices != null ? m_devices.Count : 0;
+            }
         }
 
         private void Start()

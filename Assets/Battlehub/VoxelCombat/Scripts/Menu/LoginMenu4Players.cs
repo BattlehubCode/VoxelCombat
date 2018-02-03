@@ -55,7 +55,6 @@ namespace Battlehub.VoxelCombat
             m_gSettings = Dependencies.Settings;
             m_progress = Dependencies.Progress;
 
-         
             m_slots = new[]{ m_p0Panel.transform, m_p1Panel.transform, m_p2Panel.transform, m_p3Panel.transform };
 
             m_connectButton.onClick.AddListener(OnConnectButtonClick);
@@ -98,10 +97,20 @@ namespace Battlehub.VoxelCombat
                 m_inputManager.DeviceEnabled += OnDeviceEnabled;
                 m_inputManager.DeviceDisabled += OnDeviceDisabled;
             }
+
+            m_connectButton.gameObject.SetActive(m_inputManager.DeviceCount > 0);
         }
 
         private void OnDisable()
         {
+            if(m_notification != null)
+            {
+                m_notification.Close();
+            }
+            if(m_connectButton != null)
+            {
+                m_connectButton.gameObject.SetActive(false);
+            }
             if (m_remoteGameServer != null)
             {
                 m_remoteGameServer.ConnectionStateChanging -= OnConnectionStateChanging;
@@ -136,7 +145,6 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-        
             if (m_connectButton != null)
             {
                 m_connectButton.onClick.RemoveListener(OnConnectButtonClick);
@@ -163,6 +171,11 @@ namespace Battlehub.VoxelCombat
         private void OnConnectionStateChanged(Error error, ValueChangedArgs<bool> args)
         {
             m_progress.IsVisible = false;
+
+            for(int i = 0; i < m_playerMenu.Length; ++i)
+            {
+                m_playerMenu[i].Player = null;
+            }
 
             if (args.NewValue)
             {
@@ -199,6 +212,11 @@ namespace Battlehub.VoxelCombat
             for (int i = 0; i < m_playerMenu.Length; ++i)
             {
                 m_playerMenu[i].LocalPlayerIndex = i;
+            }
+
+            for (int i = 0; i < m_playerMenu.Length; ++i)
+            {
+                m_playerMenu[i].Player = null;
             }
 
             IGameServer gameServer = Dependencies.GameServer;
@@ -246,6 +264,8 @@ namespace Battlehub.VoxelCombat
 
         private void OnDeviceEnabled(int index)
         {
+            m_connectButton.gameObject.SetActive(m_inputManager.DeviceCount > 0);
+
             HandleDevicesChange();
             m_playerMenu[index].LocalPlayerIndex = index;
             m_playerMenu[index].IsVirtualKeyboardEnabled = !m_inputManager.IsKeyboardAndMouse(index);
@@ -253,6 +273,8 @@ namespace Battlehub.VoxelCombat
 
         private void OnDeviceDisabled(int index)
         {
+            m_connectButton.gameObject.SetActive(m_inputManager.DeviceCount > 0);
+
             Player player = m_playerMenu[index].Player;
             m_playerMenu[index].gameObject.SetActive(false);
 

@@ -122,9 +122,13 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        private IGameServer GameServer
+        {
+            get { return Dependencies.GameServer; }
+        }
+
         private INotification m_notification;
         private IProgressIndicator m_progress;
-        private IGameServer m_gameServer;
         private IGlobalSettings m_gSettings;
         private IVoxelInputManager m_inputManager;
 
@@ -132,11 +136,12 @@ namespace Battlehub.VoxelCombat
 
         private IEnumerator m_coSubscribe;
 
+
+
         private void Awake()
         {
             m_notification = Dependencies.Notification;
             m_progress = Dependencies.Progress;
-            m_gameServer = Dependencies.GameServer;
             m_gSettings = Dependencies.Settings;
             m_inputManager = Dependencies.InputManager;
 
@@ -334,7 +339,7 @@ namespace Battlehub.VoxelCombat
 
             m_loggedInPanel.SetActive(false);
 
-            m_gameServer.Logoff(m_gSettings.ClientId, m_player.Id, (error, payerId) =>
+            GameServer.Logoff(m_gSettings.ClientId, m_player.Id, (error, payerId) =>
             {    
                 if(!isActiveAndEnabled)
                 {
@@ -342,7 +347,7 @@ namespace Battlehub.VoxelCombat
                 }
 
                 progress.IsVisible = false;
-                if (m_gameServer.HasError(error))
+                if (GameServer.HasError(error))
                 {
                     m_loggedInPanel.SetActive(true);
                     m_notification.GetChild(LocalPlayerIndex).ShowError(error, m_logoffButton.gameObject);
@@ -405,14 +410,14 @@ namespace Battlehub.VoxelCombat
             IProgressIndicator progress = m_progress.GetChild(LocalPlayerIndex);
             progress.IsVisible = true;
 
-            m_gameServer.Login(name, password, m_gSettings.ClientId, (error, playerId) =>
+            GameServer.Login(name, password, m_gSettings.ClientId, (error, playerId) =>
             {
                 if (!isActiveAndEnabled)
                 {
                     return;
                 }
 
-                if (m_gameServer.HasError(error))
+                if (GameServer.HasError(error))
                 {
                     progress.IsVisible = false;
                     m_notification.GetChild(LocalPlayerIndex).ShowError(error, m_loginButton.gameObject);
@@ -421,7 +426,7 @@ namespace Battlehub.VoxelCombat
                     return;
                 }
 
-                m_gameServer.GetPlayer(m_gSettings.ClientId, playerId, OnGetPlayerCompleted);
+                GameServer.GetPlayer(m_gSettings.ClientId, playerId, OnGetPlayerCompleted);
             });
         }
 
@@ -432,25 +437,25 @@ namespace Battlehub.VoxelCombat
             IProgressIndicator progress = m_progress.GetChild(LocalPlayerIndex);
             progress.IsVisible = true;
 
-            m_gameServer.SignUp(name, password, m_gSettings.ClientId, (error, playerId) =>
+            GameServer.SignUp(name, password, m_gSettings.ClientId, (error, playerId) =>
             {
                 if (!isActiveAndEnabled)
                 {
                     return;
                 }
 
-                if (m_gameServer.HasError(error))
+                if (GameServer.HasError(error))
                 {
                     if (error.Code == StatusCode.AlreadyExists)
                     {
-                        m_gameServer.Login(name, password, m_gSettings.ClientId, (error2, playerId2) =>
+                        GameServer.Login(name, password, m_gSettings.ClientId, (error2, playerId2) =>
                         {
                             if (!isActiveAndEnabled)
                             {
                                 return;
                             }
 
-                            if (m_gameServer.HasError(error2))
+                            if (GameServer.HasError(error2))
                             {
                                 progress.IsVisible = false;
                                 m_notification.GetChild(LocalPlayerIndex).ShowError(error2, m_signUpButton.gameObject);
@@ -459,7 +464,7 @@ namespace Battlehub.VoxelCombat
                                 return;
                             }
 
-                            m_gameServer.GetPlayer(m_gSettings.ClientId, playerId2, OnGetPlayerCompleted);
+                            GameServer.GetPlayer(m_gSettings.ClientId, playerId2, OnGetPlayerCompleted);
                         });
                     }
                     else
@@ -473,7 +478,7 @@ namespace Battlehub.VoxelCombat
                     return;
                 }
 
-                m_gameServer.GetPlayer(m_gSettings.ClientId, playerId, OnGetPlayerCompleted);
+                GameServer.GetPlayer(m_gSettings.ClientId, playerId, OnGetPlayerCompleted);
             });
         }
 
@@ -486,7 +491,7 @@ namespace Battlehub.VoxelCombat
             }
 
             m_progress.GetChild(LocalPlayerIndex).IsVisible = false;
-            if (m_gameServer.HasError(error))
+            if (GameServer.HasError(error))
             {
                 //#warning Show Error with try again button. This button will repeate last operation.
                 m_notification.GetChild(LocalPlayerIndex).ShowError(error, m_loginButton.gameObject); 
