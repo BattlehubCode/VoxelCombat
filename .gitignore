@@ -35,3 +35,5 @@ Assets/StreamingAssets/
 
 Server/VoxelCombatServerApp/.vs/VoxelCombatServerApp/v14/.suo
 .vs/VoxelCombat/v14/.suo
+Assets/InControl/Source/VersionInfo.cs
+Server/VoxelCombatServerApp/VoxelCombatServerApp/logs/log.txt
