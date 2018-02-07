@@ -455,8 +455,6 @@ namespace Battlehub.VoxelCombat
 
         void CompletePlayerRegistration();
 
-
-
         CommandsBundle Tick();
 
         void Destroy();

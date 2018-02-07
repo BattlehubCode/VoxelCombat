@@ -399,18 +399,8 @@ namespace Battlehub.VoxelCombat
         {
             m_progress.IsVisible = false;
 
-            if(m_playerControllers != null)
+            if (m_playerControllers != null)
             {
-                if (m_engine.HasError(error))
-                {
-                    m_notification.ShowError("Disconnected from server: " + error);
-                }
-                else
-                {
-                    m_notification.ShowError("Disconnected from server");
-                }
-
-
                 for (int i = 0; i < m_playerControllers.Length; ++i)
                 {
                     IMatchPlayerControllerCli playerController = m_playerControllers[i];
@@ -421,23 +411,39 @@ namespace Battlehub.VoxelCombat
                 }
                 m_playerControllers = null;
             }
+
+            if (m_engine.HasError(error))
+            {
+                ShowErrorAndTryToLeaveRoomAndNavigateToMenu(error.ToString());
+            }
             else
             {
-                if (m_engine.HasError(error))
+                ShowErrorAndTryToLeaveRoomAndNavigateToMenu();
+            }
+        }
+
+        private void ShowErrorAndTryToLeaveRoomAndNavigateToMenu(string errorMessage = "")
+        {
+            m_notification.ShowErrorWithAction("Disconnected from game server " + errorMessage, () =>
+            {
+                if(m_gameServer.IsConnected)
                 {
-                    m_notification.ShowErrorWithAction("Disconnected from server: " + error, () =>
+                    m_progress.IsVisible = true;
+                    m_gameServer.LeaveRoom(m_gSettings.ClientId, error =>
                     {
+                        m_progress.IsVisible = false;
+                        if(m_gameServer.HasError(error))
+                        {
+                            Debug.LogError("Unable to leave room " + error.ToString());
+                        }
                         Dependencies.Navigation.Navigate("Menu", "LoginMenu4Players", null);
                     });
                 }
                 else
                 {
-                    m_notification.ShowErrorWithAction("Disconnected from server", () =>
-                    {
-                        Dependencies.Navigation.Navigate("Menu", "LoginMenu4Players", null);
-                    });
+                    Dependencies.Navigation.Navigate("Menu", "LoginMenu4Players", null);
                 }
-            }
+            });
         }
 
         private void OnEnginePing(Error error, RTTInfo payload)

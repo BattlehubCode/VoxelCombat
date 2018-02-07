@@ -480,6 +480,11 @@ namespace Battlehub.VoxelCombat
                     return false;
                 }
 
+                if(Players.Count < 2)
+                {
+                    return false;
+                }
+
                 if(Players.Count != ReadyToLaunchPlayers.Count)
                 {
                     return false;

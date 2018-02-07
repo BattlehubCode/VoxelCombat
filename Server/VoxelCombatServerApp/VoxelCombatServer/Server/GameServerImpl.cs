@@ -275,7 +275,7 @@ namespace Battlehub.VoxelCombat
             Room room;
             if (m_roomsByClientId.TryGetValue(clientId, out room))
             {
-                if (room.CreatorClientId == clientId)
+                if (room.CreatorClientId == clientId && !room.IsLaunched)
                 {
                     DestroyRoom(clientId, room.Id, (e, g) =>
                     {
@@ -349,7 +349,7 @@ namespace Battlehub.VoxelCombat
             Room room;
             if (m_roomsByClientId.TryGetValue(clientId, out room))
             {
-                if (room.CreatorClientId == clientId && loggedInPlayers.Count == 1)
+                if (room.CreatorClientId == clientId && !room.IsLaunched)
                 {
                     DestroyRoom(clientId, room.Id, (e, g) =>
                     {
@@ -1042,9 +1042,42 @@ namespace Battlehub.VoxelCombat
             Room room;
             if (m_roomsByClientId.TryGetValue(clientId, out room))
             {
-                LeaveRoom(senderId, clientId, loggedInPlayers, room);
-                m_replaysByClientId.Remove(clientId);
-                callback(error);
+                if (LeftRoom != null)
+                {
+                    LeftRoom(new Error(StatusCode.OK), new ServerEventArgs<Guid[], Room>(loggedInPlayers.Select(p => p.Id).ToArray(), room)
+                    {
+                        Except = clientId,
+                        Targets = GetTargets(senderId, room)
+                    });
+                }
+
+                foreach (Player player in loggedInPlayers)
+                {
+                    room.Players.Remove(player.Id);
+                    room.ReadyToLaunchPlayers.Remove(player.Id);
+                }
+
+                if (room.CreatorClientId == clientId && !room.IsLaunched || room.Players.Count == 0 || room.Players.All(p => m_bots.ContainsKey(p)))
+                {
+                    DestroyRoom(clientId, room.Id, (e2, g2) =>
+                    {
+                        if (HasError(e2))
+                        {
+                            error.Code = StatusCode.Failed;
+                            error.Message = "Failed to destroy room. See inner error";
+                            error.InnerError = e2;
+                        }
+                        m_roomsByClientId.Remove(clientId);
+                        m_replaysByClientId.Remove(clientId);
+                        callback(error);
+                    });
+                }
+                else
+                {
+                    m_roomsByClientId.Remove(clientId);
+                    m_replaysByClientId.Remove(clientId);
+                    callback(error);
+                }
             }
             else
             {
@@ -1053,25 +1086,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void LeaveRoom(Guid senderId, Guid clientId, List<Player> loggedInPlayers, Room room)
-        {
-            if (LeftRoom != null)
-            {
-                LeftRoom(new Error(StatusCode.OK), new ServerEventArgs<Guid[], Room>(loggedInPlayers.Select(p => p.Id).ToArray(), room)
-                {
-                    Except = clientId,
-                    Targets = GetTargets(senderId, room)
-                });
-            }
-
-            foreach (Player player in loggedInPlayers)
-            {
-                room.Players.Remove(player.Id);
-                room.ReadyToLaunchPlayers.Remove(player.Id);
-            }
-
-            m_roomsByClientId.Remove(clientId);
-        }
 
         private void KickPlayers(Room room, ServerEventHandler callback)
         {
@@ -1355,6 +1369,7 @@ namespace Battlehub.VoxelCombat
                 }
 
                 MatchServerClient matchServerClient = new MatchServerClient(m_time, m_matchServerUrl, room.Id);
+                room = ProtobufSerializer.DeepClone(room);
                 GetPlayers(room.Players.ToArray(), (getPlayersError, players) =>
                 {
                     if (HasError(getPlayersError))

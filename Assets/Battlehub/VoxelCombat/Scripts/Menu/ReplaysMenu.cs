@@ -263,7 +263,7 @@ namespace Battlehub.VoxelCombat
 
                 if (m_room != null)
                 {
-                    GameServer.DestroyRoom(m_gSettings.ClientId, m_room.Id, (error2, guid) =>
+                    GameServer.LeaveRoom(m_gSettings.ClientId, error2 =>
                     {
                         if (GameServer.HasError(error2))
                         {

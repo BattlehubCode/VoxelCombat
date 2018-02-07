@@ -133,6 +133,20 @@ namespace Battlehub.VoxelCombat
         private bool m_initialized;
         private bool m_initializationStarted;
 
+        private class PlayerCmd
+        {
+            public Guid PlayerId;
+            public Cmd Cmd;
+
+            public PlayerCmd(Guid playerId, Cmd cmd)
+            {
+                PlayerId = playerId;
+                Cmd = cmd;
+            }
+        }
+
+        private readonly Queue<PlayerCmd> m_preInitCommands = new Queue<PlayerCmd>();
+
         private Player m_neutralPlayer;
         private Guid m_serverIdentity = new Guid(ConfigurationManager.AppSettings["ServerIdentity"]);
 
@@ -279,12 +293,22 @@ namespace Battlehub.VoxelCombat
             {
                 foreach (Guid playerId in disconnectedPlayers.Keys)
                 {
-#warning Fix Engine to handle LeaveRoom command without removing PlayerControllers. Just change colors or destroy units
+                    if (m_room != null)
+                    {
+                        m_room.Players.Remove(playerId);
+                        m_players.Remove(playerId);
+                    }
+
+                    Cmd cmd = new Cmd(CmdCode.LeaveRoom, -1);
+
+                    //#warning Fix Engine to handle LeaveRoom command without removing PlayerControllers. Just change colors or destroy units
                     if (m_initialized)
                     {
-                        Cmd cmd = new Cmd(CmdCode.LeaveRoom, -1);
-                        //m_replay.Record(playerId, cmd, m_tick);
-                        //m_engine.Submit(playerId, cmd);    
+                        m_engine.Submit(playerId, cmd);
+                    }
+                    else
+                    {
+                        m_preInitCommands.Enqueue(new PlayerCmd(playerId, cmd));
                     }
                 }
 
@@ -736,6 +760,12 @@ namespace Battlehub.VoxelCombat
             if (ReadyToPlayAll != null)
             {
                 ReadyToPlayAll(new Error(StatusCode.OK), m_readyToPlayAllArgs);
+            }
+
+            while(m_preInitCommands.Count > 0)
+            {
+                PlayerCmd playerCmd = m_preInitCommands.Dequeue();
+                m_engine.Submit(playerCmd.PlayerId, playerCmd.Cmd);
             }
 
             return true;

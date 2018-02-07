@@ -388,7 +388,7 @@ namespace Battlehub.VoxelCombat
         {
             GameServer.CancelRequests();
             m_progress.IsVisible = true;
-            GameServer.DestroyRoom(m_gSettings.ClientId, m_room.Id, (error, roomId) =>
+            GameServer.LeaveRoom(m_gSettings.ClientId, error =>
             {
                 m_progress.IsVisible = false;
                 if (GameServer.HasError(error))

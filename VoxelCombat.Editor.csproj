@@ -13,11 +13,13 @@
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Unity Full v3.5</TargetFrameworkProfile>
-    <CompilerResponseFile></CompilerResponseFile>
+    <CompilerResponseFile>
+    </CompilerResponseFile>
     <UnityProjectType>Editor:5</UnityProjectType>
     <UnityBuildTarget>StandaloneWindows64:19</UnityBuildTarget>
     <UnityVersion>2017.2.1f1</UnityVersion>
-    <RootNamespace></RootNamespace>
+    <RootNamespace>
+    </RootNamespace>
     <LangVersion>4</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -366,6 +368,7 @@
     <Compile Include="Assets\Battlehub\UIControls\VirtualizingTreeView\Scripts\Editor\VirtualizingScrollRectEditor.cs" />
     <Compile Include="Assets\Battlehub\UIControls\VirtualKeyboard\Scripts\Editor\VirtualKeyEditor.cs" />
     <Compile Include="Assets\Battlehub\UIControls\VirtualKeyboard\Scripts\Editor\VirtualToggleKeyEditor.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\Editor\ServerRunner.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\Editor\TypeModelCreatorMenu.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Test\Editor\EditModeTest.cs" />
     <Compile Include="Assets\Editor\BuildPostprocessor.cs" />
