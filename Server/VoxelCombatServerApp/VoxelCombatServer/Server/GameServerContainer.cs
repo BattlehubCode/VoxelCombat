@@ -4,7 +4,7 @@ using System.Web;
 
 namespace Battlehub.VoxelCombat
 {
-    public class GameServerContainer : ServerContainer
+    public class GameServerContainer : ServerContainer, IGameServerContainerDiagnostics
     {
         private static GameServerContainer m_instance;
         public static GameServerContainer Instance
@@ -338,6 +338,19 @@ namespace Battlehub.VoxelCombat
 
             ILoop loop = (ILoop)m_gameServer;
             loop.Update();
+        }
+
+        public IGameServerDiagnostics GameServer
+        {
+            get { return m_gameServer as IGameServerDiagnostics; }
+        }
+
+        public ContainerDiagInfo GetDiagInfo()
+        {
+            return new ContainerDiagInfo
+            {
+
+            };
         }
     }
 

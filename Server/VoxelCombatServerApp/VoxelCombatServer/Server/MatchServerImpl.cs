@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Linq;
-using System.Threading;
 
 namespace Battlehub.VoxelCombat
 {
-
     //This is for testing purposes only and does not needed on client -> should be moved to server
     public class PingTimer
     {
@@ -90,9 +88,8 @@ namespace Battlehub.VoxelCombat
                         m_initialized = true;
                         initializedCallback();
                     }
-
-                    pingInfo.m_isInitialized = true;
                 }
+                pingInfo.m_isInitialized = true;
             }
 
             RTTInfo rtt = new RTTInfo();
@@ -105,7 +102,7 @@ namespace Battlehub.VoxelCombat
     }
 
    
-    public class MatchServerImpl : IMatchServer, ILoop
+    public class MatchServerImpl : IMatchServer, ILoop, IMatchServerDiagnostics
     {
         private void GetRidOfWarnings()
         {
@@ -827,6 +824,14 @@ namespace Battlehub.VoxelCombat
         public void CancelRequests()
         {
             throw new NotSupportedException();
+        }
+
+        public MatchServerDiagInfo GetDiagInfo()
+        {
+            return new MatchServerDiagInfo
+            {
+
+            };
         }
     }
 }

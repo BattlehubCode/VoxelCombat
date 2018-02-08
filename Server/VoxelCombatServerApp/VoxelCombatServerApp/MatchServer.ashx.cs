@@ -11,6 +11,11 @@ namespace Battlehub.VoxelCombat
         private Guid m_roomId;
         private static ILog StaticLog = LogManager.GetLogger(typeof(MatchServer));
 
+        public static IEnumerable<MatchServerContainer> Containers
+        {
+            get { return m_containers.Values; }
+        }
+
         private static readonly Dictionary<Guid, MatchServerContainer> m_containers = new Dictionary<Guid, MatchServerContainer>();
         private static readonly Dictionary<Guid, DateTime> m_lastCheckedTime = new Dictionary<Guid, DateTime>();
         private static long m_isGCThreadRunning = 0;

@@ -71,6 +71,49 @@ namespace Battlehub.VoxelCombat
             m_response = null;
         }
 
+        public void IsAlive(ServerEventHandler callback)
+        {
+            if (m_protocol != null)
+            {
+                throw new InvalidOperationException();
+            }
+
+            LowProtocol<ClientSocket> protocol = new LowProtocol<ClientSocket>(m_url, m_time.Time);
+            m_protocol = protocol;
+            m_protocol.Enabled += OnEnabled;
+            m_protocol.SocketError += OnError;
+            m_protocol.Disabled += OnDisabled;
+
+            m_response = externalError =>
+            {
+                callback(externalError);
+            };
+
+            m_call = () =>
+            {
+                RemoteCall rpc = new RemoteCall(RemoteCall.Proc.IsAliveCheck, ServerContainer.ServerIdentity);
+
+                Call(rpc, (error, remoteResult) =>
+                {
+                    m_response = externalError =>
+                    {
+                        if (externalError != null)
+                        {
+                            callback(externalError);
+                        }
+                        else
+                        {
+                            callback(error);
+                        }
+                    };
+
+                    m_protocol.Disable();
+                });
+            };
+
+            m_protocol.Enable();
+        }
+
         public void CreateMatch(Guid creatorClientId, Room room, Guid[] clientIds, Player[] players, ReplayData replay, ServerEventHandler callback)
         {
             if(m_protocol != null)
@@ -206,7 +249,7 @@ namespace Battlehub.VoxelCombat
         } 
     }
 
-    public class MatchServerContainer : ServerContainer
+    public class MatchServerContainer : ServerContainer, IMatchServerContainerDiagnostics
     {
         private IMatchServer m_matchServer;
         private ILoop m_gameLoop;
@@ -295,6 +338,7 @@ namespace Battlehub.VoxelCombat
         }
 
         private RemoteEvent m_tickEvent = new RemoteEvent() { Event = RemoteEvent.Evt.Tick, Args = new[] { new RemoteArg<CommandsBundle>() } };
+
         private void OnTick(Error error,  ServerEventArgs<CommandsBundle> args)
         {
             m_tickEvent.Error = error;
@@ -445,9 +489,23 @@ namespace Battlehub.VoxelCombat
                         Return(sender, request, error);
                     });
                     break;
+                case RemoteCall.Proc.IsAliveCheck:
+                    Return(sender, request, new Error(StatusCode.OK));
+                    break;
             }
         }
 
-       
+        public IMatchServerDiagnostics MatchServer
+        {
+            get { return m_matchServer as IMatchServerDiagnostics; }
+        }
+
+        public ContainerDiagInfo GetDiagInfo()
+        {
+            return new ContainerDiagInfo
+            {
+
+            };
+        }
     }
 }

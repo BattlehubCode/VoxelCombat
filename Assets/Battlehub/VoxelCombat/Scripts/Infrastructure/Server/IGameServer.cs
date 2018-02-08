@@ -278,7 +278,8 @@ namespace Battlehub.VoxelCombat
             ReadyToPlay,
             Submit,
             Pong,
-            Pause
+            Pause,
+            IsAliveCheck,
         }
 
         [ProtoMember(1)]
@@ -661,6 +662,72 @@ namespace Battlehub.VoxelCombat
         {
             get;
         }
+    }
+
+    public struct ContainerDiagInfo
+    {
+        public int ConnectionsCount;
+        public int RegisteredClientsCount;
+        public bool IsMainThreadRunning;
+        public bool IsSecondaryThreadRunning;
+        public bool IsGCThreadRunning;
+    }
+
+    public struct GameServerDiagInfo
+    {
+        public int ActiveReplaysCount;
+        public int ClientsJoinedToRoomsCount;
+        public int CreatedRoomsCount;
+        public int ClinetsWithPlayersCount;
+        public int LoggedInPlayersCount;
+        public int LoggedInBotsCount;
+        public int RunningMatchesCount;
+    }
+
+    public struct MatchServerDiagInfo
+    {
+        public int IncomingMessagesFrequency;
+        public int OutgoingMessagesFrequency;
+        public bool IsInitializationStarted;
+        public bool IsInitialized;
+        public bool IsEnabled;
+        public bool IsMatchEngineCreated;
+        public bool IsReplay;
+        public int ServerRegisteredClientsCount;
+        public int ReadyToPlayClientsCount;
+        public int ClientsWithPlayersCount;
+        public int PlayersCount;
+        public int BotsCount;
+    }
+
+    public interface IGameServerContainerDiagnostics
+    {
+        IGameServerDiagnostics GameServer
+        {
+            get;
+        }
+
+        ContainerDiagInfo GetDiagInfo();
+    }
+
+    public interface IGameServerDiagnostics
+    {
+        GameServerDiagInfo GetDiagInfo();
+    }
+
+    public interface IMatchServerContainerDiagnostics
+    {
+        IMatchServerDiagnostics MatchServer
+        {
+            get;
+        }
+
+        ContainerDiagInfo GetDiagInfo();
+    }
+
+    public interface IMatchServerDiagnostics
+    {
+        MatchServerDiagInfo GetDiagInfo();
     }
 
     public interface ILoop

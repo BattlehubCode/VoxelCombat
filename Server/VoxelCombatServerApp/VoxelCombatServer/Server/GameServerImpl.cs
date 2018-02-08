@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Battlehub.VoxelCombat
 {
-    public class GameServerImpl : IGameServer,  ILoop
+    public class GameServerImpl : IGameServer,  ILoop, IGameServerDiagnostics
     {
         protected readonly ILog Log;
 
@@ -34,6 +34,9 @@ namespace Battlehub.VoxelCombat
         private readonly Dictionary<Guid, List<Player>> m_players = new Dictionary<Guid, List<Player>>();
         private readonly Dictionary<Guid, Player> m_bots = new Dictionary<Guid, Player>();
         private readonly ServerStats m_stats = new ServerStats();
+        private readonly List<Guid> m_runningMatches = new List<Guid>();
+        private readonly List<float> m_runningMatchesNextCheck = new List<float>();
+        private const float RunningMatchesCheckInterval = 30;
 
         public bool IsConnectionStateChanging
         {
@@ -763,6 +766,8 @@ namespace Battlehub.VoxelCombat
 
                         m_roomsByClientId.Add(clientId, room);
                         m_roomsById.Add(room.Id, room);
+
+                        m_stats.RoomsCount++;
                     }
                     callback(error, room);
                 }
@@ -837,6 +842,7 @@ namespace Battlehub.VoxelCombat
                             }
                             else
                             {
+                                m_stats.RoomsCount--;
                                 m_roomsById.Remove(roomId);
 
                                 if (RoomDestroyed != null)
@@ -960,15 +966,16 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            if(room.Mode == GameMode.Replay)
-            {
-                error.Code = StatusCode.NotAllowed;
-                callback(error, room);
-                return;
-            }
 
             if (m_roomsById.TryGetValue(roomId, out room))
             {
+                if (room.Mode == GameMode.Replay)
+                {
+                    error.Code = StatusCode.NotAllowed;
+                    callback(error, room);
+                    return;
+                }
+
                 int expectedPlayersCount = loggedInPlayers.Count + room.Players.Count;
                 if (room.MapInfo == null)
                 {
@@ -1410,6 +1417,9 @@ namespace Battlehub.VoxelCombat
                             if (!HasError(createMatchError))
                             {
                                 room.IsLaunched = true;
+                                m_stats.MatchesCount++;
+                                m_runningMatches.Add(room.Id);
+                                m_runningMatchesNextCheck.Add(m_time.Time + RunningMatchesCheckInterval);
                                 if (Launched != null)
                                 {
                                     Launched(error, new ServerEventArgs<string>(matchServerUrl)
@@ -1648,6 +1658,35 @@ namespace Battlehub.VoxelCombat
             {
                 m_matchServerClients[i].Update();
             }
+
+            for(int i = m_runningMatches.Count - 1; i >= 0; i--)
+            {
+                Guid runningMatchId = m_runningMatches[i];
+                float nextCheckTime = m_runningMatchesNextCheck[i];
+                if (nextCheckTime <= m_time.Time)
+                {
+                    m_runningMatchesNextCheck[i] = float.MaxValue;
+
+                    MatchServerClient matchServerClient = new MatchServerClient(m_time, m_matchServerUrl, runningMatchId);
+                    m_matchServerClients.Add(matchServerClient);
+                    matchServerClient.IsAlive(error =>
+                    {
+                        m_matchServerClients.Remove(matchServerClient);
+                        if (HasError(error))
+                        {
+                            m_stats.MatchesCount--;
+                            int index = m_runningMatches.IndexOf(runningMatchId);
+                            m_runningMatches.RemoveAt(index);
+                            m_runningMatchesNextCheck.RemoveAt(index);
+                        }
+                        else
+                        {
+                            m_runningMatchesNextCheck[i] = m_time.Time + RunningMatchesCheckInterval;
+                        }
+                    });
+                }
+            }
+           
         }
 
         public void Destroy()
@@ -1655,7 +1694,13 @@ namespace Battlehub.VoxelCombat
             
         }
 
+        public GameServerDiagInfo GetDiagInfo()
+        {
+            return new GameServerDiagInfo
+            {
 
+            };
+        }
     }
 }
 
