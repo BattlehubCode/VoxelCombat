@@ -11,9 +11,15 @@ namespace Battlehub.VoxelCombat
         private Guid m_roomId;
         private static ILog StaticLog = LogManager.GetLogger(typeof(MatchServer));
 
-        public static IEnumerable<MatchServerContainer> Containers
+        public static IEnumerable<KeyValuePair<Guid, MatchServerContainer>> Containers
         {
-            get { return m_containers.Values; }
+            get { return m_containers; }
+        }
+
+        private static bool m_isGCThreadRunningDiag;
+        public static bool IsGCThreadRunningDiag
+        {
+            get  { return m_isGCThreadRunningDiag;}
         }
 
         private static readonly Dictionary<Guid, MatchServerContainer> m_containers = new Dictionary<Guid, MatchServerContainer>();
@@ -49,6 +55,7 @@ namespace Battlehub.VoxelCombat
 
         private static void GCThread()
         {
+            m_isGCThreadRunningDiag = true;
             try
             {
                 while (true)
@@ -56,6 +63,7 @@ namespace Battlehub.VoxelCombat
                     if (Interlocked.CompareExchange(ref m_isGCThreadRunning, 0, 1) == 1)
                     {
                         StopAllContainers();
+                        m_isGCThreadRunningDiag = false;
                         return;
                     }
 
@@ -65,6 +73,7 @@ namespace Battlehub.VoxelCombat
                     if (Interlocked.CompareExchange(ref m_isGCThreadRunning, 0, 1) == 1)
                     {
                         StopAllContainers();
+                        m_isGCThreadRunningDiag = false;
                         return;
                     }
 
@@ -75,6 +84,7 @@ namespace Battlehub.VoxelCombat
             {
                 StaticLog.Error("MatchServer.GCThread " + e.Message, e);
 #if DEBUG
+                m_isGCThreadRunningDiag = false;
                 throw;
 #endif
             } 

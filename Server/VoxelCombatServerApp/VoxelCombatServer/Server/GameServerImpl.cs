@@ -12,6 +12,7 @@ namespace Battlehub.VoxelCombat
 
         private void GetRidOfWarnings()
         {
+            ConnectionStateChanging(new Error());
             ConnectionStateChanged(new Error(), new ValueChangedArgs<bool>(false, false));
         }
 
@@ -25,6 +26,7 @@ namespace Battlehub.VoxelCombat
         public event ServerEventHandler<ServerEventArgs<string>> Launched;
         public event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
         public event ServerEventHandler ConnectionStateChanging;
+        public event ServerEventHandler<ServerEventArgs<ChatMessage>> ChatMessage;
 
         private readonly Dictionary<Guid, Guid> m_replaysByClientId = new Dictionary<Guid, Guid>();
         private readonly Dictionary<Guid, Room> m_roomsByClientId = new Dictionary<Guid, Room>();
@@ -1635,7 +1637,80 @@ namespace Battlehub.VoxelCombat
                     callback(error);
                 });
             });
+        }
 
+        public void SendMessage(Guid clientId, ChatMessage message, ServerEventHandler<Guid> callback)
+        {
+            Error error = new Error(StatusCode.OK);
+            List<Player> loggedInPlayers;
+            if (!m_players.TryGetValue(clientId, out loggedInPlayers))
+            {
+                error.Code = StatusCode.NotRegistered;
+                callback(error, message.MessageId);
+                return;
+            }
+
+            if (loggedInPlayers.Count == 0)
+            {
+                error.Code = StatusCode.NotAuthenticated;
+                callback(error, message.MessageId);
+                return;
+            }
+
+            if (message.ReceiverIds == null || message.ReceiverIds.Length == 0)
+            {
+                Room room;
+                if (!m_roomsByClientId.TryGetValue(clientId, out room))
+                {
+                    error.Code = StatusCode.NotFound;
+                    callback(error, message.MessageId);
+                }
+                else
+                {
+                    if (ChatMessage != null)
+                    {
+                        ChatMessage(error, new ServerEventArgs<ChatMessage>(message)
+                        {
+                            Targets = GetTargets(clientId, room)
+                        });
+                    }
+                    callback(error, message.MessageId);
+                }
+            }
+            else
+            {
+                List<Guid> receivers = new List<Guid>();
+                for(int i = 0; i < message.ReceiverIds.Length; ++i)
+                {
+                    Guid receiver = message.ReceiverIds[i];
+                    Guid receiverClientId;
+                    if(m_playerToClientId.TryGetValue(receiver, out receiverClientId))
+                    {
+                        if(!receivers.Contains(receiverClientId))
+                        {
+                            receivers.Add(receiverClientId);
+                        }
+                    }
+
+                    if(!receivers.Contains(receiverClientId))
+                    {
+                        receivers.Add(clientId);
+                    }
+                }
+
+                if(receivers.Count > 0)
+                {
+                    if (ChatMessage != null)
+                    {
+                        ChatMessage(error, new ServerEventArgs<ChatMessage>(message)
+                        {
+                            Targets = receivers.ToArray(),
+                        });
+                    }
+                }
+              
+                callback(error, message.MessageId);
+            }
         }
 
         public void CancelRequests()
@@ -1672,16 +1747,16 @@ namespace Battlehub.VoxelCombat
                     matchServerClient.IsAlive(error =>
                     {
                         m_matchServerClients.Remove(matchServerClient);
+                        int index = m_runningMatches.IndexOf(runningMatchId);
                         if (HasError(error))
                         {
                             m_stats.MatchesCount--;
-                            int index = m_runningMatches.IndexOf(runningMatchId);
                             m_runningMatches.RemoveAt(index);
                             m_runningMatchesNextCheck.RemoveAt(index);
                         }
                         else
                         {
-                            m_runningMatchesNextCheck[i] = m_time.Time + RunningMatchesCheckInterval;
+                            m_runningMatchesNextCheck[index] = m_time.Time + RunningMatchesCheckInterval;
                         }
                     });
                 }
@@ -1698,7 +1773,13 @@ namespace Battlehub.VoxelCombat
         {
             return new GameServerDiagInfo
             {
-
+                ActiveReplaysCount = m_replaysByClientId.Count,
+                ClientsJoinedToRoomsCount = m_roomsByClientId.Count,
+                CreatedRoomsCount = m_roomsById.Count,
+                ClinetsWithPlayersCount = m_players.Count,
+                LoggedInPlayersCount = m_playerToClientId.Count,
+                LoggedInBotsCount = m_bots.Count,
+                RunningMatchesCount = m_stats.MatchesCount,
             };
         }
     }

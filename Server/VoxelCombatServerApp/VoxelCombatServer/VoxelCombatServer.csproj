@@ -127,8 +127,8 @@
     <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\LowProtocol.cs">
       <Link>MatchEngine\Server\LowProtocol.cs</Link>
     </Compile>
+    <Compile Include="Server\MatchServerClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Server\ChatServerImpl.cs" />
     <Compile Include="Server\ClientSocket.cs" />
     <Compile Include="Server\DB.cs" />
     <Compile Include="Server\GameServerContainer.cs" />

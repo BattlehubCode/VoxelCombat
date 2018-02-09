@@ -49,10 +49,8 @@ namespace Battlehub.VoxelCombat
             m_localPlayers.Clear();
         }
 
-        protected override void OnMessage(ILowProtocol sender, byte[] args)
+        protected override void OnRemoteEvent(RemoteEvent evt)
         {
-            RemoteEvent evt = ProtobufSerializer.Deserialize<RemoteEvent>(args);
-
             switch(evt.Event)
             {
                 case RemoteEvent.Evt.JoinedRoom:
@@ -106,6 +104,9 @@ namespace Battlehub.VoxelCombat
                     {
                         RoomsListChanged(evt.Error);
                     }
+                    break;
+                default:
+                    base.OnRemoteEvent(evt);
                     break;
             }
         }

@@ -8,6 +8,7 @@ namespace Battlehub.VoxelCombat
     {
         public event ServerEventHandler ConnectionStateChanging;
         public event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
+        public event ServerEventHandler<ChatMessage> ChatMessage;
 
         public bool IsConnectionStateChanging { get; private set; }
 
@@ -85,6 +86,8 @@ namespace Battlehub.VoxelCombat
                 m_protocol.SocketError -= OnSocketError;
                 m_protocol.Message -= OnMessage;
             }
+
+          
         }
 
         protected virtual void Update()
@@ -133,7 +136,21 @@ namespace Battlehub.VoxelCombat
 
         protected virtual void OnMessage(ILowProtocol sender, byte[] args)
         {
-           
+            RemoteEvent evt = ProtobufSerializer.Deserialize<RemoteEvent>(args);
+            OnRemoteEvent(evt);
+        }
+
+        protected virtual void OnRemoteEvent(RemoteEvent evt)
+        {
+            switch (evt.Event)
+            {
+                case RemoteEvent.Evt.ChatMessage:
+                    if (ChatMessage != null)
+                    {
+                        ChatMessage(evt.Error, evt.Get<ChatMessage>(0));
+                    }
+                    break;
+            }
         }
 
         public bool HasError(Error error)
@@ -153,6 +170,20 @@ namespace Battlehub.VoxelCombat
         public void UnregisterClient(Guid clientId, ServerEventHandler callback)
         {
             throw new NotImplementedException();
+        }
+
+        public void SendMessage(Guid clientId, ChatMessage message, ServerEventHandler<Guid> callback)
+        {
+            RemoteCall rpc = new RemoteCall(
+                  RemoteCall.Proc.SendChatMessage,
+                  clientId,
+                  RemoteArg.Create(message));
+
+            Call(rpc, (error, result) =>
+            {
+                Guid messageId = result.Get<Guid>(0);
+                callback(error, messageId);
+            });
         }
 
         public void CancelRequests()
@@ -203,6 +234,8 @@ namespace Battlehub.VoxelCombat
             },
             requestSent => { if (!requestSent) { callback(new Error(StatusCode.ConnectionClosed), new RemoteResult()); } });
         }
+
+     
     }
 
 }

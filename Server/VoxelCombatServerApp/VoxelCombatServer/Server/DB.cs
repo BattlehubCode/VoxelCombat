@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Web.Security;
 
 namespace Battlehub.VoxelCombat
 {
@@ -8,6 +9,24 @@ namespace Battlehub.VoxelCombat
         void CreatePlayer(Guid guid, string name, string password, Action<Error, Player> callback);
         void GetPlayer(string name, string password, Action<Error, Player> callback);
         void GetPlayers(Guid[] guids, Action<Error, Dictionary<Guid, Player>> callback);
+    }
+
+    public class DB : IDB
+    {
+        public void CreatePlayer(Guid guid, string name, string password, Action<Error, Player> callback)
+        {
+            Membership.Pa
+        }
+
+        public void GetPlayer(string name, string password, Action<Error, Player> callback)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void GetPlayers(Guid[] guids, Action<Error, Dictionary<Guid, Player>> callback)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class InMemoryDB : IDB

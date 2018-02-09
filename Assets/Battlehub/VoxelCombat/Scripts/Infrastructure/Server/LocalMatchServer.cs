@@ -85,6 +85,7 @@ namespace Battlehub.VoxelCombat
         public event ServerEventHandler<bool> Paused;
         public event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
         public event ServerEventHandler ConnectionStateChanging;
+        public event ServerEventHandler<ChatMessage> ChatMessage;
 
         public bool IsConnectionStateChanging
         {
@@ -704,6 +705,33 @@ namespace Battlehub.VoxelCombat
         public void CancelRequests()
         {
             m_job.CancelAll();
+        }
+
+        public void SendMessage(Guid clientId, ChatMessage message, ServerEventHandler<Guid> callback)
+        {
+            Error error = new Error();
+            if (Lag == 0)
+            {
+                if (ChatMessage != null)
+                {
+                    ChatMessage(error, message);
+                }
+
+                callback(error, message.MessageId);
+            }
+            else
+            {
+                m_job.Submit(() => { Thread.Sleep(Lag); return null; },
+                    result =>
+                    {
+                        if (ChatMessage != null)
+                        {
+                            ChatMessage(error, message);
+                        }
+
+                        callback(error, message.MessageId);
+                    });
+            }
         }
     }
 

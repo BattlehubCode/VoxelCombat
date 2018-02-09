@@ -20,8 +20,6 @@ namespace Battlehub.VoxelCombat
             m_gameView = FindObjectOfType<GameView>();
             m_settings = FindObjectOfType<GlobalSettings>();
             m_matchEngine = FindObjectOfType<MatchEngineCli>();
-            m_remoteChatServer = FindObjectOfType<RemoteChatServer>();
-            m_localChatServer = null;
             m_remoteMatchServer = FindObjectOfType<RemoteMatchServer>();
             m_localMatchServer = FindObjectOfType<LocalMatchServer>();
             m_navigation = FindObjectOfType<Navigation>();
@@ -66,8 +64,6 @@ namespace Battlehub.VoxelCombat
             m_gameView = null;
             m_settings = null;
             m_matchEngine = null;
-            m_remoteChatServer = null;
-            m_localChatServer = null;
             //m_remoteGameServer = null;
             //m_localGameServer = null;
             m_remoteMatchServer = null;
@@ -121,33 +117,6 @@ namespace Battlehub.VoxelCombat
         public static IMatchEngineCli MatchEngine
         {
             get { return m_matchEngine; }
-        }
-
-        private static IChatServer m_remoteChatServer;
-        public static IChatServer RemoteChatServer
-        {
-            get { return m_remoteChatServer; }
-        }
-
-        private static IChatServer m_localChatServer;
-        public static IChatServer LocalChatServer
-        {
-            get { return m_localChatServer; }
-        }
-
-        public static IChatServer ChatServer
-        {
-            get
-            {
-                if(m_remoteChatServer.IsConnected)
-                {
-                    return m_remoteChatServer;
-                }
-                else
-                {
-                    return m_localChatServer;
-                }
-            }
         }
 
         private static IGameServer m_remoteGameServer;

@@ -389,7 +389,6 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\LocalGameServer.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\LocalMatchServer.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\LowProtocol.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\RemoteChatServer.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\RemoteGameServer.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\RemoteMatchServer.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\RemoteServer.cs" />

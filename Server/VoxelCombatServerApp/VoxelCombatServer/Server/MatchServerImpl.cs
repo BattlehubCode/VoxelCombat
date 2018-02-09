@@ -106,6 +106,7 @@ namespace Battlehub.VoxelCombat
     {
         private void GetRidOfWarnings()
         {
+            ConnectionStateChanging(new Error());
             ConnectionStateChanged(new Error(), new ValueChangedArgs<bool>(false, false));
         }
 
@@ -120,7 +121,7 @@ namespace Battlehub.VoxelCombat
         public event ServerEventHandler<ServerEventArgs<bool>> Paused;
         public event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
         public event ServerEventHandler ConnectionStateChanging;
-
+        public event ServerEventHandler<ServerEventArgs<ChatMessage>> ChatMessage;
         private IMatchEngine m_engine;
         private IReplaySystem m_replay;
 
@@ -152,6 +153,7 @@ namespace Battlehub.VoxelCombat
         private readonly HashSet<Guid> m_readyToPlayClients;
         private readonly Dictionary<Guid, Dictionary<Guid, Player>> m_clientIdToPlayers;
         private readonly Dictionary<Guid, Player> m_players;
+        private readonly Dictionary<Guid, Guid> m_playerToClientId;
         private Dictionary<Guid, VoxelAbilities[]> m_abilities;
         private IBotController[] m_bots;
         private Room m_room;
@@ -181,6 +183,7 @@ namespace Battlehub.VoxelCombat
             m_registeredClients = new HashSet<Guid>();
             m_readyToPlayClients = new HashSet<Guid>();
             m_clientIdToPlayers = new Dictionary<Guid, Dictionary<Guid, Player>>();
+            m_playerToClientId = new Dictionary<Guid, Guid>();
             for (int i = 0; i < clientIds.Length; ++i)
             {
                 Guid clientId = clientIds[i];
@@ -194,6 +197,7 @@ namespace Battlehub.VoxelCombat
                     }
                     Player player = players[i];
                     idToPlayer.Add(player.Id, player);
+                    m_playerToClientId.Add(player.Id, clientId);
                 }
             }
 
@@ -307,6 +311,8 @@ namespace Battlehub.VoxelCombat
                     {
                         m_preInitCommands.Enqueue(new PlayerCmd(playerId, cmd));
                     }
+
+                    m_playerToClientId.Remove(playerId);
                 }
 
                 m_readyToPlayClients.Remove(clientId);
@@ -428,7 +434,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-
         public void ReadyToPlay(Guid clientId, ServerEventHandler callback)
         {
             if (!m_clientIdToPlayers.ContainsKey(clientId))
@@ -461,7 +466,6 @@ namespace Battlehub.VoxelCombat
             TryToInitEngine(callback);
         }
 
-     
         public void Submit(Guid clientId, Guid playerId, Cmd cmd, ServerEventHandler callback)
         {
             Error error = new Error(StatusCode.OK);
@@ -526,7 +530,6 @@ namespace Battlehub.VoxelCombat
 
         private void OnPingPongCompleted(Error error, Guid clientId)
         {
-
             //Currently MatchEngine will be launched immediately and it does not care about different RTT for diffierent clients.
             //Some clients will look -50 ms to the past and some clients will look -500 ms or more to the past.
             //Is this a big deal? Don't know... Further investigation and playtest needed
@@ -535,9 +538,6 @@ namespace Battlehub.VoxelCombat
             {
                 throw new InvalidOperationException("m_engine == null");
             }
-
-       
-
 
             Player[] players;
             VoxelAbilitiesArray[] abilities;
@@ -639,6 +639,55 @@ namespace Battlehub.VoxelCombat
                 error.Message = "Match was not initialized";
             }
             callback(error, replay, m_room);
+        }
+
+        public void SendMessage(Guid clientId, ChatMessage message, ServerEventHandler<Guid> callback)
+        {
+            Error error = new Error(StatusCode.OK);
+            if (!m_clientIdToPlayers.ContainsKey(clientId))
+            {
+                error.Code = StatusCode.NotRegistered;
+                callback(error, message.MessageId);
+                return;
+            }
+
+            if (message.ReceiverIds == null || message.ReceiverIds.Length == 0)
+            {
+                if (ChatMessage != null)
+                {
+                    ChatMessage(error, new ServerEventArgs<ChatMessage>(message));
+                }
+                callback(error, message.MessageId);
+            }
+            else
+            {
+                List<Guid> receivers = new List<Guid>();
+                for (int i = 0; i < message.ReceiverIds.Length; ++i)
+                {
+                    Guid receiver = message.ReceiverIds[i];
+                    Guid receiverClientId;
+                    if (m_playerToClientId.TryGetValue(receiver, out receiverClientId))
+                    {
+                        if (!receivers.Contains(receiverClientId))
+                        {
+                            receivers.Add(receiverClientId);
+                        }
+                    }
+                }
+
+                if (receivers.Count > 0)
+                {
+                    if (ChatMessage != null)
+                    {
+                        ChatMessage(error, new ServerEventArgs<ChatMessage>(message)
+                        {
+                            Targets = receivers.ToArray(),
+                        });
+                    }
+                }
+
+                callback(error, message.MessageId);
+            }
         }
 
         private void TryToInitEngine(ServerEventHandler callback)
@@ -830,7 +879,16 @@ namespace Battlehub.VoxelCombat
         {
             return new MatchServerDiagInfo
             {
-
+                IsInitializationStarted = m_initializationStarted,
+                IsInitialized = m_initialized,
+                IsEnabled = enabled,
+                IsMatchEngineCreated = m_engine != null,
+                IsReplay = m_room != null && m_room.Mode == GameMode.Replay,
+                ServerRegisteredClientsCount = m_registeredClients.Count,
+                ReadyToPlayClientsCount = m_readyToPlayClients.Count,
+                ClientsWithPlayersCount = m_clientIdToPlayers.Count,
+                PlayersCount = m_players.Count,
+                BotsCount = m_bots.Length,
             };
         }
     }

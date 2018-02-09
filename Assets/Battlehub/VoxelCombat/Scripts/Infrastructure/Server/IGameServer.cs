@@ -198,6 +198,7 @@ namespace Battlehub.VoxelCombat
     [ProtoInclude(29, typeof(RemoteArg<Cmd>))]
     [ProtoInclude(30, typeof(RemoteArg<ReplayData>))]
     [ProtoInclude(31, typeof(RemoteArg<CommandsBundle>))]
+    [ProtoInclude(32, typeof(RemoteArg<ChatMessage>))]
     public class RemoteArg
     {
         public virtual object Value
@@ -280,6 +281,8 @@ namespace Battlehub.VoxelCombat
             Pong,
             Pause,
             IsAliveCheck,
+
+            SendChatMessage,
         }
 
         [ProtoMember(1)]
@@ -342,7 +345,9 @@ namespace Battlehub.VoxelCombat
             Tick,
             ReadyToPlayAll,
             Pause,
-            Ping
+            Ping,
+            
+            ChatMessage
         }
 
         [ProtoMember(1)]
@@ -670,7 +675,8 @@ namespace Battlehub.VoxelCombat
         public int RegisteredClientsCount;
         public bool IsMainThreadRunning;
         public bool IsSecondaryThreadRunning;
-        public bool IsGCThreadRunning;
+        public float IncomingMessagesFrequency;
+        public float OutgoingMessagesFrequency;
     }
 
     public struct GameServerDiagInfo
@@ -686,8 +692,6 @@ namespace Battlehub.VoxelCombat
 
     public struct MatchServerDiagInfo
     {
-        public int IncomingMessagesFrequency;
-        public int OutgoingMessagesFrequency;
         public bool IsInitializationStarted;
         public bool IsInitialized;
         public bool IsEnabled;
@@ -702,12 +706,8 @@ namespace Battlehub.VoxelCombat
 
     public interface IGameServerContainerDiagnostics
     {
-        IGameServerDiagnostics GameServer
-        {
-            get;
-        }
-
-        ContainerDiagInfo GetDiagInfo();
+        ContainerDiagInfo GetContainerDiagInfo();
+        GameServerDiagInfo GetDiagInfo();
     }
 
     public interface IGameServerDiagnostics
@@ -717,12 +717,8 @@ namespace Battlehub.VoxelCombat
 
     public interface IMatchServerContainerDiagnostics
     {
-        IMatchServerDiagnostics MatchServer
-        {
-            get;
-        }
-
-        ContainerDiagInfo GetDiagInfo();
+        ContainerDiagInfo GetContainerDiagInfo();
+        MatchServerDiagInfo GetDiagInfo();
     }
 
     public interface IMatchServerDiagnostics
@@ -1081,11 +1077,33 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+    [ProtoContract]
+    public class ChatMessage
+    {
+        [ProtoMember(1)]
+        public Guid MessageId;
+
+        [ProtoMember(2)]
+        public Guid[] ReceiverIds; //Not equals to Guid.Empty -> send private message
+
+        [ProtoMember(3)]
+        public long DateTime; //Utc DateTime.Ticks 
+
+        [ProtoMember(4)]
+        public string Message;
+    }
+
     public interface IServer
     {
         event ServerEventHandler ConnectionStateChanging;
 
         event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
+
+#if SERVER
+        event ServerEventHandler<ServerEventArgs<ChatMessage>> ChatMessage;
+#else
+        event ServerEventHandler<ChatMessage> ChatMessage;
+#endif
 
         bool IsConnectionStateChanging { get; }
 
@@ -1098,6 +1116,8 @@ namespace Battlehub.VoxelCombat
         void UnregisterClient(Guid clientId, ServerEventHandler callback);
 
         void CancelRequests();
+
+        void SendMessage(Guid clientId, ChatMessage message, ServerEventHandler<Guid> callback);
 
 #if !SERVER
         void Connect();
@@ -1167,28 +1187,6 @@ namespace Battlehub.VoxelCombat
         void GetReplay(Guid clientId, ServerEventHandler<ReplayData, Room> callback);
     }
 
-
-    [ProtoContract]
-    public class ChatMessage
-    {
-        [ProtoMember(1)]
-        public Guid RoomId; //Equals to Guid.Empty -> send to everyone
-
-        [ProtoMember(2)]
-        public Guid ReceiverId; //Not equals to Guid.Empty -> send private message
-
-        //public long DateTime; //Utc DateTime.Ticks 
-
-        [ProtoMember(3)]
-        public string Message;
-    }
-
-    public interface IChatServer : IServer
-    {
-        event ServerEventHandler<ChatMessage> MessageReceived;
-
-        void Send(Guid clientId, ChatMessage message);
-    }
 }
 
 

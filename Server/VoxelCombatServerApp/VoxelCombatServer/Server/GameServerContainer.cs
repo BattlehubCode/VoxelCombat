@@ -44,7 +44,9 @@ namespace Battlehub.VoxelCombat
             m_gameServer.RoomDestroyed += OnRoomDestoryed;
             m_gameServer.ReadyToLaunch += OnReadyToLaunch;
             m_gameServer.Launched += OnLaunched;
+            m_gameServer.ChatMessage += OnChatMessage;
         }
+
 
         protected override void OnAfterStop()
         {
@@ -61,12 +63,18 @@ namespace Battlehub.VoxelCombat
             m_gameServer.RoomDestroyed -= OnRoomDestoryed;
             m_gameServer.ReadyToLaunch -= OnReadyToLaunch;
             m_gameServer.Launched -= OnLaunched;
+            m_gameServer.ChatMessage -= OnChatMessage;
             m_gameServer = null;
         }
 
         protected override void OnMessage(ILowProtocol sender, byte[] message)
         {
             Log.Error("Unknow message");
+        }
+
+        private void OnChatMessage(Error error, ServerEventArgs<ChatMessage> args)
+        {
+            Broadcast(RemoteEvent.Evt.ChatMessage, error, args, RemoteArg.Create(args.Arg));
         }
 
         private void OnLoggedIn(Error error, ServerEventArgs args)
@@ -222,28 +230,24 @@ namespace Battlehub.VoxelCombat
                 case RemoteCall.Proc.DestroyRoom:
                     m_gameServer.DestroyRoom(rpc.ClientId, rpc.Get<Guid>(0), (error, guid) =>
                     {
-                        //Broadcast to room players
                         Return(sender, request, error, RemoteArg.Create(guid));
                     });
                     break;
                 case RemoteCall.Proc.CreateBot:
                     m_gameServer.CreateBot(rpc.ClientId, rpc.Get<string>(0), rpc.Get<BotType>(1), (error, playerId, room) =>
                     {
-                        //Broadcast to room players
                         Return(sender, request, error, RemoteArg.Create(playerId), RemoteArg.Create(room));
                     });
                     break;
                 case RemoteCall.Proc.CreateBots:
                     m_gameServer.CreateBots(rpc.ClientId, rpc.Get<string[]>(0), rpc.Get<int[]>(1).ToEnum<BotType>(), (error, playerIds, room) =>
                     {
-                        //Broadcast to room players
                         Return(sender, request, error, RemoteArg.Create(playerIds), RemoteArg.Create(room));
                     });
                     break;
                 case RemoteCall.Proc.DestroyBot:
                     m_gameServer.DestroyBot(rpc.ClientId, rpc.Get<Guid>(0), (error, playerId, room) =>
                     {
-                        //Broadcast to room players
                         Return(sender, request, error, RemoteArg.Create(playerId), RemoteArg.Create(room));
                     });
                     break;
@@ -294,15 +298,19 @@ namespace Battlehub.VoxelCombat
                 case RemoteCall.Proc.SetReadyToLaunch:
                     m_gameServer.SetReadyToLaunch(rpc.ClientId, rpc.Get<bool>(0), (error, room) =>
                     {
-                        //Broadcast to room players
                         Return(sender, request, error, RemoteArg.Create(room));
                     });
                     break;
                 case RemoteCall.Proc.Launch:
                     m_gameServer.Launch(rpc.ClientId, (error, serverUrl) =>
                     {
-                        //Broadcast to Match Server url to room players
                         Return(sender, request, error, RemoteArg.Create(serverUrl));
+                    });
+                    break;
+                case RemoteCall.Proc.SendChatMessage:
+                    m_gameServer.SendMessage(rpc.ClientId, rpc.Get<ChatMessage>(0), (error, messageId) =>
+                    {
+                        Return(sender, request, error, RemoteArg.Create(messageId));
                     });
                     break;
 
@@ -340,17 +348,24 @@ namespace Battlehub.VoxelCombat
             loop.Update();
         }
 
-        public IGameServerDiagnostics GameServer
+        private GameServerDiagInfo m_gameServerDiagInfo;
+
+        protected override void UpdateDiagInfo()
         {
-            get { return m_gameServer as IGameServerDiagnostics; }
+            base.UpdateDiagInfo();
+
+            IGameServerDiagnostics diag = (IGameServerDiagnostics)m_gameServer;
+            m_gameServerDiagInfo = diag.GetDiagInfo();
         }
 
-        public ContainerDiagInfo GetDiagInfo()
+        public ContainerDiagInfo GetContainerDiagInfo()
         {
-            return new ContainerDiagInfo
-            {
+            return DiagInfo;
+        }
 
-            };
+        public GameServerDiagInfo GetDiagInfo()
+        {
+            return m_gameServerDiagInfo;
         }
     }
 

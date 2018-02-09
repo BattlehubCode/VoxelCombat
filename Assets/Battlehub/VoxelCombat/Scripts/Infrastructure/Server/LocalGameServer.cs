@@ -19,6 +19,7 @@ namespace Battlehub.VoxelCombat
         public event ServerEventHandler<string> Launched;
         public event ServerEventHandler<ValueChangedArgs<bool>> ConnectionStateChanged;
         public event ServerEventHandler ConnectionStateChanging;
+        public event ServerEventHandler<ChatMessage> ChatMessage;
 
         private void GetRidOfWarnings()
         {
@@ -1200,6 +1201,33 @@ namespace Battlehub.VoxelCombat
         public void CancelRequests()
         {
             Job.CancelAll();
+        }
+
+        public void SendMessage(Guid clientId, ChatMessage message, ServerEventHandler<Guid> callback)
+        {
+            Error error = new Error();
+            if (Lag == 0)
+            {
+                if(ChatMessage != null)
+                {
+                    ChatMessage(error, message);
+                }
+
+                callback(error, message.MessageId);
+            }
+            else
+            {
+                Job.Submit(() => { Thread.Sleep(Lag); return null; }, 
+                    result =>
+                    {
+                        if (ChatMessage != null)
+                        {
+                            ChatMessage(error, message);
+                        }
+
+                        callback(error, message.MessageId);
+                    });
+            }
         }
     }
 }

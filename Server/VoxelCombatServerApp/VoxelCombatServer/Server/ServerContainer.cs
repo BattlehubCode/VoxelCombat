@@ -50,6 +50,9 @@ namespace Battlehub.VoxelCombat
 
         protected readonly ILog Log;
 
+        private readonly FrequencyCaculator m_incomingMessagesFrequency = new FrequencyCaculator();
+        private readonly FrequencyCaculator m_outgoingMessagesFrequency = new FrequencyCaculator();
+
         private readonly Queue<QueuedMessage> m_incomingMessages = new Queue<QueuedMessage>();
         private readonly Queue<QueuedMessage> m_outgoingMessages = new Queue<QueuedMessage>();
 
@@ -58,6 +61,13 @@ namespace Battlehub.VoxelCombat
    
         private bool m_isMainThreadRunning;
         private bool m_isSecondaryThreadRunning;
+
+        private float m_nextDiagInfoUpdateTime;
+        private ContainerDiagInfo m_diagInfo;
+        protected ContainerDiagInfo DiagInfo
+        {
+            get { return m_diagInfo; }
+        }
 
         private Stopwatch m_stopwatch;
         public float Time
@@ -225,6 +235,7 @@ namespace Battlehub.VoxelCombat
                     Monitor.PulseAll(m_incomingMessages);
                 }
 
+                m_incomingMessagesFrequency.Increment();
                 m_incomingMessages.Enqueue(new QueuedMessage(sender, args));
             }
         }
@@ -238,6 +249,7 @@ namespace Battlehub.VoxelCombat
                     Monitor.PulseAll(m_incomingMessages);
                 }
 
+                m_incomingMessagesFrequency.Increment();
                 m_incomingMessages.Enqueue(new QueuedMessage(sender, data));
             }
         }
@@ -287,11 +299,22 @@ namespace Battlehub.VoxelCombat
                     }
                   
                     OnTick();
+
+                    m_incomingMessagesFrequency.Tick();
+                    m_outgoingMessagesFrequency.Tick();
+
+                    if(m_nextDiagInfoUpdateTime < Time)
+                    {
+                        m_nextDiagInfoUpdateTime = Time + 10;
+                        m_diagInfo = GetContainerDiagInfo();
+                        UpdateDiagInfo();
+                    }
                 }
                 catch (Exception e)
                 {
                     Log.Error(e.Message, e);
 #if DEBUG
+                    m_diagInfo = GetContainerDiagInfo();
                     throw;
 #endif
                 }
@@ -301,6 +324,11 @@ namespace Battlehub.VoxelCombat
         protected virtual void OnTick()
         {
         
+        }
+
+        protected virtual void UpdateDiagInfo()
+        {
+
         }
 
         protected abstract void OnRequest(ILowProtocol sender, LowRequestArgs request);
@@ -404,6 +432,8 @@ namespace Battlehub.VoxelCombat
             {
                 Monitor.PulseAll(m_outgoingMessages);
             }
+
+            m_outgoingMessagesFrequency.Increment();
             m_outgoingMessages.Enqueue(message);
         }
 
@@ -424,6 +454,8 @@ namespace Battlehub.VoxelCombat
                 {
                     Monitor.PulseAll(m_outgoingMessages);
                 }
+
+                m_outgoingMessagesFrequency.Increment();
                 m_outgoingMessages.Enqueue(message);
             }
         }
@@ -484,5 +516,66 @@ namespace Battlehub.VoxelCombat
                 }
             }
         }
+
+        private ContainerDiagInfo GetContainerDiagInfo()
+        {
+            ContainerDiagInfo diagInfo = new ContainerDiagInfo();
+            lock (m_protocolToClientId)
+            {
+                diagInfo.ConnectionsCount = m_protocolToClientId.Count;
+                diagInfo.RegisteredClientsCount = m_clientIdToProtocol.Count;
+            }
+
+            lock (m_incomingMessages)
+            {
+                diagInfo.IsMainThreadRunning = m_isMainThreadRunning;
+                diagInfo.IncomingMessagesFrequency = m_incomingMessagesFrequency.Value;
+            }
+
+            lock (m_outgoingMessages)
+            {
+                diagInfo.IsSecondaryThreadRunning = m_isSecondaryThreadRunning;
+                diagInfo.OutgoingMessagesFrequency = m_outgoingMessagesFrequency.Value;
+            }
+
+            return diagInfo;
+        }
+    }
+
+    public class FrequencyCaculator
+    {
+        private float m_frequency;
+        public float Value
+        {
+            get { return m_frequency; }
+        }
+
+        private float m_interval;
+        private Stopwatch m_stopwatch;
+        private int m_currentMeasurement;
+
+        public FrequencyCaculator(float interval = 10.0f)
+        {
+            m_interval = interval;
+            m_stopwatch = new Stopwatch();
+            m_stopwatch.Start();
+        }
+
+        public void Increment()
+        {
+            m_currentMeasurement++;
+        }
+
+        public void Tick()
+        {
+            if(m_stopwatch.Elapsed.TotalSeconds >= m_interval)
+            {
+                m_frequency = m_currentMeasurement * (1.0f / m_interval);
+                m_currentMeasurement = 0;
+                m_stopwatch.Restart();
+            }
+        }
+
+
     }
 }

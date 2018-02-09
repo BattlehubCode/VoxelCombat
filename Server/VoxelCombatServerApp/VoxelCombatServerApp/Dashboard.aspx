@@ -24,16 +24,16 @@
                         <h2>Game Server</h2>
                         <div style="float: left;margin-right:10px;">
                             <span>Connections:</span><br />
-                            <span>Registered Clients:</span><br />
-                            <span>Is Main Thread Running:</span><br />
-                            <span>Is Secondary Thread Running:</span><br />
-                            <span>Active Replays:</span><br />
-                            <span>Clients Joined To Rooms:</span><br />
-                            <span>Created Rooms:</span><br />
+                            <span>Registered clients:</span><br />
+                            <span>Is main thread running:</span><br />
+                            <span>Is secondary thread running:</span><br />
+                            <span>Active replays:</span><br />
+                            <span>Clients joined to rooms:</span><br />
+                            <span>Created rooms:</span><br />
                             <span>Clients with players:</span><br />
-                            <span>Logged-in Players:</span><br />
-                            <span>Logged-in Bots:</span><br />
-                            <span>Runnting Matches:</span><br />
+                            <span>Logged-in players:</span><br />
+                            <span>Logged-in bots:</span><br />
+                            <span>Runnting matches:</span><br />
                         </div>
                         <div>
                             <asp:Label runat="server" ID="GSConnections" Text="-"></asp:Label><br />
@@ -53,20 +53,22 @@
                         <asp:DropDownList runat="server" ID="DDLMatchNumber">
                         </asp:DropDownList>
                         <br />
-                        <div style="float: left;margin-right:10px;">
+                        <asp:Panel runat="server" ID="MatchServerPanel">
+                            <div style="float: left;margin-right:10px;">
                             <span>Connections:</span><br />
-                            <span>Container Registered Clients:</span><br />
-                            <span>Is Main Thread Running:</span><br />
-                            <span>Is Secondary Thread Running:</span><br />
-                            <span>Incoming Messages Frequency:</span><br />
-                            <span>Outgoing Messages Frequency:</span><br />
-                            <span>Is Initialization Started:</span><br />
-                            <span>Is Initialized:</span><br />
-                            <span>Is Enabled:</span><br />
-                            <span>Is Match Engine Created:</span><br />
-                            <span>Is Replay:</span><br />
-                            <span>Server Registered Clients:</span><br />
-                            <span>Ready To Play Clients:</span><br />
+                            <span>Container registered Clients:</span><br />
+                            <span>Is main thread running:</span><br />
+                            <span>Is secondary thread running:</span><br />
+                            <span>Is GC thread running:</span><br />
+                            <span>Incoming messages frequency:</span><br />
+                            <span>Outgoing messages frequency:</span><br />
+                            <span>Is initialization started:</span><br />
+                            <span>Is initialized:</span><br />
+                            <span>Is enabled:</span><br />
+                            <span>Is match engine created:</span><br />
+                            <span>Is replay:</span><br />
+                            <span>Server registered clients:</span><br />
+                            <span>Ready to play clients:</span><br />
                             <span>Clients with players:</span><br />
                             <span>Players:</span><br />
                             <span>Bots:</span><br />
@@ -77,6 +79,7 @@
                             <asp:Label runat="server" ID="MSContainerRegisteredClients" Text="-"></asp:Label><br />
                             <asp:Label runat="server" ID="MSIsMainThreadRunning" Text="-"></asp:Label><br />
                             <asp:Label runat="server" ID="MSIsSecondaryThreadRunning" Text="-"></asp:Label><br />
+                            <asp:Label runat="server" ID="MSIsGCThreadRunning" Text="-"></asp:Label><br />
                             <asp:Label runat="server" ID="MSIncomingMessagesFrequency" Text="-"></asp:Label><br />
                             <asp:Label runat="server" ID="MSOutgoingMessagesFrequency" Text="-"></asp:Label><br />
                             <asp:Label runat="server" ID="MSIsInitializationStarted" Text="-"></asp:Label><br />
@@ -91,6 +94,8 @@
                             <asp:Label runat="server" ID="MSBots" Text="-"></asp:Label><br />
                         </div>
                         <div style="clear:both"></div>
+                        </asp:Panel>
+                        
                     </div>
                 </div>
             </ContentTemplate>

@@ -135,6 +135,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="App_Data\VoxelCombatDB.mdf" />
+    <Content Include="App_Data\VoxelCombatDB_log.ldf">
+      <DependentUpon>VoxelCombatDB.mdf</DependentUpon>
+    </Content>
     <Content Include="Dashboard.aspx" />
     <Content Include="Global.asax" />
     <Content Include="scripts\ai.0.22.9-build00167.js" />
@@ -180,7 +184,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="App_Data\" />
     <Folder Include="Controllers\" />
     <Folder Include="Data\Maps\" />
     <Folder Include="Data\Replays\" />

@@ -25,10 +25,8 @@ namespace Battlehub.VoxelCombat
             base.Awake();
         }
 
-        protected override void OnMessage(ILowProtocol sender, byte[] args)
+        protected override void OnRemoteEvent(RemoteEvent evt)
         {
-            RemoteEvent evt = ProtobufSerializer.Deserialize<RemoteEvent>(args);
-
             switch (evt.Event)
             {
                 case RemoteEvent.Evt.Tick:
@@ -54,6 +52,9 @@ namespace Battlehub.VoxelCombat
                     {
                         ReadyToPlayAll(evt.Error, evt.Get<Player[]>(0), evt.Get<Guid[]>(1), evt.Get<VoxelAbilitiesArray[]>(2), evt.Get<Room>(3));
                     }
+                    break;
+                default:
+                    base.OnRemoteEvent(evt);
                     break;
             }
         }

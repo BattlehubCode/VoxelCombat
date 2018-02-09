@@ -139,6 +139,15 @@ namespace Battlehub.VoxelCombat {
         protected global::System.Web.UI.WebControls.DropDownList DDLMatchNumber;
         
         /// <summary>
+        /// MatchServerPanel control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel MatchServerPanel;
+        
+        /// <summary>
         /// MSConnections control.
         /// </summary>
         /// <remarks>
@@ -173,6 +182,15 @@ namespace Battlehub.VoxelCombat {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Label MSIsSecondaryThreadRunning;
+        
+        /// <summary>
+        /// MSIsGCThreadRunning control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label MSIsGCThreadRunning;
         
         /// <summary>
         /// MSIncomingMessagesFrequency control.
