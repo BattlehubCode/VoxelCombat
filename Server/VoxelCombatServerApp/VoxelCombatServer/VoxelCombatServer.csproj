@@ -130,11 +130,12 @@
     <Compile Include="Server\MatchServerClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server\ClientSocket.cs" />
-    <Compile Include="Server\DB.cs" />
+    <Compile Include="Server\Db.cs" />
     <Compile Include="Server\GameServerContainer.cs" />
     <Compile Include="Server\GameServerImpl.cs" />
     <Compile Include="Server\MatchServerContainer.cs" />
     <Compile Include="Server\MatchServerImpl.cs" />
+    <Compile Include="Server\PlayerRepository.cs" />
     <Compile Include="Server\ServerContainer.cs" />
   </ItemGroup>
   <ItemGroup>

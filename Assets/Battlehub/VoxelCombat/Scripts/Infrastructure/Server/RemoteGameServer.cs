@@ -353,7 +353,28 @@ namespace Battlehub.VoxelCombat
             Call(rpc, (error, result) => callback(error));
         }
 
-        public void Login(string name, string password, Guid clientId, ServerEventHandler<Guid> callback)
+        public void Login(string name, byte[] pwdHash, Guid clientId, ServerEventHandler<Guid> callback)
+        {
+            RemoteCall rpc = new RemoteCall(
+                RemoteCall.Proc.LoginHash,
+                clientId,
+                RemoteArg.Create(name),
+                RemoteArg.Create(pwdHash));
+
+            Call(rpc, (error, result) =>
+            {
+                Guid playerId = result.Get<Guid>(0);
+                if (!HasError(error))
+                {
+                    m_localPlayers.Add(playerId);
+                }
+
+                callback(error, playerId);
+            });
+        }
+
+
+        public void Login(string name, string password, Guid clientId, ServerEventHandler<Guid, byte[]> callback)
         {
             RemoteCall rpc = new RemoteCall(
                 RemoteCall.Proc.Login,
@@ -364,17 +385,17 @@ namespace Battlehub.VoxelCombat
             Call(rpc, (error, result) =>
             {
                 Guid playerId = result.Get<Guid>(0);
-
+                byte[] pwdHash = result.Get<byte[]>(1);
                 if(!HasError(error))
                 {
                     m_localPlayers.Add(playerId);
                 }
 
-                callback(error, playerId);
+                callback(error, playerId, pwdHash);
             });
         }
 
-        public void SignUp(string name, string password, Guid clientId, ServerEventHandler<Guid> callback)
+        public void SignUp(string name, string password, Guid clientId, ServerEventHandler<Guid, byte[]> callback)
         {
             RemoteCall rpc = new RemoteCall(
                 RemoteCall.Proc.SignUp,
@@ -385,13 +406,13 @@ namespace Battlehub.VoxelCombat
             Call(rpc, (error, result) =>
             {
                 Guid playerId = result.Get<Guid>(0);
-
+                byte[] pwdHash = result.Get<byte[]>(1);
                 if (!HasError(error))
                 {
                     m_localPlayers.Add(playerId);
                 }
 
-                callback(error, playerId);
+                callback(error, playerId, pwdHash);
             });
         }
 

@@ -246,6 +246,7 @@ namespace Battlehub.VoxelCombat
             GetPlayersByRoomId,
             GetPlayer,
             Login,
+            LoginHash,
             SignUp,
             Logoff,
             LogoffMultiple,
@@ -434,8 +435,17 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+    public interface IPersistentObject
+    {
+        int Id
+        {
+            get;
+            set;
+        }
+    }
+
     [ProtoContract]
-    public class Player
+    public class Player : IPersistentObject
     {
         [ProtoMember(1)]
         public Guid Id;
@@ -449,6 +459,12 @@ namespace Battlehub.VoxelCombat
         public bool IsBot
         {
             get { return BotType != BotType.None; }
+        }
+
+        int IPersistentObject.Id //Not Used
+        {
+            get;
+            set;
         }
     }    
 
@@ -802,14 +818,15 @@ namespace Battlehub.VoxelCombat
         /// <param name="callback"></param>
         void BecomeAdmin(Guid playerId, ServerEventHandler callback);
 
+        void Login(string name, byte[] pwdHash, Guid clientId, ServerEventHandler<Guid> callback);
         /// <summary>
         /// Possible errors TooMuchLocalPlayers, NotAuthenticated 
         /// </summary>
-        void Login(string name, string password, Guid clientId, ServerEventHandler<Guid> callback);
+        void Login(string name, string password, Guid clientId, ServerEventHandler<Guid, byte[]> callback);
         /// <summary>
         /// Possible errors TooMuchLocalPlayers, NotAuthenticated, 
         /// </summary>
-        void SignUp(string name, string password, Guid clientId, ServerEventHandler<Guid> callback);
+        void SignUp(string name, string password, Guid clientId, ServerEventHandler<Guid, byte[]> callback);
         /// <summary>
         /// Possible errors NotAuthenticated 
         /// </summary>

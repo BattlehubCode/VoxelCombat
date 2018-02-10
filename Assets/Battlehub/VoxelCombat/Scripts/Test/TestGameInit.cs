@@ -54,13 +54,13 @@ namespace Battlehub.VoxelCombat
            
             if(playerIndex < playersCount)
             {
-                server.Login(m_playerNames[playerIndex], "", gSettings.ClientId, (e1, playerId) =>
+                server.Login(m_playerNames[playerIndex], "", gSettings.ClientId, (e1, playerId, pwdHash) =>
                 {
                     if (server.HasError(e1))
                     {
                         error(e1);
                         progress.IsVisible = false;
-                        server.SignUp(m_playerNames[playerIndex], "", gSettings.ClientId, (e100, p) =>
+                        server.SignUp(m_playerNames[playerIndex], "", gSettings.ClientId, (e100, p, pwdHash2) =>
                         {
                             LoginOrSignupCompleted(mapName, playerIndex, botIndex, playersCount, botsCount, callback, error);
                         });

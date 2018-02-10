@@ -163,15 +163,21 @@ namespace Battlehub.VoxelCombat
                     });
                     break;
                 case RemoteCall.Proc.Login:
-                    m_gameServer.Login(rpc.Get<string>(0), rpc.Get<string>(1), rpc.ClientId, (error, playerId) =>
+                    m_gameServer.Login(rpc.Get<string>(0), rpc.Get<string>(1), rpc.ClientId, (error, playerId, pwdHash) =>
+                    {
+                        Return(sender, request, error, RemoteArg.Create(playerId), RemoteArg.Create(pwdHash));
+                    });
+                    break;
+                case RemoteCall.Proc.LoginHash:
+                    m_gameServer.Login(rpc.Get<string>(0), rpc.Get<byte[]>(1), rpc.ClientId, (error, playerId) =>
                     {
                         Return(sender, request, error, RemoteArg.Create(playerId));
                     });
                     break;
                 case RemoteCall.Proc.SignUp:
-                    m_gameServer.SignUp(rpc.Get<string>(0), rpc.Get<string>(1), rpc.ClientId, (error, playerId) =>
+                    m_gameServer.SignUp(rpc.Get<string>(0), rpc.Get<string>(1), rpc.ClientId, (error, playerId, pwdHash) =>
                     {
-                        Return(sender, request, error, RemoteArg.Create(playerId));
+                        Return(sender, request, error, RemoteArg.Create(playerId), RemoteArg.Create(pwdHash));
                     });
                     break;
                 case RemoteCall.Proc.Logoff:

@@ -410,7 +410,7 @@ namespace Battlehub.VoxelCombat
             IProgressIndicator progress = m_progress.GetChild(LocalPlayerIndex);
             progress.IsVisible = true;
 
-            GameServer.Login(name, password, m_gSettings.ClientId, (error, playerId) =>
+            GameServer.Login(name, password, m_gSettings.ClientId, (error, playerId, pwdHash) =>
             {
                 if (!isActiveAndEnabled)
                 {
@@ -437,7 +437,7 @@ namespace Battlehub.VoxelCombat
             IProgressIndicator progress = m_progress.GetChild(LocalPlayerIndex);
             progress.IsVisible = true;
 
-            GameServer.SignUp(name, password, m_gSettings.ClientId, (error, playerId) =>
+            GameServer.SignUp(name, password, m_gSettings.ClientId, (error, playerId, pwdHash) =>
             {
                 if (!isActiveAndEnabled)
                 {
@@ -448,7 +448,7 @@ namespace Battlehub.VoxelCombat
                 {
                     if (error.Code == StatusCode.AlreadyExists)
                     {
-                        GameServer.Login(name, password, m_gSettings.ClientId, (error2, playerId2) =>
+                        GameServer.Login(name, pwdHash, m_gSettings.ClientId, (error2, playerId2) =>
                         {
                             if (!isActiveAndEnabled)
                             {

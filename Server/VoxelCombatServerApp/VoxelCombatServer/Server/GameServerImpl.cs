@@ -52,7 +52,7 @@ namespace Battlehub.VoxelCombat
 
         private readonly string m_persistentDataPath;
         private readonly string m_matchServerUrl;
-        private IDB m_db;
+        private IPlayerRepository m_playerRepository;
         private ITimeService m_time;
 
         public GameServerImpl(string persistentDataPath, string matchServerUrl)
@@ -60,7 +60,7 @@ namespace Battlehub.VoxelCombat
             m_matchServerUrl = matchServerUrl;
             m_persistentDataPath = persistentDataPath;
             Log = LogManager.GetLogger(GetType());
-            m_db = new InMemoryDB();
+            m_playerRepository = new PlayerRepository();
         }
 
         public bool HasError(Error error)
@@ -104,14 +104,20 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void GetPlayer(string name, string password, Action<Error, Player> callback)
+        public void GetPlayer(string name, byte[] pwdHash, Action<Error, Player> callback)
         {
-            m_db.GetPlayer(name, password, callback);
+            m_playerRepository.GetPlayer(name, pwdHash, callback);
         }
 
-        public void CreatePlayer(Guid guid, string name, string password, Action<Error, Player> callback)
+
+        public void GetPlayer(string name, string password, Action<Error, Player, byte[]> callback)
         {
-            m_db.CreatePlayer(guid, name, password, callback);
+            m_playerRepository.GetPlayer(name, password, callback);
+        }
+
+        public void CreatePlayer(Guid guid, string name, string password, Action<Error, Player, byte[]> callback)
+        {
+            m_playerRepository.CreatePlayer(guid, name, password, callback);
         }
 
         public void GetPlayers(Guid[] guids, Action<Error, Player[]> callback)
@@ -126,7 +132,7 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            m_db.GetPlayers(guids, (error, players) =>
+            m_playerRepository.GetPlayers(guids, (error, players) =>
             {
                 if(HasError(error))
                 {
@@ -148,7 +154,7 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        public void Login(string name, string password, Guid clientId, ServerEventHandler<Guid> callback)
+        public void Login(string name, byte[] pwdHash, Guid clientId, ServerEventHandler<Guid> callback)
         {
             Error error = new Error(StatusCode.OK);
             List<Player> loggedInPlayers;
@@ -159,7 +165,7 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            GetPlayer(name, password, (getPlayerError, player) =>
+            GetPlayer(name, pwdHash, (getPlayerError, player) =>
             {
                 Guid playerId = Guid.Empty;
                 if (HasError(getPlayerError))
@@ -194,20 +200,69 @@ namespace Battlehub.VoxelCombat
                 }
                 callback(error, playerId);
             });
+
         }
 
-        public void SignUp(string name, string password, Guid clientId, ServerEventHandler<Guid> callback)
+        public void Login(string name, string password, Guid clientId, ServerEventHandler<Guid, byte[]> callback)
+        {
+            Error error = new Error(StatusCode.OK);
+            List<Player> loggedInPlayers;
+            if (!m_players.TryGetValue(clientId, out loggedInPlayers))
+            {
+                error.Code = StatusCode.NotRegistered;
+                callback(error, Guid.Empty, new byte[0]);
+                return;
+            }
+
+            GetPlayer(name, password, (getPlayerError, player, pwdHash) =>
+            {
+                Guid playerId = Guid.Empty;
+                if (HasError(getPlayerError))
+                {
+                    error = getPlayerError;
+                }
+                else if (player == null)
+                {
+                    error.Code = StatusCode.NotAuthenticated;
+                }
+                else if (loggedInPlayers.Count == GameConstants.MaxLocalPlayers)
+                {
+                    error.Code = StatusCode.TooMuchLocalPlayers;
+                    playerId = player.Id;
+                }
+                else
+                {
+                    error.Code = StatusCode.OK;
+                    playerId = player.Id;
+
+                    if (!loggedInPlayers.Any(p => p.Id == playerId))
+                    {
+                        m_playerToClientId.Add(playerId, clientId);
+                        loggedInPlayers.Add(player);
+                        m_stats.PlayersCount++;
+
+                        if (LoggedIn != null)
+                        {
+                            LoggedIn(error, new ServerEventArgs<Guid>(playerId) { Except = clientId });
+                        }
+                    }
+                }
+                callback(error, playerId, pwdHash);
+            });
+        }
+
+        public void SignUp(string name, string password, Guid clientId, ServerEventHandler<Guid, byte[]> callback)
         {
             Error error = new Error();
             List<Player> loggedInPlayers;
             if (!m_players.TryGetValue(clientId, out loggedInPlayers))
             {
                 error.Code = StatusCode.NotRegistered;
-                callback(error, Guid.Empty);
+                callback(error, Guid.Empty, new byte[0]);
                 return;
             }
 
-            GetPlayer(name, password, (getPlayerError, player) =>
+            GetPlayer(name, password, (getPlayerError, player, pwdHash) =>
             {
                 Guid playerId = Guid.Empty;
                 if (HasError(getPlayerError))
@@ -219,7 +274,7 @@ namespace Battlehub.VoxelCombat
                     error.Code = StatusCode.OK;
                     playerId = Guid.NewGuid();
 
-                    CreatePlayer(playerId, name, password, (createPlayerError, createdPlayer) =>
+                    CreatePlayer(playerId, name, password, (createPlayerError, createdPlayer, createdPwdHash) =>
                     {
                         if (HasError(createPlayerError))
                         {
@@ -237,7 +292,7 @@ namespace Battlehub.VoxelCombat
                             }
                         }
 
-                        callback(error, playerId);
+                        callback(error, playerId, createdPwdHash);
                     });
 
                     return;
@@ -262,7 +317,7 @@ namespace Battlehub.VoxelCombat
                         }
                     }
                 }
-                callback(error, playerId);
+                callback(error, playerId, pwdHash);
             });
         }
 

@@ -135,9 +135,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="App_Data\VoxelCombatDB.mdf" />
-    <Content Include="App_Data\VoxelCombatDB_log.ldf">
-      <DependentUpon>VoxelCombatDB.mdf</DependentUpon>
+    <Content Include="App_Data\VoxelCombat.mdf" />
+    <Content Include="App_Data\VoxelCombat_log.ldf">
+      <DependentUpon>VoxelCombat.mdf</DependentUpon>
     </Content>
     <Content Include="Dashboard.aspx" />
     <Content Include="Global.asax" />

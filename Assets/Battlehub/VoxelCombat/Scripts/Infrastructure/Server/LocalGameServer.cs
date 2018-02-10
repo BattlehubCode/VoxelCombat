@@ -148,7 +148,12 @@ namespace Battlehub.VoxelCombat
             callback(new Error { Code = StatusCode.OK });
         }
 
-        public void Login(string name, string password, Guid clientId, ServerEventHandler<Guid> callback)
+        public void Login(string name, byte[] pwdHash, Guid clientId, ServerEventHandler<Guid> callback)
+        {
+            Login(name, "dont_care", clientId, (error, guid, bytes) => callback(error, guid));
+        }
+
+        public void Login(string name, string password, Guid clientId, ServerEventHandler<Guid, byte[]> callback)
         {
             Error error = new Error();
             Player player = m_players.Values.Where(p => p.Name == name).FirstOrDefault();
@@ -176,15 +181,15 @@ namespace Battlehub.VoxelCombat
 
             if (Lag == 0)
             {
-                callback(error, playerId);
+                callback(error, playerId, new byte[0]);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, playerId));
+                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, playerId, new byte[0]));
             }
         }
 
-        public void SignUp(string name, string password, Guid clientId, ServerEventHandler<Guid> callback)
+        public void SignUp(string name, string password, Guid clientId, ServerEventHandler<Guid, byte[]> callback)
         {
             Error error = new Error();
             Player player = m_players.Values.Where(p => p.Name == name).FirstOrDefault();
@@ -194,11 +199,11 @@ namespace Battlehub.VoxelCombat
 
                 if (Lag == 0)
                 {
-                    callback(error, player.Id);
+                    callback(error, player.Id, new byte[0]);
                 }
                 else
                 {
-                    Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, player.Id));
+                    Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, player.Id, new byte[0]));
                 }
             }
             else if (m_loggedInPlayers.Count == GameConstants.MaxLocalPlayers)
@@ -206,11 +211,11 @@ namespace Battlehub.VoxelCombat
                 error.Code = StatusCode.TooMuchLocalPlayers;
                 if (Lag == 0)
                 {
-                    callback(error, Guid.Empty);
+                    callback(error, Guid.Empty, new byte[0]);
                 }
                 else
                 {
-                    Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, Guid.Empty));
+                    Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, Guid.Empty, new byte[0]));
                 }
             }
             else
@@ -247,11 +252,11 @@ namespace Battlehub.VoxelCombat
                 {
                     if (Lag == 0)
                     {
-                        callback(error, playerId);
+                        callback(error, playerId, new byte[0]);
                     }
                     else
                     {
-                        Job.Submit(() => { Thread.Sleep(Lag); return null; }, result2 => callback(error, playerId));
+                        Job.Submit(() => { Thread.Sleep(Lag); return null; }, result2 => callback(error, playerId, new byte[0]));
                     }
                 });
             }

@@ -1,79 +1,303 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Web.Security;
+using System.Configuration;
+using System.Data.Common;
+using System.Data.SqlClient;
 
 namespace Battlehub.VoxelCombat
 {
-    public interface IDB
+    public class Map
     {
-        void CreatePlayer(Guid guid, string name, string password, Action<Error, Player> callback);
-        void GetPlayer(string name, string password, Action<Error, Player> callback);
-        void GetPlayers(Guid[] guids, Action<Error, Dictionary<Guid, Player>> callback);
-    }
-
-    public class DB : IDB
-    {
-        public void CreatePlayer(Guid guid, string name, string password, Action<Error, Player> callback)
+        public string Property
         {
-            Membership.Pa
+            get;
+            set;
         }
 
-        public void GetPlayer(string name, string password, Action<Error, Player> callback)
+        public string Column
         {
-            throw new NotImplementedException();
-        }
-
-        public void GetPlayers(Guid[] guids, Action<Error, Dictionary<Guid, Player>> callback)
-        {
-            throw new NotImplementedException();
+            get;
+            set;
         }
     }
 
-    public class InMemoryDB : IDB
+    public interface IDb
     {
-        private readonly Dictionary<string, Player> m_playersByName = new Dictionary<string, Player>();
-        private readonly Dictionary<Guid, Player> m_playersByGuid = new Dictionary<Guid, Player>();
+        DbTransaction Transaction(DbConnection connection);
 
-        public void CreatePlayer(Guid guid, string name, string password, Action<Error, Player> callback)
+        DbConnection Connection(DbConnection connection = null);
+
+        DbCommand Command(string text, DbConnection connection, DbTransaction transaction);
+
+        DbParameter Parameter(string parameterName, object value);
+
+        int Identity(DbCommand command);
+
+        int ExecuteInsert(IPersistentObject persistentObject, DbConnection connection, DbTransaction transaction, string sql, params DbParameter[] parameters);
+
+        int ExecuteNonQuery(DbConnection connection, DbTransaction transaction, string sql, params DbParameter[] parameters);
+
+        IEnumerable<T> ExecuteSelect<T>(DbConnection connection, DbTransaction transaction, string sql, Func<DbDataReader, T> getFromReaderFunc, params DbParameter[] parameters)
+            where T : new();
+
+        T ExecuteSelectFirst<T>(DbConnection connection, DbTransaction transaction, string sql, Func<DbDataReader, T> getFromReaderFunc, params DbParameter[] parameters)
+            where T : IPersistentObject, new();
+
+        object ExecuteScalar(DbConnection connection, DbTransaction transaction, string sql, params DbParameter[] parameters);
+    }
+
+
+
+    public class Db : IDb
+    {
+        public static string ConnectionstringName
         {
-            Player player = new Player
-            {
-                Id = guid,
-                BotType = BotType.None,
-                Name = name,
-                Victories = 0
-            };
-
-            m_playersByName.Add(name, player);
-            m_playersByGuid.Add(guid, player); 
-            callback(new Error(StatusCode.OK), player);
+            get;
+            set;
         }
 
-        public void GetPlayer(string name, string password, Action<Error, Player> callback)
+        static Db()
         {
-            Player player;
-            if(m_playersByName.TryGetValue(name, out player))
-            {
-                callback(new Error(StatusCode.OK), player);
-            }
-            else
-            {
-                callback(new Error(StatusCode.OK), null);
-            }
+            ConnectionstringName = "LocalSqlServer";
         }
-        public void GetPlayers(Guid[] guids, Action<Error, Dictionary<Guid, Player>> callback)
+
+        private static IDb _instance;
+        public static IDb Get
         {
-            Dictionary<Guid, Player> players = new Dictionary<Guid, Player>();
-            for (int i = 0; i < guids.Length; ++i)
+            get
             {
-                Player player;
-                if(m_playersByGuid.TryGetValue(guids[i], out player))
+                if (_instance == null)
                 {
-                    players.Add(guids[i], player);
+                    _instance = new Db();
+                }
+
+                return _instance;
+            }
+        }
+
+        public static IDb Begin
+        {
+            get
+            {
+                return Get;
+            }
+        }
+
+        public DbTransaction Transaction(DbConnection connection)
+        {
+            return connection.BeginTransaction();
+        }
+
+        public DbConnection Connection(DbConnection connection = null)
+        {
+            if (connection != null)
+            {
+                return connection;
+            }
+
+            connection = new SqlConnection(ConfigurationManager.ConnectionStrings[ConnectionstringName].ConnectionString);
+            connection.Open();
+            return connection;
+        }
+
+        public DbCommand Command(string text, DbConnection connection, DbTransaction transaction)
+        {
+            return new SqlCommand(text, (SqlConnection)connection, (SqlTransaction)transaction);
+        }
+
+        public DbParameter Parameter(string parameterName, object value)
+        {
+            if (value == null)
+            {
+                value = DBNull.Value;
+            }
+            return new SqlParameter(parameterName, value);
+        }
+
+        public int Identity(DbCommand command)
+        {
+            command.Parameters.Clear();
+            command.CommandText = "SELECT @@IDENTITY";
+
+            try
+            {
+                // Get the last inserted id.
+                return Convert.ToInt32(command.ExecuteScalar());
+            }
+            catch (Exception e)
+            {
+                return -1;
+            }
+
+        }
+
+        public int ExecuteInsert(IPersistentObject persistentObject, DbConnection connection, DbTransaction transaction, string sql, params DbParameter[] parameters)
+        {
+            bool close = connection == null;
+            int result = 0;
+            try
+            {
+                connection = Db.Get.Connection(connection);
+                using (DbCommand command = Db.Get.Command(sql, connection, transaction))
+                {
+                    foreach (DbParameter parameter in parameters)
+                    {
+                        command.Parameters.Add(parameter);
+                    }
+
+                    result = command.ExecuteNonQuery();
+                    int id = Db.Get.Identity(command);
+                    if (id > -1)
+                    {
+                        persistentObject.Id = id;
+                    }
+                }
+            }
+            finally
+            {
+                if (close && connection != null)
+                {
+                    connection.Close();
+                }
+            }
+            return result;
+        }
+
+        public int ExecuteNonQuery(DbConnection connection, DbTransaction transaction, string sql, params DbParameter[] parameters)
+        {
+            bool close = connection == null;
+            int result = 0;
+            try
+            {
+                connection = Db.Get.Connection(connection);
+                using (DbCommand command = Db.Get.Command(sql, connection, transaction))
+                {
+                    foreach (DbParameter parameter in parameters)
+                    {
+                        command.Parameters.Add(parameter);
+                    }
+
+                    result = command.ExecuteNonQuery();
+                }
+            }
+            finally
+            {
+                if (close && connection != null)
+                {
+                    connection.Close();
                 }
             }
 
-            callback(new Error(StatusCode.OK), players);
+            return result;
+        }
+
+
+        public T ExecuteSelectFirst<T>(DbConnection connection, DbTransaction transaction, string sql, Func<DbDataReader, T> getFromReaderFunc, params DbParameter[] parameters)
+            where T : IPersistentObject, new()
+        {
+            T result = default(T);
+            bool close = connection == null;
+            try
+            {
+                connection = Db.Get.Connection(connection);
+                using (DbCommand command = Db.Get.Command(sql, connection, transaction))
+                {
+                    if (parameters != null)
+                    {
+                        foreach (DbParameter param in parameters)
+                        {
+                            command.Parameters.Add(param);
+                        }
+                    }
+
+                    using (DbDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            result = getFromReaderFunc(reader);
+                        }
+
+                    }
+                }
+            }
+            finally
+            {
+                if (close && connection != null)
+                {
+                    connection.Close();
+                }
+            }
+
+            return result;
+        }
+
+        public IEnumerable<T> ExecuteSelect<T>(
+            DbConnection connection,
+            DbTransaction transaction,
+            string sql,
+            Func<DbDataReader, T> getFromReaderFunc,
+            params DbParameter[] parameters)
+            where T : new()
+        {
+            bool close = connection == null;
+            try
+            {
+                connection = Db.Get.Connection(connection);
+                using (DbCommand command = Db.Get.Command(sql, connection, transaction))
+                {
+                    if (parameters != null)
+                    {
+                        foreach (DbParameter param in parameters)
+                        {
+                            command.Parameters.Add(param);
+                        }
+                    }
+
+                    using (DbDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            yield return getFromReaderFunc(reader);
+                        }
+
+                    }
+                }
+            }
+            finally
+            {
+                if (close && connection != null)
+                {
+                    connection.Close();
+                }
+            }
+        }
+
+        public Object ExecuteScalar(DbConnection connection, DbTransaction transaction, string sql, params DbParameter[] parameters)
+        {
+            bool close = connection == null;
+            try
+            {
+                connection = Db.Get.Connection(connection);
+                using (DbCommand command = Db.Get.Command(sql, connection, transaction))
+                {
+                    if (parameters != null)
+                    {
+                        foreach (DbParameter param in parameters)
+                        {
+                            command.Parameters.Add(param);
+                        }
+                    }
+
+                    return command.ExecuteScalar();
+                }
+            }
+            finally
+            {
+                if (close && connection != null)
+                {
+                    connection.Close();
+                }
+            }
         }
     }
 }
