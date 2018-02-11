@@ -265,11 +265,7 @@ namespace Battlehub.VoxelCombat
             GetPlayer(name, password, (getPlayerError, player, pwdHash) =>
             {
                 Guid playerId = Guid.Empty;
-                if (HasError(getPlayerError))
-                {
-                    error = getPlayerError;
-                }
-                else if (player == null)
+                if (player == null)
                 {
                     error.Code = StatusCode.OK;
                     playerId = Guid.NewGuid();

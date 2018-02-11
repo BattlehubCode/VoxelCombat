@@ -105,7 +105,7 @@ namespace Battlehub.VoxelCombat
             PlayerCredentials credentials = GetCredentials(name);
             if(credentials != null)
             {
-                callback(new Error(StatusCode.AlreadyExists), null, new byte[0]);
+                callback(new Error(StatusCode.AlreadyExists), null, null);
                 return;
             }
 

@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
-    public delegate void LoginEventHandler(string name, string password);
+    public delegate void LoginEventHandler(string name, string password, bool hasChanged, bool remember);
     public delegate void LoginCancelEventHandler();
 
     public class LoginPanel : MonoBehaviour
@@ -20,12 +20,25 @@ namespace Battlehub.VoxelCombat
         private InputField m_passwordInput;
 
         [SerializeField]
+        private Toggle m_rememberMe;
+
+        [SerializeField]
         private Button m_okButton;
 
         [SerializeField]
         private Button m_cancelButton;
 
         private IEnumerator m_coSelect;
+
+        private bool m_hasChanged;
+
+        public void Set(string name)
+        {
+            m_loginInput.text = name;
+            m_passwordInput.text = "dont_care";
+            m_rememberMe.isOn = true;
+            m_hasChanged = false;
+        }
 
         private void Awake()
         {
@@ -38,15 +51,16 @@ namespace Battlehub.VoxelCombat
             m_loginInput.onEndEdit.AddListener(OnLoginEndEdit);
             
             m_passwordInput.onValueChanged.AddListener(OnPasswordValueChanged);
+            m_passwordInput.onEndEdit.AddListener(OnPasswordEndEdit);
         }
 
         private void OnEnable()
         {
-            m_coSelect = CoSelect();
+            m_coSelect = CoSelectInput();
             StartCoroutine(m_coSelect);
         }
 
-        private IEnumerator CoSelect()
+        private IEnumerator CoSelectInput()
         {
             yield return new WaitForEndOfFrame();
 
@@ -55,6 +69,7 @@ namespace Battlehub.VoxelCombat
 
             m_coSelect = null;
         }
+
 
         private void OnDisable()
         {
@@ -83,24 +98,27 @@ namespace Battlehub.VoxelCombat
             if(m_passwordInput != null)
             {
                 m_passwordInput.onValueChanged.RemoveListener(OnPasswordValueChanged);
+                m_passwordInput.onEndEdit.RemoveListener(OnPasswordEndEdit);
             }   
         }
 
         private void OnLoginValueChanged(string value)
         {
-            m_okButton.interactable = !string.IsNullOrEmpty(value);
+            m_hasChanged = true;
+            m_okButton.interactable = !string.IsNullOrEmpty(value) && !string.IsNullOrEmpty(m_passwordInput.text);
         }
 
         private void OnPasswordValueChanged(string value)
         {
-
+            m_hasChanged = true;
+            m_okButton.interactable = !string.IsNullOrEmpty(value) && !string.IsNullOrEmpty(m_loginInput.text);
         }
 
         private void OnOkClick()
         {
             if (Login != null)
             {
-                Login(m_loginInput.text, m_passwordInput.text);
+                Login(m_loginInput.text, m_passwordInput.text, m_hasChanged, m_rememberMe == null ? false : m_rememberMe.isOn);
             }
 
             m_loginInput.text = string.Empty;
@@ -119,6 +137,12 @@ namespace Battlehub.VoxelCombat
         }
 
         private void OnLoginEndEdit(string value)
+        {
+            IndependentSelectable.Select(m_passwordInput.gameObject);
+            InputFieldWithVirtualKeyboard.ActivateInputField(m_passwordInput);
+        }
+
+        private void OnPasswordEndEdit(string value)
         {
             IndependentSelectable.Select(m_okButton.gameObject);
         }

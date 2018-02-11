@@ -1,4 +1,5 @@
 ﻿using Battlehub.UIControls;
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
@@ -136,6 +137,22 @@ namespace Battlehub.VoxelCombat
 
         private IEnumerator m_coSubscribe;
 
+        private string RememberedLogin
+        {
+            get { return PlayerPrefs.GetString("bf942302-0053-4500-9ca7-0d7aa9a7daa3" + LocalPlayerIndex); }
+            set { PlayerPrefs.SetString("bf942302-0053-4500-9ca7-0d7aa9a7daa3" + LocalPlayerIndex, value); }
+        }
+
+        private byte[] RememberedPasswordHash
+        {
+            get
+            {
+                string str = PlayerPrefs.GetString("c0ebfce5-7da3-486f-870f-949e80e9db5b" + LocalPlayerIndex);
+                if(string.IsNullOrEmpty(str)) { return new byte[0]; }
+                return Convert.FromBase64String(str);
+            }
+            set { PlayerPrefs.SetString("c0ebfce5-7da3-486f-870f-949e80e9db5b" + LocalPlayerIndex, Convert.ToBase64String(value)); }
+        }
 
 
         private void Awake()
@@ -318,6 +335,11 @@ namespace Battlehub.VoxelCombat
 
         private void OnLoginClick()
         {
+            if(!string.IsNullOrEmpty(RememberedLogin))
+            {
+                m_loginPanel.Set(RememberedLogin);
+            }
+
             m_loggedOffPanel.SetActive(false);
             m_loginPanel.gameObject.SetActive(true);
             m_notification.GetChild(LocalPlayerIndex).Close();
@@ -332,6 +354,9 @@ namespace Battlehub.VoxelCombat
 
         private void OnLogoffClick()
         {
+            RememberedLogin = null;
+            RememberedPasswordHash = new byte[0];
+          
             m_notification.GetChild(LocalPlayerIndex).Close();
 
             IProgressIndicator progress = m_progress.GetChild(LocalPlayerIndex);
@@ -403,34 +428,75 @@ namespace Battlehub.VoxelCombat
             SelectFirstButton();
         }
 
-        private void OnLogin(string name, string password)
+        private void OnLogin(string name, string password, bool hasChanged, bool rememberMe)
         {
             m_loginPanel.gameObject.SetActive(false);
 
             IProgressIndicator progress = m_progress.GetChild(LocalPlayerIndex);
             progress.IsVisible = true;
-
-            GameServer.Login(name, password, m_gSettings.ClientId, (error, playerId, pwdHash) =>
+            
+            if(!hasChanged && RememberedLogin != null)
             {
-                if (!isActiveAndEnabled)
+                GameServer.Login(name, RememberedPasswordHash, m_gSettings.ClientId, (error, playerId) =>
                 {
-                    return;
-                }
+                    if (!isActiveAndEnabled)
+                    {
+                        return;
+                    }
 
-                if (GameServer.HasError(error))
+                    if (GameServer.HasError(error))
+                    {
+                        progress.IsVisible = false;
+                        m_notification.GetChild(LocalPlayerIndex).ShowError(error, m_loginButton.gameObject);
+                        m_loggedOffPanel.SetActive(true);
+                        SelectFirstButton();
+                        return;
+                    }
+
+                    if (!rememberMe)
+                    {
+                        RememberedLogin = null;
+                        RememberedPasswordHash = new byte[0];
+                    }
+              
+                    GameServer.GetPlayer(m_gSettings.ClientId, playerId, OnGetPlayerCompleted);
+                });
+            }
+            else
+            {
+                GameServer.Login(name, password, m_gSettings.ClientId, (error, playerId, pwdHash) =>
                 {
-                    progress.IsVisible = false;
-                    m_notification.GetChild(LocalPlayerIndex).ShowError(error, m_loginButton.gameObject);
-                    m_loggedOffPanel.SetActive(true);
-                    SelectFirstButton();
-                    return;
-                }
+                    if (!isActiveAndEnabled)
+                    {
+                        return;
+                    }
 
-                GameServer.GetPlayer(m_gSettings.ClientId, playerId, OnGetPlayerCompleted);
-            });
+                    if (GameServer.HasError(error))
+                    {
+                        progress.IsVisible = false;
+                        m_notification.GetChild(LocalPlayerIndex).ShowError(error, m_loginButton.gameObject);
+                        m_loggedOffPanel.SetActive(true);
+                        SelectFirstButton();
+                        return;
+                    }
+
+                    if (rememberMe)
+                    {
+                        RememberedLogin = name;
+                        RememberedPasswordHash = pwdHash;
+                    }
+                    else
+                    {
+                        RememberedLogin = null;
+                        RememberedPasswordHash = new byte[0];
+                    }
+
+                    GameServer.GetPlayer(m_gSettings.ClientId, playerId, OnGetPlayerCompleted);
+                });
+            }
         }
 
-        private void OnSignup(string name, string password)
+        private void OnSignup(string name, string password, bool hasChanged, bool rememberMe)
         {
             m_signUpPanel.gameObject.SetActive(false);
 
@@ -448,24 +514,10 @@ namespace Battlehub.VoxelCombat
                 {
                     if (error.Code == StatusCode.AlreadyExists)
                     {
-                        GameServer.Login(name, pwdHash, m_gSettings.ClientId, (error2, playerId2) =>
-                        {
-                            if (!isActiveAndEnabled)
-                            {
-                                return;
-                            }
-
-                            if (GameServer.HasError(error2))
-                            {
-                                progress.IsVisible = false;
-                                m_notification.GetChild(LocalPlayerIndex).ShowError(error2, m_signUpButton.gameObject);
-                                m_loggedOffPanel.SetActive(true);
-                                SelectFirstButton();
-                                return;
-                            }
-
-                            GameServer.GetPlayer(m_gSettings.ClientId, playerId2, OnGetPlayerCompleted);
-                        });
+                        progress.IsVisible = false;
+                        m_notification.GetChild(LocalPlayerIndex).ShowError("User with this name already exists", m_signUpButton.gameObject);
+                        m_loggedOffPanel.SetActive(true);
+                        SelectFirstButton();
                     }
                     else
                     {
@@ -476,6 +528,17 @@ namespace Battlehub.VoxelCombat
                     }
 
                     return;
+                }
+
+                if (rememberMe)
+                {
+                    RememberedLogin = name;
+                    RememberedPasswordHash = pwdHash;
+                }
+                else
+                {
+                    RememberedLogin = null;
+                    RememberedPasswordHash = new byte[0];
                 }
 
                 GameServer.GetPlayer(m_gSettings.ClientId, playerId, OnGetPlayerCompleted);
