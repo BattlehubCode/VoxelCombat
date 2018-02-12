@@ -37,3 +37,5 @@ Server/VoxelCombatServerApp/.vs/VoxelCombatServerApp/v14/.suo
 .vs/VoxelCombat/v14/.suo
 Assets/InControl/Source/VersionInfo.cs
 Server/VoxelCombatServerApp/VoxelCombatServerApp/logs/log.txt
+Server/VoxelCombatServerApp/VoxelCombatServerApp/App_Data/VoxelCombat.mdf
+Server/VoxelCombatServerApp/VoxelCombatServerApp/App_Data/VoxelCombat_log.ldf
