@@ -235,6 +235,7 @@ namespace Battlehub.VoxelCombat
                 for (int i = 0; i < playersCount; ++i)
                 {
                     m_playerMenu[i].Player = players[i];
+                    m_playerMenu[i].IsVirtualKeyboardEnabled = !m_inputManager.IsKeyboardAndMouse(i);
                 }
 
                 if (m_inputManager.DeviceCount < players.Length)
@@ -259,6 +260,11 @@ namespace Battlehub.VoxelCombat
                 {
                     m_progress.IsVisible = false;
                 }
+
+                for (int i = players.Length; i < m_inputManager.DeviceCount; ++i)
+                {
+                    m_playerMenu[i].TryAutoLogin();
+                }
             });
         }
 
@@ -267,8 +273,13 @@ namespace Battlehub.VoxelCombat
             m_connectButton.gameObject.SetActive(m_inputManager.DeviceCount > 0);
 
             HandleDevicesChange();
-            m_playerMenu[index].LocalPlayerIndex = index;
+            m_playerMenu[index].LocalPlayerIndex = index; 
             m_playerMenu[index].IsVirtualKeyboardEnabled = !m_inputManager.IsKeyboardAndMouse(index);
+
+            if(!m_remoteGameServer.IsConnectionStateChanging && !m_progress.IsVisible)
+            {
+                m_playerMenu[index].TryAutoLogin();
+            }
         }
 
         private void OnDeviceDisabled(int index)

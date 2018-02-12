@@ -6,8 +6,6 @@ using UnityEngine.UI;
 
 namespace Battlehub.UIControls
 {
-    
-
     public class InputFieldWithVirtualKeyboard : IndependentSelectable, IBeforeSelectHandler, ISelectHandler, IDeselectHandler, IPointerClickHandler, IUpdateFocusedHandler
     {
         [SerializeField]
@@ -141,11 +139,26 @@ namespace Battlehub.UIControls
 
         private void OnGUI()
         {
-            if(m_virtualKeyboard.IsOn != IsEditing && VirtualKeyboardEnabled)
+            if(VirtualKeyboardEnabled)
             {
-                m_virtualKeyboard.IsOn = IsEditing;
+                if (IsEditing)
+                {
+                    if (!m_virtualKeyboard.IsOn)
+                    {
+                        m_virtualKeyboard.Target = m_inputField;
+                        m_virtualKeyboard.IsOn = true;
+                    }
+                }
+                else
+                {
+                    if (m_virtualKeyboard.IsOn && m_virtualKeyboard.Target == m_inputField)
+                    {
+                        m_virtualKeyboard.IsOn = false;
+                    }
+                }
             }
-            
+           
+
             if (m_setVirtualKeyboardPostion)
             {
                 SetVirtualKeyboardPosition();
@@ -424,7 +437,7 @@ namespace Battlehub.UIControls
                     return;
                 }
 
-                if (input.IsFunctional2ButtonPressed && IsEditing)
+                if (input.IsFunctional2ButtonDown && IsEditing)
                 {
                     m_enterKey.OnSubmit(null);
                     m_enterKey.OnEndSubmit(null);
@@ -508,7 +521,7 @@ namespace Battlehub.UIControls
 
         private void SetVirtualKeyboardPosition()
         {
-            if (m_kbRT != null)
+            if (m_kbRT != null && m_virtualKeyboard.Target == m_inputField)
             {
                 if (m_kbRT.pivot != m_inputRT.pivot)
                 {

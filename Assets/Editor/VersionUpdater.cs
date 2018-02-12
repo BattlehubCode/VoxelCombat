@@ -12,7 +12,7 @@ namespace InControl
 	{
 		static VersionUpdater()
 		{
-            EditorApplication.playModeStateChanged += Update;
+            //EditorApplication.playModeStateChanged += Update;
 		}
 
         private static void Update(PlayModeStateChange obj)

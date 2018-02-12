@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace Battlehub.UIControls
 {
@@ -46,6 +47,13 @@ namespace Battlehub.UIControls
                 m_pressedKey = null;
                 gameObject.SetActive(m_isOn);
             }
+        }
+
+        private InputField m_target;
+        public InputField Target
+        {
+            get { return m_target; }
+            set { m_target = value; }
         }
 
         private void Awake()

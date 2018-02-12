@@ -94,9 +94,19 @@ namespace Battlehub.UIControls
             get { return Input.GetKeyDown(KeyCode.Keypad8) || Input.GetKeyDown(KeyCode.Keypad2); }
         }
 
+        public virtual bool IsFunctionalButtonDown
+        {
+            get { return Input.GetKeyDown(KeyCode.LeftControl); }
+        }
+
         public virtual bool IsFunctionalButtonPressed
         {
             get { return Input.GetKey(KeyCode.LeftControl); }
+        }
+
+        public virtual bool IsFunctional2ButtonDown
+        {
+            get { return Input.GetKeyDown(KeyCode.LeftShift); }
         }
 
         public virtual bool IsFunctional2ButtonPressed

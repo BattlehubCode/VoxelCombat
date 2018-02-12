@@ -87,9 +87,19 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        public override bool IsFunctionalButtonDown
+        {
+            get { return m_input.GetButtonDown(InputAction.LB, m_localPlayerIndex, false); }
+        }
+
         public override bool IsFunctionalButtonPressed
         {
             get { return m_input.GetButton(InputAction.LB, m_localPlayerIndex, false); }
+        }
+
+        public override bool IsFunctional2ButtonDown
+        {
+            get { return m_input.GetButtonDown(InputAction.RB, m_localPlayerIndex, false); }
         }
 
         public override bool IsFunctional2ButtonPressed

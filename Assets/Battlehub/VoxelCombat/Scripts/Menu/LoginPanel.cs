@@ -123,14 +123,16 @@ namespace Battlehub.VoxelCombat
 
             m_loginInput.text = string.Empty;
             m_passwordInput.text = string.Empty;
+            m_rememberMe.isOn = false;
         }
 
         private void OnCancelClick()
         {
             m_loginInput.text = string.Empty;
             m_passwordInput.text = string.Empty;
+            m_rememberMe.isOn = false;
 
-            if(LoginCancel != null)
+            if (LoginCancel != null)
             {
                 LoginCancel();
             }
@@ -138,8 +140,12 @@ namespace Battlehub.VoxelCombat
 
         private void OnLoginEndEdit(string value)
         {
-            IndependentSelectable.Select(m_passwordInput.gameObject);
-            InputFieldWithVirtualKeyboard.ActivateInputField(m_passwordInput);
+            if(!string.IsNullOrEmpty(value))
+            {
+                IndependentSelectable.Select(m_passwordInput.gameObject);
+                InputFieldWithVirtualKeyboard.ActivateInputField(m_passwordInput);
+            }
+           
         }
 
         private void OnPasswordEndEdit(string value)

@@ -190,7 +190,7 @@ namespace Battlehub.VoxelCombat
 
         public void GetPlayers(Guid[] guids, Action<Error, Dictionary<Guid, Player>> callback)
         {
-            string sql = "SELECT PlayerId, Name FROM Player WHERE PayerId IN(";
+            string sql = "SELECT PlayerId, Name FROM Player WHERE PlayerId IN(";
             for(int i = 0; i < guids.Length - 1; ++i)
             {
                 sql += "'" + guids[i] + "',";

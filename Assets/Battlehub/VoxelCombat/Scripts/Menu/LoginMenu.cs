@@ -137,13 +137,13 @@ namespace Battlehub.VoxelCombat
 
         private IEnumerator m_coSubscribe;
 
-        private string RememberedLogin
+        public string RememberedLogin
         {
             get { return PlayerPrefs.GetString("bf942302-0053-4500-9ca7-0d7aa9a7daa3" + LocalPlayerIndex); }
             set { PlayerPrefs.SetString("bf942302-0053-4500-9ca7-0d7aa9a7daa3" + LocalPlayerIndex, value); }
         }
 
-        private byte[] RememberedPasswordHash
+        public byte[] RememberedPasswordHash
         {
             get
             {
@@ -189,6 +189,15 @@ namespace Battlehub.VoxelCombat
             m_coSubscribe = CoSubscribe();
 
             StartCoroutine(m_coSubscribe);
+        }
+
+        public void TryAutoLogin()
+        {
+            if (m_player == null && !string.IsNullOrEmpty(RememberedLogin))
+            {
+                m_loginPanel.Set(RememberedLogin);
+                Login(RememberedLogin, "dont_care", false, true);
+            }
         }
 
         private IEnumerator CoSubscribe()
@@ -430,12 +439,17 @@ namespace Battlehub.VoxelCombat
 
         private void OnLogin(string name, string password, bool hasChanged, bool rememberMe)
         {
+            Login(name, password, hasChanged, rememberMe);
+        }
+
+        private void Login(string name, string password, bool hasChanged, bool rememberMe)
+        {
             m_loginPanel.gameObject.SetActive(false);
 
             IProgressIndicator progress = m_progress.GetChild(LocalPlayerIndex);
             progress.IsVisible = true;
-            
-            if(!hasChanged && RememberedLogin != null)
+
+            if (!hasChanged && RememberedLogin != null)
             {
                 GameServer.Login(name, RememberedPasswordHash, m_gSettings.ClientId, (error, playerId) =>
                 {
@@ -458,7 +472,7 @@ namespace Battlehub.VoxelCombat
                         RememberedLogin = null;
                         RememberedPasswordHash = new byte[0];
                     }
-              
+
                     GameServer.GetPlayer(m_gSettings.ClientId, playerId, OnGetPlayerCompleted);
                 });
             }
