@@ -188,19 +188,31 @@ namespace Battlehub.VoxelCombat
 
                     if (!loggedInPlayers.Any(p => p.Id == playerId))
                     {
-                        m_playerToClientId.Add(playerId, clientId);
-                        loggedInPlayers.Add(player);
-                        m_stats.PlayersCount++;
-
-                        if (LoggedIn != null)
+                        if(m_playerToClientId.ContainsKey(playerId))
                         {
-                            LoggedIn(error, new ServerEventArgs<Guid>(playerId) { Except = clientId });
+                            Logoff(clientId, m_playerToClientId[playerId], playerId, (logoffError, guid) =>
+                            {
+                                if (HasError(logoffError))
+                                {
+                                    error = logoffError;
+                                }
+                                else
+                                {
+                                    FinishLogin(clientId, player, error, loggedInPlayers, playerId);
+                                }
+                                callback(error, playerId);
+                            });
+                            return;
                         }
+                        else
+                        {
+                            FinishLogin(clientId, player, error, loggedInPlayers, playerId);
+                        }
+
                     }
                 }
                 callback(error, playerId);
             });
-
         }
 
         public void Login(string name, string password, Guid clientId, ServerEventHandler<Guid, byte[]> callback)
@@ -237,19 +249,32 @@ namespace Battlehub.VoxelCombat
 
                     if (!loggedInPlayers.Any(p => p.Id == playerId))
                     {
-                        m_playerToClientId.Add(playerId, clientId);
-                        loggedInPlayers.Add(player);
-                        m_stats.PlayersCount++;
-
-                        if (LoggedIn != null)
+                        if (m_playerToClientId.ContainsKey(playerId))
                         {
-                            LoggedIn(error, new ServerEventArgs<Guid>(playerId) { Except = clientId });
+                            Logoff(clientId, m_playerToClientId[playerId], playerId, (logoffError, guid) =>
+                            {
+                                if (HasError(logoffError))
+                                {
+                                    error = logoffError;
+                                }
+                                else
+                                {
+                                    FinishLogin(clientId, player, error, loggedInPlayers, playerId);
+                                }
+                                callback(error, playerId, pwdHash);
+                            });
+                            return;
+                        }
+                        else
+                        {
+                            FinishLogin(clientId, player, error, loggedInPlayers, playerId);
                         }
                     }
                 }
                 callback(error, playerId, pwdHash);
             });
         }
+
 
         public void SignUp(string name, string password, Guid clientId, ServerEventHandler<Guid, byte[]> callback)
         {
@@ -303,13 +328,25 @@ namespace Battlehub.VoxelCombat
                     playerId = player.Id;
                     if (!loggedInPlayers.Any(p => p.Id == playerId))
                     {
-                        m_playerToClientId.Add(playerId, clientId);
-                        loggedInPlayers.Add(player);
-                        m_stats.PlayersCount++;
-
-                        if (LoggedIn != null)
+                        if (m_playerToClientId.ContainsKey(playerId))
                         {
-                            LoggedIn(error, new ServerEventArgs<Guid>(playerId) { Except = clientId });
+                            Logoff(clientId, m_playerToClientId[playerId], playerId, (logoffError, guid) =>
+                            {
+                                if (HasError(logoffError))
+                                {
+                                    error = logoffError;
+                                }
+                                else
+                                {
+                                    FinishLogin(clientId, player, error, loggedInPlayers, playerId);
+                                }
+                                callback(error, playerId, pwdHash);
+                            });
+                            return;
+                        }
+                        else
+                        {
+                            FinishLogin(clientId, player, error, loggedInPlayers, playerId);
                         }
                     }
                 }
@@ -317,7 +354,26 @@ namespace Battlehub.VoxelCombat
             });
         }
 
+        private void FinishLogin(Guid clientId, Player player, Error error, List<Player> loggedInPlayers, Guid playerId)
+        {
+            m_playerToClientId.Add(playerId, clientId);
+            loggedInPlayers.Add(player);
+            m_stats.PlayersCount++;
+
+            //DO NOT RAISE THIS EVENT FOR EVERY CLIENT!
+            // if (LoggedIn != null)
+            //{
+            //    LoggedIn(error, new ServerEventArgs<Guid>(playerId) { Except = clientId });
+            //}
+        }
+
+
         public void Logoff(Guid clientId, Guid playerId, ServerEventHandler<Guid> callback)
+        {
+            Logoff(clientId, clientId, playerId, callback);
+        }
+
+        private void Logoff(Guid senderClientId, Guid clientId, Guid playerId,  ServerEventHandler<Guid> callback)
         {
             Error error = new Error(StatusCode.OK);
             List<Player> loggedInPlayers;
@@ -333,7 +389,7 @@ namespace Battlehub.VoxelCombat
             {
                 if (room.CreatorClientId == clientId && !room.IsLaunched)
                 {
-                    DestroyRoom(clientId, room.Id, (e, g) =>
+                    DestroyRoom(senderClientId, clientId, room.Id, (e, g) =>
                     {
                         if (HasError(e))
                         {
@@ -344,13 +400,13 @@ namespace Battlehub.VoxelCombat
                         }
                         else
                         {
-                            FinishLogOff(clientId, playerId, callback, error, loggedInPlayers);
+                            FinishLogOff(senderClientId, clientId, playerId, callback, error, loggedInPlayers);
                         }
                     });
                 }
                 else
                 {
-                    LeaveRoom(clientId, e =>
+                    LeaveRoom(senderClientId, clientId, e =>
                     {
                         if (HasError(e))
                         {
@@ -361,18 +417,18 @@ namespace Battlehub.VoxelCombat
                         }
                         else
                         {
-                            FinishLogOff(clientId, playerId, callback, error, loggedInPlayers);
+                            FinishLogOff(senderClientId, clientId, playerId, callback, error, loggedInPlayers);
                         }
                     });
                 }
             }
             else
             {
-                FinishLogOff(clientId, playerId, callback, error, loggedInPlayers);
+                FinishLogOff(senderClientId, clientId, playerId, callback, error, loggedInPlayers);
             }
         }
 
-        private void FinishLogOff(Guid clientId, Guid playerId, ServerEventHandler<Guid> callback, Error error, List<Player> loggedInPlayers)
+        private void FinishLogOff(Guid senderClientId, Guid clientId, Guid playerId, ServerEventHandler<Guid> callback, Error error, List<Player> loggedInPlayers)
         {
             Player loggedInPlayer = loggedInPlayers.Where(p => p.Id == playerId).FirstOrDefault();
             if (loggedInPlayer != null)
@@ -384,7 +440,7 @@ namespace Battlehub.VoxelCombat
 
                 if (LoggedOff != null)
                 {
-                    LoggedOff(error, new ServerEventArgs<Guid[]>(new[] { playerId }) { Except = clientId });
+                    LoggedOff(error, new ServerEventArgs<Guid[]>(new[] { playerId }) { Except = senderClientId, Targets = new[] { clientId } });
                 }
             }
 
@@ -829,6 +885,11 @@ namespace Battlehub.VoxelCombat
 
         public void DestroyRoom(Guid clientId, Guid roomId, ServerEventHandler<Guid> callback)
         {
+            DestroyRoom(clientId, clientId, roomId, callback);
+        }
+
+        private void DestroyRoom(Guid senderClientId, Guid clientId, Guid roomId, ServerEventHandler<Guid> callback)
+        {
             Error error = new Error(StatusCode.OK);
             List<Player> loggedInPlayers;
             if (!m_players.TryGetValue(clientId, out loggedInPlayers))
@@ -848,7 +909,7 @@ namespace Battlehub.VoxelCombat
             Room room = null;
             if (m_roomsById.TryGetValue(roomId, out room))
             {
-                if(room.CreatorClientId != clientId)
+                if (room.CreatorClientId != clientId)
                 {
                     error.Code = StatusCode.NotAuthorized;
                     callback(error, roomId);
@@ -866,7 +927,7 @@ namespace Battlehub.VoxelCombat
                     }
                     else
                     {
-                        playersWillLeaveRoom.Add(playerId);  
+                        playersWillLeaveRoom.Add(playerId);
                     }
                 }
 
@@ -900,12 +961,12 @@ namespace Battlehub.VoxelCombat
 
                                 if (RoomDestroyed != null)
                                 {
-                                    RoomDestroyed(new Error(StatusCode.OK), new ServerEventArgs { Except = clientId, Targets = GetTargets(clientId, room) });
+                                    RoomDestroyed(new Error(StatusCode.OK), new ServerEventArgs { Except = senderClientId, Targets = GetTargets(senderClientId, room) });
                                 }
 
                                 if (RoomsListChanged != null)
                                 {
-                                    RoomsListChanged(new Error(StatusCode.OK), new ServerEventArgs { Except = clientId });
+                                    RoomsListChanged(new Error(StatusCode.OK), new ServerEventArgs { Except = senderClientId });
                                 }
                             }
 
@@ -1106,7 +1167,7 @@ namespace Battlehub.VoxelCombat
                 {
                     LeftRoom(new Error(StatusCode.OK), new ServerEventArgs<Guid[], Room>(loggedInPlayers.Select(p => p.Id).ToArray(), room)
                     {
-                        Except = clientId,
+                        Except = senderId,
                         Targets = GetTargets(senderId, room)
                     });
                 }
@@ -1298,22 +1359,27 @@ namespace Battlehub.VoxelCombat
 
         private void DestroyBots(Guid clientId, Guid[] botIds, bool raiseGlobalEvent, ServerEventHandler<Guid[], Room> callback)
         {
+            DestroyBots(clientId, clientId, botIds, raiseGlobalEvent, callback);
+        }
+
+        private void DestroyBots(Guid senderClientId, Guid clientId, Guid[] botIds, bool raiseGlobalEvent, ServerEventHandler<Guid[], Room> callback)
+        {
             Error error = new Error(StatusCode.OK);
             Room room = null;
             if (m_roomsByClientId.TryGetValue(clientId, out room))
             {
-                if(raiseGlobalEvent)
+                if (raiseGlobalEvent)
                 {
                     if (LeftRoom != null)
                     {
                         LeftRoom(new Error(StatusCode.OK), new ServerEventArgs<Guid[], Room>(botIds, room)
                         {
-                            Except = clientId,
-                            Targets = GetTargets(clientId, room)
+                            Except = senderClientId,
+                            Targets = GetTargets(senderClientId, room)
                         });
                     }
                 }
-                
+
                 for (int i = 0; i < botIds.Length; ++i)
                 {
                     Guid botId = botIds[i];

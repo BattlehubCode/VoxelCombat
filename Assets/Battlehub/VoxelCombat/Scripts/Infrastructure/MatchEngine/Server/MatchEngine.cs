@@ -20,19 +20,14 @@ namespace Battlehub.VoxelCombat
         public const int Split4 = 24;
         public const int Grow = 25;
         public const int Diminish = 26;
-
         public const int Automatic = 40;
-
         public const int Convert = 50;
         public const int Explode = 75;
-
         public const int StateChanged = 90;
 
         public const int Failed = 98; //Last command was failed -> disable animations return to idle state
         public const int LeaveRoom = 99;
         public const int Composite = 100;
-
-        
 
         //Debug command
         public const int SetHealth = 200;

@@ -30,14 +30,12 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-
         bool IsContextActionInProgress(int localPlayerIndex);
         void IsContextActionInProgress(int localPlayerIndex, bool value);
 
         bool IsMenuOpened(int localPlayerIndex);
         void IsMenuOpened(int localPlayerIndex, bool value);
 
-       
         bool IsPaused
         {
             get;
@@ -232,7 +230,7 @@ namespace Battlehub.VoxelCombat
         private PlayerStats[] m_playerStats;
         private Dictionary<int, VoxelAbilities>[] m_voxelAbilities;
         private IMatchPlayerControllerCli[] m_playerControllers;
-    
+        
         private void Awake()
         {
             m_progress = Dependencies.Progress;

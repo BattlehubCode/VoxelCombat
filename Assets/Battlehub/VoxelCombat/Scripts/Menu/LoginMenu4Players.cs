@@ -51,14 +51,15 @@ namespace Battlehub.VoxelCombat
             m_inputManager = Dependencies.InputManager;
             m_notification = Dependencies.Notification;
             m_navigation = Dependencies.Navigation;
-            m_remoteGameServer = Dependencies.RemoteGameServer;
             m_gSettings = Dependencies.Settings;
             m_progress = Dependencies.Progress;
-
+            m_remoteGameServer = Dependencies.RemoteGameServer;
+          
             m_slots = new[]{ m_p0Panel.transform, m_p1Panel.transform, m_p2Panel.transform, m_p3Panel.transform };
 
             m_connectButton.onClick.AddListener(OnConnectButtonClick);
         }
+
 
         private void Start()
         {
@@ -76,6 +77,7 @@ namespace Battlehub.VoxelCombat
         {
             m_remoteGameServer.ConnectionStateChanging += OnConnectionStateChanging;
             m_remoteGameServer.ConnectionStateChanged += OnConnectionStateChanged;
+            m_remoteGameServer.LoggedOff += OnPlayersLoggedOff;
 
             m_inputManager.IsInInitializationState = true;
 
@@ -115,6 +117,7 @@ namespace Battlehub.VoxelCombat
             {
                 m_remoteGameServer.ConnectionStateChanging -= OnConnectionStateChanging;
                 m_remoteGameServer.ConnectionStateChanged -= OnConnectionStateChanged;
+                m_remoteGameServer.LoggedOff -= OnPlayersLoggedOff;
             }
 
             if (m_root != null)
@@ -203,6 +206,21 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        private void OnPlayersLoggedOff(Error error, Guid[] playerIds)
+        {
+            for(int i = 0; i < playerIds.Length; ++i)
+            {
+                for(int j = 0; j  < m_playerMenu.Length; ++j)
+                {
+                    LoginMenu loginMenu = m_playerMenu[j];
+                    if(loginMenu.Player != null && loginMenu.Player.Id == playerIds[i])
+                    {
+                        loginMenu.Player = null;
+                    }
+                }
+            }
+        }
+
         private void GetPlayers()
         {
             m_progress.IsVisible = true;
@@ -235,6 +253,10 @@ namespace Battlehub.VoxelCombat
                 for (int i = 0; i < playersCount; ++i)
                 {
                     m_playerMenu[i].Player = players[i];
+                }
+
+                for(int i = 0; i < m_inputManager.DeviceCount; ++i)
+                {
                     m_playerMenu[i].IsVirtualKeyboardEnabled = !m_inputManager.IsKeyboardAndMouse(i);
                 }
 

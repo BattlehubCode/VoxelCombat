@@ -1,8 +1,10 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 namespace Battlehub.VoxelCombat
 {
     public class BaseMenuBehaviour : MonoBehaviour
     {
+        private IGlobalSettings m_gSettings;
         private IGameServer m_remoteGameServer;
         private IProgressIndicator m_progress;
         private INotification m_notification;
@@ -23,6 +25,7 @@ namespace Battlehub.VoxelCombat
                 m_connectionButton = FindObjectOfType<ConnectionButton>();
             }
 
+            m_gSettings = Dependencies.Settings;
             m_remoteGameServer = Dependencies.GameServer;
             m_progress = Dependencies.Progress;
             m_notification = Dependencies.Notification;
@@ -33,7 +36,9 @@ namespace Battlehub.VoxelCombat
         {
             m_remoteGameServer.ConnectionStateChanging += OnConnectionStateChanging;
             m_remoteGameServer.ConnectionStateChanged += OnConnectionStateChanged;
+            m_remoteGameServer.LoggedOff += OnPlayersLoggedOff;
         }
+
 
         protected virtual void OnDisable()
         {
@@ -41,6 +46,7 @@ namespace Battlehub.VoxelCombat
             {
                 m_remoteGameServer.ConnectionStateChanging -= OnConnectionStateChanging;
                 m_remoteGameServer.ConnectionStateChanged -= OnConnectionStateChanged;
+                m_remoteGameServer.LoggedOff -= OnPlayersLoggedOff;
             }
         }
 
@@ -54,7 +60,29 @@ namespace Battlehub.VoxelCombat
             m_progress.IsVisible = true;
         }
 
-   
+
+        private void OnPlayersLoggedOff(Error error, Guid[] players)
+        {
+            if (m_remoteGameServer.IsConnected)
+            {
+                foreach (Guid player in players)
+                {
+                    if(m_remoteGameServer.IsLocal(m_gSettings.ClientId, player))
+                    {
+                        m_notification.ShowError("Player was logged off");
+
+                        Dependencies.RemoteGameServer.CancelRequests();
+                        Dependencies.LocalGameServer.CancelRequests();
+
+                        m_navigation.ClearHistory();
+                        m_navigation.Navigate("LoginMenu4Players");
+
+                        break;
+                    }
+                }
+            }
+        }
+
         protected virtual void OnConnectionStateChanged(Error error, ValueChangedArgs<bool> args)
         {
             m_progress.IsVisible = false;

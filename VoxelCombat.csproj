@@ -400,6 +400,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\Notification.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\PlayerUIZone.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\ProgressIndicator.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\RTTIndicator.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\VoxelUIInputProvider.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UnitSelection.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\VoxelConsole.cs" />

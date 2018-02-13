@@ -1068,8 +1068,10 @@ namespace Battlehub.VoxelCombat
     [ProtoContract]
     public class RTTInfo
     {
+        [ProtoMember(1)]
         public float RTT; //RTT of current player
 
+        [ProtoMember(2)]
         public float RTTMax; //
     }
 

@@ -43,7 +43,7 @@ namespace Battlehub.VoxelCombat
 
     public class MatchEngineCli : MonoBehaviour, IMatchEngineCli
     {
-
+        private RTTInfo m_rttInfo;
         public event MatchEngineCliEvent ReadyToStart;
         public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], Room> Started;
         public event MatchEngineCliEvent<RTTInfo> Ping;
@@ -59,6 +59,7 @@ namespace Battlehub.VoxelCombat
         private IMatchServer m_matchServer;
         private IGlobalSettings m_gSettings;
 
+        private float m_pauseTime;
         private float m_prevTickTime;
         private long m_tick;
         private readonly Queue<CommandsBundle> m_commands = new Queue<CommandsBundle>();
@@ -92,7 +93,7 @@ namespace Battlehub.VoxelCombat
 
         private void FixedUpdate()
         {
-            while ((Time.fixedTime - m_prevTickTime) >= GameConstants.MatchEngineTick)
+            while ((Time.realtimeSinceStartup - m_prevTickTime) >= GameConstants.MatchEngineTick)
             {
                 //Exec commands from current tick
                 if(m_commands.Count != 0)
@@ -107,6 +108,12 @@ namespace Battlehub.VoxelCombat
                         {
                             ExecuteCommands(error, m_tick, commands);
                         }
+                    }
+                    else if(m_tick < (commands.Tick - 8)) //This means the diff between server time and client time > 400ms, so we try to make adjustment
+                    {
+                        #warning DON'T KNOW IF IT'S SAFE TO MAKE SUCH ADJUSTMENT
+                        m_tick++;
+                        Debug.LogWarning("Diff between server time and client time is too high. Probabliy ping is lower then measured initially");
                     }
                     else if (m_tick > commands.Tick)
                     {
@@ -173,7 +180,11 @@ namespace Battlehub.VoxelCombat
             enabled = !pause;
             if(enabled)
             {
-                m_prevTickTime = Time.fixedTime;
+                m_prevTickTime += (Time.realtimeSinceStartup - m_pauseTime);
+            }
+            else
+            {
+                m_pauseTime = Time.realtimeSinceStartup;
             }
 
             m_matchServer.Pause(m_gSettings.ClientId, pause, error => callback(error));
@@ -205,7 +216,7 @@ namespace Battlehub.VoxelCombat
         }
 
         private void OnReadyToPlayAll(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] payload, Room room)
-        {
+        { 
             if (m_matchServer.HasError(error))
             {
                 Error(error);
@@ -214,7 +225,12 @@ namespace Battlehub.VoxelCombat
             }
 
             enabled = true; //update method will be called
-            m_prevTickTime = Time.fixedTime;
+            m_prevTickTime = Time.realtimeSinceStartup;
+            if(m_rttInfo.RTT < GameConstants.MatchEngineTick)
+            {
+                //In case of low rtt we offset client timer by one tick to the past
+                m_prevTickTime += GameConstants.MatchEngineTick;
+            }
             
             m_isInitialized = true;
 
@@ -226,7 +242,9 @@ namespace Battlehub.VoxelCombat
 
         private void OnPing(Error error, RTTInfo payload)
         {
-            if(m_matchServer.HasError(error))
+            m_rttInfo = payload;
+
+            if (m_matchServer.HasError(error))
             {
                 Error(error);
                 m_matchServer.Disconnect();
@@ -267,8 +285,9 @@ namespace Battlehub.VoxelCombat
 
                 if (m_isInitialized)
                 {
+                    Debug.LogWarning("RECONNECT IS NOT TESTED");
                     enabled = true;
-                    m_prevTickTime = Time.fixedTime;
+                    m_prevTickTime = Time.realtimeSinceStartup;
                 }
                 else
                 {

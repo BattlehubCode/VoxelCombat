@@ -38,12 +38,12 @@ namespace Battlehub.VoxelCombat
         {
             if(m_pingInfo.ContainsKey(clientId))
             {
-                m_pingInfo[clientId].m_pingTime = Time.time;
+                m_pingInfo[clientId].m_pingTime = Time.realtimeSinceStartup;
             }
             else
             {
                 //For debugging purposes. Should be removed later
-                m_pingInfo[Guid.Empty].m_pingTime = Time.time;
+                m_pingInfo[Guid.Empty].m_pingTime = Time.realtimeSinceStartup;
             }    
         }
 
@@ -53,7 +53,7 @@ namespace Battlehub.VoxelCombat
                 m_pingInfo[clientId] :
                 m_pingInfo[Guid.Empty]; //For debugging purposes. Should be removed later
 
-            float interval = Time.time - pingInfo.m_pingTime;
+            float interval = Time.realtimeSinceStartup - pingInfo.m_pingTime;
 
             pingInfo.m_intervals[pingInfo.m_index] = interval;
             pingInfo.m_index++;
@@ -105,6 +105,7 @@ namespace Battlehub.VoxelCombat
         private IMatchEngine m_engine;
         private IReplaySystem m_replay;
 
+        private float m_pauseTime;
         private float m_prevTickTime;
         private long m_tick;
         private PingTimer m_pingTimer;
@@ -463,7 +464,7 @@ namespace Battlehub.VoxelCombat
                     //Is this a big deal? Don't know... Further investigation and playtest needed
 
                     enabled = true;
-                    m_prevTickTime = Time.fixedTime;
+                    m_prevTickTime = Time.realtimeSinceStartup;
                     m_initialized = true;
 
                     m_room = m_gState.GetValue<Room>("LocalGameServer.m_room");
@@ -543,7 +544,11 @@ namespace Battlehub.VoxelCombat
                 enabled = !pause;
                 if(enabled)
                 {
-                    m_prevTickTime = Time.fixedTime;
+                    m_prevTickTime += (Time.realtimeSinceStartup - m_pauseTime);
+                }
+                else
+                {
+                    m_pauseTime = Time.realtimeSinceStartup;
                 }
             }
 
@@ -641,7 +646,7 @@ namespace Battlehub.VoxelCombat
                         }
                         engine.CompletePlayerRegistration();
                  
-                        m_prevTickTime = Time.fixedTime;
+                        m_prevTickTime = Time.realtimeSinceStartup;
 
                         m_engine = engine;
 
@@ -671,7 +676,7 @@ namespace Battlehub.VoxelCombat
 
             for (int i = 0; i < m_bots.Length; ++i)
             {
-                m_bots[i].Update(Time.time);
+                m_bots[i].Update(Time.realtimeSinceStartup);
             }
 
         }
@@ -684,7 +689,7 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            while ((Time.fixedTime - m_prevTickTime) >= GameConstants.MatchEngineTick)
+            while ((Time.realtimeSinceStartup - m_prevTickTime) >= GameConstants.MatchEngineTick)
             {
                 m_replay.Tick(m_engine, m_tick);
 

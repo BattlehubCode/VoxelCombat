@@ -118,7 +118,7 @@ namespace Battlehub.VoxelCombat
             for (int i = 0; i < m_gameState.PlayersCount; ++i)
             {
                 PlayerStats stats = m_gameState.GetStats(i);
-                if(stats.ControllableUnitsCount > 0 /* && stats.IsInRoom*/)
+                if(stats.ControllableUnitsCount > 0 /*&& stats.IsInRoom*/)
                 {
                     Player player = m_gameState.GetPlayer(i);
                     player.Victories++;

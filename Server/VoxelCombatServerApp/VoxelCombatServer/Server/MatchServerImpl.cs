@@ -125,6 +125,7 @@ namespace Battlehub.VoxelCombat
         private IMatchEngine m_engine;
         private IReplaySystem m_replay;
 
+        private float m_pauseTime;
         private float m_prevTickTime;
         private long m_tick;
         private PingTimer m_pingTimer;
@@ -147,7 +148,6 @@ namespace Battlehub.VoxelCombat
 
         private Player m_neutralPlayer;
         private Guid m_serverIdentity = new Guid(ConfigurationManager.AppSettings["ServerIdentity"]);
-
 
         private readonly HashSet<Guid> m_registeredClients;
         private readonly HashSet<Guid> m_readyToPlayClients;
@@ -609,7 +609,11 @@ namespace Battlehub.VoxelCombat
                 enabled = !pause;
                 if(enabled)
                 {
-                    m_prevTickTime = m_time.Time;
+                    m_prevTickTime += (m_time.Time - m_pauseTime);
+                }
+                else
+                {
+                    m_pauseTime = m_time.Time;
                 }
             }
 
@@ -848,7 +852,6 @@ namespace Battlehub.VoxelCombat
             {
                 return;
             }
-
 
             while ((m_time.Time - m_prevTickTime) >= GameConstants.MatchEngineTick)
             {
