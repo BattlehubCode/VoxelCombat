@@ -1110,6 +1110,22 @@ namespace Battlehub.VoxelCombat
 
         [ProtoMember(4)]
         public string Message;
+
+        [ProtoMember(5)]
+        public Guid SenderId;
+
+        public ChatMessage()
+        {
+
+        }
+
+        public ChatMessage(Guid senderId, string message, Guid[] receiverIds)
+        {
+            SenderId = senderId;
+            MessageId = Guid.NewGuid();
+            Message = message;
+            ReceiverIds = receiverIds;
+        }
     }
 
     public interface IServer

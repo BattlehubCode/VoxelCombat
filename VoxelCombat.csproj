@@ -13,11 +13,13 @@
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Unity Subset v3.5</TargetFrameworkProfile>
-    <CompilerResponseFile></CompilerResponseFile>
+    <CompilerResponseFile>
+    </CompilerResponseFile>
     <UnityProjectType>Game:1</UnityProjectType>
     <UnityBuildTarget>StandaloneWindows64:19</UnityBuildTarget>
     <UnityVersion>2017.2.1f1</UnityVersion>
-    <RootNamespace></RootNamespace>
+    <RootNamespace>
+    </RootNamespace>
     <LangVersion>4</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -393,6 +395,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\RemoteMatchServer.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\RemoteServer.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Server\Socket.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\ChatControl.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\CommonUIZone.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\CommonUIZoneSetter.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\ConnectionButton.cs" />
@@ -400,10 +403,11 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\Notification.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\PlayerUIZone.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\ProgressIndicator.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\RoomChat.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\RTTIndicator.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\VoxelConsole.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\VoxelUIInputProvider.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UnitSelection.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\VoxelConsole.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\VoxelFactory.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Legacy\VoxelInputManager.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\MapEditor\MapEditorPrefab.cs" />

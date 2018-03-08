@@ -110,6 +110,7 @@ namespace Battlehub.VoxelCombat
         private CommandsArray m_commandBuffer;
         private long m_identity;
 
+        private bool m_isPlayerLeftRoom = false;
         private bool m_isPlayerInRoom = true;
         public bool IsPlayerInRoom
         {
@@ -272,7 +273,7 @@ namespace Battlehub.VoxelCombat
 
         public void Submit(Cmd command)
         {
-            if (!m_isPlayerInRoom)
+            if (m_isPlayerLeftRoom)
             {
                 return; //it means that player has left the room;
             }
@@ -299,7 +300,7 @@ namespace Battlehub.VoxelCombat
 
                 //Changes player color to neutral??
 
-                m_isPlayerInRoom = false;
+                m_isPlayerLeftRoom = true;
             }
 
         }
@@ -320,6 +321,8 @@ namespace Battlehub.VoxelCombat
 
         public CommandsArray Tick()
         {
+            m_isPlayerInRoom = !m_isPlayerLeftRoom;
+
             if (m_units.Length != m_commandBuffer.Commands.Length)
             {
                 m_commandBuffer = new CommandsArray(new Cmd[m_idToUnit.Count]);

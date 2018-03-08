@@ -605,22 +605,7 @@ namespace Battlehub.VoxelCombat
             int weight = task.ControlledData.Weight;
             int height = task.ControlledData.Height;
 
-            // This will allow bomb movement 
             MapCell targetCell;
-            bool isLastStep = task.Waypoints[task.Waypoints.Length - 1].MapPos == next.MapPos;
-            if (isLastStep)
-            {
-                //Try target coordinate first
-                next = task.Waypoints[task.Waypoints.Length - 1];
-
-                //last step is param false -> force CanMove to check next coordinate as is
-                if (VoxelDataController.CanMove(task.ControlledData, task.Abilities, task.Map, task.MapSize, from, next, false, false, false, out targetCell))
-                {
-                    result = next;
-                    return true;
-                }
-            }
-
             if(checkTarget)
             {
                 VoxelData targetData = cell.GetById(task.TargetId);
@@ -633,6 +618,21 @@ namespace Battlehub.VoxelCombat
                         result = next;
                         return true;    
                     }
+                }
+            }
+
+            // This will allow bomb movement 
+            bool isLastStep = task.Waypoints[task.Waypoints.Length - 1].MapPos == next.MapPos;
+            if (isLastStep)
+            {
+                //Try target coordinate first
+                next = task.Waypoints[task.Waypoints.Length - 1];
+
+                //last step is param false -> force CanMove to check next coordinate as is
+                if (VoxelDataController.CanMove(task.ControlledData, task.Abilities, task.Map, task.MapSize, from, next, false, false, false, out targetCell))
+                {
+                    result = next;
+                    return true;
                 }
             }
 

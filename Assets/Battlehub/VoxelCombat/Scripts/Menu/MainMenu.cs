@@ -78,11 +78,16 @@ namespace Battlehub.VoxelCombat
         protected override void OnDisable()
         {
             base.OnDisable();
-            EventSystem eventSystem = IndependentSelectable.GetEventSystem(m_multiplayerButton.gameObject);
-            if(eventSystem != null)
+
+            if(m_multiplayerButton != null)
             {
-                eventSystem.SetSelectedGameObject(null);
+                EventSystem eventSystem = IndependentSelectable.GetEventSystem(m_multiplayerButton.gameObject);
+                if (eventSystem != null)
+                {
+                    eventSystem.SetSelectedGameObject(null);
+                }
             }
+           
             if (m_root != null)
             {
                 m_root.SetActive(false);

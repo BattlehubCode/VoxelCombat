@@ -247,7 +247,7 @@ namespace Battlehub.VoxelCombat
             {
                 foreach(BotTaskType taskType in AvailableTaskTypes())
                 {
-                    CreateNewTask(taskType);
+                     CreateNewTask(taskType);
                 }
             }
 

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Battlehub.UIControls;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -127,6 +128,9 @@ namespace Battlehub.VoxelCombat
             m_inputField.onValidateInput += OnValidateInput;
             m_inputField.onEndEdit.AddListener(OnInputEndEdit);
 
+            InputFieldWithVirtualKeyboard ifwk = m_inputField.GetComponent<InputFieldWithVirtualKeyboard>();
+            ifwk.VirtualKeyboardEnabled = false;// !m_input.IsKeyboardAndMouse(m_consoleOwner);
+
             ClearAndHide();
         }
 
@@ -171,9 +175,9 @@ namespace Battlehub.VoxelCombat
 
                     m_inputField.text = null;
                     m_inputField.text = m_messages[m_messages.Length - m_messageIndex - 1];
-                    m_inputField.Select();
-                    m_inputField.ActivateInputField();
-                    
+                    IndependentSelectable.Select(m_inputField.gameObject);
+                    InputFieldWithVirtualKeyboard.ActivateInputField(m_inputField);
+
                 }
                 else if (Input.GetKeyDown(KeyCode.DownArrow))
                 {
@@ -190,9 +194,9 @@ namespace Battlehub.VoxelCombat
                         
                         m_inputField.text = null;
                         m_inputField.text = m_messages[m_messages.Length - m_messageIndex - 1];
-                        m_inputField.Select();
-                        m_inputField.ActivateInputField();
-                        
+                        IndependentSelectable.Select(m_inputField.gameObject);
+                        InputFieldWithVirtualKeyboard.ActivateInputField(m_inputField);
+
                     }
                 }
             }
@@ -214,8 +218,8 @@ namespace Battlehub.VoxelCombat
                         m_isAnimationInProgress = false;
 
                         m_inputField.gameObject.SetActive(true);
-                        m_inputField.ActivateInputField();
-                        m_inputField.Select();
+                        IndependentSelectable.Select(m_inputField.gameObject);
+                        InputFieldWithVirtualKeyboard.ActivateInputField(m_inputField);
                     }
                 }
                 else
@@ -237,10 +241,12 @@ namespace Battlehub.VoxelCombat
             ClearUIQueue();
 
             m_inputField.text = string.Empty;
-            m_inputField.DeactivateInputField();
-            if (EventSystem.current.currentSelectedGameObject == m_inputField.gameObject)
+            //m_inputField.DeactivateInputField();
+        
+            EventSystem eventSystem = IndependentSelectable.GetEventSystem(m_inputField.gameObject);
+            if (eventSystem == m_inputField.gameObject)
             {
-                EventSystem.current.SetSelectedGameObject(null);
+                eventSystem.SetSelectedGameObject(null);
             }
             m_messageScrollRect.gameObject.SetActive(false);
            
@@ -379,8 +385,8 @@ namespace Battlehub.VoxelCombat
 
             if(m_isExpanded)
             {
-                m_inputField.ActivateInputField();
-                m_inputField.Select();
+                IndependentSelectable.Select(m_inputField.gameObject);
+                InputFieldWithVirtualKeyboard.ActivateInputField(m_inputField);
             }
         }
     }

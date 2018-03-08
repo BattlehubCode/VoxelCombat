@@ -208,8 +208,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-
-     
         private void OnResultsIsOpenedChanged(ButtonsPanel sender)
         {
             if(sender.IsOpened)
