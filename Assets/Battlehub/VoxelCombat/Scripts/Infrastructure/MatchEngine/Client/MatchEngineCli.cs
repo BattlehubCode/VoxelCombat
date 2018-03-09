@@ -67,6 +67,24 @@ namespace Battlehub.VoxelCombat
 
         private void Awake()
         {
+            if(Dependencies.RemoteGameServer.IsConnectionStateChanging)
+            {
+                Dependencies.RemoteGameServer.ConnectionStateChanged += OnRemoteGameServerConnectionStateChanged;
+            }
+            else
+            {
+                Init();
+            }
+        }
+
+        private void OnRemoteGameServerConnectionStateChanged(Error error, ValueChangedArgs<bool> payload)
+        {
+            Dependencies.RemoteGameServer.ConnectionStateChanged -= OnRemoteGameServerConnectionStateChanged;
+            Init();
+        }
+
+        private void Init()
+        {
             m_matchServer = Dependencies.MatchServer;
             m_gSettings = Dependencies.Settings;
 

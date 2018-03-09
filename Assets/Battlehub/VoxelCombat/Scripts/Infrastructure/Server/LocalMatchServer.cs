@@ -139,19 +139,11 @@ namespace Battlehub.VoxelCombat
             m_neutralPlayer.BotType = BotType.Neutral;
             m_neutralPlayer.Name = "Neutral";
             m_neutralPlayer.Id = Guid.NewGuid();
+        }
 
-            Init();
-
+        private void Start()
+        {
             enabled = false; //Will be set to true when match engine will be ready
-        }
-        private void OnEnable()
-        {
-            Connect();
-        }
-
-        private void OnDisable()
-        {
-            Disconnect();
         }
 
         public void Connect()
@@ -183,8 +175,12 @@ namespace Battlehub.VoxelCombat
         }
 
 
-        public void Init()
+        public void Activate()
         {
+            if (Dependencies.RemoteGameServer.IsConnected)
+            {
+                return;
+            }
             //m_persistentDataPath = Application.persistentDataPath;
             m_persistentDataPath = Application.streamingAssetsPath;
 
@@ -238,7 +234,12 @@ namespace Battlehub.VoxelCombat
                 m_replay = MatchFactory.CreateReplayPlayer();
                 m_replay.Load(replay);
             }
-            
+            Connect();
+        }
+     
+        public void Deactivate()
+        {
+          
         }
 
         private void OnDestroy()

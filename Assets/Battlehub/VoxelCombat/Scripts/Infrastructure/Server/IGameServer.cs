@@ -1191,7 +1191,9 @@ namespace Battlehub.VoxelCombat
 
         event ServerEventHandler<bool> Paused;
 #endif
+        void Activate();
 
+        void Deactivate();
         /// <summary>
         /// Is guid is local (player)
         /// </summary>

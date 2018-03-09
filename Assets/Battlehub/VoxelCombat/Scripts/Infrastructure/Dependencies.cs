@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Battlehub.VoxelCombat
 {
@@ -7,7 +6,8 @@ namespace Battlehub.VoxelCombat
     {
         private void Awake()
         {
-            //m_inputManager = FindObjectOfType<VoxelInputManager>();
+            m_gState = new GlobalState();
+
             m_inputManager = FindObjectOfType<InControlAdapter>();
             m_console = FindObjectOfType<VoxelConsole>();
             m_game = FindObjectOfType<VoxelGame>();
@@ -26,14 +26,36 @@ namespace Battlehub.VoxelCombat
             m_eventSystemManager = FindObjectOfType<EventSystemManager>();
             m_notification = FindObjectOfType<Notification>();
 
+
+            GameObject serverGO = null;
             if (m_remoteGameServer == null)
             {
                 m_remoteGameServer = FindObjectOfType<RemoteGameServer>();
+                if(m_remoteGameServer == null)
+                {
+                    if(serverGO == null)
+                    {
+                        serverGO = new GameObject();
+                        serverGO.name = "Server";
+                        serverGO.AddComponent<Dispatcher.Dispatcher>();
+                    }
+                    m_remoteGameServer = serverGO.AddComponent<RemoteGameServer>();
+                }
             }
 
             if(m_localGameServer == null)
             {
                 m_localGameServer = FindObjectOfType<LocalGameServer>();
+                if (m_localGameServer == null)
+                {
+                    if (serverGO == null)
+                    {
+                        serverGO = new GameObject();
+                        serverGO.name = "Server";
+                        serverGO.AddComponent<Dispatcher.Dispatcher>();
+                    }
+                    m_localGameServer = serverGO.AddComponent<LocalGameServer>();
+                }
             }
 
             UnitSelection[] selection = FindObjectsOfType<UnitSelection>();
@@ -46,8 +68,6 @@ namespace Battlehub.VoxelCombat
             {
                 m_targetSelection = selection[1];
             }
-
-            m_gState = new GlobalState();
         }
 
         private void OnDestroy()
@@ -135,7 +155,7 @@ namespace Battlehub.VoxelCombat
         {
             get
             {
-                if(m_remoteGameServer.IsConnected)
+                if(m_remoteGameServer.IsConnected || m_remoteGameServer.IsConnectionStateChanging)
                 {
                     return m_remoteGameServer;
                 }
@@ -162,7 +182,7 @@ namespace Battlehub.VoxelCombat
         {
             get
             {
-                if (m_remoteGameServer.IsConnected) //This is not mistake
+                if (m_remoteGameServer.IsConnected || m_remoteGameServer.IsConnectionStateChanging) //This is not mistake
                 {
                     return m_remoteMatchServer;
                 }

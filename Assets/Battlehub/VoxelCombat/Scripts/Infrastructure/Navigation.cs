@@ -25,6 +25,11 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
+        string PrevSceneName
+        {
+            get;
+        }
+     
         void Navigate(string target);
 
         void Navigate(string scene, string target, Dictionary<string, object> args);
@@ -43,7 +48,10 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private GameObject[] m_menus;
 
-        private IGlobalState m_gState;
+        private IGlobalState GState
+        {
+            get { return Dependencies.State; }
+        }
         
         private Stack<string> m_localNavigationStack = new Stack<string>();
 
@@ -58,23 +66,27 @@ namespace Battlehub.VoxelCombat
             get { return m_menus.Where(m => m.name == m_current).FirstOrDefault(); }
         }
 
+        
+        public string PrevSceneName
+        {
+            get { return GState.GetValue<string>("Battlehub.VoxelCombat.Navigation.prevScene"); }
+            private set { GState.SetValue("Battlehub.VoxelCombat.Navigation.prevScene", value); }
+        }
+
         public Dictionary<string, object> Args
         {
-            get { return m_gState.GetValue<Dictionary<string, object>>("Battlehub.VoxelCombat.Navigation.args"); }
-            set { m_gState.SetValue("Battlehub.VoxelCombat.Navigation.args", value); }
+            get { return GState.GetValue<Dictionary<string, object>>("Battlehub.VoxelCombat.Navigation.args"); }
+            private set { GState.SetValue("Battlehub.VoxelCombat.Navigation.args", value); }
         }
 
         private string Target
         {
-            get { return m_gState.GetValue<string>("Battlehub.VoxelCombat.Navigation.target"); }
-            set { m_gState.SetValue("Battlehub.VoxelCombat.Navigation.target", value); }
+            get { return GState.GetValue<string>("Battlehub.VoxelCombat.Navigation.target"); }
+            set { GState.SetValue("Battlehub.VoxelCombat.Navigation.target", value); }
         }
-
 
         private void Awake()
         {
-            m_gState = Dependencies.State;
-
             if (m_menus == null || m_menus.Length == 0)
             {
                 //Debug.LogError("Set menus array");
@@ -150,7 +162,7 @@ namespace Battlehub.VoxelCombat
             else
             {
                 m_localNavigationStack.Clear();
-
+                PrevSceneName = SceneManager.GetActiveScene().name;
                 SceneManager.LoadScene(target);
             }
         }

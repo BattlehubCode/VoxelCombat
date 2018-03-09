@@ -13,13 +13,11 @@
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Unity Subset v3.5</TargetFrameworkProfile>
-    <CompilerResponseFile>
-    </CompilerResponseFile>
+    <CompilerResponseFile></CompilerResponseFile>
     <UnityProjectType>Game:1</UnityProjectType>
     <UnityBuildTarget>StandaloneWindows64:19</UnityBuildTarget>
     <UnityVersion>2017.2.1f1</UnityVersion>
-    <RootNamespace>
-    </RootNamespace>
+    <RootNamespace></RootNamespace>
     <LangVersion>4</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -437,7 +435,6 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\TargetSelectionController.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Test\InputTest.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Test\TestGameInit.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Test\TestMenu.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\VoxelGame.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\VoxelMap.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\EatableVoxel.cs" />

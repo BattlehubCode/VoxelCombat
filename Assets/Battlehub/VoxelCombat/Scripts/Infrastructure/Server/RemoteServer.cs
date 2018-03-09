@@ -24,20 +24,25 @@ namespace Battlehub.VoxelCombat
         }
 
         protected virtual void Awake()
-        {  
-            m_settings = Dependencies.Settings;
+        {
 
-            m_wasConnected = false;
-
-            m_protocol = new LowProtocol<Socket>(ServerUrl, Time.time);
-            m_protocol.Enabled += OnEnabled;
-            m_protocol.Disabled += OnDisabled;
-            m_protocol.SocketError += OnSocketError;
-            m_protocol.Message += OnMessage;
         }
 
         public void Connect()
         {
+            if (m_protocol == null)
+            {
+                m_settings = Dependencies.Settings;
+
+                m_wasConnected = false;
+
+                m_protocol = new LowProtocol<Socket>(ServerUrl, Time.time);
+                m_protocol.Enabled += OnEnabled;
+                m_protocol.Disabled += OnDisabled;
+                m_protocol.SocketError += OnSocketError;
+                m_protocol.Message += OnMessage;
+            }
+
             m_wasConnected = IsConnected;
 
             IsConnectionStateChanging = true;

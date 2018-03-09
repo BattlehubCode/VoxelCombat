@@ -47,11 +47,11 @@ namespace Battlehub.VoxelCombat
                 {
                     if(m_index == -1)
                     {
-                        m_inputManager.ResumeAll();
+                        InputManager.ResumeAll();
                     }
                     else
                     {
-                        m_inputManager.Resume(m_index);
+                        InputManager.Resume(m_index);
                     }
                     if (m_target != null)
                     {
@@ -63,11 +63,11 @@ namespace Battlehub.VoxelCombat
                 {
                     if(m_index == -1)
                     {
-                        m_inputManager.SuspendAll();
+                        InputManager.SuspendAll();
                     }
                     else
                     {
-                        m_inputManager.Suspend(m_index);
+                        InputManager.Suspend(m_index);
                     }
 
                     if(m_target != null)
@@ -93,7 +93,11 @@ namespace Battlehub.VoxelCombat
 
         private int m_index = -1;
 
-        private IVoxelInputManager m_inputManager;
+        private IVoxelInputManager InputManager
+        {
+            get { return Dependencies.InputManager; }
+        }
+
 
         public void SetText(string text)
         {
@@ -102,7 +106,6 @@ namespace Battlehub.VoxelCombat
 
         private void Awake()
         {
-            m_inputManager = Dependencies.InputManager;
             m_target.SetActive(false);
             m_counter = 0;
         }

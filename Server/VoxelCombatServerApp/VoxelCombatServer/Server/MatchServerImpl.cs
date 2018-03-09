@@ -155,7 +155,7 @@ namespace Battlehub.VoxelCombat
         private readonly Dictionary<Guid, Player> m_players;
         private readonly Dictionary<Guid, Guid> m_playerToClientId;
         private Dictionary<Guid, VoxelAbilities[]> m_abilities;
-        private IBotController[] m_bots;
+        private IBotController[] m_bots = new IBotController[0];
         private Room m_room;
     
         private string m_persistentDataPath;
@@ -171,6 +171,16 @@ namespace Battlehub.VoxelCombat
         public bool IsConnected
         {
             get { throw new NotSupportedException(); }
+        }
+
+        public void Activate()
+        {
+            throw new NotSupportedException();
+        }
+
+        public void Deactivate()
+        {
+            throw new NotSupportedException();
         }
 
         public MatchServerImpl(ITimeService timeService, string persistentDataPath, Guid creatorClientId, Room room, Guid[] clientIds, Player[] players, ReplayData replay)
@@ -894,5 +904,7 @@ namespace Battlehub.VoxelCombat
                 BotsCount = m_bots.Length,
             };
         }
+
+    
     }
 }

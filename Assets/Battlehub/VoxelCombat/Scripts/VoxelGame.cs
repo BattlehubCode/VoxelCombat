@@ -249,6 +249,27 @@ namespace Battlehub.VoxelCombat
             m_engine.Paused += OnEnginePaused;
 
             m_engine.ExecuteCommands += OnEngineCommands;
+
+            INavigation navigation = Dependencies.Navigation;
+            if (string.IsNullOrEmpty(navigation.PrevSceneName))
+            {
+                Dependencies.RemoteGameServer.ConnectionStateChanged += OnConnectionStateChanged;
+            }
+        }
+
+        private void OnConnectionStateChanged(Error error, ValueChangedArgs<bool> payload)
+        {
+            Dependencies.RemoteGameServer.ConnectionStateChanged -= OnConnectionStateChanged;
+            TestGameInit.Init(null, 2, 0, Dependencies.RemoteGameServer.IsConnected, () => { }, initError => m_notification.ShowError(initError));
+        }
+
+        private void Start()
+        {
+            INavigation navigation = Dependencies.Navigation;
+            if (!string.IsNullOrEmpty(navigation.PrevSceneName))
+            {
+                Dependencies.MatchServer.Activate();
+            }
         }
 
         private void OnDestroy()
@@ -286,24 +307,7 @@ namespace Battlehub.VoxelCombat
                 m_progress.IsVisible = false;
                 if(m_engine.HasError(error))
                 {
-#if DEBUG
-                    if (error.Code != StatusCode.NotFound)
-                    {
-                        m_notification.ShowError(error);
-                    }
-                    else
-                    {
-                        TestGameInit.Init(null, 2, 0, () =>
-                        //TestGameInit.Init(null, 4, 4, () =>
-                        {
-                            DownloadMapFromServer();
-                        },
-                        e2 => m_notification.ShowError(e2));
-                    }
-                  
-#else
                     m_notification.ShowError(error);
-#endif
                     return;
                 }
 

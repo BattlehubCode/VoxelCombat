@@ -16,13 +16,23 @@ namespace Battlehub.VoxelCombat
 
         protected override void Awake()
         {
-            if (!Dependencies.RemoteGameServer.IsConnected)
-            {
-                gameObject.SetActive(false);
-                return;
-            }
-
+            //if (!Dependencies.RemoteGameServer.IsConnected)
+            //{
+            //    gameObject.SetActive(false);
+            //    return;
+            //}
+            Deactivate();
             base.Awake();
+        }
+
+        public void Activate()
+        {
+            gameObject.SetActive(true);
+        }
+
+        public void Deactivate()
+        {
+            gameObject.SetActive(false);
         }
 
         protected override void OnRemoteEvent(RemoteEvent evt)
