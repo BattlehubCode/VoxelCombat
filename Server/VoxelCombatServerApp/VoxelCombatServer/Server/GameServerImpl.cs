@@ -440,7 +440,11 @@ namespace Battlehub.VoxelCombat
 
                 if (LoggedOff != null)
                 {
-                    LoggedOff(error, new ServerEventArgs<Guid[]>(new[] { playerId }) { Except = senderClientId, Targets = new[] { clientId } });
+                    if(senderClientId != clientId)
+                    {
+                        LoggedOff(error, new ServerEventArgs<Guid[]>(new[] { playerId }) { Except = senderClientId, Targets = new[] { clientId } });
+                    }
+                    
                 }
             }
 
@@ -1495,7 +1499,9 @@ namespace Battlehub.VoxelCombat
                 }
 
                 MatchServerClient matchServerClient = new MatchServerClient(m_time, m_matchServerUrl, room.Id);
+                Guid roomCreatorClientId = room.CreatorClientId;
                 room = ProtobufSerializer.DeepClone(room);
+                room.CreatorClientId = roomCreatorClientId;
                 GetPlayers(room.Players.ToArray(), (getPlayersError, players) =>
                 {
                     if (HasError(getPlayersError))
@@ -1556,7 +1562,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private Guid[] GetTargets(Guid clientId, Room room)
+        private Guid[] GetTargets(Guid clientId, Room room) 
         {
             return room.Players
                 .Where(p => m_playerToClientId.ContainsKey(p))

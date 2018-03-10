@@ -128,8 +128,8 @@ namespace Battlehub.VoxelCombat
             m_inputField.onValidateInput += OnValidateInput;
             m_inputField.onEndEdit.AddListener(OnInputEndEdit);
 
-            InputFieldWithVirtualKeyboard ifwk = m_inputField.GetComponent<InputFieldWithVirtualKeyboard>();
-            ifwk.VirtualKeyboardEnabled = false;// !m_input.IsKeyboardAndMouse(m_consoleOwner);
+            //InputFieldWithVirtualKeyboard ifwk = m_inputField.GetComponent<InputFieldWithVirtualKeyboard>();
+            //ifwk.VirtualKeyboardEnabled = false;// !m_input.IsKeyboardAndMouse(m_consoleOwner);
 
             ClearAndHide();
         }

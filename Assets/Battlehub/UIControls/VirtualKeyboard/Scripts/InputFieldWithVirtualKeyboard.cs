@@ -108,7 +108,11 @@ namespace Battlehub.UIControls
         protected override void Start()
         {
             base.Start();
-            m_enterKey = m_virtualKeyboard.Keys.Where(k => k.KeyCode == KeyCode.Return).FirstOrDefault();
+            if(m_virtualKeyboard != null)
+            {
+                m_enterKey = m_virtualKeyboard.Keys.Where(k => k.KeyCode == KeyCode.Return).FirstOrDefault();
+            }
+           
         }
 
         private void OnApplicationQuit()
@@ -197,7 +201,11 @@ namespace Battlehub.UIControls
                 ClearTextComponent();
             }
 
-            m_virtualKeyboard.KeyPressed += OnKeyPressed;
+            if(m_virtualKeyboard != null)
+            {
+                m_virtualKeyboard.KeyPressed += OnKeyPressed;
+            }
+            
 
             m_isInputFieldReadOnly = m_inputField.readOnly;
             if(VirtualKeyboardEnabled)
@@ -209,7 +217,11 @@ namespace Battlehub.UIControls
             m_isFocusedListener.IsFocusedChanged += OnIsFocusedChanged;
 
             m_inputRT = m_inputField.GetComponent<RectTransform>();
-            m_kbRT = m_virtualKeyboard.GetComponent<RectTransform>();
+
+            if (m_virtualKeyboard != null)
+            {
+                m_kbRT = m_virtualKeyboard.GetComponent<RectTransform>();
+            }
         }
 
         public void OnPointerClick(PointerEventData eventData)
@@ -235,7 +247,10 @@ namespace Battlehub.UIControls
             DestroyHelpers();
 
             IsEditing = false;
-            m_virtualKeyboard.KeyPressed -= OnKeyPressed;
+            if(m_virtualKeyboard != null)
+            {
+                m_virtualKeyboard.KeyPressed -= OnKeyPressed;
+            }
 
             m_inputField.readOnly = m_isInputFieldReadOnly;
         
@@ -439,8 +454,12 @@ namespace Battlehub.UIControls
 
                 if (input.IsFunctional2ButtonDown && IsEditing)
                 {
-                    m_enterKey.OnSubmit(null);
-                    m_enterKey.OnEndSubmit(null);
+                    if(m_enterKey != null)
+                    {
+                        m_enterKey.OnSubmit(null);
+                        m_enterKey.OnEndSubmit(null);
+                    }
+                  
                     return;
                 }
 

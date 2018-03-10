@@ -97,6 +97,7 @@ namespace Battlehub.VoxelCombat
             {
                 m_current = m_menus.First().name;
                 m_localNavigationStack.Push(m_current);
+                m_current = Target;
                 Load(Target);
                 Target = null;
             }

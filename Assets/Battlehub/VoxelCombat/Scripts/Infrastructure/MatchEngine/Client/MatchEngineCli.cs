@@ -43,7 +43,7 @@ namespace Battlehub.VoxelCombat
 
     public class MatchEngineCli : MonoBehaviour, IMatchEngineCli
     {
-        private RTTInfo m_rttInfo;
+        private RTTInfo m_rttInfo = new RTTInfo { RTT = 0, RTTMax = 0 };
         public event MatchEngineCliEvent ReadyToStart;
         public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], Room> Started;
         public event MatchEngineCliEvent<RTTInfo> Ping;
