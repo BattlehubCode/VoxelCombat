@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using System;
 
 namespace Battlehub.VoxelCombat
 {
@@ -13,19 +14,7 @@ namespace Battlehub.VoxelCombat
     {
         event ConsoleCommandHandler Command;
 
-        bool CanExpand
-        {
-            get;
-            set;
-        }
-
-        bool IsExpanded
-        {
-            get;
-            set;
-        }
-
-       
+        IConsole GetChild(int index);
 
         void Echo(string message);
         void Write(string message);
@@ -52,7 +41,7 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private Text m_messageUIPrefab;
 
-        private Queue<System.DateTime> m_timeQueue;
+        private Queue<DateTime> m_timeQueue;
         private Queue<string> m_messageQueue;
         private string[] m_messages;
         private int m_messageIndex = -1;
@@ -271,7 +260,7 @@ namespace Battlehub.VoxelCombat
                     uiQueueEnumerator.MoveNext();
                 }
 
-                IEnumerator<System.DateTime> timeEnumerator = m_timeQueue.GetEnumerator();
+                IEnumerator<DateTime> timeEnumerator = m_timeQueue.GetEnumerator();
                 foreach (string message in m_messageQueue)
                 {
                     timeEnumerator.MoveNext();
@@ -388,6 +377,11 @@ namespace Battlehub.VoxelCombat
                 IndependentSelectable.Select(m_inputField.gameObject);
                 InputFieldWithVirtualKeyboard.ActivateInputField(m_inputField);
             }
+        }
+
+        public IConsole GetChild(int index)
+        {
+            throw new NotImplementedException();
         }
     }
 }

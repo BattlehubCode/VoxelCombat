@@ -413,6 +413,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\MapEditor\VoxelMapEditor.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Menu\BaseMenuBehaviour.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Menu\ButtonsPanel.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Menu\ConsolePanel.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Menu\CreateRoomMenu.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Menu\GameResultsPanel.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Menu\JoinMenu.cs" />

@@ -334,6 +334,10 @@ namespace Battlehub.VoxelCombat
                 InputDevice device = InputManager.Devices[i];
                 device.IsSuspended = false;
                 m_devices.Add(device);
+                if (DeviceEnabled != null)
+                {
+                    DeviceEnabled(m_devices.Count - 1);
+                }
             }
         }
 

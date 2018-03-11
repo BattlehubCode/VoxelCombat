@@ -230,9 +230,30 @@ namespace Battlehub.VoxelCombat
         private void Awake()
         {
             m_input = Dependencies.InputManager;
+            m_input.DeviceEnabled += OnDeviceEnabled;
+            m_input.DeviceDisabled += OnDeviceDisabled;
         }
 
         private void Start()
+        {
+            m_isKeyboardAndMouse = m_input.IsKeyboardAndMouse(m_localPlayerIndex);
+        }
+
+        private void OnDestroy()
+        {
+            if(m_input != null)
+            {
+                m_input.DeviceEnabled -= OnDeviceEnabled;
+                m_input.DeviceDisabled -= OnDeviceDisabled;
+            }   
+        }
+
+        private void OnDeviceDisabled(int arg)
+        {
+            m_isKeyboardAndMouse = m_input.IsKeyboardAndMouse(m_localPlayerIndex);
+        }
+
+        private void OnDeviceEnabled(int arg)
         {
             m_isKeyboardAndMouse = m_input.IsKeyboardAndMouse(m_localPlayerIndex);
         }

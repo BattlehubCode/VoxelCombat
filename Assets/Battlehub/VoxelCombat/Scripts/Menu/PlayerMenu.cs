@@ -11,6 +11,9 @@ namespace Battlehub.VoxelCombat
         private GameResultsPanel m_resultsPanel;
 
         [SerializeField]
+        private ButtonsPanel m_consolePanel;
+
+        [SerializeField]
         private ButtonsPanel m_helpPanel;
 
         private IVoxelGame m_gameState;
@@ -29,8 +32,9 @@ namespace Battlehub.VoxelCombat
             {
                 m_localPlayerIndex = value;
                 m_menuPanel.LocalPlayerIndex = value;
+                m_consolePanel.LocalPlayerIndex = value;
                 m_helpPanel.LocalPlayerIndex = value;
-                m_resultsPanel.LocalPlayerIndex = value;
+                m_resultsPanel.LocalPlayerIndex = value;  
             }
         }
 
@@ -54,10 +58,12 @@ namespace Battlehub.VoxelCombat
             m_helpPanel.IsOpenedChanged += OnHelpIsOpenedChanged;
             m_helpPanel.Action += OnHelpPanelAction;
 
+            m_consolePanel.IsOpenedChanged += OnConsoleIsOpenedChanged;
+            m_consolePanel.Action += OnConsoleAction;
+
             m_resultsPanel.IsOpenedChanged += OnResultsIsOpenedChanged;
             m_resultsPanel.Action += OnResultsPanelAction;
         }
-
 
         private void OnDestroy()
         {
@@ -80,7 +86,13 @@ namespace Battlehub.VoxelCombat
                 m_helpPanel.Action -= OnHelpPanelAction;
             }
 
-            if(m_resultsPanel != null)
+            if(m_consolePanel != null)
+            {
+                m_consolePanel.IsOpenedChanged -= OnConsoleIsOpenedChanged;
+                m_consolePanel.Action -= OnConsoleAction;
+            }
+
+            if (m_resultsPanel != null)
             {
                 m_resultsPanel.IsOpenedChanged -= OnResultsIsOpenedChanged;
                 m_resultsPanel.Action -= OnResultsPanelAction;
@@ -101,8 +113,8 @@ namespace Battlehub.VoxelCombat
 
             
             if ( /*m_inputManager.GetButtonDown(InputAction.ToggleMenu, LocalPlayerIndex) ||*/
-                (m_inputManager.GetButtonDown(InputAction.Action0, LocalPlayerIndex) ||
-                 m_inputManager.GetButtonDown(InputAction.Action9, LocalPlayerIndex)))
+                (m_inputManager.GetButtonDown(InputAction.Action0, LocalPlayerIndex, false) ||
+                 m_inputManager.GetButtonDown(InputAction.Action9, LocalPlayerIndex, false)))
             {
                 m_gameState.IsMenuOpened(LocalPlayerIndex, !m_gameState.IsMenuOpened(LocalPlayerIndex));
 
@@ -134,7 +146,6 @@ namespace Battlehub.VoxelCombat
             {
                 m_resultsPanel.ResultText = "Nobody wins this game";
             }
-
         }
 
         private void OnPlayerDefeated(int arg)
@@ -151,7 +162,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-
         private void OnIsPausedChanged()
         {
             m_menuPanel.SetText(1, m_gameState.IsPaused ? "Resume" : "Pause");
@@ -162,6 +172,7 @@ namespace Battlehub.VoxelCombat
             m_notification.Close();
             m_resultsPanel.IsOpened = false;
             m_helpPanel.IsOpened = false;
+            m_consolePanel.IsOpened = false;
             UpdateIsOpenedState();
         }
 
@@ -175,11 +186,15 @@ namespace Battlehub.VoxelCombat
                 case 1: //pause
                     m_gameState.IsPaused = !m_gameState.IsPaused;
                     break;
-                case 2: //help
+                case 2: //console
+                    m_menuPanel.IsOpened = false;
+                    m_consolePanel.IsOpened = true;
+                    break;
+                case 3: //help
                     m_menuPanel.IsOpened = false;
                     m_helpPanel.IsOpened = true;
                     break;
-                case 3: //back to menu
+                case 4: //back to menu
                     if(m_gameServer.IsConnected)
                     {
                         m_gameServer.LeaveRoom(m_gSettings.ClientId, error =>
@@ -202,7 +217,7 @@ namespace Battlehub.VoxelCombat
                         m_navigation.Navigate("Menu", "LoginMenu4Players", null);
                     }
                     break;
-                case 4: //quit
+                case 5: //quit
                     m_console.Write("quit");
                     break;
             }
@@ -214,6 +229,7 @@ namespace Battlehub.VoxelCombat
             {
                 m_helpPanel.IsOpened = false;
                 m_menuPanel.IsOpened = false;
+                m_consolePanel.IsOpened = false;
             }
             else
             {
@@ -230,13 +246,35 @@ namespace Battlehub.VoxelCombat
                 m_resultsPanel.IsOpened = false;
             }
         }
-     
+
+        private void OnConsoleIsOpenedChanged(ButtonsPanel sender)
+        {
+            if (sender.IsOpened)
+            {
+                m_resultsPanel.IsOpened = false;
+                m_menuPanel.IsOpened = false;
+                m_helpPanel.IsOpened = false;
+            }
+            else
+            {
+                m_menuPanel.IsOpened = true;
+            }
+
+            UpdateIsOpenedState();
+        }
+
+        private void OnConsoleAction(ButtonsPanel sender, int code)
+        {
+            m_consolePanel.IsOpened = false;
+        }
+
         private void OnHelpIsOpenedChanged(ButtonsPanel sender)
         {
             if(sender.IsOpened)
             {
                 m_resultsPanel.IsOpened = false;
                 m_menuPanel.IsOpened = false;
+                m_consolePanel.IsOpened = false;
             }
             else
             {
@@ -253,7 +291,7 @@ namespace Battlehub.VoxelCombat
 
         private void UpdateIsOpenedState()
         {
-            m_gameState.IsMenuOpened(LocalPlayerIndex, m_helpPanel.IsOpened || m_resultsPanel.IsOpened || m_menuPanel.IsOpened);
+            m_gameState.IsMenuOpened(LocalPlayerIndex, m_helpPanel.IsOpened || m_resultsPanel.IsOpened || m_menuPanel.IsOpened || m_consolePanel.IsOpened);
         }
 
     }
