@@ -400,7 +400,7 @@ namespace Battlehub.VoxelCombat
                 
                 if (args.Length < 4 || !int.TryParse(args[0], out row) || !int.TryParse(args[1], out col) || !int.TryParse(args[2], out weight) || !int.TryParse(args[3], out altitude))
                 {
-                    console.Echo("Move <unitId> <row> <col> <weight> <altitude>");
+                    console.GetChild(LocalPlayerIndex).Echo("Move <unitId> <row> <col> <weight> <altitude>");
                     return;
                 }
 
@@ -432,7 +432,7 @@ namespace Battlehub.VoxelCombat
                 KnownVoxelTypes voxelType;
                 if (args.Length < 1 || !(args[0].TryParse(true, out voxelType)))
                 {
-                    console.Echo("Convert KnowVoxelType");
+                    console.GetChild(LocalPlayerIndex).Echo("Convert KnowVoxelType");
                     return;
                 }
 
@@ -445,7 +445,7 @@ namespace Battlehub.VoxelCombat
                 int health = -1;
                 if (args.Length < 1 || !int.TryParse(args[0], out health))
                 {
-                    console.Echo("SetHealth <health>");
+                    console.GetChild(LocalPlayerIndex).Echo("SetHealth <health>");
                     return;
                 }
 
@@ -492,6 +492,34 @@ namespace Battlehub.VoxelCombat
 
                 commandsToSubmit.Add(command);
             }
+        }
+    }
+
+    public static class EnumExt
+    {
+        public static bool TryParse<TEnum>(this string value, bool ignoreCase, out TEnum result)
+            where TEnum : struct, IConvertible
+        {
+            var retValue = value == null ?
+                false :
+                Enum.IsDefined(typeof(TEnum), value);
+            result = retValue ? (TEnum)Enum.Parse(typeof(TEnum), value) : default(TEnum);
+
+            if (!retValue && ignoreCase)
+            {
+                string[] names = Enum.GetNames(typeof(TEnum));
+                for (int i = 0; i < names.Length; ++i)
+                {
+                    if (string.Compare(names[i], value, true) == 0)
+                    {
+                        result = (TEnum)Enum.Parse(typeof(TEnum), names[i]);
+                        retValue = true;
+                        break;
+                    }
+                }
+            }
+
+            return retValue;
         }
     }
 }

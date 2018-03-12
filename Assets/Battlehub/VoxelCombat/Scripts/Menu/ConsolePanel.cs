@@ -120,6 +120,11 @@ namespace Battlehub.VoxelCombat
 
             m_isExpanded = false;
 
+     
+            //  m_inputField.DeactivateInputField();
+
+            //  IndependentSelectable.GetEventSystem(m_inputField).SetSelectedGameObject(null);
+
             ClearUIQueue();
         }
 
@@ -127,9 +132,9 @@ namespace Battlehub.VoxelCombat
         {
             if (m_isExpanded && m_messageQueue.Count > 0)
             {
-                if(m_inputManager.GetButtonDown(InputAction.MoveForward, LocalPlayerIndex, false))
+                if(m_inputManager.GetButtonDown(InputAction.CursorY, LocalPlayerIndex, false))
                 {
-                    if (m_inputManager.GetAxisRaw(InputAction.MoveForward, LocalPlayerIndex, false) > 0)
+                    if (m_inputManager.GetAxisRaw(InputAction.CursorY, LocalPlayerIndex, false) > 0)
                     {
                         if (m_messages == null)
                         {
@@ -307,13 +312,13 @@ namespace Battlehub.VoxelCombat
                     args[i - 1] = args[i];
                 }
                 Array.Resize(ref args, args.Length - 1);
-                Command(cmd, args);
+                Command(this, cmd, args);
             }
         }
 
         public IConsole GetChild(int index)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
     }
 }

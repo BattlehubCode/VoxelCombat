@@ -8,7 +8,51 @@ using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
- 
+    public enum InputAction
+    {
+        //Infrastructure
+        ToggleConsole = 0,
+        ToggleMenu = 1,
+        Quit = 2,
+        SaveReplay = 3,
+
+        //Game
+        MoveForward = 10,
+        MoveSide = 15,
+
+        MouseX = 90,
+        MouseY = 91,
+
+        CursorX = 100,
+        CursorY = 101,
+
+        Zoom = 102,
+        LB = 103,
+        RB = 104,
+        A = 105,
+        X = 106,
+        B = 107,
+        Action6 = 108,
+        Action7 = 109,
+        Y = 110,
+        Action9 = 111,
+        Action0 = 112,
+        Cancel = 113,
+        Submit = 114,
+
+        //MapEditor
+        EditorCreate = 500,
+        EditorDestroy = 510,
+        EditorPan = 520,
+        EditorRotate = 530,
+
+        //Debug
+        ToggleCursor = 1000,
+
+
+
+    }
+
     [Serializable]
     public class InputBinding
     {

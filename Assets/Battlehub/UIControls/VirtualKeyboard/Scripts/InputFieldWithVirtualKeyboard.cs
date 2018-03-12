@@ -189,8 +189,11 @@ namespace Battlehub.UIControls
         /// <param name="eventData"></param>
         public void OnSelect(BaseEventData eventData)
         {
-            m_disableInputFieldKeyboardInput = gameObject.AddComponent<DisableInputFieldKeyboard>();
-            m_disableInputFieldKeyboardInput.EventSystem = EventSystem;
+            if(gameObject.GetComponent<DisableInputFieldKeyboard>() == null)
+            {
+                m_disableInputFieldKeyboardInput = gameObject.AddComponent<DisableInputFieldKeyboard>();
+                m_disableInputFieldKeyboardInput.EventSystem = EventSystem;
+            }
 
             //if (m_openOnSelect)
             //{
@@ -212,9 +215,12 @@ namespace Battlehub.UIControls
             {
                 m_inputField.readOnly = true;
             }
-            
-            m_isFocusedListener = gameObject.AddComponent<InputFieldIsFocusedListener>();
-            m_isFocusedListener.IsFocusedChanged += OnIsFocusedChanged;
+
+            if (gameObject.GetComponent<InputFieldIsFocusedListener>() == null)
+            {
+                m_isFocusedListener = gameObject.AddComponent<InputFieldIsFocusedListener>();
+                m_isFocusedListener.IsFocusedChanged += OnIsFocusedChanged;
+            }
 
             m_inputRT = m_inputField.GetComponent<RectTransform>();
 

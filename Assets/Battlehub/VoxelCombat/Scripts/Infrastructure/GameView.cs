@@ -153,7 +153,7 @@ namespace Battlehub.VoxelCombat
         private void Update()
         {
 
-            if (Dependencies.InputManager.GetButtonDown(InputAction.ToggleCursor, 0, false))
+            if (Dependencies.InputManager.GetButtonDown(InputAction.ToggleCursor, -1, false))
             {
                 Cursor.visible = !Cursor.visible;
                 if(Cursor.visible)

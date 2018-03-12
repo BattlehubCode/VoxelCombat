@@ -71,7 +71,7 @@ namespace Battlehub.VoxelCombat
                 {
                     Handle = "ToggleCursor",
                     Target = InputControlType.Button2,
-					Source = KeyCodeButton( KeyCode.Keypad5 )
+					Source = KeyCodeButton( KeyCode.T )
                 },
 
                 new InputControlMapping

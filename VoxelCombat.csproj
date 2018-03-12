@@ -348,7 +348,6 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\TxtSlider.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\TypeModelCreator.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\HUD\PlayerCursor.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\CommandRouter.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Dependencies.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\EventSystemManager.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\GameView.cs" />

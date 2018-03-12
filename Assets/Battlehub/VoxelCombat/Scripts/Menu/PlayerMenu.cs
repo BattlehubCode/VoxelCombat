@@ -218,7 +218,7 @@ namespace Battlehub.VoxelCombat
                     }
                     break;
                 case 5: //quit
-                    m_console.Write("quit");
+                    m_console.GetChild(LocalPlayerIndex).Write("quit");
                     break;
             }
         }

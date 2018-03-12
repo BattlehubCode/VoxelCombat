@@ -855,7 +855,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void OnConsoleCommand(string cmd, params string[] args)
+        private void OnConsoleCommand(IConsole console, string cmd, params string[] args)
         {
             cmd = cmd.ToLower();
             if(cmd == "mapeditor")
