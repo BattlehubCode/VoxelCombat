@@ -582,15 +582,15 @@ namespace Battlehub.VoxelCombat
         private void Update()
         {
             m_isPointerOverGameObject = false;
-            if (EventSystem.current != null)
-            {
-                m_isPointerOverGameObject = EventSystem.current.IsPointerOverGameObject();
-                if (EventSystem.current.currentSelectedGameObject != m_selectedGameObject)
-                {
-                    m_selectedGameObject = EventSystem.current.currentSelectedGameObject;
-                    m_isInputFieldSelected = m_selectedGameObject != null && m_selectedGameObject.GetComponent<InputField>() != null;
-                }
-            }
+            //if (EventSystem.current != null)
+            //{
+            //    m_isPointerOverGameObject = EventSystem.current.IsPointerOverGameObject();
+            //    if (EventSystem.current.currentSelectedGameObject != m_selectedGameObject)
+            //    {
+            //        m_selectedGameObject = EventSystem.current.currentSelectedGameObject;
+            //        m_isInputFieldSelected = m_selectedGameObject != null && m_selectedGameObject.GetComponent<InputField>() != null;
+            //    }
+            //}
 
             if(IsInInitializationState)
             {

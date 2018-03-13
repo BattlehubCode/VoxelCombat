@@ -338,6 +338,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Effects\VoxelDestruction.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\BoxSelection.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\CursorHelper.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\DontDestroyOnLoadManager.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\GLCamera.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\GLRenderer.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\GridRenderer.cs" />

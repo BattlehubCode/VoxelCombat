@@ -29,7 +29,7 @@ namespace Battlehub.VoxelCombat
             if(m_instance == null)
             {
                 m_instance = this;
-                DontDestroyOnLoad(m_instance);
+                gameObject.DontDestroyOnLoad();
 
                 m_localPlayers = new HashSet<Guid>();
                 base.Awake();

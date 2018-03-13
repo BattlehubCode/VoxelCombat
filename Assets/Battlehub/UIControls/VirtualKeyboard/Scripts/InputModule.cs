@@ -478,6 +478,8 @@ namespace Battlehub.UIControls
         protected override void ProcessMove(PointerEventData pointerEvent)
         {
             var targetGO = (Cursor.lockState != CursorLockMode.None ? null : pointerEvent.pointerCurrentRaycast.gameObject);
+           // GameObject targetGO = null;// pointerEvent.pointerCurrentRaycast.gameObject;
+           // Debug.Log(Cursor.lockState);
             if(CanProcess(targetGO))
             {
                 HandlePointerExitAndEnter(pointerEvent, targetGO);

@@ -132,6 +132,9 @@ namespace Battlehub.UIControls
             {
                 m_inputField.textComponent = m_textComponent;
             }
+
+            m_virtualKeyboard.IsOn = false;
+            HandleDeselect();
         }
 
         protected override void OnDestroy()
@@ -206,6 +209,7 @@ namespace Battlehub.UIControls
 
             if(m_virtualKeyboard != null)
             {
+                m_virtualKeyboard.KeyPressed -= OnKeyPressed;
                 m_virtualKeyboard.KeyPressed += OnKeyPressed;
             }
             
@@ -250,16 +254,20 @@ namespace Battlehub.UIControls
 
         public void OnDeselect(BaseEventData eventData)
         {
+            HandleDeselect();
+        }
+
+        private void HandleDeselect()
+        {
             DestroyHelpers();
 
             IsEditing = false;
-            if(m_virtualKeyboard != null)
+            if (m_virtualKeyboard != null)
             {
                 m_virtualKeyboard.KeyPressed -= OnKeyPressed;
             }
 
             m_inputField.readOnly = m_isInputFieldReadOnly;
-        
         }
 
         private void DestroyHelpers()

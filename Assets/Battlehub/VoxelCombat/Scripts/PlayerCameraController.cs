@@ -515,7 +515,7 @@ namespace Battlehub.VoxelCombat
                     mouseYAxis = 0;
                 }
 
-                if (UnityEngine.Cursor.lockState != CursorLockMode.None)
+                if (CursorHelper.lockState != CursorLockMode.None)
                 {
                     bool left = VirtualMousePosition.x < m_camPixelRect.xMin + MouseMargin;
                     bool right = VirtualMousePosition.x > m_camPixelRect.xMax - MouseMargin;
@@ -563,7 +563,7 @@ namespace Battlehub.VoxelCombat
             {
                 if(mouseXAxis != 0 || mouseYAxis != 0)
                 {
-                    if(UnityEngine.Cursor.lockState != CursorLockMode.None)
+                    if(CursorHelper.lockState != CursorLockMode.None)
                     {
                         MoveCursorUsingMouse(settings);
                         //MoveCursor(settings);

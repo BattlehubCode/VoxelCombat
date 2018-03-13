@@ -28,10 +28,10 @@ namespace Battlehub.VoxelCombat
 
 
             GameObject serverGO = null;
-            if (m_remoteGameServer == null)
+            if (!m_remoteGameServer)
             {
                 m_remoteGameServer = FindObjectOfType<RemoteGameServer>();
-                if(m_remoteGameServer == null)
+                if(!m_remoteGameServer)
                 {
                     if(serverGO == null)
                     {
@@ -43,10 +43,10 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            if(m_localGameServer == null)
+            if(!m_localGameServer)
             {
                 m_localGameServer = FindObjectOfType<LocalGameServer>();
-                if (m_localGameServer == null)
+                if (!m_localGameServer)
                 {
                     if (serverGO == null)
                     {
@@ -139,13 +139,13 @@ namespace Battlehub.VoxelCombat
             get { return m_matchEngine; }
         }
 
-        private static IGameServer m_remoteGameServer;
+        private static RemoteGameServer m_remoteGameServer;
         public static IGameServer RemoteGameServer
         {
             get { return m_remoteGameServer; }
         }
 
-        private static IGameServer m_localGameServer;
+        private static LocalGameServer m_localGameServer;
         public static IGameServer LocalGameServer
         {
             get { return m_localGameServer; }

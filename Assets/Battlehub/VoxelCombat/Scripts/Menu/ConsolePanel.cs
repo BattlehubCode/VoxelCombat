@@ -132,6 +132,7 @@ namespace Battlehub.VoxelCombat
         {
             if (m_isExpanded && m_messageQueue.Count > 0)
             {
+                /*
                 if(m_inputManager.GetButtonDown(InputAction.CursorY, LocalPlayerIndex, false))
                 {
                     if (m_inputManager.GetAxisRaw(InputAction.CursorY, LocalPlayerIndex, false) > 0)
@@ -178,13 +179,16 @@ namespace Battlehub.VoxelCombat
                         }
                     }
                 }
+                */
             }
         }
 
         private IEnumerator ScrollToBottom()
         {
             yield return new WaitForEndOfFrame();
+
             m_messageScrollRect.verticalNormalizedPosition = 0;
+            //m_messageScrollRect.verticalNormalizedPosition = 0;
         }
 
         private void PopulateUIQueue()
@@ -235,17 +239,21 @@ namespace Battlehub.VoxelCombat
 
         private void OnInputEndEdit(string value)
         {
-            if (!string.IsNullOrEmpty(value))
+            bool notEmptyCmd = !string.IsNullOrEmpty(value);
+
+            if (notEmptyCmd)
             {
                 m_inputField.text = string.Empty;
                 Write(value);
             }
 
-            if (m_isExpanded)
-            {
-                IndependentSelectable.Select(m_inputField.gameObject);
-                InputFieldWithVirtualKeyboard.ActivateInputField(m_inputField);
-            }
+            //if (m_isExpanded && notEmptyCmd)
+            //{
+            //    m_coSelect = CoSelect();
+            //    StartCoroutine(m_coSelect);
+            //    // IndependentSelectable.Select(m_inputField.gameObject);
+            //    //InputFieldWithVirtualKeyboard.ActivateInputField(m_inputField);
+            //}
         }
 
         private char OnValidateInput(string text, int charIndex, char addedChar)

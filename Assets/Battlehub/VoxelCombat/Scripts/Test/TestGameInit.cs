@@ -4,6 +4,14 @@ using UnityEngine;
 
 namespace Battlehub.VoxelCombat
 {
+
+    public class TestGameInitArgs
+    {
+        public string MapName;
+        public int PlayersCount = 2;
+        public int BotsCount;
+    }
+
     public static class TestGameInit
     {
         private static readonly string[] m_playerNames =
@@ -40,8 +48,8 @@ namespace Battlehub.VoxelCombat
                 throw new ArgumentException("players + bots should be >= 2 and <= 8");
             }
 
-            IProgressIndicator progress = Dependencies.Progress;
-            progress.IsVisible = true;
+            //IProgressIndicator progress = Dependencies.Progress;
+            //progress.IsVisible = true;
 
             INotification notification = Dependencies.Notification;
             IGameServer remoteGameServer = Dependencies.RemoteGameServer;
@@ -149,7 +157,7 @@ namespace Battlehub.VoxelCombat
 
         private static void InitGame(string mapName, int playerIndex, int botIndex, int playersCount, int botsCount, Action callback, Action<Error> error)
         {
-            IProgressIndicator progress = Dependencies.Progress;
+            //IProgressIndicator progress = Dependencies.Progress;
             IGameServer server = Dependencies.GameServer;
             IGlobalSettings gSettings = Dependencies.Settings;
            
@@ -160,13 +168,13 @@ namespace Battlehub.VoxelCombat
                     if (server.HasError(e1))
                     {
                         error(e1);
-                        progress.IsVisible = false;
+                        //progress.IsVisible = false;
                         server.SignUp(m_playerNames[playerIndex], "welcome", gSettings.ClientId, (e100, p, pwdHash2) =>
                         {
                             if(server.HasError(e100))
                             {
                                 error(e100);
-                                progress.IsVisible = false;
+                                //progress.IsVisible = false;
                                 return;
                             }
 
@@ -183,7 +191,7 @@ namespace Battlehub.VoxelCombat
             {
                 if (botIndex == botsCount)
                 {
-                    Launch(callback, error, progress, server, gSettings);
+                    Launch(callback, error, null, /*progress*/ server, gSettings);
                 }
                 else
                 {
@@ -192,7 +200,7 @@ namespace Battlehub.VoxelCombat
                         if (server.HasError(e4))
                         {
                             error(e4);
-                            progress.IsVisible = false;
+                            //progress.IsVisible = false;
                             return;
                         }
 
@@ -200,7 +208,7 @@ namespace Battlehub.VoxelCombat
 
                         if (botIndex == botsCount)
                         {
-                            Launch(callback, error, progress, server, gSettings);
+                            Launch(callback, error, null /*progress*/ , server, gSettings);
                         }
                         else
                         {
@@ -218,7 +226,7 @@ namespace Battlehub.VoxelCombat
                 if (server.HasError(readyToLaunchError))
                 {
                     error(readyToLaunchError);
-                    progress.IsVisible = false;
+                    //progress.IsVisible = false;
                     return;
                 }
 
@@ -227,11 +235,11 @@ namespace Battlehub.VoxelCombat
                     if (server.HasError(e5))
                     {
                         error(e5);
-                        progress.IsVisible = false;
+                        //progress.IsVisible = false;
                         return;
                     }
 
-                    progress.IsVisible = false;
+                    //progress.IsVisible = false;
 
                     gSettings.MatchServerUrl = serverUrl;
 
@@ -256,7 +264,7 @@ namespace Battlehub.VoxelCombat
 
         private static void LoginOrSignupCompleted(string mapName, int playerIndex, int botIndex, int playersCount, int botsCount, Action callback, Action<Error> error)
         {
-            IProgressIndicator progress = Dependencies.Progress;
+            //IProgressIndicator progress = Dependencies.Progress;
             IGameServer server = Dependencies.GameServer;
             IGlobalSettings gSettings = Dependencies.Settings;
 
@@ -269,7 +277,7 @@ namespace Battlehub.VoxelCombat
                     if (server.HasError(e2))
                     {
                         error(e2);
-                        progress.IsVisible = false;
+                       // progress.IsVisible = false;
                         return;
                     }
 
@@ -296,18 +304,18 @@ namespace Battlehub.VoxelCombat
                             if (server.HasError(createDefaultError))
                             {
                                 error(createDefaultError);
-                                progress.IsVisible = false;
+                               //progress.IsVisible = false;
                                 return;
                             }
 
                             mapName = defaultMapInfo.Name;
                             mapInfo = defaultMapInfo;
-                            CreateRoom(mapName, playerIndex, botIndex, playersCount, botsCount, callback, error, progress, server, gSettings, mapInfo);
+                            CreateRoom(mapName, playerIndex, botIndex, playersCount, botsCount, callback, error, null /*progress*/, server, gSettings, mapInfo);
                         });
                     }
                     else
                     {
-                        CreateRoom(mapName, playerIndex, botIndex, playersCount, botsCount, callback, error, progress, server, gSettings, mapInfo);
+                        CreateRoom(mapName, playerIndex, botIndex, playersCount, botsCount, callback, error, null /*progress*/, server, gSettings, mapInfo);
                     }
                 });
             }
@@ -324,7 +332,7 @@ namespace Battlehub.VoxelCombat
                 if (server.HasError(e3))
                 {
                     error(e3);
-                    progress.IsVisible = false;
+                    //progress.IsVisible = false;
                     return;
                 }
 

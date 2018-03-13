@@ -125,8 +125,8 @@ namespace Battlehub.VoxelCombat
 
         private void UpdateCursorMode()
         {
-            Cursor.visible = !m_isOn;
-            Cursor.lockState = m_isOn ? CursorLockMode.Locked : CursorLockMode.None;
+            CursorHelper.visible = !m_isOn;
+            CursorHelper.lockState = m_isOn ? CursorLockMode.Locked : CursorLockMode.None;
         }
 
 
@@ -155,22 +155,22 @@ namespace Battlehub.VoxelCombat
 
             if (Dependencies.InputManager.GetButtonDown(InputAction.ToggleCursor, -1, false))
             {
-                Cursor.visible = !Cursor.visible;
-                if(Cursor.visible)
+                CursorHelper.visible = !CursorHelper.visible;
+                if(CursorHelper.visible)
                 {
-                    Cursor.lockState = CursorLockMode.None;
+                    CursorHelper.lockState = CursorLockMode.None;
                 }
                 else
                 {
-                    Cursor.lockState = CursorLockMode.Locked;
+                    CursorHelper.lockState = CursorLockMode.Locked;
                 } 
             }
 
-            if (!Cursor.visible)
+            if (!CursorHelper.visible)
             {
-                if(Cursor.lockState != CursorLockMode.Locked)
+                if(CursorHelper.lockState != CursorLockMode.Locked)
                 {
-                    Cursor.lockState = CursorLockMode.Locked;
+                    CursorHelper.lockState = CursorLockMode.Locked;
                 }
             }
         }
@@ -199,6 +199,8 @@ namespace Battlehub.VoxelCombat
                 m_secondCol.SetActive(m_viewportCount > 1);
 
                 IEventSystemManager eventSystemMan = Dependencies.EventSystemManager;
+
+       
 
                 for (int i = 0; i < m_viewportCount; ++i)
                 {
@@ -240,6 +242,9 @@ namespace Battlehub.VoxelCombat
                         playerMenu.LocalPlayerIndex = i;
                     }
                 }
+
+                VoxelConsole console = GetComponent<VoxelConsole>();
+                console.Initialize();
             }
         }
 

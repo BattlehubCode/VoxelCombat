@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Battlehub.VoxelCombat
 {
@@ -219,11 +220,13 @@ namespace Battlehub.VoxelCombat
 
         private IMatchEngineCli m_engine;
         private IGameServer m_gameServer;
+        private IGameServer m_remoteGameServer;
         private IGlobalSettings m_gSettings;
         private IProgressIndicator m_progress;
         private INotification m_notification;
         private IVoxelMap m_voxelMap;
         private IGameView m_gameView;
+        private IConsole m_console;
 
         private Guid[] m_localPlayers;
         private Player[] m_players;
@@ -238,7 +241,10 @@ namespace Battlehub.VoxelCombat
             m_voxelMap = Dependencies.Map;
             m_gameView = Dependencies.GameView;
             m_gameServer = Dependencies.GameServer;
+            m_remoteGameServer = Dependencies.RemoteGameServer;
             m_gSettings = Dependencies.Settings;
+            m_console = Dependencies.Console;
+            m_console.Command += OnConsoleCommand;
 
             m_engine = Dependencies.MatchEngine;
             m_engine.ReadyToStart += OnEngineReadyToStart;
@@ -247,20 +253,15 @@ namespace Battlehub.VoxelCombat
             m_engine.Stopped += OnEngineStopped;
             m_engine.Ping += OnEnginePing;
             m_engine.Paused += OnEnginePaused;
-
             m_engine.ExecuteCommands += OnEngineCommands;
 
             INavigation navigation = Dependencies.Navigation;
             if (string.IsNullOrEmpty(navigation.PrevSceneName))
             {
-                Dependencies.RemoteGameServer.ConnectionStateChanged += OnConnectionStateChanged;
+                m_remoteGameServer.ConnectionStateChanged += OnConnectionStateChanged;
             }
-        }
 
-        private void OnConnectionStateChanged(Error error, ValueChangedArgs<bool> payload)
-        {
-            Dependencies.RemoteGameServer.ConnectionStateChanged -= OnConnectionStateChanged;
-            TestGameInit.Init(null, 2, 0, Dependencies.RemoteGameServer.IsConnected, () => { }, initError => m_notification.ShowError(initError));
+            m_progress.IsVisible = true;
         }
 
         private void Start()
@@ -274,6 +275,16 @@ namespace Battlehub.VoxelCombat
 
         private void OnDestroy()
         {
+            if (m_remoteGameServer != null)
+            {
+                m_remoteGameServer.ConnectionStateChanged -= OnConnectionStateChanged;
+            }
+
+            if (m_console != null)
+            {
+                m_console.Command -= OnConsoleCommand;
+            }
+
             if(m_engine != null)
             {
                 m_engine.ReadyToStart -= OnEngineReadyToStart;
@@ -283,6 +294,45 @@ namespace Battlehub.VoxelCombat
                 m_engine.Ping -= OnEnginePing;
                 m_engine.Paused -= OnEnginePaused;
                 m_engine.ExecuteCommands -= OnEngineCommands;
+            }
+        }
+
+        private void OnConnectionStateChanged(Error error, ValueChangedArgs<bool> payload)
+        {
+            TestGameInitArgs gameInitArgs = Dependencies.State.GetValue<TestGameInitArgs>("Battlehub.VoxelGame.TestGameInitArgs");
+            if(gameInitArgs == null)
+            {
+                gameInitArgs = new TestGameInitArgs();
+            }
+            Dependencies.State.SetValue("Battlehub.VoxelGame.TestGameInitArgs", null);
+
+            Dependencies.RemoteGameServer.ConnectionStateChanged -= OnConnectionStateChanged;
+            TestGameInit.Init(gameInitArgs.MapName, gameInitArgs.PlayersCount, gameInitArgs.BotsCount, Dependencies.RemoteGameServer.IsConnected, () => { }, initError => m_notification.ShowError(initError));
+        }
+
+        private void OnConsoleCommand(IConsole console, string cmd, params string[] args)
+        {
+            if(cmd == "launch")
+            {
+                TestGameInitArgs gameInitArgs = new TestGameInitArgs();
+                if(args.Length > 2)
+                {
+                    gameInitArgs.MapName = args[2];
+                }
+
+                if(args.Length > 0)
+                {
+                    int.TryParse(args[0], out gameInitArgs.PlayersCount);
+                }
+
+                if(args.Length > 1)
+                {
+                    int.TryParse(args[1], out gameInitArgs.BotsCount);
+                }
+
+                DontDestroyOnLoadManager.DestroyAll();
+                Dependencies.State.SetValue("Battlehub.VoxelGame.TestGameInitArgs", gameInitArgs);
+                SceneManager.LoadScene("Game");
             }
         }
 
