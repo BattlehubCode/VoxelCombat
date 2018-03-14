@@ -34,6 +34,22 @@ namespace Battlehub.VoxelCombat
         public const int Kill = 201;
     }
 
+    public struct MapRect
+    {
+        public int Row;
+        public int Col;
+        public int Width;
+        public int Height;
+       
+        public MapRect(int row, int col, int width, int height)
+        {
+            Row = row;
+            Col = col;
+            Width = width;
+            Height = height;
+        }
+    }
+
     public struct MapPos
     {
         public enum Align

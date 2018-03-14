@@ -13,11 +13,6 @@ namespace Battlehub.VoxelCombat
             get;
         }  
 
-        //PlayerCursor Cursor
-        //{
-        //    get;
-        //}
-
         int LocalPlayerIndex
         {
             get;
@@ -31,8 +26,6 @@ namespace Battlehub.VoxelCombat
     {
         public event GameViewportEventHandler ViewportChanged;
         
-
-
         private RectTransform m_viewport;
         private Vector3 m_viewportPosition;
         private float m_viewportWidth;
@@ -44,21 +37,10 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private PostProcessingProfile m_postrocessingProfile;
 
-        //[SerializeField]
-        //private PlayerCursor m_cursor;
-
         public Camera Camera
         {
             get { return m_camera; }
         }
-
-        //public PlayerCursor Cursor
-        //{
-        //    get { return m_cursor; }
-        //}
-
-
-
 
         private int m_localPlayerIndex = -1;
         public int LocalPlayerIndex //starts from 1

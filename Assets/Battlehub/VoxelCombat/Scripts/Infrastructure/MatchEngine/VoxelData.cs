@@ -1742,6 +1742,13 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
+        MapRect MapBounds
+        {
+            get;
+        }
+
+
+
         bool IsOn
         {
             get;

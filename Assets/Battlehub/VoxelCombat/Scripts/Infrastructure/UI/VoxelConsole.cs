@@ -35,6 +35,7 @@ namespace Battlehub.VoxelCombat
 
         public void Initialize()
         {
+          
             m_children = GetComponentsInChildren<ConsolePanel>(true).ToDictionary(cp => cp.LocalPlayerIndex, cp => (IConsole)cp);
             foreach(IConsole console in m_children.Values)
             {

@@ -697,8 +697,7 @@ namespace Battlehub.VoxelCombat
                 //Relace with async version
                 byte[] mapInfoBytes = ProtobufSerializer.Serialize(mapInfo);
                 File.WriteAllBytes(dataPath + mapInfo.Id + ".info", mapInfoBytes);
-                byte[] mapDataBytes = ProtobufSerializer.Serialize(mapData);
-                File.WriteAllBytes(dataPath + mapInfo.Id + ".data", mapDataBytes);
+                File.WriteAllBytes(dataPath + mapInfo.Id + ".data", mapData);
             }
             catch(Exception e)
             {

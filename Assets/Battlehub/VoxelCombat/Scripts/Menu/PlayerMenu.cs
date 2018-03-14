@@ -180,15 +180,15 @@ namespace Battlehub.VoxelCombat
         {
             switch(code)
             {
-                case 0: //close menu 
-                    m_menuPanel.IsOpened = false;
-                    break;
-                case 1: //pause
-                    m_gameState.IsPaused = !m_gameState.IsPaused;
-                    break;
-                case 2: //console
+                case 0: //console
                     m_menuPanel.IsOpened = false;
                     m_consolePanel.IsOpened = true;
+                    break;
+                case 1: //close menu 
+                    m_menuPanel.IsOpened = false;
+                    break;
+                case 2: //pause
+                    m_gameState.IsPaused = !m_gameState.IsPaused;
                     break;
                 case 3: //help
                     m_menuPanel.IsOpened = false;

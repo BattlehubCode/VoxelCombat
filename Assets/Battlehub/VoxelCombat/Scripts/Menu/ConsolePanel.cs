@@ -33,11 +33,21 @@ namespace Battlehub.VoxelCombat
         private bool m_isExpanded;
 
         private IVoxelInputManager m_inputManager;
+        private bool m_isInitialized;
 
         private void Awake()
         {
-            m_inputManager = Dependencies.InputManager;
+            if (!m_isInitialized)
+            {
+                Initialize();
+            }
+        }
 
+        private void Initialize()
+        {
+            m_isInitialized = true;
+
+            m_inputManager = Dependencies.InputManager;
             m_timeQueue = new Queue<System.DateTime>();
             m_messageQueue = new Queue<string>();
             m_uiQueue = new Queue<Text>();
@@ -95,7 +105,6 @@ namespace Battlehub.VoxelCombat
             StartCoroutine(m_coSelect);
 
             m_isExpanded = true;
-
             PopulateUIQueue();
         }
 
@@ -267,12 +276,24 @@ namespace Battlehub.VoxelCombat
 
         public void Echo(string message)
         {
+            if (!m_isInitialized)
+            {
+                Initialize();
+            }
+
             if (string.IsNullOrEmpty(message))
             {
                 throw new ArgumentException("message should not be empty");
             }
 
+            m_messageQueue.Enqueue(message);
             DateTime now = DateTime.Now;
+            m_timeQueue.Enqueue(now);
+
+            if (m_messageQueue.Count > m_maxMessages)
+            {
+                m_messageQueue.Dequeue();
+            }
 
             if (m_isExpanded)
             {
@@ -291,6 +312,11 @@ namespace Battlehub.VoxelCombat
             if (string.IsNullOrEmpty(message))
             {
                 throw new ArgumentException("message should not be empty");
+            }
+
+            if(!m_isInitialized)
+            {
+                Initialize();
             }
 
             m_messageQueue.Enqueue(message);

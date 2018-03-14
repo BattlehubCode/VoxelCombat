@@ -323,11 +323,13 @@ namespace Battlehub.VoxelCombat
                 if(args.Length > 0)
                 {
                     int.TryParse(args[0], out gameInitArgs.PlayersCount);
+                    gameInitArgs.PlayersCount = Mathf.Clamp(gameInitArgs.PlayersCount, 0, GameConstants.MaxLocalPlayers);
                 }
 
                 if(args.Length > 1)
                 {
                     int.TryParse(args[1], out gameInitArgs.BotsCount);
+                    gameInitArgs.BotsCount = Mathf.Clamp(gameInitArgs.BotsCount, 0, GameConstants.MaxPlayers - gameInitArgs.BotsCount);
                 }
 
                 DontDestroyOnLoadManager.DestroyAll();

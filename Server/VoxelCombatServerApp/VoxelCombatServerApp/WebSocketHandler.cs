@@ -216,6 +216,8 @@ namespace Battlehub.VoxelCombat
                         }
                         else
                         {
+                            m_memoryStream.Write(receiveDataBuffer.Array, receiveDataBuffer.Offset, result.Count);
+
                             byte[] data = m_memoryStream.ToArray();
                             m_memoryStream.SetLength(0);
                             Message(this, data);

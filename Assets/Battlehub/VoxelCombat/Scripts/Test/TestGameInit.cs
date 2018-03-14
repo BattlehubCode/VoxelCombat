@@ -285,6 +285,17 @@ namespace Battlehub.VoxelCombat
                     if (!string.IsNullOrEmpty(mapName))
                     {
                         mapInfo = maps.Where(m => m.Name == mapName).FirstOrDefault();
+
+                        if (mapInfo == null)
+                        {
+                            Debug.Log(mapName + " not found. Searching for default map..");
+                            mapName = "Default";
+                            mapInfo = maps.Where(m => m.Name == mapName).FirstOrDefault();
+                            if(mapInfo != null)
+                            {
+                                Debug.Log("Default map found");
+                            }
+                        }
                     }
                     else
                     {

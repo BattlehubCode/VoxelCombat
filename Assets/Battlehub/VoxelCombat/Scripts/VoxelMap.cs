@@ -35,6 +35,12 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        private MapRect m_mapBounds;
+        public MapRect MapBounds
+        {
+            get { return m_mapBounds; }
+        }
+
         private bool m_isOn = false;
         public bool IsOn
         {
@@ -219,6 +225,8 @@ namespace Battlehub.VoxelCombat
                 try
                 {
                     m_map = ProtobufSerializer.Deserialize<MapRoot>(bytes);
+                    CalculateBounds();
+
                     //how to make sure than no one accessing cameras during background thread job ?
                     for (int i = 0; i < m_mapCameras.Count; ++i)
                     {
@@ -251,7 +259,14 @@ namespace Battlehub.VoxelCombat
                     m_mapCameras[i].IsOn = m_isOn;
                 }
             });
+        }
 
+        private void CalculateBounds()
+        {
+            MapPos mim;
+            MapPos max;
+
+           // m_map.Root.ForEach()
         }
 
         public void Save(Action<byte[]> done)

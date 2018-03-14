@@ -200,8 +200,6 @@ namespace Battlehub.VoxelCombat
 
                 IEventSystemManager eventSystemMan = Dependencies.EventSystemManager;
 
-       
-
                 for (int i = 0; i < m_viewportCount; ++i)
                 {
                     GameViewport gameViewport = Instantiate(m_gameViewportPrefab, m_viewportPlaceholders[i]);
@@ -211,33 +209,33 @@ namespace Battlehub.VoxelCombat
                     m_gameViewports[i] = gameViewport;
 
                     eventSystemMan.Apply(gameViewport.gameObject, i);
-                    
+
                     PlayerCameraController cameraController = gameViewport.GetComponent<PlayerCameraController>();
-                    if(cameraController != null)
+                    if (cameraController != null)
                     {
                         cameraController.LocalPlayerIndex = i;
                     }
 
                     PlayerSelectionController playerSelectionController = gameViewport.GetComponent<PlayerSelectionController>();
-                    if(playerSelectionController != null)
+                    if (playerSelectionController != null)
                     {
                         playerSelectionController.LocalPlayerIndex = i;
                     }
 
                     PlayerUnitController playerUnitController = gameViewport.GetComponent<PlayerUnitController>();
-                    if(playerUnitController != null)
+                    if (playerUnitController != null)
                     {
                         playerUnitController.LocalPlayerIndex = i;
                     }
 
                     TargetSelectionController targetSelectionController = gameViewport.GetComponent<TargetSelectionController>();
-                    if(targetSelectionController != null)
+                    if (targetSelectionController != null)
                     {
                         targetSelectionController.LocalPlayerIndex = i;
                     }
 
                     PlayerMenu playerMenu = gameViewport.GetComponent<PlayerMenu>();
-                    if(playerMenu != null)
+                    if (playerMenu != null)
                     {
                         playerMenu.LocalPlayerIndex = i;
                     }
@@ -245,6 +243,16 @@ namespace Battlehub.VoxelCombat
 
                 VoxelConsole console = GetComponent<VoxelConsole>();
                 console.Initialize();
+
+                for (int i = 0; i < m_viewportCount; ++i)
+                {
+                    PlayerConsoleCommandHandler cmdHandler = m_viewportPlaceholders[i].GetComponentInChildren<PlayerConsoleCommandHandler>();
+                    if (cmdHandler != null)
+                    {
+                        cmdHandler.LocalPlayerIndex = i;
+                        cmdHandler.Initialize();
+                    }
+                }
             }
         }
 
