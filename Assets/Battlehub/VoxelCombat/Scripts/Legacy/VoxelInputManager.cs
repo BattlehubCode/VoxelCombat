@@ -39,6 +39,8 @@ namespace Battlehub.VoxelCombat
         Action0 = 112,
         Cancel = 113,
         Submit = 114,
+        LT = 115,
+        RT = 116,
 
         //MapEditor
         EditorCreate = 500,

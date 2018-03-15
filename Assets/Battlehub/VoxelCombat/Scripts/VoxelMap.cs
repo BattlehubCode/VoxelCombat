@@ -263,10 +263,55 @@ namespace Battlehub.VoxelCombat
 
         private void CalculateBounds()
         {
-            MapPos mim;
-            MapPos max;
+            int weight = GameConstants.MinVoxelActorWeight;
+            int size = m_map.GetMapSizeWith(weight);
+            MapPos min = new MapPos(size / 2, size / 2);
+            MapPos max = new MapPos(size / 2, size / 2);
+            for (int row = 0; row < size; ++row)
+            {
+                for(int col = 0; col < size; ++col)
+                {
+                    MapCell cell = m_map.Get(row, col, weight);
+                    bool nonEmpty = cell.VoxelData != null || cell.HasDescendantsWithVoxelData();
+                    if (!nonEmpty)
+                    {
+                        while (cell.Parent != null)
+                        {
+                            cell = cell.Parent;
+                            if (cell.VoxelData != null)
+                            {
+                                nonEmpty = true;
+                                break;
+                            }
+                        }
+                    }
 
-           // m_map.Root.ForEach()
+                    if(nonEmpty)
+                    {
+                        if(row < min.Row)
+                        {
+                            min.Row = row;
+                        }
+
+                        if(row > max.Row)
+                        {
+                            max.Row = row;
+                        }
+
+                        if(col < min.Col)
+                        {
+                            min.Col = col;
+                        }
+
+                        if(col > max.Col)
+                        {
+                            max.Col = col;
+                        }
+                    }
+                }
+            }
+
+            m_mapBounds = new MapRect(min, max);
         }
 
         public void Save(Action<byte[]> done)

@@ -27,6 +27,8 @@ namespace Battlehub.VoxelCombat
             {
                 { InputAction.LB, InputControlType.LeftBumper },
                 { InputAction.RB, InputControlType.RightBumper },
+                { InputAction.LT, InputControlType.LeftTrigger },
+                { InputAction.RT, InputControlType.RightTrigger },
                 { InputAction.A, InputControlType.Action1 },
                 { InputAction.B, InputControlType.Action2 },
                 { InputAction.X, InputControlType.Action3 },

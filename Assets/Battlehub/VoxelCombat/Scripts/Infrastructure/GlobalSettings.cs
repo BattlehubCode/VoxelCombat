@@ -6,6 +6,7 @@ namespace Battlehub.VoxelCombat
     [Serializable]
     public class PlayerCamCtrlSettings
     {
+        public float RotateSensitivity = 100.0f;
         public float MoveSensitivity = 1.0f;
         public float CursorSensitivity = 15.0f;
         public float ZoomSensitivity = 1.0f;

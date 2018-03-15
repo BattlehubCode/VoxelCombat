@@ -38,15 +38,30 @@ namespace Battlehub.VoxelCombat
     {
         public int Row;
         public int Col;
-        public int Width;
-        public int Height;
-       
-        public MapRect(int row, int col, int width, int height)
+        public int RowsCount;
+        public int ColsCount;
+
+        public MapRect(int row, int col, int rowsCount, int colsCount)
         {
             Row = row;
             Col = col;
-            Width = width;
-            Height = height;
+            RowsCount = rowsCount;
+            ColsCount = colsCount;
+        }
+
+        public MapRect(MapPos min, MapPos max)
+        {
+            Row = min.Row;
+            Col = min.Col;
+
+            RowsCount = max.Row - Row;
+            ColsCount = max.Col - Col;
+        }
+
+        public bool Contains(MapPos pos)
+        {
+            return Row <= pos.Row && pos.Row <= Row + RowsCount &&
+                   Col <= pos.Col && pos.Col <= Col + ColsCount;
         }
     }
 
