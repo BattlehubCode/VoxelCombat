@@ -9,7 +9,7 @@ namespace Battlehub.VoxelCombat
     {
         public const float UnitSize = 0.5f;
 
-        public const int VoxelCameraRadius = 8;// 2; //= 6;
+        public const int VoxelCameraRadius = 2; //8;// 2; //= 6;
         public const int VoxelCameraWeight = 4;
 
 
@@ -64,6 +64,16 @@ namespace Battlehub.VoxelCombat
         };
 
         public const int ExplodableWeightDelta = 1;
+
+#if !SERVER
+        public static readonly int[] GLViewports = new int[]
+        {
+            (int)RTLayer.Viewport0,
+            (int)RTLayer.Viewport1,
+            (int)RTLayer.Viewport2,
+            (int)RTLayer.Viewport3,
+        };
+#endif
     }
 
     [ProtoContract]

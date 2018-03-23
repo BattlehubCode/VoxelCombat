@@ -60,7 +60,8 @@ namespace Battlehub.VoxelCombat
             m_matchServerUrl = matchServerUrl;
             m_persistentDataPath = persistentDataPath;
             Log = LogManager.GetLogger(GetType());
-            m_playerRepository = new PlayerRepository();
+            // m_playerRepository = new PlayerRepository();
+            m_playerRepository = new InMemoryPlayerRepository();
         }
 
         public bool HasError(Error error)

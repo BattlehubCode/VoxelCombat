@@ -240,7 +240,7 @@ namespace Battlehub.VoxelCombat
             m_notification = Dependencies.Notification;
             m_voxelMap = Dependencies.Map;
             m_gameView = Dependencies.GameView;
-            m_gameServer = Dependencies.GameServer;
+         
             m_remoteGameServer = Dependencies.RemoteGameServer;
             m_gSettings = Dependencies.Settings;
             m_console = Dependencies.Console;
@@ -259,6 +259,10 @@ namespace Battlehub.VoxelCombat
             if (string.IsNullOrEmpty(navigation.PrevSceneName))
             {
                 m_remoteGameServer.ConnectionStateChanged += OnConnectionStateChanged;
+            }
+            else
+            {
+                m_gameServer = Dependencies.GameServer;
             }
 
             m_progress.IsVisible = true;
@@ -299,14 +303,17 @@ namespace Battlehub.VoxelCombat
 
         private void OnConnectionStateChanged(Error error, ValueChangedArgs<bool> payload)
         {
+            m_gameServer = Dependencies.GameServer;
+
             TestGameInitArgs gameInitArgs = Dependencies.State.GetValue<TestGameInitArgs>("Battlehub.VoxelGame.TestGameInitArgs");
             if(gameInitArgs == null)
             {
                 gameInitArgs = new TestGameInitArgs();
             }
+
             Dependencies.State.SetValue("Battlehub.VoxelGame.TestGameInitArgs", null);
 
-            Dependencies.RemoteGameServer.ConnectionStateChanged -= OnConnectionStateChanged;
+            m_remoteGameServer.ConnectionStateChanged -= OnConnectionStateChanged;
             TestGameInit.Init(gameInitArgs.MapName, gameInitArgs.PlayersCount, gameInitArgs.BotsCount, Dependencies.RemoteGameServer.IsConnected, () => { }, initError => m_notification.ShowError(initError));
         }
 

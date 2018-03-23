@@ -25,6 +25,10 @@ namespace Battlehub.VoxelCombat
         private static readonly Dictionary<InputAction, InputControlType> m_mapping =
             new Dictionary<InputAction, InputControlType>
             {
+                { InputAction.LMB, InputControlType.Button3 },
+                { InputAction.RMB, InputControlType.Button4 },
+                { InputAction.MMB, InputControlType.Button5 },
+
                 { InputAction.LB, InputControlType.LeftBumper },
                 { InputAction.RB, InputControlType.RightBumper },
                 { InputAction.LT, InputControlType.LeftTrigger },
@@ -39,6 +43,8 @@ namespace Battlehub.VoxelCombat
                 { InputAction.MoveSide, InputControlType.LeftStickX },
                 { InputAction.CursorY, InputControlType.RightStickY },
                 { InputAction.CursorX, InputControlType.RightStickX },
+                { InputAction.MouseY, InputControlType.RightStickY },
+                { InputAction.MouseX, InputControlType.RightStickX },
 
                 { InputAction.ToggleConsole, InputControlType.Button1 },
                 { InputAction.ToggleCursor, InputControlType.Button2 },
@@ -49,6 +55,7 @@ namespace Battlehub.VoxelCombat
                 { InputAction.Cancel, InputControlType.Button18 },
                 { InputAction.Submit, InputControlType.Button19 },
                 { InputAction.Zoom, InputControlType.ScrollWheel },
+           
             };
 
         public event InputEventHandler<int> DeviceEnabled;

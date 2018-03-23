@@ -191,7 +191,7 @@ namespace Battlehub.VoxelCombat
             {
                 if (botIndex == botsCount)
                 {
-                    Launch(callback, error, null, /*progress*/ server, gSettings);
+                    Launch(mapName, callback, error, null, /*progress*/ server, gSettings);
                 }
                 else
                 {
@@ -208,7 +208,7 @@ namespace Battlehub.VoxelCombat
 
                         if (botIndex == botsCount)
                         {
-                            Launch(callback, error, null /*progress*/ , server, gSettings);
+                            Launch(mapName, callback, error, null /*progress*/ , server, gSettings);
                         }
                         else
                         {
@@ -219,7 +219,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private static void Launch(Action callback, Action<Error> error, IProgressIndicator progress, IGameServer server, IGlobalSettings gSettings)
+        private static void Launch(string mapName, Action callback, Action<Error> error, IProgressIndicator progress, IGameServer server, IGlobalSettings gSettings)
         {
             server.SetReadyToLaunch(gSettings.ClientId, true, (readyToLaunchError, room) =>
             {
@@ -256,6 +256,11 @@ namespace Battlehub.VoxelCombat
 
                     Dependencies.InputManager.ActivateAll();
 
+                    if(mapName != "Default")
+                    {
+                        PlayerPrefs.SetString("lastmap", mapName);
+                    }
+                
                     callback();
                 });
             });
@@ -326,6 +331,7 @@ namespace Battlehub.VoxelCombat
                     }
                     else
                     {
+                        mapName = mapInfo.Name;
                         CreateRoom(mapName, playerIndex, botIndex, playersCount, botsCount, callback, error, null /*progress*/, server, gSettings, mapInfo);
                     }
                 });

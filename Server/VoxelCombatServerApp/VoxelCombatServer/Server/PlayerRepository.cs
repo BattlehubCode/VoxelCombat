@@ -14,6 +14,71 @@ namespace Battlehub.VoxelCombat
         void GetPlayers(Guid[] guids, Action<Error, Dictionary<Guid, Player>> callback);
     }
 
+    public class InMemoryPlayerRepository : IPlayerRepository
+    {
+        private readonly Dictionary<Guid, Player> m_playersByGuid = new Dictionary<Guid, Player>();
+        private readonly Dictionary<string, Player> m_playersByName = new Dictionary<string, Player>();
+
+        public void CreatePlayer(Guid guid, string name, string password, Action<Error, Player, byte[]> callback)
+        {
+            Player player = new Player
+            {
+                Name = name,
+                BotType = BotType.None,
+                Id = guid,
+                Victories = 0,
+            };
+
+            m_playersByGuid.Add(guid, player);
+            m_playersByName.Add(name, player);
+
+            callback(new Error(StatusCode.OK),
+                  player,
+                  new byte[] { 1 });
+        }
+
+        public void GetPlayer(string name, byte[] pwdHash, Action<Error, Player> callback)
+        {
+            Player result;
+            if(!m_playersByName.TryGetValue(name, out result))
+            {
+                callback(new Error(StatusCode.NotAuthenticated), null);
+                return;
+            }
+              
+            callback(new Error(StatusCode.OK), result);
+        }
+
+        public void GetPlayer(string name, string password, Action<Error, Player, byte[]> callback)
+        {
+            Player result;
+            if (!m_playersByName.TryGetValue(name, out result))
+            {
+                callback(new Error(StatusCode.NotAuthenticated), null, new byte[0]);
+                return;
+            }
+
+            callback(new Error(StatusCode.OK), result, new byte[] { 1 });
+        }
+
+        public void GetPlayers(Guid[] guids, Action<Error, Dictionary<Guid, Player>> callback)
+        {
+            Dictionary<Guid, Player> result = new Dictionary<Guid, Player>();
+            for(int i = 0; i < guids.Length; ++i)
+            {
+                Player player;
+                if(m_playersByGuid.TryGetValue(guids[i], out player))
+                {
+                    if(!result.ContainsKey(guids[i]))
+                    {
+                        result.Add(guids[i], player);
+                    }
+                }
+            }
+            callback(new Error(StatusCode.OK), result);
+        }
+    }
+
     public class PlayerRepository : IPlayerRepository
     {
         private const int SALT_LENGTH = 24;

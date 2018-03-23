@@ -1,0 +1,216 @@
+fileFormatVersion: 2
+guid: 334635fbf7dfe254cb60a039dd0ec748
+timeCreated: 1521454079
+licenseType: Free
+ModelImporter:
+  serializedVersion: 22
+  fileIDToRecycleName:
+    100000: a00
+    100002: a01
+    100004: a02
+    100006: a03
+    100008: a10
+    100010: a11
+    100012: a12
+    100014: a13
+    100016: a21
+    100018: a22
+    100020: a23
+    100022: a24
+    100024: Cone
+    100026: Cursor
+    100028: //RootNode
+    100030: Highlight
+    100032: Highlight0
+    100034: Cube
+    100036: Circle
+    100038: Circle_001
+    400000: a00
+    400002: a01
+    400004: a02
+    400006: a03
+    400008: a10
+    400010: a11
+    400012: a12
+    400014: a13
+    400016: a21
+    400018: a22
+    400020: a23
+    400022: a24
+    400024: Cone
+    400026: Cursor
+    400028: //RootNode
+    400030: Highlight
+    400032: Highlight0
+    400034: Cube
+    400036: Circle
+    400038: Circle_001
+    2300000: a00
+    2300002: a01
+    2300004: a02
+    2300006: a03
+    2300008: a10
+    2300010: a11
+    2300012: a12
+    2300014: a13
+    2300016: a21
+    2300018: a22
+    2300020: a23
+    2300022: a24
+    2300024: Cone
+    2300026: Highlight
+    2300028: Highlight0
+    2300030: Cube
+    2300032: Circle
+    2300034: Circle_001
+    3300000: a00
+    3300002: a01
+    3300004: a02
+    3300006: a03
+    3300008: a10
+    3300010: a11
+    3300012: a12
+    3300014: a13
+    3300016: a21
+    3300018: a22
+    3300020: a23
+    3300022: a24
+    3300024: Cone
+    3300026: Highlight
+    3300028: Highlight0
+    3300030: Cube
+    3300032: Circle
+    3300034: Circle_001
+    4300000: Highlight
+    4300002: Highlight0
+    4300004: Cone
+    4300006: a23
+    4300008: a24
+    4300010: a00
+    4300012: a10
+    4300014: a21
+    4300016: a22
+    4300018: a11
+    4300020: a01
+    4300022: a02
+    4300024: a12
+    4300026: a13
+    4300028: a03
+    4300030: Cube
+    4300032: Circle_001
+    4300034: Circle
+    7400000: Default Take
+    9500000: //RootNode
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M1
+    second: {fileID: 2100000, guid: 90a8e0529eb4d2a4c9dc0897cc5182b6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M2
+    second: {fileID: 2100000, guid: b359769c42b207c4b9b395431208384a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M3
+    second: {fileID: 2100000, guid: 9b65e1b30b4743b448c5316508289c5d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M4
+    second: {fileID: 2100000, guid: b6bf9acceb8bb8c42a8b620471f073b8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material1
+    second: {fileID: 2100000, guid: 4d53a1f4382898841853cfd23c692d24, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material2
+    second: {fileID: 2100000, guid: dfa6570249771ae4db88aa4f1e48aeb2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: unnamed
+    second: {fileID: 2100000, guid: 7bedd00f44ae56447ba5c82de4f3b78d, type: 2}
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 0
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    rigImportErrors: 
+    rigImportWarnings: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    serializedVersion: 2
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    rootMotionBoneName: 
+    rootMotionBoneRotation: {x: 0, y: 0, z: 0, w: 1}
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 2
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

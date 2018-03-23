@@ -237,7 +237,13 @@ namespace Battlehub.VoxelCombat
                 }
                 callback(error, result);
             },
-            requestSent => { if (!requestSent) { callback(new Error(StatusCode.ConnectionClosed), new RemoteResult()); } });
+            requestSent => 
+            {
+                if (!requestSent)
+                {
+                    callback(new Error(StatusCode.ConnectionClosed), new RemoteResult());
+                }
+            });
         }
 
      

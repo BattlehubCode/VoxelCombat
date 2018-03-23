@@ -22,7 +22,7 @@ namespace Battlehub.VoxelCombat
         private Mesh m_wall1;
 
         private MeshFilter m_filter;
-       // private MeshCollider m_collider;
+        private BoxCollider m_collider;
   
         protected override void SetMaterials(Material primary, Material secondary)
         {
@@ -46,6 +46,9 @@ namespace Battlehub.VoxelCombat
                 localScale.x = scale - 0.5f;
                 localScale.z = scale - 0.5f;
                 Root.localScale = localScale;
+
+                float colliderSize = m_collider.size.y * scale / (scale - 0.5f);
+                m_collider.size = new Vector3(colliderSize, m_collider.size.y, colliderSize);
             }
         }
 
@@ -67,7 +70,7 @@ namespace Battlehub.VoxelCombat
         protected override void AwakeOverride()
         {
             m_filter = GetComponent<MeshFilter>();
-           // m_collider = GetComponent<MeshCollider>();
+            m_collider = GetComponent<BoxCollider>();
             UpdateMesh();
         }
 
@@ -85,17 +88,14 @@ namespace Battlehub.VoxelCombat
             if(Health >= 3)
             {
                 m_filter.sharedMesh = m_wall3;
-               // m_collider.sharedMesh = m_wall3; 
             }
             else if(Health == 2)
             {
                 m_filter.sharedMesh = m_wall2;
-               // m_collider.sharedMesh = m_wall2;
             }
             else if (Health == 1)
             {
                 m_filter.sharedMesh = m_wall1;
-              //  m_collider.sharedMesh = m_wall1;
             }
 
 

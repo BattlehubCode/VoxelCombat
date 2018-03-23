@@ -41,6 +41,9 @@ namespace Battlehub.VoxelCombat
         Submit = 114,
         LT = 115,
         RT = 116,
+        RMB = 117,
+        LMB = 118,
+        MMB = 119,
 
         //MapEditor
         EditorCreate = 500,

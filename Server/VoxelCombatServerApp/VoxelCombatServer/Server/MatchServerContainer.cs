@@ -14,6 +14,7 @@ namespace Battlehub.VoxelCombat
         public MatchServerContainer()
         {
             m_path = HttpContext.Current.Server.MapPath("/Data");
+            Log.Info("Match Server data path " +  m_path);
         }
 
         protected override void OnRegisterClientSafe(ILowProtocol protocol, Guid clientId)

@@ -76,19 +76,19 @@ namespace Battlehub.VoxelCombat
 
                 new InputControlMapping
                 {
-                    Handle = "EditorCreate",
+                    Handle = "LMB",
                     Target = InputControlType.Button3,
 					Source = MouseButton0
                 },
                 new InputControlMapping
                 {
-                    Handle = "EditorDestroy",
+                    Handle = "RMB",
                     Target = InputControlType.Button4,
 					Source = MouseButton1
                 },
                 new InputControlMapping
                 {
-                    Handle = "EditorPan",
+                    Handle = "MMB",
                     Target = InputControlType.Button5,
 					Source = MouseButton2
                 },
@@ -116,10 +116,12 @@ namespace Battlehub.VoxelCombat
                     Target = InputControlType.Back,
                     Source = KeyCodeButton( KeyCode.Escape )
                 },
+
             };
 
             AnalogMappings = new[]
             {
+
                 new InputControlMapping {
                     Handle = "Move X",
                     Target = InputControlType.LeftStickX,
@@ -129,6 +131,20 @@ namespace Battlehub.VoxelCombat
                     Handle = "Move Y",
                     Target = InputControlType.LeftStickY,
                     Source = KeyCodeAxis( KeyCode.DownArrow, KeyCode.UpArrow )
+                },
+                new InputControlMapping {
+                    Handle = "Cursor Y",
+                    Target = InputControlType.RightStickY,
+                    Source = MouseYAxis,
+                    Raw = true,
+                    Scale = 0.1f,
+                },
+                   new InputControlMapping {
+                    Handle = "Cursor X",
+                    Target = InputControlType.RightStickX,
+                    Source = MouseXAxis,
+                    Raw = true,
+                    Scale = 0.1f,
                 },
                 new InputControlMapping
                 {

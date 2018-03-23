@@ -126,7 +126,8 @@ namespace Battlehub.VoxelCombat
                 completed(false);
                 return;
             }
-            m_ws.SendAsync(data, completed);
+            m_ws.SendAsync(data, result =>
+                Dispatcher.Dispatcher.Current.BeginInvoke(() => completed(result)));
         }
 
         public void Update()

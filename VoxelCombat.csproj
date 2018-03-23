@@ -348,7 +348,6 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\TriggerHandlers.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\TxtSlider.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\TypeModelCreator.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\HUD\PlayerCursor.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Dependencies.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\EventSystemManager.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\GameView.cs" />
@@ -681,6 +680,7 @@
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonBasicOutline.shader" />
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLit.shader" />
     <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLitOutline.shader" />
+    <None Include="Assets\StreamingAssets\playerStats.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="GenerateTargetFrameworkMonikerAttribute" />
