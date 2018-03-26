@@ -437,7 +437,7 @@ namespace Battlehub.VoxelCombat
             {
                 if (action == InputAction.MoveForward)
                 {
-                    float value = inputDevice.GetControl(m_mapping[action]).Value; 
+                    float value = inputDevice.GetControl(m_mapping[action]).Value;
                     if (value == 0)
                     {
                         return inputDevice.DPadY;

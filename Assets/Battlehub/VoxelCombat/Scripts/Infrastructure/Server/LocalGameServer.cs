@@ -74,7 +74,7 @@ namespace Battlehub.VoxelCombat
         }
 
         [SerializeField]
-        private int Lag = 50;
+        private int Lag = 5;
 
         private string m_persistentDataPath;
 

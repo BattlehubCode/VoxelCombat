@@ -196,7 +196,7 @@ namespace Battlehub.VoxelCombat
                         {
                             Coordinate coord = dc.Coordinate.ToWeight(GameConstants.MinVoxelActorWeight);
                             m_cameraController.MapPivot = coord.MapPos;
-                            m_cameraController.MapCursor = coord.MapPos;
+                            m_cameraController.SetVirtualMousePosition(coord, true);
                             m_mapCursor = m_cameraController.MapCursor;
                         }
                     }
@@ -323,7 +323,7 @@ namespace Battlehub.VoxelCombat
                 {
                     coord = coord.ToWeight(m_cameraController.Weight);
                     m_cameraController.MapPivot = coord.MapPos;
-                    m_cameraController.MapCursor = coord.MapPos;
+                    m_cameraController.SetVirtualMousePosition(coord, true);
                 }
 
                 m_mapCursor = m_cameraController.MapCursor;

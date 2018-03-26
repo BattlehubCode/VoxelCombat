@@ -67,7 +67,9 @@ namespace Battlehub.VoxelCombat
 
         private void Awake()
         {
-            if(Dependencies.RemoteGameServer.IsConnectionStateChanging)
+            enabled = false;
+
+            if (Dependencies.RemoteGameServer.IsConnectionStateChanging)
             {
                 Dependencies.RemoteGameServer.ConnectionStateChanged += OnRemoteGameServerConnectionStateChanged;
             }

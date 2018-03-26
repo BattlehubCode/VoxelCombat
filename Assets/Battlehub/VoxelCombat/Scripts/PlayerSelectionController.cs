@@ -264,10 +264,13 @@ namespace Battlehub.VoxelCombat
 
                 if (m_wasSelected.Count == 1)
                 {
-                    Coordinate coord = m_gameState.GetVoxelDataController(playerIndex, unitIndex).Coordinate;
+                    IVoxelDataController dc = m_gameState.GetVoxelDataController(playerIndex, unitIndex);
+                    Coordinate coord = dc.Coordinate;
                     coord = coord.ToWeight(m_cameraController.Weight);
+                    coord.Altitude += dc.ControlledData.Height;
+
                     m_cameraController.MapPivot = coord.MapPos;
-                    m_cameraController.MapCursor = coord.MapPos;
+                    m_cameraController.SetVirtualMousePosition(coord, true);
                     m_mapCursor = m_cameraController.MapCursor;
                 }
             }
@@ -277,8 +280,9 @@ namespace Battlehub.VoxelCombat
         {
             int playerIndex = PlayerIndex;
 
+            MapPos mapCursor = m_cameraController.MapCursor;
             Vector3 selectedPosition;
-            if (selectedIndex == -1 || m_mapCursor != m_cameraController.MapCursor)
+            if (selectedIndex == -1 || m_mapCursor != mapCursor)
             {
                 selectedPosition = m_cameraController.Cursor;
             }
@@ -310,7 +314,7 @@ namespace Battlehub.VoxelCombat
                         continue;
                     }
 
-                    if (unitIndex == selectedIndex && m_mapCursor != m_cameraController.MapCursor)
+                    if (unitIndex == selectedIndex && m_mapCursor != mapCursor)
                     {
                         continue;
                     }
