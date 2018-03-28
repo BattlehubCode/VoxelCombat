@@ -44,6 +44,8 @@ namespace Battlehub.VoxelCombat
         RMB = 117,
         LMB = 118,
         MMB = 119,
+        LeftStickButton = 120,
+        RightStickButton = 121,
 
         //MapEditor
         EditorCreate = 500,

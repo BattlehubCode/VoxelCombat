@@ -109,9 +109,36 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            if (m_inputManager.GetButtonDown(InputAction.A, LocalPlayerIndex))
+            if(m_inputManager.GetButtonDown(InputAction.A, LocalPlayerIndex))
             {
-                SubmitMoveCommand();
+
+            }
+
+            if(m_inputManager.GetButtonDown(InputAction.A, LocalPlayerIndex) || m_inputManager.GetButtonDown(InputAction.RMB, LocalPlayerIndex))
+            {
+                List<Cmd> cmd = CreateMovementCmd();
+                if (cmd != null && cmd.Count > 0)
+                {
+                    MovementCmd movementCmd = (MovementCmd)cmd[0];
+
+                    if(!m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
+                    {
+                        m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates[0], true, true);
+                    }
+                }
+            }
+            else if (m_inputManager.GetButtonUp(InputAction.A, LocalPlayerIndex) || m_inputManager.GetButtonUp(InputAction.RMB, LocalPlayerIndex))
+            {
+                List<Cmd> cmd = CreateMovementCmd();
+                if (cmd != null && cmd.Count > 0)
+                {
+                    MovementCmd movementCmd = (MovementCmd)cmd[0];
+                    if (!m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
+                    {
+                        m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates[0], true, true);
+                    }
+                    SubmitToEngine(m_gameState.GetLocalPlayerId(LocalPlayerIndex), cmd);
+                }
             }
             else if (m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex))
             {
@@ -248,7 +275,7 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        private void SubmitMoveCommand()
+        private List<Cmd> CreateMovementCmd()
         {
             Guid playerId = m_gameState.GetLocalPlayerId(m_localPlayerIndex);
             int playerIndex = m_gameState.GetPlayerIndex(playerId);
@@ -262,42 +289,44 @@ namespace Battlehub.VoxelCombat
                 {
                     long unitIndex = selectedUnitIds[i];
                     IVoxelDataController dataController = m_gameState.GetVoxelDataController(playerIndex, unitIndex);
-                  
+
                     MapCell cell = m_map.GetCell(m_cameraController.MapCursor, m_cameraController.Weight, null);
                     int deltaWeight = dataController.ControlledData.Weight - m_cameraController.Weight;
-                    while(deltaWeight > 0)
+                    while (deltaWeight > 0)
                     {
                         cell = cell.Parent;
                         deltaWeight--;
                     }
 
+                    
+
                     VoxelData selectedTarget = null;
                     //MapCell selectedTargetCell = null;
-                    for(int p = 0; p < m_gameState.PlayersCount; ++p)
+                    for (int p = 0; p < m_gameState.PlayersCount; ++p)
                     {
                         long[] targetSelection = m_targetSelection.GetSelection(playerIndex, p);
-                        if(targetSelection.Length > 0)
+                        if (targetSelection.Length > 0)
                         {
                             MatchAssetCli asset = m_gameState.GetAsset(p, targetSelection[0]);
-                            if(asset != null)
+                            if (asset != null)
                             {
                                 selectedTarget = asset.VoxelData;
-                               // selectedTargetCell = asset.Cell;
+                                // selectedTargetCell = asset.Cell;
                             }
                             else
                             {
                                 IVoxelDataController dc = m_gameState.GetVoxelDataController(p, targetSelection[0]);
                                 selectedTarget = dc.ControlledData;
-                               // selectedTargetCell = m_map.GetCell(dc.Coordinate.MapPos, dc.Coordinate.Weight, null);
+                                // selectedTargetCell = m_map.GetCell(dc.Coordinate.MapPos, dc.Coordinate.Weight, null);
                             }
                         }
                     }
 
                     int dataType = dataController.ControlledData.Type;
                     int dataWeight = dataController.ControlledData.Weight;
-                    
+
                     VoxelData beneath;
-                    if(selectedTarget == null)
+                    if (selectedTarget == null)
                     {
                         VoxelData defaultTarget;
                         beneath = cell.GetDefaultTargetFor(dataType, dataWeight, playerIndex, false, out defaultTarget);
@@ -306,34 +335,76 @@ namespace Battlehub.VoxelCombat
                     {
                         beneath = cell.GetPreviousFor(selectedTarget, dataType, dataWeight, playerIndex);
                     }
-                    
+
+                    VoxelData closestBeneath = beneath;
+                    float minDistance = float.MaxValue;
+
+                    if(closestBeneath == null)
+                    {
+                        MapPos pos = cell.GetPosition();
+                        for(int r = -1; r <= 1; r++)
+                        {
+                            for(int c = -1; c <= 1; c++)
+                            {
+                                MapCell neighbourCell = m_map.GetCell(new MapPos(pos.Row + r, pos.Col + c), dataController.ControlledData.Weight, null);
+                                if(neighbourCell != null)
+                                {
+                                    VoxelData defaultTarget;
+                                    VoxelData data = neighbourCell.GetDefaultTargetFor(dataType, dataWeight, playerIndex, false, out defaultTarget);
+                                    Vector3 worldPoint = m_map.GetWorldPosition(new MapPos(pos.Row + r, pos.Col + c), dataWeight);
+                                    if(data != null)
+                                    {
+                                        worldPoint.y = (data.Altitude + data.Height) * GameConstants.UnitSize;
+                                    }
+                                  
+                                    Vector2 screenPoint = m_cameraController.WorldToScreenPoint(worldPoint);
+                                    if(m_cameraController.InScreenBounds(screenPoint))
+                                    {
+                                        float distance = (screenPoint - m_cameraController.VirtualMousePosition).magnitude;
+                                        if (data != null && distance < minDistance)
+                                        {
+                                            minDistance = distance;
+                                            closestBeneath = data;
+                                            cell = neighbourCell;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    beneath = closestBeneath;     
+
                     if (beneath != null)
-                    {                       
+                    {
                         int weight = dataController.ControlledData.Weight;
-                        Vector3 hitPoint = beneath.Weight <= weight ? m_map.GetWorldPosition(m_cameraController.MapCursor, m_cameraController.Weight) : m_cameraController.Cursor;
-                        MapPos mapPos = m_map.GetMapPosition(hitPoint, weight);
+                        // Vector3 hitPoint = beneath.Weight <= weight ? m_map.GetWorldPosition(m_cameraController.MapCursor, m_cameraController.Weight) : m_cameraController.Cursor;
+                        //MapPos mapPos = m_map.GetMapPosition(hitPoint, weight);
+
+                        MapPos mapPos = cell.GetPosition();
                         int altitude = beneath.Altitude + beneath.Height;
-                        
+
                         MovementCmd movementCmd = new MovementCmd();
-                        
-                        if(selectedTarget != null)
+
+                        if (selectedTarget != null)
                         {
                             movementCmd.HasTarget = true;
                             movementCmd.TargetIndex = selectedTarget.UnitOrAssetIndex;
                             movementCmd.TargetPlayerIndex = selectedTarget.Owner;
                         }
 
+                        Coordinate targetCoordinate = new Coordinate(mapPos, weight, altitude);
                         movementCmd.Code = CmdCode.Move;
-                        movementCmd.Coordinates = new[] { new Coordinate(mapPos, weight, altitude) };
+                        movementCmd.Coordinates = new[] { targetCoordinate };
                         movementCmd.UnitIndex = unitIndex;
                         commandsToSubmit.Add(movementCmd);
                     }
                 }
 
-                SubmitToEngine(playerId, commandsToSubmit);
+                return commandsToSubmit;
             }
+            return null;
         }
-
 
 
         private void SubmitStdCommand(Func<Cmd> createCmd, Func<int, long, bool> check)

@@ -142,7 +142,24 @@ namespace Battlehub.VoxelCombat
             m_unselectInterval -= Time.deltaTime;
 
             bool multiselect = m_inputManager.GetButton(InputAction.RB, LocalPlayerIndex);
-
+            if(m_inputManager.GetButtonDown(InputAction.LMB, LocalPlayerIndex))
+            {
+                RaycastHit hitInfo;
+                if(Physics.Raycast(m_cameraController.Ray, out hitInfo))
+                {
+                    Voxel voxel = hitInfo.transform.GetComponentInParent<Voxel>();
+                    if(voxel != null)
+                    {
+                        VoxelData data = voxel.VoxelData;
+                        if (VoxelData.IsControllableUnit(data.Type) && data.Owner == playerIndex)
+                        {
+                            m_unitSelection.ClearSelection(playerIndex);
+                            m_unitSelection.Select(playerIndex, playerIndex, new[] { data.UnitOrAssetIndex });
+                        }
+                    }
+                }
+            }
+            
             if (m_inputManager.GetButtonDown(InputAction.LB, LocalPlayerIndex))
             {
                 bool select = true;
@@ -209,7 +226,8 @@ namespace Battlehub.VoxelCombat
                         m_unitSelection.ClearSelection(playerIndex);
                     }
                 }
-            }    
+            }   
+            
         }
 
         private void Unselect(int playerIndex)
@@ -270,7 +288,8 @@ namespace Battlehub.VoxelCombat
                     coord.Altitude += dc.ControlledData.Height;
 
                     m_cameraController.MapPivot = coord.MapPos;
-                    m_cameraController.SetVirtualMousePosition(coord, true);
+                    m_cameraController.SetVirtualMousePosition(coord, true, false);
+                    
                     m_mapCursor = m_cameraController.MapCursor;
                 }
             }
