@@ -438,6 +438,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Test\TestGameInit.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\VoxelGame.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\VoxelMap.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\VoxelMinimapRenderer.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\EatableVoxel.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\GroundVoxel.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\Voxel.cs" />

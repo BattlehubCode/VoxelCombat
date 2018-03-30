@@ -9,7 +9,7 @@ namespace Battlehub.VoxelCombat
     {
         public const float UnitSize = 0.5f;
 
-        public const int VoxelCameraRadius = 2; //8;// 2; //= 6;
+        public const int VoxelCameraRadius = 16;// 2; //= 6;
         public const int VoxelCameraWeight = 4;
 
 
