@@ -14,6 +14,7 @@ namespace Battlehub.VoxelCombat
             m_voxelFactory = FindObjectOfType<VoxelFactory>();
             m_effectFactory = FindObjectOfType<ParticleEffectFactory>();
             m_map = FindObjectOfType<VoxelMap>();
+            m_minimap = FindObjectOfType<VoxelMinimapRenderer>();
             m_progress = FindObjectOfType<ProgressIndicator>();
             m_job = FindObjectOfType<Job>();
             m_materialsCache = FindObjectOfType<MaterialsCache>();
@@ -25,7 +26,6 @@ namespace Battlehub.VoxelCombat
             m_navigation = FindObjectOfType<Navigation>();
             m_eventSystemManager = FindObjectOfType<EventSystemManager>();
             m_notification = FindObjectOfType<Notification>();
-
 
             GameObject serverGO = null;
             if (!m_remoteGameServer)
@@ -78,6 +78,7 @@ namespace Battlehub.VoxelCombat
             m_voxelFactory = null;
             m_effectFactory = null;
             m_map = null;
+            m_minimap = null;
             m_progress = null;
             m_job = null;
             m_materialsCache = null;
@@ -245,6 +246,12 @@ namespace Battlehub.VoxelCombat
         public static IVoxelMap Map
         {
             get { return m_map; }
+        }
+
+        private static IVoxelMinimapRenderer m_minimap;
+        public static IVoxelMinimapRenderer Minimap
+        {
+            get { return m_minimap; }
         }
 
         private static IProgressIndicator m_progress;

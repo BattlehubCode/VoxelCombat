@@ -210,30 +210,6 @@ namespace Battlehub.VoxelCombat
 
                     eventSystemMan.Apply(gameViewport.gameObject, i);
 
-                    PlayerCameraController cameraController = gameViewport.GetComponent<PlayerCameraController>();
-                    if (cameraController != null)
-                    {
-                        cameraController.LocalPlayerIndex = i;
-                    }
-
-                    PlayerSelectionController playerSelectionController = gameViewport.GetComponent<PlayerSelectionController>();
-                    if (playerSelectionController != null)
-                    {
-                        playerSelectionController.LocalPlayerIndex = i;
-                    }
-
-                    PlayerUnitController playerUnitController = gameViewport.GetComponent<PlayerUnitController>();
-                    if (playerUnitController != null)
-                    {
-                        playerUnitController.LocalPlayerIndex = i;
-                    }
-
-                    TargetSelectionController targetSelectionController = gameViewport.GetComponent<TargetSelectionController>();
-                    if (targetSelectionController != null)
-                    {
-                        targetSelectionController.LocalPlayerIndex = i;
-                    }
-
                     PlayerMenu playerMenu = gameViewport.GetComponent<PlayerMenu>();
                     if (playerMenu != null)
                     {

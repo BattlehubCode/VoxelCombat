@@ -1737,6 +1737,9 @@ namespace Battlehub.VoxelCombat
 
     public interface IVoxelMap
     {
+        event EventHandler Loaded;
+        event EventHandler Saved;
+
         MapRoot Map
         {
             get;
@@ -1747,12 +1750,15 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-
-
         bool IsOn
         {
             get;
             set;
+        }
+
+        bool IsLoaded
+        {
+            get;
         }
         
 
@@ -1794,7 +1800,6 @@ namespace Battlehub.VoxelCombat
         Vector3 GetWorldPosition(Coordinate coordinate);
 #endif
 
-       // void CreateNew(int weight);
         void Load(byte[] bytes, Action done);
         void Save(Action<byte[]> done);
         void Create(int weight);

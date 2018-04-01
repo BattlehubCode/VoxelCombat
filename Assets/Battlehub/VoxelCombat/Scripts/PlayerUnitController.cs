@@ -31,10 +31,13 @@ namespace Battlehub.VoxelCombat
         private IPlayerCameraController m_cameraController;
 
         [SerializeField]
+        private GameViewport m_viewport;
+
+        [SerializeField]
         private PlayerCommandsPanel m_commandsPanel;
         
         private int m_localPlayerIndex;
-        public int LocalPlayerIndex
+        private int LocalPlayerIndex
         {
             get { return m_localPlayerIndex; }
             set
@@ -87,11 +90,10 @@ namespace Battlehub.VoxelCombat
 
         private void Start()
         {
+            LocalPlayerIndex = m_viewport.LocalPlayerIndex;
             m_cameraController = Dependencies.GameView.GetCameraController(LocalPlayerIndex);
         }
 
-
-        
         private void Update()
         {
             if (m_gameState.IsContextActionInProgress(LocalPlayerIndex))

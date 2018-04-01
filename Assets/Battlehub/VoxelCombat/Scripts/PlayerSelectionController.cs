@@ -15,6 +15,9 @@ namespace Battlehub.VoxelCombat
     public class PlayerSelectionController : MonoBehaviour, IPlayerSelectionController
     {
         [SerializeField]
+        private GameViewport m_viewport;
+
+        [SerializeField]
         private Color m_ownColor = Color.green;
         [SerializeField]
         private Color m_enemyColor = Color.red;
@@ -22,11 +25,10 @@ namespace Battlehub.VoxelCombat
         private Color m_neutralColor = Color.black;
 
         private OutlineEffect m_outlineEffect;
-        private IGameViewport m_viewport;
         private IPlayerCameraController m_cameraController;
 
         private int m_localPlayerIndex;
-        public int LocalPlayerIndex 
+        private int LocalPlayerIndex 
         {
             get { return m_localPlayerIndex; }
             set
@@ -41,7 +43,6 @@ namespace Battlehub.VoxelCombat
                             Destroy(m_outlineEffect);
                         }
                         
-                        m_viewport = Dependencies.GameView.GetViewport(LocalPlayerIndex);
                         m_cameraController = Dependencies.GameView.GetCameraController(LocalPlayerIndex);
 
                         m_outlineEffect = m_viewport.Camera.GetComponent<OutlineEffect>();
@@ -76,7 +77,6 @@ namespace Battlehub.VoxelCombat
         private float m_unselectInterval;
         private bool m_multiselectMode;
 
- 
         private void Awake()
         {
             m_unitSelection = Dependencies.UnitSelection;
@@ -88,11 +88,8 @@ namespace Battlehub.VoxelCombat
 
         private void Start()
         {
-            m_viewport = Dependencies.GameView.GetViewport(LocalPlayerIndex);
             m_cameraController = Dependencies.GameView.GetCameraController(LocalPlayerIndex);
-
-            m_outlineEffect = m_viewport.Camera.gameObject.AddComponent<OutlineEffect>();
-            InitializeOutlineEffect();
+            LocalPlayerIndex = m_viewport.LocalPlayerIndex;
         }
 
         private void InitializeOutlineEffect()

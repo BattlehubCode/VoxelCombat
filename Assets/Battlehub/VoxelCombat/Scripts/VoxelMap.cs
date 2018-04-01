@@ -7,6 +7,9 @@ namespace Battlehub.VoxelCombat
 {
     public class VoxelMap :  MonoBehaviour, IVoxelMap, IGL
     {
+        public event EventHandler Loaded;
+        public event EventHandler Saved;
+
         [SerializeField]
         private bool m_drawDebugLines = true;
 
@@ -57,6 +60,11 @@ namespace Battlehub.VoxelCombat
                     }
                 }
             }
+        }
+
+        public bool IsLoaded
+        {
+            get { return m_map != null; }
         }
 
         private void Awake()
@@ -249,6 +257,12 @@ namespace Battlehub.VoxelCombat
 
                 m_isBusy = false;
                 m_progressIndicator.IsVisible = false;
+
+                if(Loaded != null)
+                {
+                    Loaded(this, EventArgs.Empty);
+                }
+
                 if(done != null)
                 {
                     done();
@@ -258,6 +272,8 @@ namespace Battlehub.VoxelCombat
                 {
                     m_mapCameras[i].IsOn = m_isOn;
                 }
+
+                
             });
         }
 
@@ -336,7 +352,12 @@ namespace Battlehub.VoxelCombat
                 m_isBusy = false;
                 m_progressIndicator.IsVisible = false;
 
-                if(done != null)
+                if (Saved != null)
+                {
+                    Saved(this, EventArgs.Empty);
+                }
+
+                if (done != null)
                 {
                     done((byte[])result);
                 }
@@ -355,6 +376,11 @@ namespace Battlehub.VoxelCombat
             for (int i = 0; i < m_mapCameras.Count; ++i)
             {
                 m_mapCameras[i].Map = m_map;
+            }
+
+            if(Loaded != null)
+            {
+                Loaded(this, EventArgs.Empty);
             }
 
             for (int i = 0; i < m_mapCameras.Count; ++i)

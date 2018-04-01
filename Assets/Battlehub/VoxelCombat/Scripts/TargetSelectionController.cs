@@ -12,11 +12,12 @@ namespace Battlehub.VoxelCombat
 
     public class TargetSelectionController : MonoBehaviour, ITargetSelectionController
     {
-        private IGameViewport m_viewport;
+        [SerializeField]
+        private GameViewport m_viewport;
         private IPlayerCameraController m_cameraController;
 
         private int m_localPlayerIndex;
-        public int LocalPlayerIndex
+        private int LocalPlayerIndex
         {
             get { return m_localPlayerIndex; }
             set
@@ -26,7 +27,6 @@ namespace Battlehub.VoxelCombat
                     m_localPlayerIndex = value;
                     if (m_viewport != null) //if start method was called
                     {
-                        m_viewport = Dependencies.GameView.GetViewport(LocalPlayerIndex);
                         m_cameraController = Dependencies.GameView.GetCameraController(LocalPlayerIndex);
                     }
                 }
@@ -98,7 +98,7 @@ namespace Battlehub.VoxelCombat
 
         private void Start()
         {
-            m_viewport = Dependencies.GameView.GetViewport(LocalPlayerIndex);
+            LocalPlayerIndex = m_viewport.LocalPlayerIndex;
             m_cameraController = Dependencies.GameView.GetCameraController(LocalPlayerIndex);
             BeginTargetSelection();
         }

@@ -7,12 +7,6 @@ namespace Battlehub.VoxelCombat
 {
     public interface IPlayerCameraController
     {
-        int LocalPlayerIndex
-        {
-            get;
-            set;
-        }
-
         bool IsInputEnabled
         {
             get;
@@ -67,6 +61,9 @@ namespace Battlehub.VoxelCombat
     public class PlayerCameraController : MonoBehaviour, IPlayerCameraController
     {
         [SerializeField]
+        private GameViewport m_viewport;
+
+        [SerializeField]
         private RectTransform m_cursorIconTransform;
 
         [SerializeField]
@@ -112,13 +109,12 @@ namespace Battlehub.VoxelCombat
         private object m_voxelCameraRef;
 
         private IVoxelInputManager m_inputManager;
-        private IGameViewport m_viewport;
         private IGlobalSettings m_settings;
         private IVoxelMap m_voxelMap;
         private IVoxelGame m_gameState;
 
         private int m_localPlayerIndex;
-        public int LocalPlayerIndex
+        private int LocalPlayerIndex
         {
             get { return m_localPlayerIndex; }
             set
@@ -338,10 +334,13 @@ namespace Battlehub.VoxelCombat
             m_settings = Dependencies.Settings;
             m_inputManager = Dependencies.InputManager;
             m_voxelMap = Dependencies.Map;
+
         }
 
         private void Start()
         {
+            LocalPlayerIndex = m_viewport.LocalPlayerIndex;
+
             GetViewportAndCamera();
             ReadPlayerCamSettings();
             SetCameraPosition();
@@ -395,7 +394,6 @@ namespace Battlehub.VoxelCombat
                 m_viewport.ViewportChanged -= OnViewportChanged;
             }
 
-            m_viewport = Dependencies.GameView.GetViewport(LocalPlayerIndex);
             if (m_viewport != null)
             {
                 m_viewport.ViewportChanged += OnViewportChanged;
