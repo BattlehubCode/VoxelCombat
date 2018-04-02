@@ -321,11 +321,6 @@ namespace Battlehub.VoxelCombat
             return 0;
         }
 
-        //public bool HasWeightLessThen(int weight)
-        //{
-        //    return Weight < weight;  
-        //}
-
         public bool IsEatableBy(int type, int weight, int height, int altitude, int owner)
         {
             if(type != (int)KnownVoxelTypes.Eater)
@@ -390,6 +385,11 @@ namespace Battlehub.VoxelCombat
             }
 
             return result;
+        }
+
+        public static bool IsStatic(int type)
+        {
+            return type == (int)KnownVoxelTypes.Ground;
         }
 
         public static bool IsUnit(int type)
@@ -568,6 +568,22 @@ namespace Battlehub.VoxelCombat
             return result;
         }
 
+        public VoxelData GetLastStatic()
+        {
+            VoxelData result = null;
+            VoxelData data = this;
+            while (data != null)
+            {
+                if (IsStatic(data.Type))
+                {
+                    result = data;
+                }
+                data = data.Next;
+            }
+            return result;
+        }
+
+
         public VoxelData GetLastSelectable()
         {
             VoxelData result = null;
@@ -676,6 +692,7 @@ namespace Battlehub.VoxelCombat
             }
             return 0;
         }
+
         public int GetTotalHeight(int type)
         {
             MapCell cell = this;
@@ -694,6 +711,8 @@ namespace Battlehub.VoxelCombat
             }
             return 0;
         }
+
+       
 
 
 
@@ -1063,6 +1082,7 @@ namespace Battlehub.VoxelCombat
             return true;
         }
 
+
         public void ForEach(Action<MapCell> action)
         {
             ForEach(this, action);
@@ -1176,7 +1196,6 @@ namespace Battlehub.VoxelCombat
             return (int)Mathf.Pow(2, Weight);
         }
 
-
         /// <summary>
         /// Get Map Size at level with specified weight  
         /// </summary>
@@ -1191,7 +1210,7 @@ namespace Battlehub.VoxelCombat
             return (int)Mathf.Pow(2, Weight - weight);
         }
 
-
+ 
         /// <summary>
         /// Get Map Cell at level with specified weight
         /// </summary>
@@ -1217,7 +1236,6 @@ namespace Battlehub.VoxelCombat
                 return null;
             }
             return cell.GetVoxelDataAt(coord.Altitude);
-
         }
 
         private MapCell Get(int i, int j, int withWeight, MapCell currentParent, int currentWeight)
@@ -1285,8 +1303,6 @@ namespace Battlehub.VoxelCombat
             return result;
         }
 #endif
-
-
         public void DestroyExtraPlayers(int playersCount)
         {
             List<VoxelData> dataToDestroy = new List<VoxelData>();

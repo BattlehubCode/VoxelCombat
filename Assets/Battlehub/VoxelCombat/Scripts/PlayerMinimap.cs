@@ -13,7 +13,10 @@ namespace Battlehub.VoxelCombat
         private GameViewport m_viewport;
         [SerializeField]
         private RawImage m_background;
-        private RectTransform m_backgroundRT;
+        [SerializeField]
+        private RawImage m_foreground;
+        [SerializeField]
+        private RectTransform m_rtMapBounds;
 
         protected override void Awake()
         {
@@ -21,8 +24,7 @@ namespace Battlehub.VoxelCombat
             m_minimap = Dependencies.Minimap;
             m_minimap.Loaded += OnLoaded;
             m_background.texture = m_minimap.Background;
-
-            m_backgroundRT = m_background.GetComponent<RectTransform>();
+            m_foreground.texture = m_minimap.Foreground;
         }
 
         protected override void Start()
@@ -33,7 +35,7 @@ namespace Battlehub.VoxelCombat
 
         private void Update()
         {
-            m_backgroundRT.rotation = Quaternion.Euler(new Vector3(0, 0, m_viewport.Camera.transform.eulerAngles.y));
+            m_rtMapBounds.rotation = Quaternion.Euler(new Vector3(0, 0, m_viewport.Camera.transform.eulerAngles.y));
         }
 
         protected override void OnRectTransformDimensionsChange()
@@ -46,13 +48,13 @@ namespace Battlehub.VoxelCombat
         {
             yield return new WaitForEndOfFrame();
 
-            RectTransform parentRT = (RectTransform)m_backgroundRT.parent;
+            RectTransform parentRT = (RectTransform)m_rtMapBounds.parent;
             Bounds bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(parentRT);
             float radius = bounds.extents.x;
             float offset = radius - radius * Mathf.Sqrt(2.0f) / 2.0f;
 
-            m_backgroundRT.offsetMin = new Vector2(offset, offset);
-            m_backgroundRT.offsetMax = new Vector2(-offset, -offset);
+            m_rtMapBounds.offsetMin = new Vector2(offset, offset);
+            m_rtMapBounds.offsetMax = new Vector2(-offset, -offset);
         }
 
         protected override void OnDestroy()
@@ -67,6 +69,7 @@ namespace Battlehub.VoxelCombat
         private void OnLoaded(object sender, System.EventArgs e)
         {
             m_background.texture = m_minimap.Background;
+            m_foreground.texture = m_minimap.Foreground;
         }
     }
 }
