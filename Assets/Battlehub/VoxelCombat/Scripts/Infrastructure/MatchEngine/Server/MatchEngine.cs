@@ -41,6 +41,16 @@ namespace Battlehub.VoxelCombat
         public int RowsCount;
         public int ColsCount;
 
+        public MapPos P0
+        {
+            get { return new MapPos(Row, Col); }
+        }
+
+        public MapPos P1
+        {
+            get { return new MapPos(Row + RowsCount, Col + ColsCount); }
+        }
+
         public MapRect(int row, int col, int rowsCount, int colsCount)
         {
             Row = row;

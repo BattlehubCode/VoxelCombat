@@ -82,28 +82,15 @@ namespace Battlehub.VoxelCombat
 
         private const int MouseMargin = 30;
         private Vector3 m_prevMouseOffset;
-
-        /*
-        private const float AlignedMoveDeltaT = 0.15f;
-        private float m_nextAlignedMoveTime;
-        private static readonly Vector3[] m_alignMovementDirections = new[]
-        {
-            new Vector3(0, 0, -1).normalized,
-           // new Vector3(1, 0, -1).normalized,
-            new Vector3(1, 0, 0).normalized,
-            //new Vector3(1, 0, 1).normalized,
-            new Vector3(0, 0, 1).normalized,
-           // new Vector3(-1, 0, 1).normalized,
-            new Vector3(-1, 0, 0).normalized,
-            //new Vector3(-1, 0, -1).normalized,
-        };*/
-
+        
         private Camera m_camera;
         private float m_camDistance;
         private Vector3 m_camToVector;
         private float m_camAngle;
         private Plane m_groundPlane = new Plane(Vector3.up, Vector3.zero);
         private Plane m_hitPlane;
+        private float m_allowedRadius;
+        private Vector3 m_boundsCenter;
    
         private Rect m_camPixelRect;
         private object m_voxelCameraRef;
@@ -229,7 +216,6 @@ namespace Battlehub.VoxelCombat
         {
             m_cursor = Hit(m_virtualMousePosition);
             m_mapCursor = m_voxelMap.GetMapPosition(m_cursor, Weight);
-           // m_cursorCell = m_voxelMap.GetCell(m_mapCursor, Weight, null);
         }
 
         public Ray Ray
@@ -243,7 +229,6 @@ namespace Battlehub.VoxelCombat
             get { return m_cursor; }
         }
 
-        //private MapCell m_cursorCell;
         private MapPos m_mapCursor;
         public MapPos MapCursor
         {
@@ -335,6 +320,11 @@ namespace Battlehub.VoxelCombat
             m_inputManager = Dependencies.InputManager;
             m_voxelMap = Dependencies.Map;
 
+            MapRect rect = m_voxelMap.MapBounds;
+            Vector3 p0 = m_voxelMap.GetWorldPosition(rect.P0, GameConstants.MinVoxelActorWeight);
+            Vector3 p1 = m_voxelMap.GetWorldPosition(rect.P1, GameConstants.MinVoxelActorWeight);
+            m_allowedRadius = (p1 - p0).magnitude / 2.0f;
+            m_boundsCenter = p0 + (p1 - p0) / 2.0f;
         }
 
         private void Start()
@@ -772,7 +762,6 @@ namespace Battlehub.VoxelCombat
                 }
 
                 Vector3 deltaOffset = new Vector3(deltaX, deltaY, 0);
-             
                 Vector3 offset = Vector2.zero;
                 if (deltaOffset != Vector3.zero)
                 {
@@ -795,6 +784,7 @@ namespace Battlehub.VoxelCombat
                     offsetW.y = 0;
                     offsetW.Normalize();
 
+                    
                     Vector3 newPivot = offsetW * settings.MoveSensitivity * Time.deltaTime;
                     if(pivotPreciseMode || cursorPreciseMode)
                     {
@@ -805,6 +795,16 @@ namespace Battlehub.VoxelCombat
                     MapPos newMapPivot = m_voxelMap.GetMapPosition(newPivot, Weight);
                     SetMapPivot(newMapPivot);
                     m_targetPivot = newPivot;
+                }
+                else
+                {
+                    Vector3 toPivot = m_targetPivot - m_boundsCenter;
+                    toPivot.y = 0;
+                    if (toPivot.magnitude > m_allowedRadius)
+                    {
+                        toPivot = toPivot.normalized * m_allowedRadius;
+                        m_targetPivot = Vector3.up * m_targetPivot.y + m_boundsCenter + toPivot;
+                    }
                 }
 
                 if (m_prevMouseOffset != mouseOffset)
