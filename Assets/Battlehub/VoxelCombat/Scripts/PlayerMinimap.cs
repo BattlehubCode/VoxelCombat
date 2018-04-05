@@ -23,10 +23,10 @@ namespace Battlehub.VoxelCombat
             base.Awake();
             m_minimap = Dependencies.Minimap;
             m_minimap.Loaded += OnLoaded;
+            //m_minimap.ForegroundChanged += OnForegroundChanged;
             m_background.texture = m_minimap.Background;
             m_foreground.texture = m_minimap.Foreground;
         }
-
         protected override void Start()
         {
             base.Start();
@@ -41,7 +41,10 @@ namespace Battlehub.VoxelCombat
         protected override void OnRectTransformDimensionsChange()
         {
             base.OnRectTransformDimensionsChange();
-            StartCoroutine(Fit());
+            if(isActiveAndEnabled)
+            {
+                StartCoroutine(Fit());
+            }
         }
 
         private IEnumerator Fit()
@@ -63,6 +66,7 @@ namespace Battlehub.VoxelCombat
             if (m_minimap != null)
             {
                 m_minimap.Loaded -= OnLoaded;
+                //m_minimap.ForegroundChanged -= OnForegroundChanged;
             }
         }
 
@@ -71,5 +75,10 @@ namespace Battlehub.VoxelCombat
             m_background.texture = m_minimap.Background;
             m_foreground.texture = m_minimap.Foreground;
         }
+
+        //private void OnForegroundChanged(object sender, System.EventArgs e)
+        //{
+        //    m_foreground.texture = m_minimap.Foreground;
+        //}
     }
 }

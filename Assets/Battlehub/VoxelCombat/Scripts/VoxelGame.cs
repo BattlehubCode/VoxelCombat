@@ -227,6 +227,7 @@ namespace Battlehub.VoxelCombat
         private IVoxelMap m_voxelMap;
         private IGameView m_gameView;
         private IConsole m_console;
+        private IVoxelMinimapRenderer m_minimap;
 
         private Guid[] m_localPlayers;
         private Player[] m_players;
@@ -244,6 +245,8 @@ namespace Battlehub.VoxelCombat
             m_remoteGameServer = Dependencies.RemoteGameServer;
             m_gSettings = Dependencies.Settings;
             m_console = Dependencies.Console;
+            m_minimap = Dependencies.Minimap;
+
             m_console.Command += OnConsoleCommand;
 
             m_engine = Dependencies.MatchEngine;
@@ -534,6 +537,9 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
+
+            m_minimap.BeginUpdate();
+
             List<IMatchPlayerControllerCli> defeatedPlayers = null;
             CommandsArray[] playersCommands = commandsBundle.Commands;
             for(int p = 0; p < playersCommands.Length; ++p)
@@ -594,6 +600,8 @@ namespace Battlehub.VoxelCombat
                     }
                 }
             }
+
+            m_minimap.EndUpdate();
 
             IsCompleted = commandsBundle.IsGameCompleted;
         }

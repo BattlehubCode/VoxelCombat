@@ -49,7 +49,7 @@ namespace Battlehub.VoxelCombat
     {
         protected readonly IVoxelMap m_voxelMap;
         protected readonly IVoxelFactory m_voxelFactory;
-
+       
         protected readonly IVoxelDataController m_dataController;
         protected Voxel m_controlledVoxel;
         private ulong m_selection;
@@ -697,7 +697,6 @@ namespace Battlehub.VoxelCombat
 
             bool wasVisible = m_controlledVoxel != null;
 
-            
             AcquireReleaseVisibility(voxelData, mapPos, weight);
             
             bool isVisible = m_controlledVoxel != null;
@@ -810,8 +809,6 @@ namespace Battlehub.VoxelCombat
                 Collapse(m_currentTick, 0);
                 EatAndExpand(m_currentTick, 0);
             }
-          
-           
         }
 
         protected virtual void OnGrow()

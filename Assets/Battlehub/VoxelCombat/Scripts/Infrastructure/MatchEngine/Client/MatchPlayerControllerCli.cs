@@ -197,6 +197,7 @@ namespace Battlehub.VoxelCombat
 
         private IUnitSelection m_selection;
         private IUnitSelection m_targetSelection;
+        private IVoxelMinimapRenderer m_minimap;
 
         private IVoxelGame m_gameState;
 
@@ -242,6 +243,7 @@ namespace Battlehub.VoxelCombat
             m_voxelMap = Dependencies.Map;
             m_selection = Dependencies.UnitSelection;
             m_targetSelection = Dependencies.TargetSelection;
+            m_minimap = Dependencies.Minimap;
             
             m_selection.SelectionChanged += OnUnitSelectionChanged;
             m_targetSelection.SelectionChanged += OnTargetSelectionChanged;
@@ -276,6 +278,7 @@ namespace Battlehub.VoxelCombat
             m_playerIndex = playerIndex;
             m_isLocalPlayer = m_gameState.IsLocalPlayer(m_playerIndex);
 
+            m_minimap.BeginUpdate();
             m_voxelMap.Map.Root.ForEach(cell =>
             {
                 cell.ForEach(voxelData =>
@@ -298,6 +301,7 @@ namespace Battlehub.VoxelCombat
                     }
                 });
             });
+            m_minimap.EndUpdate();
         }
 
         private void CreateAsset(VoxelData data, MapCell cell)
@@ -313,8 +317,9 @@ namespace Battlehub.VoxelCombat
             m_voxelDataToId.Add(data, m_identity);
             m_idToAsset.Add(m_identity, asset);
 
-
             m_identity++;
+
+            m_minimap.Spawn(data, new Coordinate(cell, data));
         }
 
         private void RemoveAsset(VoxelData data)
@@ -330,6 +335,9 @@ namespace Battlehub.VoxelCombat
                 m_voxelDataToId.Remove(data);
 
                 MatchAssetCli asset = m_idToAsset[id];
+
+                m_minimap.Kill(data, new Coordinate(asset.Cell, data));
+
                 asset.Destroy();
 
                 m_idToAsset.Remove(id);
@@ -350,6 +358,8 @@ namespace Battlehub.VoxelCombat
 
             m_idToUnit.Add(m_identity, unit);
 
+            m_minimap.Spawn(voxelData, coordinate);
+
             m_identity++;
         }
 
@@ -360,6 +370,8 @@ namespace Battlehub.VoxelCombat
             {
                 m_controllableUnitsCount--;
             }
+
+            m_minimap.Kill(unitController.DataController.ControlledData, unitController.DataController.Coordinate);
 
             m_idToUnit.Remove(unitId);
 
@@ -394,7 +406,13 @@ namespace Battlehub.VoxelCombat
 
                     cmd.Duration = (int)duration;
 
+                    IVoxelDataController dc = unitController.DataController;
+                    Coordinate prevCoord = dc.Coordinate;
                     unitController.ExecuteCommand(cmd, tick);
+                    if(prevCoord != dc.Coordinate)
+                    {
+                        m_minimap.Move(dc.ControlledData, prevCoord, dc.Coordinate);
+                    }
 
                     IList<VoxelDataCellPair> createdVoxels = unitController.CreatedVoxels;
                     if (createdVoxels.Count != 0)
