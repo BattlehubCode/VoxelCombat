@@ -294,7 +294,11 @@
     <Compile Include="Assets\Battlehub\UIControls\Common\InputProvider.cs" />
     <Compile Include="Assets\Battlehub\UIControls\Common\InputProviderAdapter.cs" />
     <Compile Include="Assets\Battlehub\UIControls\Common\Repeater.cs" />
+    <Compile Include="Assets\Battlehub\UIControls\Primitives\BezierPath.cs" />
+    <Compile Include="Assets\Battlehub\UIControls\Primitives\CableCurve.cs" />
     <Compile Include="Assets\Battlehub\UIControls\Primitives\UICircle.cs" />
+    <Compile Include="Assets\Battlehub\UIControls\Primitives\UILineRenderer.cs" />
+    <Compile Include="Assets\Battlehub\UIControls\Primitives\UIPrimitiveBase.cs" />
     <Compile Include="Assets\Battlehub\UIControls\VirtualizingTreeView\Demo\Scripts\ExternalDragItem.cs" />
     <Compile Include="Assets\Battlehub\UIControls\VirtualizingTreeView\Demo\Scripts\Rotation.cs" />
     <Compile Include="Assets\Battlehub\UIControls\VirtualizingTreeView\Demo\Scripts\TreeViewDemo.cs" />

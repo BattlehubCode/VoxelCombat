@@ -271,9 +271,7 @@ namespace Battlehub.VoxelCombat
                 for (int i = 0; i < m_mapCameras.Count; ++i)
                 {
                     m_mapCameras[i].IsOn = m_isOn;
-                }
-
-                
+                }       
             });
         }
 
