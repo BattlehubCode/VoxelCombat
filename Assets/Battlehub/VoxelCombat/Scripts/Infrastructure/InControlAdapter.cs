@@ -14,7 +14,7 @@ namespace Battlehub.VoxelCombat
         private const string DevicesPersistentKey = "InControlAdapter.Devices";
 
         private GameObject m_selectedGameObject;
-        private bool m_isInputFieldSelected;
+       // private bool m_isInputFieldSelected;
         private bool m_isPointerOverGameObject;
 
         private List<InputDevice> m_devices;
@@ -381,7 +381,7 @@ namespace Battlehub.VoxelCombat
         {
             if (isMaskedByInputField)
             {
-                if (m_isPointerOverGameObject || m_isInputFieldSelected)
+                if (m_isPointerOverGameObject /* || m_isInputFieldSelected*/)
                 {
                     return false;
                 }
@@ -420,7 +420,7 @@ namespace Battlehub.VoxelCombat
         {
             if(isMaskedByInputField)
             {
-                if (m_isPointerOverGameObject || m_isInputFieldSelected)
+                if (m_isPointerOverGameObject /*|| m_isInputFieldSelected*/)
                 {
                     return 0;
                 }
@@ -471,7 +471,7 @@ namespace Battlehub.VoxelCombat
         {
             if (isMaskedByInputField)
             {
-                if (m_isPointerOverGameObject || m_isInputFieldSelected)
+                if (m_isPointerOverGameObject /*|| m_isInputFieldSelected*/)
                 {
                     return false;
                 }
@@ -512,7 +512,7 @@ namespace Battlehub.VoxelCombat
         {
             if(isMaskedByInputField)
             {
-                if (m_isPointerOverGameObject || m_isInputFieldSelected)
+                if (m_isPointerOverGameObject /*|| m_isInputFieldSelected*/)
                 {
                     return false;
                 }
@@ -554,7 +554,7 @@ namespace Battlehub.VoxelCombat
         {
             if(isMaskedByInputField)
             {
-                if (m_isPointerOverGameObject || m_isInputFieldSelected)
+                if (m_isPointerOverGameObject /*|| m_isInputFieldSelected*/)
                 {
                     return false;
                 }

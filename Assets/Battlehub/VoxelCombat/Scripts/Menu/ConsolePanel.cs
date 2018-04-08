@@ -25,7 +25,7 @@ namespace Battlehub.VoxelCombat
 
         private Queue<DateTime> m_timeQueue;
         private Queue<string> m_messageQueue;
-        private string[] m_messages;
+        //private string[] m_messages;
 
         private Queue<Text> m_uiQueue;
 
@@ -236,7 +236,7 @@ namespace Battlehub.VoxelCombat
             }
             m_messageScrollRect.content.localScale = Vector2.zero;
             m_uiQueue.Clear();
-            m_messages = null;
+           // m_messages = null;
           
         }
 
@@ -302,7 +302,7 @@ namespace Battlehub.VoxelCombat
                 m_uiQueue.Enqueue(messageUI);
             }
 
-            m_messages = null;
+           // m_messages = null;
         }
 
         public void Write(string message)
@@ -333,7 +333,7 @@ namespace Battlehub.VoxelCombat
                 messageUI.transform.SetSiblingIndex(m_maxMessages);
                 m_uiQueue.Enqueue(messageUI);
             }
-            m_messages = null;
+           // m_messages = null;
             if (Command != null)
             {
                 string[] args = message.Split(' ');

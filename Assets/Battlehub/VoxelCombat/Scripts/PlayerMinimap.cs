@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -6,20 +7,27 @@ using UnityEngine.UI.Extensions;
 
 namespace Battlehub.VoxelCombat
 {
-    public class PlayerMinimap : UIBehaviour
+    public class PlayerMinimap : UIBehaviour, IGL
     {
+
         private IVoxelMinimapRenderer m_minimap;
         private IPlayerCameraController m_cameraController;
         private IVoxelInputManager m_input;
-        
+
         [SerializeField]
         private GameViewport m_viewport;
         [SerializeField]
         private RawImage m_background;
         [SerializeField]
         private RawImage m_foreground;
+        //[SerializeField]
+        //private UILineRenderer m_frustumProjection;
+        //[SerializeField]
+        //private Material m_frustumMaterial;
+
         [SerializeField]
-        private UILineRenderer m_frustumProjection;
+        private RectTransform m_frustumApproximation;
+
         [SerializeField]
         private RectTransform m_rtMapBounds;
         private float m_rootRadius;
@@ -27,7 +35,7 @@ namespace Battlehub.VoxelCombat
         private bool m_manipulating;
         private Vector3 m_prevCamPos;
         private Quaternion m_prevCamRot;
-
+        private int m_cullingMask;
 
         protected override void Awake()
         {
@@ -40,20 +48,29 @@ namespace Battlehub.VoxelCombat
             m_background.texture = m_minimap.Background;
             m_foreground.texture = m_minimap.Foreground;
 
-            m_frustumProjection.Points = new Vector2[5];
+            //m_frustumProjection.Points = new Vector2[5];
         }
+
         protected override void Start()
         {
+            if (GLRenderer.Instance != null)
+            {
+                GLRenderer.Instance.Add(this);
+            }
+
             m_cameraController = Dependencies.GameView.GetCameraController(m_viewport.LocalPlayerIndex);
+            m_cullingMask = m_viewport.Camera.GetComponent<GLCamera>().CullingMask;
     
             base.Start();
             StartCoroutine(Fit());
         }
 
+        
         private void Update()
         {
             Transform camTransform = m_viewport.Camera.transform;
 
+          
             if (camTransform.position != m_prevCamPos || camTransform.rotation != m_prevCamRot)
             {
                 m_prevCamPos = camTransform.position;
@@ -65,7 +82,8 @@ namespace Battlehub.VoxelCombat
                 ProjectCamera(m_rtMapBounds.rotation);
             }
 
-            if (m_input.GetButtonDown(InputAction.LMB, m_viewport.LocalPlayerIndex))
+            if (m_input.GetButtonDown(InputAction.LMB, m_viewport.LocalPlayerIndex) ||
+               m_input.GetButtonDown(InputAction.RightStickButton, m_viewport.LocalPlayerIndex))
             {
                 Vector2 pt;
                 if (RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)m_rtMapBounds.parent, m_cameraController.VirtualMousePosition, null, out pt))
@@ -78,7 +96,8 @@ namespace Battlehub.VoxelCombat
                     }
                 }
             }
-            if (m_input.GetButtonUp(InputAction.LMB, m_viewport.LocalPlayerIndex))
+            if (m_input.GetButtonUp(InputAction.LMB, m_viewport.LocalPlayerIndex) ||
+                m_input.GetButtonUp(InputAction.RightStickButton, m_viewport.LocalPlayerIndex))
             {
                 m_manipulating = false;
                 m_cameraController.VirtualMouseSensitivityScale = 1.0f;
@@ -103,6 +122,11 @@ namespace Battlehub.VoxelCombat
                         }
                         m_prevCursor = m_cameraController.VirtualMousePosition;
                     }
+                }
+                else if(m_input.GetButton(InputAction.RightStickButton, m_viewport.LocalPlayerIndex))
+                {
+                    //float fwd = m_input.GetAxisRaw(InputAction.MoveForward, m_viewport.LocalPlayerIndex);
+                    //float side = m_input.GetAxisRaw(InputAction.MoveSide, m_viewport.LocalPlayerIndex);
                 }
             }
         }
@@ -148,14 +172,17 @@ namespace Battlehub.VoxelCombat
             p2 = rotation * p2;
             p3 = rotation * p3;
 
+            m_frustumApproximation.offsetMin = new Vector2(p1.x, p3.y);
+            m_frustumApproximation.offsetMax = new Vector2(p2.x, p1.y);
+
             //Maybe replace with line renderer?
 
-            m_frustumProjection.Points[0] = p0;
-            m_frustumProjection.Points[1] = p1;
-            m_frustumProjection.Points[2] = p2;
-            m_frustumProjection.Points[3] = p3;
-            m_frustumProjection.Points[4] = p0;
-            m_frustumProjection.SetAllDirty();
+            //m_frustumProjection.Points[0] = p0;
+            //m_frustumProjection.Points[1] = p1;
+            //m_frustumProjection.Points[2] = p2;
+            //m_frustumProjection.Points[3] = p3;
+            //m_frustumProjection.Points[4] = p0;
+            //m_frustumProjection.SetAllDirty();
         }
 
         protected override void OnRectTransformDimensionsChange()
@@ -186,16 +213,46 @@ namespace Battlehub.VoxelCombat
         protected override void OnDestroy()
         {
             base.OnDestroy();
+            if (GLRenderer.Instance != null)
+            {
+                GLRenderer.Instance.Remove(this);
+            }
             if (m_minimap != null)
             {
                 m_minimap.Loaded -= OnLoaded;
             }
         }
 
-        private void OnLoaded(object sender, System.EventArgs e)
+        private void OnLoaded(object sender, EventArgs e)
         {
             m_background.texture = m_minimap.Background;
             m_foreground.texture = m_minimap.Foreground;
+        }
+
+        public void Draw(int cullingMask)
+        {
+            //if (m_cullingMask != cullingMask)
+            //{
+            //    return;
+            //}
+
+            //if (!m_frustumMaterial)
+            //{
+            //    Debug.LogError("Please Assign a material on the inspector");
+            //    return;
+            //}
+
+            //GL.PushMatrix();
+            //m_frustumMaterial.SetPass(0);
+            //GL.LoadOrtho();
+            //GL.Color(Color.red);
+            //GL.Begin(GL.TRIANGLES);
+            //GL.Vertex3(0.25F, 0.1351F, 0);
+            //GL.Vertex3(0.25F, 0.3F, 0);
+            //GL.Vertex3(0.5F, 0.3F, 0);
+            //GL.End();
+        
+            //GL.PopMatrix();
         }
     }
 }

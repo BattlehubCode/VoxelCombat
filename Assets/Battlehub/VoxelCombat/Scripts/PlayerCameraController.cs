@@ -699,8 +699,8 @@ namespace Battlehub.VoxelCombat
                 bool rotateCamCCW = m_inputManager.GetButton(InputAction.RT, LocalPlayerIndex);
 
                 bool aPressed = m_inputManager.GetButton(InputAction.A, LocalPlayerIndex);
-                bool pivotPreciseMode = aPressed | m_inputManager.GetButton(InputAction.LeftStickButton, LocalPlayerIndex);
-                bool cursorPreciseMode = aPressed | m_inputManager.GetButton(InputAction.RightStickButton, LocalPlayerIndex);
+                bool pivotPreciseMode = aPressed | m_inputManager.GetButton(InputAction.RightStickButton, LocalPlayerIndex);
+                bool cursorPreciseMode = aPressed | m_inputManager.GetButton(InputAction.LeftStickButton, LocalPlayerIndex);
 
                 if(m_inputManager.GetButtonUp(InputAction.LT, LocalPlayerIndex) || m_inputManager.GetButtonUp(InputAction.RT, LocalPlayerIndex))
                 {
@@ -789,9 +789,8 @@ namespace Battlehub.VoxelCombat
 
                     Vector3 offsetW = m_camera.cameraToWorldMatrix.MultiplyVector(offset);
                     offsetW.y = 0;
-                    offsetW.Normalize();
+                  //  offsetW.Normalize();
 
-                    
                     Vector3 newPivot = offsetW * settings.MoveSensitivity * Time.deltaTime;
                     if(pivotPreciseMode || cursorPreciseMode)
                     {

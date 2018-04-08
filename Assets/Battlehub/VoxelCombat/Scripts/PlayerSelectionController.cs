@@ -27,7 +27,7 @@ namespace Battlehub.VoxelCombat
         private OutlineEffect m_outlineEffect;
         private IPlayerCameraController m_cameraController;
 
-        private int m_localPlayerIndex;
+        private int m_localPlayerIndex = -1;
         private int LocalPlayerIndex 
         {
             get { return m_localPlayerIndex; }
@@ -88,8 +88,9 @@ namespace Battlehub.VoxelCombat
 
         private void Start()
         {
-            m_cameraController = Dependencies.GameView.GetCameraController(LocalPlayerIndex);
             LocalPlayerIndex = m_viewport.LocalPlayerIndex;
+            m_cameraController = Dependencies.GameView.GetCameraController(LocalPlayerIndex);
+           
         }
 
         private void InitializeOutlineEffect()

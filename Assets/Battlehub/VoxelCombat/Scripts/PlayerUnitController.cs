@@ -111,12 +111,7 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            if(m_inputManager.GetButtonDown(InputAction.A, LocalPlayerIndex))
-            {
-
-            }
-
-            if(m_inputManager.GetButtonDown(InputAction.A, LocalPlayerIndex) || m_inputManager.GetButtonDown(InputAction.RMB, LocalPlayerIndex))
+             if(m_inputManager.GetButtonDown(InputAction.A, LocalPlayerIndex) || m_inputManager.GetButtonDown(InputAction.RMB, LocalPlayerIndex))
             {
                 List<Cmd> cmd = CreateMovementCmd();
                 if (cmd != null && cmd.Count > 0)
