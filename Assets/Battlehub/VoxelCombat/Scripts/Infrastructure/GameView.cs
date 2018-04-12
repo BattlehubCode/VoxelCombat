@@ -5,6 +5,13 @@ namespace Battlehub.VoxelCombat
 {
     public interface IGameView
     {
+        event EventHandler Initialized;
+
+        bool IsInitialized
+        {
+            get;
+        }
+
         bool IsOn
         {
             get;
@@ -26,6 +33,9 @@ namespace Battlehub.VoxelCombat
 
     public class GameView : MonoBehaviour, IGameView
     {
+        public event EventHandler Initialized;
+
+
         [SerializeField]
         private GameViewport m_gameViewportPrefab;
 
@@ -82,6 +92,11 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        public bool IsInitialized
+        {
+            get { return m_isInitialized; }
+        }
+
         public void Initialize(int viewportsCount, bool isOn)
         {
             if(m_initializationCamera && isOn)
@@ -100,6 +115,11 @@ namespace Battlehub.VoxelCombat
 
             InitViewports();
             UpdateGameViewMode();
+
+            if(Initialized != null)
+            {
+                Initialized(this, EventArgs.Empty);
+            }
         }
 
 
@@ -234,21 +254,38 @@ namespace Battlehub.VoxelCombat
 
         public IPlayerUnitController GetUnitController(int index)
         {
+            if (index < 0 || m_gameViewports.Length <= index)
+            {
+                return null;
+            }
             return m_gameViewports[index].GetComponent<PlayerUnitController>();
         }
 
         public IPlayerSelectionController GetSelectionController(int index)
         {
+            if (index < 0 || m_gameViewports.Length <= index)
+            {
+                return null;
+            }
             return m_gameViewports[index].GetComponent<PlayerSelectionController>();
         }
 
         public IPlayerCameraController GetCameraController(int index)
         {
+            if(index < 0 || m_gameViewports.Length <= index)
+            {
+                return null;
+            }
+
             return m_gameViewports[index].GetComponent<PlayerCameraController>();
         }
 
         public ITargetSelectionController GetTargetSelectionController(int index)
         {
+            if (index < 0 || m_gameViewports.Length <= index)
+            {
+                return null;
+            }
             return m_gameViewports[index].GetComponent<TargetSelectionController>();
         }
     }

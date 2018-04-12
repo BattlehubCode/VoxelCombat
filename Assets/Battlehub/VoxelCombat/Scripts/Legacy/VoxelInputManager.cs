@@ -67,7 +67,7 @@ namespace Battlehub.VoxelCombat
         public InputAction Action;
         public string AxisName;
         public string AltAxisName;
-        public bool IsMaskedByInputField = true;
+        public bool isMaskedByUI = true;
         public int Player;
     }
 
@@ -112,15 +112,15 @@ namespace Battlehub.VoxelCombat
 
         bool IsKeyboardAndMouse(int index);
 
-        bool IsAnyButtonDown(int player, bool isMaskedByInputField = true);
+        bool IsAnyButtonDown(int player, bool isMaskedByUI = true);
 
-        float GetAxisRaw(InputAction action, int player, bool isMaskedByInputField = true);
+        float GetAxisRaw(InputAction action, int player, bool isMaskedByUI = true);
 
-        bool GetButtonDown(InputAction action, int player, bool isMaskedByInputField = true);
+        bool GetButtonDown(InputAction action, int player, bool isMaskedByUI = true);
 
-        bool GetButton(InputAction action, int player, bool isMaskedByInputField = true);
+        bool GetButton(InputAction action, int player, bool isMaskedByUI = true);
 
-        bool GetButtonUp(InputAction action, int player, bool isMaskedByInputField = true);
+        bool GetButtonUp(InputAction action, int player, bool isMaskedByUI = true);
     }
 
     public class VoxelInputManager : MonoBehaviour, IVoxelInputManager
@@ -237,7 +237,7 @@ namespace Battlehub.VoxelCombat
                 for (int i = 0; i < Bindings.Length; ++i)
                 {
                     InputBinding binding = Bindings[i];
-                    if(binding.IsMaskedByInputField)
+                    if(binding.isMaskedByUI)
                     {
                         m_values[binding.Player][m_commandToIndex[(int)binding.Action]] = 0;
                         m_downButtons[binding.Player][m_commandToIndex[(int)binding.Action]] = false;
@@ -319,7 +319,7 @@ namespace Battlehub.VoxelCombat
             throw new NotImplementedException();
         }
 
-        public bool IsAnyButtonDown(int player, bool isMaskedByInputField = true)
+        public bool IsAnyButtonDown(int player, bool isMaskedByUI = true)
         {
             throw new NotImplementedException();
         }
@@ -329,22 +329,22 @@ namespace Battlehub.VoxelCombat
             throw new NotImplementedException();
         }
 
-        public float GetAxisRaw(InputAction action, int player, bool isMaskedByInputField)
+        public float GetAxisRaw(InputAction action, int player, bool isMaskedByUI)
         {
             return m_values[player][m_commandToIndex[(int)action]];
         }
 
-        public bool GetButtonDown(InputAction action, int player, bool isMaskedByInputField)
+        public bool GetButtonDown(InputAction action, int player, bool isMaskedByUI)
         {
             return m_downButtons[player][m_commandToIndex[(int)action]];
         }
 
-        public bool GetButton(InputAction action, int player, bool isMaskedByInputField)
+        public bool GetButton(InputAction action, int player, bool isMaskedByUI)
         {
             return m_buttons[player][m_commandToIndex[(int)action]];
         }
 
-        public bool GetButtonUp(InputAction action, int player, bool isMaskedByInputField)
+        public bool GetButtonUp(InputAction action, int player, bool isMaskedByUI)
         {
             return m_upButtons[player][m_commandToIndex[(int)action]];
         }

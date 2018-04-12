@@ -8,6 +8,9 @@ namespace Battlehub.VoxelCombat
 
     public class PlayerCommandsPanel : MonoBehaviour
     {
+        public event PlayerCommandsPanelEventHandler Move;
+        public event PlayerCommandsPanelEventHandler Attack;
+        public event PlayerCommandsPanelEventHandler Auto;
         public event PlayerCommandsPanelEventHandler Wall;
         public event PlayerCommandsPanelEventHandler Bomb;
         public event PlayerCommandsPanelEventHandler Spawner;
@@ -16,10 +19,14 @@ namespace Battlehub.VoxelCombat
         public event PlayerCommandsPanelEventHandler Grow;
         public event PlayerCommandsPanelEventHandler Diminish;
 
-        public event PlayerCommandsPanelEventHandler Closed;
+        [SerializeField]
+        private Button m_moveBtn;
 
         [SerializeField]
-        private Button m_btnClose;
+        private Button m_attackBtn;
+
+        [SerializeField]
+        private Button m_autoBtn;
 
         [SerializeField]
         private Button m_wallBtn;
@@ -42,13 +49,12 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private Button m_diminishButton;
 
-        [SerializeField]
-        private Button[] m_order;
-
-        private int m_selectedButton;
-
         private IVoxelInputManager m_inputManager;
         private IVoxelGame m_gameState;
+        private IUnitSelection m_selection;
+
+        [SerializeField]
+        private Button m_activeButton;
 
         public int LocalPlayerIndex
         {
@@ -56,217 +62,184 @@ namespace Battlehub.VoxelCombat
             set;
         }
 
-
-        public bool m_isOpenedLatch;
-        public bool IsOpen
-        {
-            get { return gameObject.activeSelf; }
-        }
-
-        public void SetIsOpen(bool value, 
-            bool canCreateWall = false,
-            bool canCreateBomb = false,
-            bool canCreateSpawner = false,
-            bool canSplit = false,
-            bool canSplit4 = false,
-            bool canGrow = false,
-            bool canDiminish = false)
-        {
-            gameObject.SetActive(value);
-            m_gameState.IsContextActionInProgress(LocalPlayerIndex, value);
-
-            for (int i = 0; i < m_order.Length; ++i)
-            {
-                m_order[i].OnDeselect(null);
-            }
-
-            m_bombBtn.interactable = canCreateBomb;
-            m_wallBtn.interactable = canCreateWall;
-            m_spawnButton.interactable = canCreateSpawner;
-            m_splitButton.interactable = canSplit;
-            m_split4Button.interactable = canSplit4;
-            m_growButton.interactable = canGrow;
-            m_diminishButton.interactable = canDiminish;
-      
-            if (value)
-            {
-                m_selectedButton = -1;
-                SelectNext();
-            }
-            else
-            {
-                if (Closed != null)
-                {
-                    Closed();
-                }
-            }
-
-            m_isOpenedLatch = false;
-        }
-
         private void Awake()
         {
-            if(m_order.Length == 0)
-            {
-                m_order = new[]
-                {
-                    m_btnClose,
-                    m_wallBtn,
-                    m_bombBtn,
-                    m_spawnButton,
-                    m_splitButton,
-                    m_split4Button,
-                    m_growButton,
-                    m_diminishButton,
-                };
-            }
-
-            for(int i = 0; i < m_order.Length; ++i)
-            {
-                m_order[m_selectedButton].OnDeselect(null);
-            }
-
             m_gameState = Dependencies.GameState;
             m_inputManager = Dependencies.InputManager;
+            m_selection = Dependencies.UnitSelection;
+
+            m_attackBtn.onClick.AddListener(OnAttack);
+            m_moveBtn.onClick.AddListener(OnMove);
+            m_autoBtn.onClick.AddListener(OnAuto);
+            m_bombBtn.onClick.AddListener(OnBomb);
+            m_wallBtn.onClick.AddListener(OnWall);
+            m_spawnButton.onClick.AddListener(OnSpawn);
+            m_splitButton.onClick.AddListener(OnSplit);
+            m_split4Button.onClick.AddListener(OnSplit4);
+            m_growButton.onClick.AddListener(OnGrow);
+            m_diminishButton.onClick.AddListener(OnDiminish);
+
+            UpdateState();
+            m_selection.SelectionChanged += OnSelectionChanged;
         }
 
         private void OnDestroy()
         {
-     
+            if(m_attackBtn != null)
+            {
+                m_attackBtn.onClick.RemoveListener(OnAttack);
+            }
+
+            if(m_moveBtn != null)
+            {
+                m_moveBtn.onClick.RemoveListener(OnMove);
+            }
+            
+            if(m_autoBtn != null)
+            {
+                m_autoBtn.onClick.RemoveListener(OnAuto);
+            }
+            
+            if (m_bombBtn != null)
+            {
+                m_bombBtn.onClick.RemoveListener(OnBomb);
+            }
+            
+            if(m_wallBtn != null)
+            {
+                m_wallBtn.onClick.RemoveListener(OnWall);
+            }
+            
+            if(m_spawnButton != null)
+            {
+                m_spawnButton.onClick.RemoveListener(OnSpawn);
+            }
+            
+            if(m_splitButton != null)
+            {
+                m_splitButton.onClick.RemoveListener(OnSplit);
+            }
+            
+            if(m_split4Button != null)
+            {
+                m_split4Button.onClick.RemoveListener(OnSplit4);
+            }
+            
+            if(m_growButton != null)
+            {
+                m_growButton.onClick.RemoveListener(OnGrow);
+            }
+            
+            if(m_diminishButton != null)
+            {
+                m_diminishButton.onClick.RemoveListener(OnDiminish);
+            }
+
+            if(m_selection != null)
+            {
+                m_selection.SelectionChanged -= OnSelectionChanged;
+            }
         }
 
-
-        private float m_prevAxis;
-        private void LateUpdate()
+        private void OnSelectionChanged(int selectorIndex, int unitOwnerIndex, long[] selected, long[] unselected)
         {
-            if(m_gameState.IsMenuOpened(LocalPlayerIndex))
+            if (m_gameState.LocalToPlayerIndex(LocalPlayerIndex) != selectorIndex)
             {
                 return;
             }
 
-            if(m_isOpenedLatch == false)
-            {
-                m_isOpenedLatch = IsOpen;
-                return;
-            }
-
-            float axis = m_inputManager.GetAxisRaw(InputAction.MoveSide, LocalPlayerIndex);
-            if(axis == 0)
-            {
-                axis = m_inputManager.GetAxisRaw(InputAction.CursorX, LocalPlayerIndex);
-            }
-
-            if(axis > 0)
-            {
-                axis = Mathf.CeilToInt(axis);
-            }
-
-            if(axis < 0)
-            {
-                axis = Mathf.FloorToInt(axis);
-            }
-
-            if (m_prevAxis != axis) 
-            {
-                if(axis > 0)
-                {
-                    SelectNext();
-                }
-                else if(axis < 0)
-                {
-                    SelectPrev();
-                }
-
-                m_prevAxis = axis;
-            }
-
-            if(m_inputManager.GetButtonDown(InputAction.A, LocalPlayerIndex))
-            {
-                switch(m_selectedButton)
-                {
-                    case 0:
-                        SetIsOpen(false);
-                        break;
-                    case 1:
-                        OnWall();
-                        break;
-                    case 2:
-                        OnBomb();
-                        break;
-                    case 3:
-                        OnSpawn();
-                        break;
-                    case 4:
-                        OnSplit();
-                        break;
-                    case 5:
-                        OnSplit4();
-                        break;
-                    case 6:
-                        OnGrow();
-                        break;
-                    case 7:
-                        OnDiminish();
-                        break;
-                }
-
-                Debug.Log(LocalPlayerIndex);
-                SetIsOpen(false);
-            }
-
-            if(m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex))
-            {
-                SetIsOpen(false);
-            }
+            UpdateState();
         }
 
-        private void SelectNext()
+        private void UpdateState()
         {
-            if(m_order.Length > 0)
+            int playerIndex = m_gameState.LocalToPlayerIndex(LocalPlayerIndex);
+            long[] selection = m_selection.GetSelection(playerIndex, playerIndex);
+
+            m_attackBtn.gameObject.SetActive(selection.Length > 0);
+            m_moveBtn.gameObject.SetActive(selection.Length > 0);
+            m_autoBtn.gameObject.SetActive(selection.Length > 0);
+            m_bombBtn.gameObject.SetActive(false);
+            m_wallBtn.gameObject.SetActive(false);
+            m_spawnButton.gameObject.SetActive(false);
+            m_growButton.gameObject.SetActive(false);
+            m_diminishButton.gameObject.SetActive(false);
+            m_splitButton.gameObject.SetActive(false);
+            m_split4Button.gameObject.SetActive(false);
+
+            for (int i = 0; i < selection.Length; ++i)
             {
-                if(m_selectedButton >= 0)
+                IVoxelDataController dc = m_gameState.GetVoxelDataController(playerIndex, selection[i]);
+                if (dc != null)
                 {
-                    m_order[m_selectedButton].OnDeselect(null);
-                }
-
-                do
-                {
-                    m_selectedButton++;
-                    m_selectedButton %= m_order.Length;
-                }
-                while (!m_order[m_selectedButton].interactable);
-
-                m_order[m_selectedButton].OnSelect(null);
-            }
-        }
-
-        private void SelectPrev()
-        {
-            if (m_order.Length > 0)
-            {
-                if (m_selectedButton >= 0)
-                {
-                    m_order[m_selectedButton].OnDeselect(null);
-                }
-
-                do
-                {
-                    m_selectedButton--;
-                    if (m_selectedButton < 0)
+                    if (dc.CanConvert((int)KnownVoxelTypes.Bomb))
                     {
-                        m_selectedButton = m_order.Length - 1;
+                        m_bombBtn.gameObject.SetActive(true);
+                    }
+
+                    if (dc.CanConvert((int)KnownVoxelTypes.Ground))
+                    {
+                        m_wallBtn.gameObject.SetActive(true);
+                    }
+
+                    if (dc.CanConvert((int)KnownVoxelTypes.Spawner))
+                    {
+                        m_spawnButton.gameObject.SetActive(true);
+                    }
+
+                    if (dc.CanGrow())
+                    {
+                        m_growButton.gameObject.SetActive(true);
+                    }
+
+                    if (dc.CanDiminish())
+                    {
+                        m_diminishButton.gameObject.SetActive(true);
+                    }
+
+                    if (dc.CanSplit())
+                    {
+                        m_splitButton.gameObject.SetActive(true);
+                    }
+
+                    if (dc.CanSplit4())
+                    {
+                        m_split4Button.gameObject.SetActive(true);
                     }
                 }
-                while (!m_order[m_selectedButton].interactable);
-
-                m_order[m_selectedButton].OnSelect(null);
             }
         }
 
+        private void OnAttack()
+        {
+            ActivateButton(m_attackBtn);
+            if(Attack != null)
+            {
+                Attack();
+            }
+        }
+        private void OnMove()
+        {
+            ActivateButton(m_moveBtn);
+            if(Move != null)
+            {
+                Move();
+            }
+        }
+
+        private void OnAuto()
+        {
+            ActivateButton(m_autoBtn);
+            if (Auto != null)
+            {
+                Auto();
+            }
+        }
 
         private void OnWall()
         {
-            if(Wall != null)
+            ActivateButton(m_wallBtn);
+            if (Wall != null)
             {
                 Wall();
             }
@@ -274,7 +247,8 @@ namespace Battlehub.VoxelCombat
 
         private void OnBomb()
         {
-            if(Bomb != null)
+            ActivateButton(m_bombBtn);
+            if (Bomb != null)
             {
                 Bomb();
             }
@@ -282,7 +256,8 @@ namespace Battlehub.VoxelCombat
 
         private void OnSpawn()
         {
-            if(Spawner != null)
+            ActivateButton(m_spawnButton);
+            if (Spawner != null)
             {
                 Spawner();
             }
@@ -291,7 +266,8 @@ namespace Battlehub.VoxelCombat
 
         private void OnSplit()
         {
-            if(Split != null)
+            ActivateButton(m_splitButton);
+            if (Split != null)
             {
                 Split();
             }
@@ -299,7 +275,8 @@ namespace Battlehub.VoxelCombat
 
         private void OnSplit4()
         {
-            if(Split4 != null)
+            ActivateButton(m_split4Button);
+            if (Split4 != null)
             {
                 Split4();
             }
@@ -307,7 +284,8 @@ namespace Battlehub.VoxelCombat
 
         private void OnGrow()
         {
-            if(Grow != null)
+            ActivateButton(m_growButton);
+            if (Grow != null)
             {
                 Grow();
             }
@@ -315,11 +293,26 @@ namespace Battlehub.VoxelCombat
 
         private void OnDiminish()
         {
-            if(Diminish != null)
+            ActivateButton(m_diminishButton);
+            if (Diminish != null)
             {
                 Diminish();
             }
         }
-    }
 
+        private void ActivateButton(Button button)
+        {
+            if (m_activeButton != null)
+            {
+                Transform activeOutline = m_activeButton.transform.Find("ActiveOutline");
+                activeOutline.gameObject.SetActive(false);
+            }
+            m_activeButton = button;
+            if(m_activeButton != null)
+            {
+                Transform activeOutline = m_activeButton.transform.Find("ActiveOutline");
+                activeOutline.gameObject.SetActive(true);
+            }
+        }
+    }
 }

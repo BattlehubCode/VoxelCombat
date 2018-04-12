@@ -5,6 +5,11 @@ namespace Battlehub.VoxelCombat
 {
     public interface IEventSystemManager
     {
+        int EventSystemCount
+        {
+            get;
+        }
+
         void Apply(GameObject root, int eventSystemIndex);
 
         IndependentEventSystem GetEventSystem(int index);
@@ -18,6 +23,11 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private VirtualKeyboard[] m_virtualKeyboards;
 
+        public int EventSystemCount
+        {
+            get { return m_eventSystems.Length; }
+        }
+
         public IndependentEventSystem GetEventSystem(int index)
         {
             return m_eventSystems[index];
@@ -25,7 +35,6 @@ namespace Battlehub.VoxelCombat
 
         public void Apply(GameObject root, int eventSystemIndex)
         {
-
             IndependentSelectable[] selectables = root.GetComponentsInChildren<IndependentSelectable>(true);
             
             for(int i = 0; i < selectables.Length; ++i)

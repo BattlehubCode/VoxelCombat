@@ -70,7 +70,7 @@ namespace Battlehub.VoxelCombat
             m_commandsPanel.Split4 += OnSplit4;
             m_commandsPanel.Grow += OnGrow;
             m_commandsPanel.Diminish += OnDiminish;
-            m_commandsPanel.Closed += OnClosed;
+           // m_commandsPanel.Closed += OnClosed;
         }
 
         private void OnDestroy()
@@ -84,7 +84,7 @@ namespace Battlehub.VoxelCombat
                 m_commandsPanel.Split4 -= OnSplit4;
                 m_commandsPanel.Grow -= OnGrow;
                 m_commandsPanel.Diminish -= OnDiminish;
-                m_commandsPanel.Closed -= OnClosed;
+              //  m_commandsPanel.Closed -= OnClosed;
             }
         }
 
@@ -139,29 +139,29 @@ namespace Battlehub.VoxelCombat
             }
             else if (m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex))
             {
-                int playerIndex = m_gameState.LocalToPlayerIndex(LocalPlayerIndex);
+                //int playerIndex = m_gameState.LocalToPlayerIndex(LocalPlayerIndex);
 
-                if (m_unitSelection.HasSelected(playerIndex, playerIndex))
-                {
-                    long[] notSelected = m_gameState.GetUnits(playerIndex).Where(u => !m_unitSelection.IsSelected(playerIndex, playerIndex, u)).ToArray();
-                    bool atLeastOneEaterIsNotSelected = notSelected.Select(u => m_gameState.GetVoxelDataController(playerIndex, u)).Where(dc => dc != null && dc.ControlledData.Type == (int)KnownVoxelTypes.Eater).Any();
+                //if (m_unitSelection.HasSelected(playerIndex, playerIndex))
+                //{
+                //    long[] notSelected = m_gameState.GetUnits(playerIndex).Where(u => !m_unitSelection.IsSelected(playerIndex, playerIndex, u)).ToArray();
+                //    bool atLeastOneEaterIsNotSelected = notSelected.Select(u => m_gameState.GetVoxelDataController(playerIndex, u)).Where(dc => dc != null && dc.ControlledData.Type == (int)KnownVoxelTypes.Eater).Any();
                 
-                    var selection = m_unitSelection.GetSelection(playerIndex, playerIndex)
-                        .Where(u => m_gameState.GetVoxelDataController(playerIndex, u) != null);
+                //    var selection = m_unitSelection.GetSelection(playerIndex, playerIndex)
+                //        .Where(u => m_gameState.GetVoxelDataController(playerIndex, u) != null);
 
-                    PlayerStats stats = m_gameState.GetStats(playerIndex);
-                    long[] unitSelection = m_unitSelection.GetSelection(playerIndex, playerIndex);
+                //    PlayerStats stats = m_gameState.GetStats(playerIndex);
+                //    long[] unitSelection = m_unitSelection.GetSelection(playerIndex, playerIndex);
 
-                    bool canCreateWall = stats.ControllableUnitsCount > unitSelection.Length && atLeastOneEaterIsNotSelected && selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanConvert((int)KnownVoxelTypes.Ground));
-                    bool canCreateBomb = stats.ControllableUnitsCount > unitSelection.Length && atLeastOneEaterIsNotSelected && selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanConvert((int)KnownVoxelTypes.Bomb));
-                    bool canCreateSpawner = stats.ControllableUnitsCount > unitSelection.Length && atLeastOneEaterIsNotSelected && selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanConvert((int)KnownVoxelTypes.Spawner));
-                    bool canSplit = selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanSplit());
-                    bool canSplit4 = selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanSplit4());
-                    bool canGrow = selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanGrow());
-                    bool canDiminish = selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanDiminish());
+                //    bool canCreateWall = stats.ControllableUnitsCount > unitSelection.Length && atLeastOneEaterIsNotSelected && selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanConvert((int)KnownVoxelTypes.Ground));
+                //    bool canCreateBomb = stats.ControllableUnitsCount > unitSelection.Length && atLeastOneEaterIsNotSelected && selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanConvert((int)KnownVoxelTypes.Bomb));
+                //    bool canCreateSpawner = stats.ControllableUnitsCount > unitSelection.Length && atLeastOneEaterIsNotSelected && selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanConvert((int)KnownVoxelTypes.Spawner));
+                //    bool canSplit = selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanSplit());
+                //    bool canSplit4 = selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanSplit4());
+                //    bool canGrow = selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanGrow());
+                //    bool canDiminish = selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanDiminish());
 
-                    m_commandsPanel.SetIsOpen(true, canCreateWall, canCreateBomb, canCreateSpawner, canSplit, canSplit4, canGrow, canDiminish);
-                }
+                //    m_commandsPanel.SetIsOpen(true, canCreateWall, canCreateBomb, canCreateSpawner, canSplit, canSplit4, canGrow, canDiminish);
+                //}
             }
             else if(m_inputManager.GetButtonDown(InputAction.Y, LocalPlayerIndex))
             {
@@ -172,10 +172,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void OnClosed()
-        {
-            
-        }
 
         private void OnDiminish()
         {

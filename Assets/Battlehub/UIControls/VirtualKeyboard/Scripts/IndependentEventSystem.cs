@@ -13,6 +13,12 @@ namespace Battlehub.UIControls
 
         private static EventSystem m_root;
 
+        [SerializeField]
+        private int m_index = -1;
+        public int Index
+        {
+            get { return m_index; }
+        }
 
         //[SerializeField]
         private bool m_isRoot = false;
@@ -95,6 +101,7 @@ namespace Battlehub.UIControls
             }
             current = m_root;
         }
+
 
         public override string ToString()
         {

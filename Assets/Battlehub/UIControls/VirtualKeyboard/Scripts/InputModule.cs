@@ -77,12 +77,8 @@ namespace Battlehub.UIControls
 
         protected override void Awake()
         {
-            //m_InputOverride = GetComponent<BaseInputOverride>();
-            //if (m_InputOverride == null)
-            //{
-            //    m_InputOverride = gameObject.AddComponent<BaseInputOverride>();
-            //}
-
+            m_InputOverride = GetComponent<BaseInput>();
+         
             base.Awake();
 
             if (m_inputProvider == null)
@@ -212,7 +208,7 @@ namespace Battlehub.UIControls
                 bool released;
                 bool pressed;
                 var pointer = GetTouchPointerEventData(touch, out pressed, out released);
-
+                
                 ProcessTouchPress(pointer, pressed, released);
 
                 if (!released)
@@ -477,10 +473,11 @@ namespace Battlehub.UIControls
 
         protected override void ProcessMove(PointerEventData pointerEvent)
         {
-            var targetGO = (Cursor.lockState != CursorLockMode.None ? null : pointerEvent.pointerCurrentRaycast.gameObject);
-           // GameObject targetGO = null;// pointerEvent.pointerCurrentRaycast.gameObject;
-           // Debug.Log(Cursor.lockState);
-            if(CanProcess(targetGO))
+            //var targetGO = (Cursor.lockState != CursorLockMode.None ? null : pointerEvent.pointerCurrentRaycast.gameObject);
+            var targetGO = pointerEvent.pointerCurrentRaycast.gameObject;
+            // GameObject targetGO = null;// pointerEvent.pointerCurrentRaycast.gameObject;
+            // Debug.Log(Cursor.lockState);
+            if (CanProcess(targetGO))
             {
                 HandlePointerExitAndEnter(pointerEvent, targetGO);
             }
@@ -631,5 +628,63 @@ namespace Battlehub.UIControls
         }
 
 
+        public PointerEventData GetPointerEventData(int pointerId = -1)
+        {
+            PointerEventData eventData;
+            GetPointerData(pointerId, out eventData, true);
+            return eventData;
+        }
+
+        private readonly MouseState m_MouseState = new MouseState();
+
+        protected override MouseState GetMousePointerEventData(int id)
+        {
+            // Populate the left button...
+            PointerEventData leftData;
+            var created = GetPointerData(kMouseLeftId, out leftData, true);
+
+            leftData.Reset();
+
+            if (created)
+                leftData.position = m_inputProvider.MousePosition;
+
+            Vector2 pos = m_inputProvider.MousePosition;
+
+            
+            //if (Cursor.lockState == CursorLockMode.None)
+            //{
+            //    // We don't want to do ANY cursor-based interaction when the mouse is not locked
+            //    leftData.position = new Vector2(-1.0f, -1.0f);
+            //    leftData.delta = Vector2.zero;
+            //}
+            //else
+            //{
+                leftData.delta = pos - leftData.position;
+                leftData.position = pos;
+            //}
+            leftData.scrollDelta = input.mouseScrollDelta;
+            leftData.button = PointerEventData.InputButton.Left;
+            eventSystem.RaycastAll(leftData, m_RaycastResultCache);
+            var raycast = FindFirstRaycast(m_RaycastResultCache);
+            leftData.pointerCurrentRaycast = raycast;
+            m_RaycastResultCache.Clear();
+
+            // copy the apropriate data into right and middle slots
+            PointerEventData rightData;
+            GetPointerData(kMouseRightId, out rightData, true);
+            CopyFromTo(leftData, rightData);
+            rightData.button = PointerEventData.InputButton.Right;
+
+            PointerEventData middleData;
+            GetPointerData(kMouseMiddleId, out middleData, true);
+            CopyFromTo(leftData, middleData);
+            middleData.button = PointerEventData.InputButton.Middle;
+
+            m_MouseState.SetButtonState(PointerEventData.InputButton.Left, StateForMouseButton(0), leftData);
+            m_MouseState.SetButtonState(PointerEventData.InputButton.Right, StateForMouseButton(1), rightData);
+            m_MouseState.SetButtonState(PointerEventData.InputButton.Middle, StateForMouseButton(2), middleData);
+
+            return m_MouseState;
+        }
     }
 }

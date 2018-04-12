@@ -149,6 +149,7 @@ namespace Battlehub.UIControls
             get { return Input.mousePosition; }
         }
 
+#warning Usages??
         [SerializeField]
         private bool m_isMouseButtonDown;
 
@@ -187,5 +188,29 @@ namespace Battlehub.UIControls
             get { return Input.touchSupported; }
         }
 
+        public virtual float GetAxisRaw(string axisName)
+        {
+            return Input.GetAxisRaw(axisName);
+        }
+
+        public virtual bool GetMouseButton(int button)
+        {
+            return Input.GetMouseButtonDown(button);
+        }
+
+        public virtual bool GetButtonDown(string buttonName)
+        {
+            return Input.GetButtonDown(buttonName);
+        }
+
+        public virtual bool GetMouseButtonUp(int button)
+        {
+            return Input.GetMouseButtonUp(button);
+        }
+
+        public virtual bool GetMouseButtonDown(int button)
+        {
+            return Input.GetMouseButtonDown(button);
+        }
     }
 }

@@ -18,6 +18,11 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
+        Vector3 TargetPivot
+        {
+            get;
+        }
+
         MapPos MapPivot
         {
             get;
@@ -32,6 +37,7 @@ namespace Battlehub.VoxelCombat
         Vector2 VirtualMousePosition
         {
             get;
+            set;
         }
 
         float VirtualMouseSensitivityScale
@@ -65,7 +71,7 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-     
+   
         bool InScreenBounds(Vector2 point);
 
         Vector2 WorldToScreenPoint(Vector3 worldPoint);
@@ -79,6 +85,7 @@ namespace Battlehub.VoxelCombat
 
     public class PlayerCameraController : MonoBehaviour, IPlayerCameraController
     {
+
         [SerializeField]
         private GameViewport m_viewport;
 
@@ -99,7 +106,7 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private Sprite[] m_spriteArrows;
 
-        private const int MouseMargin = 30;
+        private const int MouseMargin = 15;
         private Vector3 m_prevMouseOffset;
         
         private Camera m_camera;
@@ -136,8 +143,14 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private Vector3 m_targetPivot;
         private MapCell m_targetPivotCell;
+        private Vector3 m_targetPivot;
+        public Vector3 TargetPivot
+        {
+            get { return m_targetPivot; }
+            set { m_targetPivot = value; }
+        }
+
         private Transform m_pivot;
         public Vector3 Pivot
         {
@@ -208,7 +221,7 @@ namespace Battlehub.VoxelCombat
         public Vector2 VirtualMousePosition
         {
             get { return m_virtualMousePosition; }
-            private set
+            set
             {
                 SetVirtualMousePosition(value);
             }
@@ -596,6 +609,7 @@ namespace Battlehub.VoxelCombat
             m_virtualMousePosition = vmPos;
         }
 
+
         private void MoveVirtualMouseToCenterOfScreen()
         {
             VirtualMousePosition = Vector3.Lerp(VirtualMousePosition, m_camPixelRect.center, Time.deltaTime * 20);
@@ -667,10 +681,10 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            if (m_gameState.IsMenuOpened(LocalPlayerIndex))
-            {
-                return;
-            }
+            //if (m_gameState.IsMenuOpened(LocalPlayerIndex))
+            //{
+            //    return;
+            //}
 
             if (m_gameState.IsPaused || m_gameState.IsPauseStateChanging)
             {
@@ -691,8 +705,8 @@ namespace Battlehub.VoxelCombat
             PlayerCamCtrlSettings settings = m_settings.PlayerCamCtrl[LocalPlayerIndex];
             if (IsInputEnabled && !m_lockInputDuringPivotAnimation)
             {
-                float cursorX = m_inputManager.GetAxisRaw(InputAction.CursorX, LocalPlayerIndex);
-                float cursorY = m_inputManager.GetAxisRaw(InputAction.CursorY, LocalPlayerIndex);
+                float cursorX = m_inputManager.GetAxisRaw(InputAction.CursorX, LocalPlayerIndex, false);
+                float cursorY = m_inputManager.GetAxisRaw(InputAction.CursorY, LocalPlayerIndex, false);
                 float deltaY = m_inputManager.GetAxisRaw(InputAction.MoveForward, LocalPlayerIndex);
                 float deltaX = m_inputManager.GetAxisRaw(InputAction.MoveSide, LocalPlayerIndex);
                 bool rotateCamCW = m_inputManager.GetButton(InputAction.LT, LocalPlayerIndex);
@@ -701,6 +715,10 @@ namespace Battlehub.VoxelCombat
                 bool aPressed = m_inputManager.GetButton(InputAction.A, LocalPlayerIndex);
                 bool pivotPreciseMode = aPressed | m_inputManager.GetButton(InputAction.RightStickButton, LocalPlayerIndex);
                 bool cursorPreciseMode = aPressed | m_inputManager.GetButton(InputAction.LeftStickButton, LocalPlayerIndex);
+                if(pivotPreciseMode || cursorPreciseMode)
+                {
+                    m_lockMouseToWorld = false;
+                }
 
                 if(m_inputManager.GetButtonUp(InputAction.LT, LocalPlayerIndex) || m_inputManager.GetButtonUp(InputAction.RT, LocalPlayerIndex))
                 {

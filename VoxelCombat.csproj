@@ -353,6 +353,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\TriggerHandlers.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\TxtSlider.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\TypeModelCreator.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\HUD\HUDControlBehavior.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Dependencies.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\EventSystemManager.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\GameView.cs" />
@@ -408,6 +409,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\RoomChat.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\RTTIndicator.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\VoxelConsole.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\VoxelUIBaseInputOverride.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\VoxelUIInputProvider.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UnitSelection.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\VoxelFactory.cs" />

@@ -9,7 +9,6 @@ namespace Battlehub.VoxelCombat
 {
     public class PlayerMinimap : UIBehaviour, IGL
     {
-
         private IVoxelMinimapRenderer m_minimap;
         private IPlayerCameraController m_cameraController;
         private IVoxelInputManager m_input;
@@ -35,14 +34,16 @@ namespace Battlehub.VoxelCombat
         private bool m_manipulating;
         private Vector3 m_prevCamPos;
         private Quaternion m_prevCamRot;
-        private int m_cullingMask;
-
+ 
+        private CanvasScaler m_scaler;
+       
         protected override void Awake()
         {
             base.Awake();
 
             m_minimap = Dependencies.Minimap;
             m_input = Dependencies.InputManager;
+            m_scaler = GetComponentInParent<CanvasScaler>();
 
             m_minimap.Loaded += OnLoaded;
             m_background.texture = m_minimap.Background;
@@ -59,8 +60,7 @@ namespace Battlehub.VoxelCombat
             }
 
             m_cameraController = Dependencies.GameView.GetCameraController(m_viewport.LocalPlayerIndex);
-            m_cullingMask = m_viewport.Camera.GetComponent<GLCamera>().CullingMask;
-    
+
             base.Start();
             StartCoroutine(Fit());
         }
@@ -70,7 +70,6 @@ namespace Battlehub.VoxelCombat
         {
             Transform camTransform = m_viewport.Camera.transform;
 
-          
             if (camTransform.position != m_prevCamPos || camTransform.rotation != m_prevCamRot)
             {
                 m_prevCamPos = camTransform.position;
@@ -82,8 +81,10 @@ namespace Battlehub.VoxelCombat
                 ProjectCamera(m_rtMapBounds.rotation);
             }
 
-            if (m_input.GetButtonDown(InputAction.LMB, m_viewport.LocalPlayerIndex) ||
-               m_input.GetButtonDown(InputAction.RightStickButton, m_viewport.LocalPlayerIndex))
+            bool rightStickDown = m_input.GetButtonDown(InputAction.RightStickButton, m_viewport.LocalPlayerIndex, false);
+            if (m_input.GetButtonDown(InputAction.LMB, m_viewport.LocalPlayerIndex, false) ||
+                m_input.GetButtonDown(InputAction.LB, m_viewport.LocalPlayerIndex, false) ||
+                rightStickDown)
             {
                 Vector2 pt;
                 if (RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)m_rtMapBounds.parent, m_cameraController.VirtualMousePosition, null, out pt))
@@ -94,10 +95,33 @@ namespace Battlehub.VoxelCombat
                         m_manipulating = true;
                         m_cameraController.VirtualMouseSensitivityScale = 0.2f;
                     }
+                    else if(rightStickDown)
+                    {
+                        Vector3[] corners = new Vector3[4];
+                        ((RectTransform)m_rtMapBounds.parent).GetWorldCorners(corners);
+                        Vector3 center = corners[1] + (corners[3] - corners[1]) / 2;
+                        Vector3 screenCenter = RectTransformUtility.WorldToScreenPoint(null, center);
+
+                        Vector3 toPivot = m_cameraController.TargetPivot - m_cameraController.BoundsCenter;
+                        toPivot.y = 0;
+
+                        float angle = camTransform.eulerAngles.y;
+                        Vector3 dir = Quaternion.Euler(new Vector3(0, -angle, 0)) * toPivot.normalized;
+                        dir.y = dir.z;
+                        dir.z = 0;
+
+                        float normalizedOffset = toPivot.magnitude / m_cameraController.BoundsRadius;
+                        m_cameraController.VirtualMousePosition = screenCenter + dir * normalizedOffset * m_rootRadius * m_scaler.scaleFactor;
+
+                        m_manipulating = true;
+                        m_cameraController.VirtualMouseSensitivityScale = 0.2f;
+                    }
                 }
             }
-            if (m_input.GetButtonUp(InputAction.LMB, m_viewport.LocalPlayerIndex) ||
-                m_input.GetButtonUp(InputAction.RightStickButton, m_viewport.LocalPlayerIndex))
+
+            bool leftStickButtonUp = m_input.GetButtonUp(InputAction.RightStickButton, m_viewport.LocalPlayerIndex, false);
+            if (m_input.GetButtonUp(InputAction.LMB, m_viewport.LocalPlayerIndex, false) || 
+                m_input.GetButtonUp(InputAction.LB, m_viewport.LocalPlayerIndex, false) || leftStickButtonUp)
             {
                 m_manipulating = false;
                 m_cameraController.VirtualMouseSensitivityScale = 1.0f;
@@ -105,7 +129,9 @@ namespace Battlehub.VoxelCombat
 
             if (m_manipulating)
             {
-                if (m_input.GetButton(InputAction.LMB, m_viewport.LocalPlayerIndex))
+                if (m_input.GetButton(InputAction.LMB, m_viewport.LocalPlayerIndex, false) ||
+                    m_input.GetButton(InputAction.LB, m_viewport.LocalPlayerIndex, false) ||
+                    m_input.GetButton(InputAction.RightStickButton, m_viewport.LocalPlayerIndex, false))
                 {
                     if (m_cameraController.VirtualMousePosition != m_prevCursor)
                     {
@@ -123,11 +149,7 @@ namespace Battlehub.VoxelCombat
                         m_prevCursor = m_cameraController.VirtualMousePosition;
                     }
                 }
-                else if(m_input.GetButton(InputAction.RightStickButton, m_viewport.LocalPlayerIndex))
-                {
-                    //float fwd = m_input.GetAxisRaw(InputAction.MoveForward, m_viewport.LocalPlayerIndex);
-                    //float side = m_input.GetAxisRaw(InputAction.MoveSide, m_viewport.LocalPlayerIndex);
-                }
+               
             }
         }
 

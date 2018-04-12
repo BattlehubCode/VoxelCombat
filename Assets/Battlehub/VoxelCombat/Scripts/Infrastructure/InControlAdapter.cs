@@ -5,23 +5,27 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using System.Linq;
 using System;
+using Battlehub.UIControls;
 
 namespace Battlehub.VoxelCombat
 {
+
+
     //[DefaultExecutionOrder(-3000)]
     public class InControlAdapter : MonoBehaviour, IVoxelInputManager
     {
         private const string DevicesPersistentKey = "InControlAdapter.Devices";
 
-        private GameObject m_selectedGameObject;
-       // private bool m_isInputFieldSelected;
-        private bool m_isPointerOverGameObject;
+        private GameObject[] m_selectedGameObject;
+        private bool[] m_isInputFieldSelected;
+        private bool[] m_isPointerOverGameObject;
 
         private List<InputDevice> m_devices;
         private List<InputDevice> m_lastDisabledDevices;
         private IGlobalState m_gState;
         private IProgressIndicator m_progress;
-
+        private IEventSystemManager m_eventSystemManager;
+      
         private static readonly Dictionary<InputAction, InputControlType> m_mapping =
             new Dictionary<InputAction, InputControlType>
             {
@@ -111,10 +115,21 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        
+
         private void Start()
         {
             m_gState = Dependencies.State;
             m_progress = Dependencies.Progress;
+            m_eventSystemManager = Dependencies.EventSystemManager;
+            for (int i = 0; i < m_eventSystemManager.EventSystemCount; ++i)
+            {
+                IndependentEventSystem eventSystem = m_eventSystemManager.GetEventSystem(i);
+                eventSystem.EventSystemUpdate += OnEventSystemUpdate;
+            }
+            m_isPointerOverGameObject = new bool[m_eventSystemManager.EventSystemCount];
+            m_isInputFieldSelected = new bool[m_eventSystemManager.EventSystemCount];
+            m_selectedGameObject = new GameObject[m_eventSystemManager.EventSystemCount];
 
             InputManager.OnDeviceAttached += OnDeviceAttached;
             InputManager.OnDeviceDetached += OnDeviceDetached;
@@ -162,10 +177,15 @@ namespace Battlehub.VoxelCombat
             LogDevices();
         }
 
-     
 
         private void OnDestroy()
         {
+            for (int i = 0; i < m_eventSystemManager.EventSystemCount; ++i)
+            {
+                IndependentEventSystem eventSystem = m_eventSystemManager.GetEventSystem(i);
+                eventSystem.EventSystemUpdate -= OnEventSystemUpdate;
+            }
+
             InputManager.OnDeviceAttached -= OnDeviceAttached;
             InputManager.OnDeviceDetached -= OnDeviceDetached;
             InputManager.OnActiveDeviceChanged -= OnActiveDeviceChanged;
@@ -377,11 +397,11 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public bool IsAnyButtonDown(int player, bool isMaskedByInputField)
+        public bool IsAnyButtonDown(int player, bool isMaskedByUI)
         {
-            if (isMaskedByInputField)
+            if (isMaskedByUI)
             {
-                if (m_isPointerOverGameObject /* || m_isInputFieldSelected*/)
+                if (m_selectedGameObject[player] != null || m_isInputFieldSelected[player])
                 {
                     return false;
                 }
@@ -416,11 +436,11 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
-        public float GetAxisRaw(InputAction action, int player, bool isMaskedByInputField)
+        public float GetAxisRaw(InputAction action, int player, bool isMaskedByUI)
         {
-            if(isMaskedByInputField)
+            if(isMaskedByUI)
             {
-                if (m_isPointerOverGameObject /*|| m_isInputFieldSelected*/)
+                if (m_selectedGameObject[player] != null || m_isInputFieldSelected[player])
                 {
                     return 0;
                 }
@@ -467,11 +487,11 @@ namespace Battlehub.VoxelCombat
             return 0;
         }
 
-        public bool GetButton(InputAction action, int player, bool isMaskedByInputField)
+        public bool GetButton(InputAction action, int player, bool isMaskedByUI)
         {
-            if (isMaskedByInputField)
+            if (isMaskedByUI)
             {
-                if (m_isPointerOverGameObject /*|| m_isInputFieldSelected*/)
+                if (m_selectedGameObject[player] != null || m_isInputFieldSelected[player])
                 {
                     return false;
                 }
@@ -508,11 +528,11 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
-        public bool GetButtonDown(InputAction action, int player, bool isMaskedByInputField)
+        public bool GetButtonDown(InputAction action, int player, bool isMaskedByUI)
         {
-            if(isMaskedByInputField)
-            {
-                if (m_isPointerOverGameObject /*|| m_isInputFieldSelected*/)
+            if(isMaskedByUI)
+            {                 
+                if (m_selectedGameObject[player] != null || m_isInputFieldSelected[player])
                 {
                     return false;
                 }
@@ -550,11 +570,11 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
-        public bool GetButtonUp(InputAction action, int player, bool isMaskedByInputField)
+        public bool GetButtonUp(InputAction action, int player, bool m_isMaskedByUI)
         {
-            if(isMaskedByInputField)
+            if(m_isMaskedByUI)
             {
-                if (m_isPointerOverGameObject /*|| m_isInputFieldSelected*/)
+                if (m_selectedGameObject[player] != null || m_isInputFieldSelected[player])
                 {
                     return false;
                 }
@@ -591,19 +611,27 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
+        private void OnEventSystemUpdate()
+        {
+            IndependentEventSystem eventSystem = EventSystem.current as IndependentEventSystem;
+            if(eventSystem == null)
+            {
+                return;
+            }
+
+            m_isPointerOverGameObject[eventSystem.Index] = eventSystem.IsPointerOverGameObject();
+
+            GameObject selectedGameObject = m_selectedGameObject[eventSystem.Index];
+            if (eventSystem.currentSelectedGameObject != selectedGameObject)
+            {
+                GameObject newGameObject = eventSystem.currentSelectedGameObject;
+                m_selectedGameObject[eventSystem.Index] = eventSystem.currentSelectedGameObject;
+                m_isInputFieldSelected[eventSystem.Index] = eventSystem.currentSelectedGameObject != null && eventSystem.currentSelectedGameObject.GetComponent<InputField>() != null;
+            }
+        }
+
         private void Update()
         {
-            m_isPointerOverGameObject = false;
-            //if (EventSystem.current != null)
-            //{
-            //    m_isPointerOverGameObject = EventSystem.current.IsPointerOverGameObject();
-            //    if (EventSystem.current.currentSelectedGameObject != m_selectedGameObject)
-            //    {
-            //        m_selectedGameObject = EventSystem.current.currentSelectedGameObject;
-            //        m_isInputFieldSelected = m_selectedGameObject != null && m_selectedGameObject.GetComponent<InputField>() != null;
-            //    }
-            //}
-
             if(IsInInitializationState)
             {
                 for(int i = 0; i < InputManager.Devices.Count; ++i)

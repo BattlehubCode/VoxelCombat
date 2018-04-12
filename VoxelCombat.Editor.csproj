@@ -368,6 +368,7 @@
     <Compile Include="Assets\Battlehub\UIControls\VirtualKeyboard\Scripts\Editor\VirtualToggleKeyEditor.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\Editor\ServerRunner.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\Editor\TypeModelCreatorMenu.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\HUD\Editor\HUDControlBehaviorEditor.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Test\Editor\EditModeTest.cs" />
     <Compile Include="Assets\Editor\BuildPostprocessor.cs" />
     <Compile Include="Assets\Editor\PackageExporter.cs" />

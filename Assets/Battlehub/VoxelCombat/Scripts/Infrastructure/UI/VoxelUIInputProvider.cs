@@ -9,6 +9,8 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private int m_localPlayerIndex;
 
+        private IGameView m_gameView;
+        private IPlayerCameraController m_cameraController;
         private IVoxelInputManager m_input;
         private bool m_isKeyboardAndMouse;
 
@@ -167,11 +169,33 @@ namespace Battlehub.VoxelCombat
         {
             get
             {
-                if (m_isKeyboardAndMouse || m_localPlayerIndex < 0)
+                if (m_localPlayerIndex < 0)
                 {
                     return m_input.MousePosition;
                 }
-                return new Vector3(-1, -1, -1);
+
+                if (m_gameView != null && m_cameraController != null)
+                {
+                    return m_cameraController.VirtualMousePosition;
+                }
+
+                return m_input.MousePosition;
+
+                //if (m_isKeyboardAndMouse)
+                //{
+                //    if(m_gameView != null && m_cameraController != null)
+                //    {
+                //        return m_cameraController.VirtualMousePosition;
+                //    }
+
+                //    return m_input.MousePosition;
+                //}
+
+                //if(m_localPlayerIndex < 0)
+                //{
+                //    return m_input.MousePosition;
+                //}
+                //return new Vector3(-1, -1, -1);
             }
         }
 
@@ -186,7 +210,7 @@ namespace Battlehub.VoxelCombat
             {
                 return Input.GetMouseButtonDown(button); 
             }
-            return false;
+            return m_input.GetButtonDown(InputAction.LB, m_localPlayerIndex, false); 
         }
 
         public override bool IsMousePresent
@@ -198,11 +222,14 @@ namespace Battlehub.VoxelCombat
                     return false;
                 }
 
+                /*
                 if(m_isKeyboardAndMouse || m_localPlayerIndex < 0)
                 {
                     return Input.mousePresent;
                 }
                 return false;
+                */
+                return true;
             }
         }
 
@@ -227,8 +254,49 @@ namespace Battlehub.VoxelCombat
             get { return false; }
         }
 
+        public override float GetAxisRaw(string axisName)
+        {
+            throw new System.NotImplementedException("GetAxisRaw " + axisName);
+        }
+
+        public override bool GetMouseButton(int button)
+        {
+            if(button == 0)
+            {
+                return m_input.GetButton(InputAction.LMB, LocalPlayerIndex, false) ||
+                    m_input.GetButton(InputAction.LB, LocalPlayerIndex, false);
+            }
+            return false;
+        }
+
+        public override bool GetMouseButtonUp(int button)
+        {
+            if (button == 0)
+            {
+                return m_input.GetButtonUp(InputAction.LMB, LocalPlayerIndex, false) ||
+                    m_input.GetButtonUp(InputAction.LB, LocalPlayerIndex, false);
+            }
+            return false;
+        }
+
+        public override bool GetMouseButtonDown(int button)
+        {
+            if (button == 0)
+            {
+                return m_input.GetButtonDown(InputAction.LMB, LocalPlayerIndex, false) ||
+                    m_input.GetButtonDown(InputAction.LB, LocalPlayerIndex, false);
+            }
+            return false;
+        }
+
+        public override bool GetButtonDown(string buttonName)
+        {
+            throw new System.NotImplementedException("GetButtonDown " + buttonName);
+        }
+
         private void Awake()
         {
+            m_gameView = Dependencies.GameView;
             m_input = Dependencies.InputManager;
             m_input.DeviceEnabled += OnDeviceEnabled;
             m_input.DeviceDisabled += OnDeviceDisabled;
@@ -237,11 +305,33 @@ namespace Battlehub.VoxelCombat
         private void Start()
         {
             m_isKeyboardAndMouse = m_input.IsKeyboardAndMouse(m_localPlayerIndex);
+            if(m_gameView != null)
+            {
+                if (m_gameView.IsInitialized)
+                {
+                    m_cameraController = m_gameView.GetCameraController(m_localPlayerIndex);
+                }
+                else
+                {
+                    m_gameView.Initialized += OnGameViewInitialized;
+                }
+            }  
+        }
+
+        private void OnGameViewInitialized(object sender, System.EventArgs e)
+        {
+            m_gameView.Initialized -= OnGameViewInitialized;
+            m_cameraController = m_gameView.GetCameraController(m_localPlayerIndex);
         }
 
         private void OnDestroy()
         {
-            if(m_input != null)
+            if (m_gameView != null)
+            {
+                m_gameView.Initialized -= OnGameViewInitialized;
+            }
+
+            if (m_input != null)
             {
                 m_input.DeviceEnabled -= OnDeviceEnabled;
                 m_input.DeviceDisabled -= OnDeviceDisabled;
