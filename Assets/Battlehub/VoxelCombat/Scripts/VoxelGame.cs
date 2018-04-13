@@ -12,6 +12,7 @@ namespace Battlehub.VoxelCombat
 
     public interface IVoxelGame
     {
+        event VoxelGameStateChangedHandler Started;
         event VoxelGameStateChangedHandler Completed;
         event VoxelGameStateChangedHandler<int> PlayerDefeated;
         event VoxelGameStateChangedHandler IsPausedChanged;
@@ -36,6 +37,11 @@ namespace Battlehub.VoxelCombat
 
         bool IsMenuOpened(int localPlayerIndex);
         void IsMenuOpened(int localPlayerIndex, bool value);
+
+        bool IsStarted
+        {
+            get;
+        }
 
         bool IsPaused
         {
@@ -110,10 +116,18 @@ namespace Battlehub.VoxelCombat
 
     public class VoxelGame : MonoBehaviour, IVoxelGame
     {
+        public event VoxelGameStateChangedHandler Started;
         public event VoxelGameStateChangedHandler<int> PlayerDefeated;
         public event VoxelGameStateChangedHandler Completed;
-        private bool m_isCompleted;
 
+        private bool m_isStarted;
+        public bool IsStarted
+        {
+            get { return m_isStarted; }
+            private set { m_isStarted = value; }
+        }
+
+        private bool m_isCompleted;
         public bool IsCompleted
         {
             get { return m_isCompleted; }
@@ -412,8 +426,6 @@ namespace Battlehub.VoxelCombat
 
             m_voxelMap.Map.DestroyExtraPlayers(players.Length);
             m_voxelMap.IsOn = true;
-
-       
             m_players = players;
 
             m_voxelAbilities = voxelAbilities.Select(va => va.Abilities.ToDictionary(a => a.Type)).ToArray();            
@@ -451,6 +463,13 @@ namespace Battlehub.VoxelCombat
             for (int i = 0; i < m_playerStats.Length; ++i)
             {
                 m_playerStats[i] = new PlayerStats(true, m_playerControllers[i].UnitsCount);
+            }
+
+
+            IsStarted = true;
+            if (Started != null)
+            {
+                Started();
             }
         }
 

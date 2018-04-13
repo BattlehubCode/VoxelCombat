@@ -436,6 +436,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerCameraController.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerCommandsPanel.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerConsoleCommandHandler.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerInputManager.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerMinimap.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerSelectionController.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerUnitController.cs" />

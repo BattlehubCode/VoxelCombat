@@ -278,7 +278,6 @@ namespace Battlehub.VoxelCombat
             m_playerIndex = playerIndex;
             m_isLocalPlayer = m_gameState.IsLocalPlayer(m_playerIndex);
 
-            m_minimap.BeginUpdate();
             m_voxelMap.Map.Root.ForEach(cell =>
             {
                 cell.ForEach(voxelData =>
@@ -301,7 +300,6 @@ namespace Battlehub.VoxelCombat
                     }
                 });
             });
-            m_minimap.EndUpdate();
         }
 
         private void CreateAsset(VoxelData data, MapCell cell)

@@ -139,6 +139,7 @@ namespace Battlehub.VoxelCombat
             }
             else if (m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex))
             {
+                m_commandsPanel.IsActive = true;
                 //int playerIndex = m_gameState.LocalToPlayerIndex(LocalPlayerIndex);
 
                 //if (m_unitSelection.HasSelected(playerIndex, playerIndex))

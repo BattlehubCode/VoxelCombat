@@ -38,8 +38,7 @@ namespace Battlehub.VoxelCombat
 
         private Texture2D m_bgTexture;
         private Texture2D m_fgTexture;
-        private IVoxelMap m_voxelMap;
-
+        
         public Texture2D Foreground
         {
             get { return m_fgTexture; }
@@ -50,7 +49,7 @@ namespace Battlehub.VoxelCombat
             get { return m_bgTexture; }
         }
 
-        private IMaterialsCache m_materialCache;
+        
         private Color m_skyColor;
         private Color m_groundBaseColor;
         private Color m_transparentColor;
@@ -60,12 +59,18 @@ namespace Battlehub.VoxelCombat
         private bool m_updateRequired;
         private bool m_updating;
 
+        private IVoxelMap m_voxelMap;
+        private IMaterialsCache m_materialCache;
+        private IVoxelGame m_gameState;
+
         private void Awake()
         {
             m_materialCache = Dependencies.MaterialsCache;
             m_voxelMap = Dependencies.Map;
-            m_voxelMap.Loaded += OnMapLoaded;
-            if (m_voxelMap.IsLoaded)
+            m_gameState = Dependencies.GameState;
+
+            m_gameState.Started += OnGameStarted;
+            if (m_gameState.IsStarted)
             {
                 CreateTextures();
             }
@@ -77,9 +82,9 @@ namespace Battlehub.VoxelCombat
 
         private void OnDestroy()
         {
-            if(m_voxelMap != null)
+            if(m_gameState != null)
             {
-                m_voxelMap.Loaded -= OnMapLoaded;
+                m_gameState.Started -= OnGameStarted;
             }
 
             if(m_bgTexture != null)
@@ -94,7 +99,7 @@ namespace Battlehub.VoxelCombat
             
         }
 
-        private void OnMapLoaded(object sender, EventArgs e)
+        private void OnGameStarted()
         {
             CreateTextures();
 
@@ -290,7 +295,7 @@ namespace Battlehub.VoxelCombat
 
             Fill(to, m_materialCache.GetPrimaryColor(voxelData.Owner));
 
-            if (!m_updating)
+            if (!m_updating && m_fgTexture != null)
             {
                 m_fgTexture.Apply();
             }
@@ -308,7 +313,7 @@ namespace Battlehub.VoxelCombat
             Color color = m_materialCache.GetPrimaryColor(voxelData.Owner);
             Fill(coord, color);
 
-            if (!m_updating)
+            if (!m_updating && m_fgTexture != null)
             {
                 m_fgTexture.Apply();
             }
@@ -333,7 +338,7 @@ namespace Battlehub.VoxelCombat
                 Fill(coord, m_materialCache.GetPrimaryColor(data.Owner));
             }
 
-            if (!m_updating)
+            if (!m_updating && m_fgTexture != null)
             {
                 m_fgTexture.Apply();
             }
