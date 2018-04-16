@@ -66,9 +66,8 @@ namespace UnityEngine
 
 namespace Battlehub.VoxelCombat
 {
-
-
     public delegate void VoxelDataControllerEvent<T>(T data);
+
 
     public interface IVoxelDataController
     {
@@ -141,33 +140,31 @@ namespace Battlehub.VoxelCombat
             Action<VoxelData> expandCallback = null,
             Action<VoxelData, int> explodeCallback = null);
 
-        
-
         void RotateRight();
 
         void RotateLeft();
 
-        bool CanSplit();
+        bool? CanSplit();
 
         bool Split(out Coordinate[] coordinates, Action<VoxelData, VoxelData, int, int> eatCallback, Action<VoxelData, int> collapseCallback = null, Action<VoxelData> dieCallback = null);
 
-        bool CanSplit4();
+        bool? CanSplit4();
 
         bool Split4(out Coordinate[] coordinates,  Action<VoxelData> expandCallback = null, Action<VoxelData> dieCallback = null);
 
-        bool CanGrow();
+        bool? CanGrow();
 
         bool Grow(Action<VoxelData, VoxelData, int, int> eatCallback, Action<VoxelData, int> collapseCallback = null);
 
-        bool CanDiminish();
+        bool? CanDiminish();
 
         bool Diminish(Action<VoxelData> expandCallback = null);
 
-        bool CanConvert(int type);
+        bool? CanConvert(int type);
 
         bool Convert(int type, Action<VoxelData> dieCallback = null);
 
-        bool CanPerformSpawnAction();
+        bool? CanPerformSpawnAction();
 
         bool PerformSpawnAction(out Coordinate[] coordinates);
 
@@ -937,11 +934,11 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
-        public bool CanSplit()
+        public bool? CanSplit()
         {
             if (ControlledData.Type != (int)KnownVoxelTypes.Eater)
             {
-                return false;
+                return null;
             }
             Coordinate coordinate;
             return FindSplitCoorinate(out coordinate);
@@ -993,11 +990,11 @@ namespace Battlehub.VoxelCombat
             return true;
         }
 
-        public bool CanSplit4()
+        public bool? CanSplit4()
         {
             if (ControlledData.Type != (int)KnownVoxelTypes.Eater)
             {
-                return false;
+                return null;
             }
             if (IsCollapsedOrBlocked)
             {
@@ -1040,7 +1037,7 @@ namespace Battlehub.VoxelCombat
         public bool Split4(out Coordinate[] coordinates, Action<VoxelData> expandCallback = null, Action<VoxelData> dieCallback = null)
         {
             coordinates = new Coordinate[4];
-            if (!CanSplit4())
+            if (CanSplit4() != true)
             {
                 return false;
             }
@@ -1106,11 +1103,11 @@ namespace Battlehub.VoxelCombat
             return true;
         }
 
-        public bool CanGrow()
+        public bool? CanGrow()
         {
             if (ControlledData.Type != (int)KnownVoxelTypes.Eater)
             {
-                return false;
+                return null;
             }
             if (m_controlledData.Health != m_abilities.MaxHealth)
             {
@@ -1163,8 +1160,7 @@ namespace Battlehub.VoxelCombat
 
         public bool Grow(Action<VoxelData, VoxelData, int, int> eatOrDestroyCallback = null, Action<VoxelData, int> collapseCallback = null)
         {
-
-            if(!CanGrow())
+            if(CanGrow() != true)
             {
                 return false;
             }
@@ -1195,11 +1191,11 @@ namespace Battlehub.VoxelCombat
             return true;
         }
 
-        public bool CanDiminish()
+        public bool? CanDiminish()
         {
             if (ControlledData.Type != (int)KnownVoxelTypes.Eater)
             {
-                return false;
+                return null;
             }
 
             if (IsCollapsedOrBlocked)
@@ -1226,8 +1222,7 @@ namespace Battlehub.VoxelCombat
 
         public bool Diminish(Action<VoxelData> expandCallback = null)
         {
-
-            if(!CanDiminish())
+            if(CanDiminish() != true)
             {
                 return false;
             }
@@ -1273,13 +1268,11 @@ namespace Battlehub.VoxelCombat
         }
 
 
-        public bool CanConvert(int type)
+        public bool? CanConvert(int type)
         {
-
-
             if(ControlledData.Type != (int)KnownVoxelTypes.Eater)
             {
-                return false;
+                return null;
             }
 
             if (IsCollapsedOrBlocked)
@@ -1367,7 +1360,7 @@ namespace Battlehub.VoxelCombat
 
         public bool Convert(int type, Action<VoxelData> dieCallback = null)
         {
-            if(!CanConvert(type))
+            if(CanConvert(type) != true)
             {
                 return false;
             }
@@ -1402,7 +1395,7 @@ namespace Battlehub.VoxelCombat
             return true;
         }
 
-        public bool CanPerformSpawnAction()
+        public bool? CanPerformSpawnAction()
         {
             if(ControlledData.Type == (int)KnownVoxelTypes.Spawner)
             {
@@ -1434,13 +1427,13 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            return false;
+            return null;
         }
 
         public bool PerformSpawnAction(out Coordinate[] coordinates)
         {
             coordinates = new Coordinate[0];
-            if (!CanPerformSpawnAction())
+            if (CanPerformSpawnAction() != true)
             {
                 return false;
             }

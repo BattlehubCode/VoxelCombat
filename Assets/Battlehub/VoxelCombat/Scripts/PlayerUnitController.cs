@@ -139,7 +139,7 @@ namespace Battlehub.VoxelCombat
             }
             else if (m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex))
             {
-                m_commandsPanel.IsActive = true;
+               // m_commandsPanel.IsActive = true;
                 //int playerIndex = m_gameState.LocalToPlayerIndex(LocalPlayerIndex);
 
                 //if (m_unitSelection.HasSelected(playerIndex, playerIndex))
@@ -179,7 +179,7 @@ namespace Battlehub.VoxelCombat
             SubmitStdCommand(() => new Cmd(CmdCode.Diminish), (playerIndex, unitId) =>
             {
                 IVoxelDataController dataController = m_gameState.GetVoxelDataController(playerIndex, unitId);
-                if (!dataController.CanDiminish())
+                if (dataController.CanDiminish() != true)
                 {
                     Debug.LogWarning("Can't diminish unit " + unitId);
                     return false;
@@ -193,7 +193,7 @@ namespace Battlehub.VoxelCombat
             SubmitStdCommand(() => new Cmd(CmdCode.Grow), (playerIndex, unitId) =>
             {
                 IVoxelDataController dataController = m_gameState.GetVoxelDataController(playerIndex, unitId);
-                if (!dataController.CanGrow())
+                if (dataController.CanGrow() != true)
                 {
                     Debug.LogWarning("Can't grow unit " + unitId);
                     return false;
@@ -207,7 +207,7 @@ namespace Battlehub.VoxelCombat
             SubmitStdCommand(() => new Cmd(CmdCode.Split4), (playerIndex, unitId) =>
             {
                 IVoxelDataController dataController = m_gameState.GetVoxelDataController(playerIndex, unitId);
-                if (!dataController.CanSplit4())
+                if (dataController.CanSplit4() != true)
                 {
                     Debug.LogWarning("Can't split4 unit " + unitId);
                     return false;
@@ -221,7 +221,7 @@ namespace Battlehub.VoxelCombat
             SubmitStdCommand(() => new Cmd(CmdCode.Split), (playerIndex, unitId) =>
             {
                 IVoxelDataController dataController = m_gameState.GetVoxelDataController(playerIndex, unitId);
-                if (!dataController.CanSplit())
+                if (dataController.CanSplit() != true)
                 {
                     Debug.LogWarning("Can't split unit " + unitId);
                     return false;
@@ -260,7 +260,7 @@ namespace Battlehub.VoxelCombat
                 int controllableUnitsCount = m_gameState.GetStats(playerIndex).ControllableUnitsCount;
                 long[] selection = m_unitSelection.GetSelection(playerIndex, playerIndex);
                 IVoxelDataController dataController = m_gameState.GetVoxelDataController(playerIndex, unitId);
-                if (!dataController.CanConvert(type) || selection.Length == controllableUnitsCount) 
+                if (dataController.CanConvert(type) != true || selection.Length == controllableUnitsCount) 
                 {
                     Debug.LogWarning("Can't convert unit " + unitId + " to " + type);
                     return false;

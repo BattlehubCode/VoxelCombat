@@ -472,7 +472,7 @@ namespace Battlehub.VoxelCombat
 
             if(taskType == BotTaskType.Split)
             {
-                if(unitView.DataController.CanGrow())
+                if(unitView.DataController.CanGrow() != true)
                 {
                     return false;
                 }

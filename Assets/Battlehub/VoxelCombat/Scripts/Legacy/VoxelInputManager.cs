@@ -12,13 +12,16 @@ namespace Battlehub.VoxelCombat
     {
         //Infrastructure
         ToggleConsole = 0,
-        ToggleMenu = 1,
         Quit = 2,
         SaveReplay = 3,
 
         //Game
         MoveForward = 10,
         MoveSide = 15,
+        DPadLeft = 16,
+        DPadRight = 17,
+        DPadUp = 18,
+        DPadDown = 19,
 
         MouseX = 90,
         MouseY = 91,
@@ -35,8 +38,8 @@ namespace Battlehub.VoxelCombat
         Action6 = 108,
         Action7 = 109,
         Y = 110,
-        Action9 = 111,
-        Action0 = 112,
+        Start = 111,
+        Back = 112,
         Cancel = 113,
         Submit = 114,
         LT = 115,
@@ -55,9 +58,6 @@ namespace Battlehub.VoxelCombat
 
         //Debug
         ToggleCursor = 1000,
-
-
-
     }
 
     [Serializable]

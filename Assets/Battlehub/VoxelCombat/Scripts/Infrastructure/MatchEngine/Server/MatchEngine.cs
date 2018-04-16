@@ -629,11 +629,11 @@ namespace Battlehub.VoxelCombat
                     case CmdCode.Convert:
                         return !unitController.DataController.IsCollapsedOrBlocked;
                     case CmdCode.Grow:
-                        return unitController.DataController.CanGrow();
+                        return unitController.DataController.CanGrow() == true;
                     case CmdCode.Split4:
-                        return unitController.DataController.CanSplit4();
+                        return unitController.DataController.CanSplit4() == true;
                     case CmdCode.Split:
-                        return unitController.DataController.CanSplit();
+                        return unitController.DataController.CanSplit() == true;
                     case CmdCode.Move:
                         return !unitController.DataController.IsCollapsedOrBlocked;
                     case CmdCode.Explode:

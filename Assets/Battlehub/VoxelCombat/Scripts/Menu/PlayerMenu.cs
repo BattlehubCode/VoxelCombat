@@ -112,9 +112,7 @@ namespace Battlehub.VoxelCombat
             }
 
             
-            if ( /*m_inputManager.GetButtonDown(InputAction.ToggleMenu, LocalPlayerIndex) ||*/
-                (m_inputManager.GetButtonDown(InputAction.Action0, LocalPlayerIndex, false) ||
-                 m_inputManager.GetButtonDown(InputAction.Action9, LocalPlayerIndex, false)))
+            if (m_inputManager.GetButtonDown(InputAction.Back, LocalPlayerIndex, false))
             {
                 m_gameState.IsMenuOpened(LocalPlayerIndex, !m_gameState.IsMenuOpened(LocalPlayerIndex));
 
