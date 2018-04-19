@@ -116,11 +116,19 @@ namespace Battlehub.VoxelCombat
         {
             if (m_gameState.IsContextActionInProgress(LocalPlayerIndex))
             {
+                if (!m_cameraController.IsInputEnabled)
+                {
+                    m_cameraController.IsInputEnabled = true;
+                }
                 return;
             }
 
             if (m_gameState.IsMenuOpened(LocalPlayerIndex))
             {
+                if(!m_cameraController.IsInputEnabled)
+                {
+                    m_cameraController.IsInputEnabled = true;
+                }
                 return;
             }
 
@@ -205,7 +213,7 @@ namespace Battlehub.VoxelCombat
 
                 m_cameraController.IsInputEnabled = false;
             }            
-            else if(m_inputManager.GetButtonUp(InputAction.LB, LocalPlayerIndex))
+            else if(m_inputManager.GetButtonUp(InputAction.LB, LocalPlayerIndex, false, false))
             {
                 m_cameraController.IsInputEnabled = true;
             }

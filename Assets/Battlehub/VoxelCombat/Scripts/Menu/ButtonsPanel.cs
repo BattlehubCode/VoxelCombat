@@ -21,7 +21,8 @@ namespace Battlehub.VoxelCombat
             set;
         }
 
-        private EventSystem m_eventSystem;
+        private IndependentEventSystem m_eventSystem;
+        private IVoxelInputManager m_inputManager;
 
         [SerializeField]
         protected Button[] m_sequence;
@@ -40,30 +41,40 @@ namespace Battlehub.VoxelCombat
                 if(IsOpened != value)
                 {
                     gameObject.SetActive(value);
-                    SelectDefault();
 
                     if (IsOpenedChanged != null)
                     {
                         IsOpenedChanged(this);
                     }
+
+                    if (IsOpened)
+                    {
+                        SelectDefault();
+                    }
                 }
             }
         }
 
+
         protected virtual void SelectDefault()
         {
-            IndependentSelectable.Select(m_sequence[0]);
+            m_eventSystem.SetSelectedGameObjectOnLateUpdate(m_sequence[0].gameObject);
             m_sequence[0].OnSelect(null);
+         
         }
 
         public void SetText(int action, string text)
         {
             m_sequence[action].GetComponentInChildren<Text>().text = text;
         }
+
+        protected virtual void Awake()
+        {
+            m_eventSystem = IndependentSelectable.GetEventSystem(m_sequence[0]);
+        }
  
         protected virtual void Start()
         {
-            m_eventSystem = IndependentSelectable.GetEventSystem(m_sequence[0]);
             SelectDefault();
 
             for (int i = 0; i < m_sequence.Length; ++i)
@@ -89,6 +100,11 @@ namespace Battlehub.VoxelCombat
         {
 
         }
+
+        //protected virtual void Update()
+        //{
+            
+        //}
 
         protected virtual void OnAction(int index)
         {

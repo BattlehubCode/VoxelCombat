@@ -32,24 +32,24 @@ namespace Battlehub.VoxelCombat
         {
             get
             {
-                float hor = m_input.GetAxisRaw(InputAction.MoveSide, m_localPlayerIndex, false);
+                float hor = m_input.GetAxisRaw(InputAction.MoveSide, m_localPlayerIndex, false, false);
                 return hor;
             }
         }
 
         public override float VerticalAxis
         {
-            get { return m_input.GetAxisRaw(InputAction.MoveForward, m_localPlayerIndex, false); }
+            get { return m_input.GetAxisRaw(InputAction.MoveForward, m_localPlayerIndex, false, false); }
         }
 
         public override bool IsHorizontalButtonDown
         {
-            get { return m_input.GetButtonDown(InputAction.MoveSide, m_localPlayerIndex, false); }
+            get { return m_input.GetButtonDown(InputAction.MoveSide, m_localPlayerIndex, false, false); }
         }
 
         public override bool IsVerticalButtonDown
         {
-            get { return m_input.GetButtonDown(InputAction.MoveForward, m_localPlayerIndex, false); }
+            get { return m_input.GetButtonDown(InputAction.MoveForward, m_localPlayerIndex, false, false); }
         }
 
         public override float HorizontalAxis2
@@ -59,16 +59,16 @@ namespace Battlehub.VoxelCombat
                 if(m_localPlayerIndex < 0)
                 {
                     return Mathf.Clamp01(
-                        m_input.GetAxisRaw(InputAction.MoveSide, m_localPlayerIndex, false) +
-                        m_input.GetAxisRaw(InputAction.CursorX, m_localPlayerIndex, false));
+                        m_input.GetAxisRaw(InputAction.MoveSide, m_localPlayerIndex, false, false) +
+                        m_input.GetAxisRaw(InputAction.CursorX, m_localPlayerIndex, false, false));
                 }
 
                 if(m_isKeyboardAndMouse)
                 {
-                    return m_input.GetAxisRaw(InputAction.MoveSide, m_localPlayerIndex, false);
+                    return m_input.GetAxisRaw(InputAction.MoveSide, m_localPlayerIndex, false, false);
                 }
 
-                return m_input.GetAxisRaw(InputAction.CursorX, m_localPlayerIndex, false);
+                return m_input.GetAxisRaw(InputAction.CursorX, m_localPlayerIndex, false, false);
             }
         }
 
@@ -78,35 +78,35 @@ namespace Battlehub.VoxelCombat
             {
                 if(m_localPlayerIndex < 0)
                 {
-                    return m_input.GetButtonDown(InputAction.MoveSide, m_localPlayerIndex, false) ||
-                        m_input.GetButtonDown(InputAction.CursorX, m_localPlayerIndex, false);
+                    return m_input.GetButtonDown(InputAction.MoveSide, m_localPlayerIndex, false, false) ||
+                        m_input.GetButtonDown(InputAction.CursorX, m_localPlayerIndex, false, false);
                 }
                 if (m_isKeyboardAndMouse)
                 {
-                    return m_input.GetButtonDown(InputAction.MoveSide, m_localPlayerIndex, false);
+                    return m_input.GetButtonDown(InputAction.MoveSide, m_localPlayerIndex, false, false);
                 }
-                return m_input.GetButtonDown(InputAction.CursorX, m_localPlayerIndex, false);
+                return m_input.GetButtonDown(InputAction.CursorX, m_localPlayerIndex, false, false);
             }
         }
 
         public override bool IsFunctionalButtonDown
         {
-            get { return m_input.GetButtonDown(InputAction.LB, m_localPlayerIndex, false); }
+            get { return m_input.GetButtonDown(InputAction.LB, m_localPlayerIndex, false, false); }
         }
 
         public override bool IsFunctionalButtonPressed
         {
-            get { return m_input.GetButton(InputAction.LB, m_localPlayerIndex, false); }
+            get { return m_input.GetButton(InputAction.LB, m_localPlayerIndex, false, false); }
         }
 
         public override bool IsFunctional2ButtonDown
         {
-            get { return m_input.GetButtonDown(InputAction.RB, m_localPlayerIndex, false); }
+            get { return m_input.GetButtonDown(InputAction.RB, m_localPlayerIndex, false, false); }
         }
 
         public override bool IsFunctional2ButtonPressed
         {
-            get { return m_input.GetButton(InputAction.RB, m_localPlayerIndex, false); }
+            get { return m_input.GetButton(InputAction.RB, m_localPlayerIndex, false, false); }
         }
 
         public override bool IsSubmitButtonDown
@@ -115,14 +115,14 @@ namespace Battlehub.VoxelCombat
             {
                 if (m_localPlayerIndex < 0)
                 {
-                    return m_input.GetButtonDown(InputAction.Submit, m_localPlayerIndex, false) ||
-                        m_input.GetButtonDown(InputAction.A, m_localPlayerIndex, false);
+                    return m_input.GetButtonDown(InputAction.Submit, m_localPlayerIndex, false, false) ||
+                        m_input.GetButtonDown(InputAction.A, m_localPlayerIndex, false, false);
                 }
                 if (m_isKeyboardAndMouse)
                 {
-                    return m_input.GetButtonDown(InputAction.Submit, m_localPlayerIndex, false);
+                    return m_input.GetButtonDown(InputAction.Submit, m_localPlayerIndex, false, false);
                 }
-                return m_input.GetButtonDown(InputAction.A, m_localPlayerIndex, false);
+                return m_input.GetButtonDown(InputAction.A, m_localPlayerIndex, false, false);
             }
         }
 
@@ -132,14 +132,14 @@ namespace Battlehub.VoxelCombat
             {
                 if(m_localPlayerIndex < 0)
                 {
-                    return m_input.GetButtonUp(InputAction.Submit, m_localPlayerIndex, false) ||
-                        m_input.GetButtonUp(InputAction.A, m_localPlayerIndex, false);
+                    return m_input.GetButtonUp(InputAction.Submit, m_localPlayerIndex, false, false) ||
+                        m_input.GetButtonUp(InputAction.A, m_localPlayerIndex, false, false);
                 }
                 if (m_isKeyboardAndMouse)
                 {
-                    return m_input.GetButtonUp(InputAction.Submit, m_localPlayerIndex, false);
+                    return m_input.GetButtonUp(InputAction.Submit, m_localPlayerIndex, false, false);
                 }
-                return m_input.GetButtonUp(InputAction.A, m_localPlayerIndex, false);
+                return m_input.GetButtonUp(InputAction.A, m_localPlayerIndex, false, false);
             }
         }
 
@@ -149,20 +149,20 @@ namespace Battlehub.VoxelCombat
             {
                 if(m_localPlayerIndex < 0)
                 {
-                    return m_input.GetButtonDown(InputAction.Cancel, m_localPlayerIndex, false) ||
-                         m_input.GetButtonDown(InputAction.B, m_localPlayerIndex, false);
+                    return m_input.GetButtonDown(InputAction.Cancel, m_localPlayerIndex, false, false) ||
+                         m_input.GetButtonDown(InputAction.B, m_localPlayerIndex, false, false);
                 }
                 if (m_isKeyboardAndMouse)
                 {
-                    return m_input.GetButtonDown(InputAction.Cancel, m_localPlayerIndex, false);
+                    return m_input.GetButtonDown(InputAction.Cancel, m_localPlayerIndex, false, false);
                 }
-                return m_input.GetButtonDown(InputAction.B, m_localPlayerIndex, false);
+                return m_input.GetButtonDown(InputAction.B, m_localPlayerIndex, false, false);
             }
         }
 
         public override bool IsAnyKeyDown
         {
-            get { return m_input.IsAnyButtonDown(m_localPlayerIndex, false); }
+            get { return m_input.IsAnyButtonDown(m_localPlayerIndex, false, false); }
         }
 
         public override Vector3 MousePosition
@@ -210,7 +210,7 @@ namespace Battlehub.VoxelCombat
             {
                 return Input.GetMouseButtonDown(button); 
             }
-            return m_input.GetButtonDown(InputAction.LB, m_localPlayerIndex, false); 
+            return m_input.GetButtonDown(InputAction.LB, m_localPlayerIndex, false, false); 
         }
 
         public override bool IsMousePresent
@@ -263,8 +263,8 @@ namespace Battlehub.VoxelCombat
         {
             if(button == 0)
             {
-                return m_input.GetButton(InputAction.LMB, LocalPlayerIndex, false) ||
-                    m_input.GetButton(InputAction.LB, LocalPlayerIndex, false);
+                return m_input.GetButton(InputAction.LMB, LocalPlayerIndex, false, false) ||
+                    m_input.GetButton(InputAction.LB, LocalPlayerIndex, false, false);
             }
             return false;
         }
@@ -273,8 +273,8 @@ namespace Battlehub.VoxelCombat
         {
             if (button == 0)
             {
-                return m_input.GetButtonUp(InputAction.LMB, LocalPlayerIndex, false) ||
-                    m_input.GetButtonUp(InputAction.LB, LocalPlayerIndex, false);
+                return m_input.GetButtonUp(InputAction.LMB, LocalPlayerIndex, false, false) ||
+                    m_input.GetButtonUp(InputAction.LB, LocalPlayerIndex, false, false);
             }
             return false;
         }
@@ -283,8 +283,8 @@ namespace Battlehub.VoxelCombat
         {
             if (button == 0)
             {
-                return m_input.GetButtonDown(InputAction.LMB, LocalPlayerIndex, false) ||
-                    m_input.GetButtonDown(InputAction.LB, LocalPlayerIndex, false);
+                return m_input.GetButtonDown(InputAction.LMB, LocalPlayerIndex, false, false) ||
+                    m_input.GetButtonDown(InputAction.LB, LocalPlayerIndex, false, false);
             }
             return false;
         }

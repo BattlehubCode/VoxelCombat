@@ -23,6 +23,9 @@ namespace Battlehub.UIControls
         //[SerializeField]
         private bool m_isRoot = false;
 
+        private GameObject m_selectGO;
+        private bool m_selectOnLateUpdate;
+
         protected override void Awake()
         {
             base.Awake();
@@ -90,16 +93,30 @@ namespace Battlehub.UIControls
             current = this;        
             if (m_wasEnabledInCurrentFrame && firstSelectedGameObject)
             {
-                SetSelectedGameObject(firstSelectedGameObject);
+                base.SetSelectedGameObject(firstSelectedGameObject);
                 ExecuteEvents.Execute(firstSelectedGameObject, null, ExecuteEvents.selectHandler);
 
                 m_wasEnabledInCurrentFrame = false;
             }
+
+            if(m_selectOnLateUpdate)
+            {
+                SetSelectedGameObject(m_selectGO);
+                m_selectGO = null;
+                m_selectOnLateUpdate = false;
+            }
+
             if (EventSystemLateUpdate != null)
             {
                 EventSystemLateUpdate();
             }
             current = m_root;
+        }
+
+        public void SetSelectedGameObjectOnLateUpdate(GameObject selectGO)
+        {
+            m_selectGO = selectGO;            
+            m_selectOnLateUpdate = true;
         }
 
 

@@ -401,25 +401,26 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public bool IsAnyButtonDown(int player, bool isMaskedByUI)
+        public bool IsAnyButtonDown(int player, bool isMaskedBySelectedUI, bool isMaskedByPointerOverUI)
         {
-            if (isMaskedByUI)
+            if (isMaskedBySelectedUI && m_selectedGameObject[player] != null)
             {
-                if (m_selectedGameObject[player] != null || m_isInputFieldSelected[player])
-                {
-                    return false;
-                }
+                return false;
             }
-
-            if(IsSuspended(player))
+            else if (isMaskedByPointerOverUI && m_isPointerOverGameObject[player])
             {
                 return false;
             }
 
-            if(IsKeyboardAndMouse(player))
+            if (IsSuspended(player))
             {
-                return Input.anyKeyDown;
+                return false;
             }
+
+            //if(IsKeyboardAndMouse(player))
+            //{
+            //    return Input.anyKeyDown;
+            //}
 
             InputDevice inputDevice;
             if (player >= 0)
@@ -433,21 +434,22 @@ namespace Battlehub.VoxelCombat
 
             if (inputDevice != null && !inputDevice.IsSuspended)
             {
-                bool value = inputDevice.AnyButton.WasPressed;
+                bool value = inputDevice.AnyButton.WasPressed || inputDevice.MenuWasPressed;
               
                 return value;
             }
             return false;
         }
 
-        public float GetAxisRaw(InputAction action, int player, bool isMaskedByUI)
+        public float GetAxisRaw(InputAction action, int player, bool isMaskedBySelectedUI, bool isMaskedByPointerOverUI)
         {
-            if(isMaskedByUI)
+            if(isMaskedBySelectedUI && m_selectedGameObject[player] != null)
             {
-                if (m_selectedGameObject[player] != null || m_isInputFieldSelected[player])
-                {
-                    return 0;
-                }
+                return 0;
+            }
+            else if(isMaskedByPointerOverUI && m_isPointerOverGameObject[player])
+            {
+                return 0;
             }
             
             InputDevice inputDevice;
@@ -491,14 +493,15 @@ namespace Battlehub.VoxelCombat
             return 0;
         }
 
-        public bool GetButton(InputAction action, int player, bool isMaskedByUI)
+        public bool GetButton(InputAction action, int player, bool isMaskedBySelectedUI, bool isMaskedByPointerOverUI)
         {
-            if (isMaskedByUI)
+            if (isMaskedBySelectedUI && m_selectedGameObject[player] != null)
             {
-                if (m_selectedGameObject[player] != null || m_isInputFieldSelected[player])
-                {
-                    return false;
-                }
+                return false;
+            }
+            else if (isMaskedByPointerOverUI && m_isPointerOverGameObject[player])
+            {
+                return false;
             }
             InputDevice inputDevice;
             if (player >= 0)
@@ -532,16 +535,17 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
-        public bool GetButtonDown(InputAction action, int player, bool isMaskedByUI)
+        public bool GetButtonDown(InputAction action, int player, bool isMaskedBySelectedUI, bool isMaskedByPointerOverUI)
         {
-            if(isMaskedByUI)
-            {                 
-                if (m_selectedGameObject[player] != null || m_isInputFieldSelected[player])
-                {
-                    return false;
-                }
+            if (isMaskedBySelectedUI && m_selectedGameObject[player] != null)
+            {
+                return false;
             }
-            
+            else if (isMaskedByPointerOverUI && m_isPointerOverGameObject[player])
+            {
+                return false;
+            }
+
             InputDevice inputDevice;
             if(player >= 0)
             {
@@ -574,16 +578,17 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
-        public bool GetButtonUp(InputAction action, int player, bool m_isMaskedByUI)
+        public bool GetButtonUp(InputAction action, int player, bool isMaskedBySelectedUI, bool isMaskedByPointerOverUI)
         {
-            if(m_isMaskedByUI)
+            if (isMaskedBySelectedUI && m_selectedGameObject[player] != null)
             {
-                if (m_selectedGameObject[player] != null || m_isInputFieldSelected[player])
-                {
-                    return false;
-                }
+                return false;
             }
-            
+            else if (isMaskedByPointerOverUI && m_isPointerOverGameObject[player])
+            {
+                return false;
+            }
+
             InputDevice inputDevice;
             if (player >= 0)
             {

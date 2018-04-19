@@ -25,9 +25,6 @@ namespace Battlehub.VoxelCombat
         public event PlayerCommandsPanelEventHandler Diminish;
 
         [SerializeField]
-        private Selectable m_minimap;
-
-        [SerializeField]
         private GameObject m_commandsRoot;
 
         [SerializeField]
@@ -72,61 +69,63 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private Text m_tooltip;
 
+        private IVirtualMouse m_virtualMouse;
         private IVoxelInputManager m_inputManager;
         private IVoxelGame m_gameState;
         private IUnitSelection m_selection;
         private IEventSystemManager m_eventSystemMananger;
         private IndependentEventSystem m_eventSystem;
+        private GameObject m_lastSelected;
 
-
-        [SerializeField]
-        private Transform m_defLeft;
-        [SerializeField]
-        private Transform[] m_leftCol;
-
-        [SerializeField]
-        private Transform m_defRight;
-        [SerializeField]
-        private Transform[] m_rightCol;
-
-        [SerializeField]
-        private Transform m_defTop;
-        [SerializeField]
-        private Transform[] m_topRow;
-
-        [SerializeField]
-        private Transform m_defBottom;
-        [SerializeField]
-        private Transform[] m_bottomRow;
-
-        private bool m_isActive;
-        
-        public bool IsActive
+        private bool m_isOpen;
+        public bool IsOpen
         {
-            get { return m_isActive; }
+            get { return m_isOpen; }
             set
             {
                 int playerIndex = m_gameState.LocalToPlayerIndex(LocalPlayerIndex);
                 long[] selection = m_selection.GetSelection(playerIndex, playerIndex);
                 bool newValue = value && selection.Length > 0;
-                if (m_isActive != newValue)
+                if (m_isOpen != newValue)
                 {
-                    m_isActive =  newValue;
-                    m_minimap.gameObject.SetActive(!m_isActive);
-                    m_commandsRoot.gameObject.SetActive(m_isActive);
-
-                    //m_eventSystem.EventSystemUpdate -= OnEventSystemUpdate;
+                    m_isOpen = newValue;
+                    m_commandsRoot.gameObject.SetActive(m_isOpen);
                     m_selection.SelectionChanged -= OnSelectionChanged;
-                    
-                    if (m_isActive)
+
+                    if (m_isOpen)
                     {
-                        //m_eventSystem.EventSystemUpdate += OnEventSystemUpdate;
                         m_selection.SelectionChanged += OnSelectionChanged;
                     }
                     UpdateState();
-                }
 
-                m_gameState.IsContextActionInProgress(LocalPlayerIndex, m_isActive);
+                    if(m_virtualMouse == null)
+                    {
+                        m_virtualMouse = Dependencies.GameView.GetVirtualMouse(LocalPlayerIndex);
+                    }
+
+                    if (m_isOpen)
+                    {
+                        if(m_lastSelected == null || m_lastSelected.GetComponent<HUDControlBehavior>().IsDisabled)
+                        {
+                            m_eventSystem.SetSelectedGameObject(m_autoBtn.gameObject);
+                        }
+                        else
+                        {
+                            m_eventSystem.SetSelectedGameObject(m_lastSelected);
+                        }
+                        
+                        m_virtualMouse.BackupVirtualMouse();
+                        m_virtualMouse.IsVirtualMouseEnabled = m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex);
+                        m_virtualMouse.IsVirtualMouseCursorVisible = m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex);
+                    }
+                    else
+                    {
+                        m_virtualMouse.RestoreVirtualMouse();
+                        m_eventSystem.SetSelectedGameObject(null);
+                    }
+
+                    m_gameState.IsContextActionInProgress(LocalPlayerIndex, m_isOpen);
+                }
             }
         }
 
@@ -143,6 +142,8 @@ namespace Battlehub.VoxelCombat
             m_selection = Dependencies.UnitSelection;
             m_eventSystemMananger = Dependencies.EventSystemManager;
 
+            m_gameState.ContextAction += OnContextAction;
+        
             m_cancelBtn.onClick.AddListener(OnCancel);
             m_attackBtn.onClick.AddListener(OnAttack);
             m_moveBtn.onClick.AddListener(OnMove);
@@ -177,21 +178,14 @@ namespace Battlehub.VoxelCombat
 
         private void Start()
         {
-            bool isKeyboardAndMouse = m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex);
-            var nav = m_minimap.navigation;
-            nav.mode = isKeyboardAndMouse ?
-                UnityEngine.UI.Navigation.Mode.None :
-                UnityEngine.UI.Navigation.Mode.Explicit;
-
             m_eventSystem = m_eventSystemMananger.GetEventSystem(LocalPlayerIndex);
-            m_eventSystem.EventSystemUpdate += OnEventSystemUpdate;
         }
 
         private void OnDestroy()
         {
-            if (m_eventSystem != null)
+            if(m_gameState != null)
             {
-                m_eventSystem.EventSystemUpdate -= OnEventSystemUpdate;
+                m_gameState.ContextAction -= OnContextAction;
             }
 
             if (m_cancelBtn != null)
@@ -200,115 +194,88 @@ namespace Battlehub.VoxelCombat
                 m_cancelBtn.onClick.RemoveListener(OnCancel);
             }
 
-            if(m_attackBtn != null)
+            if (m_attackBtn != null)
             {
                 RemoveListeners(m_attackBtn);
                 m_attackBtn.onClick.RemoveListener(OnAttack);
             }
 
-            if(m_moveBtn != null)
+            if (m_moveBtn != null)
             {
                 RemoveListeners(m_moveBtn);
                 m_moveBtn.onClick.RemoveListener(OnMove);
             }
-            
-            if(m_autoBtn != null)
+
+            if (m_autoBtn != null)
             {
                 RemoveListeners(m_autoBtn);
                 m_autoBtn.onClick.RemoveListener(OnAuto);
             }
-            
+
             if (m_bombBtn != null)
             {
                 RemoveListeners(m_bombBtn);
                 m_bombBtn.onClick.RemoveListener(OnBomb);
             }
-            
-            if(m_wallBtn != null)
+
+            if (m_wallBtn != null)
             {
                 RemoveListeners(m_wallBtn);
                 m_wallBtn.onClick.RemoveListener(OnWall);
             }
-            
-            if(m_spawnButton != null)
+
+            if (m_spawnButton != null)
             {
                 RemoveListeners(m_spawnButton);
                 m_spawnButton.onClick.RemoveListener(OnSpawn);
             }
-            
-            if(m_splitButton != null)
+
+            if (m_splitButton != null)
             {
                 RemoveListeners(m_splitButton);
                 m_splitButton.onClick.RemoveListener(OnSplit);
             }
-            
-            if(m_split4Button != null)
+
+            if (m_split4Button != null)
             {
                 RemoveListeners(m_split4Button);
                 m_split4Button.onClick.RemoveListener(OnSplit4);
             }
-            
-            if(m_growButton != null)
+
+            if (m_growButton != null)
             {
                 RemoveListeners(m_growButton);
                 m_growButton.onClick.RemoveListener(OnGrow);
             }
-            
-            if(m_diminishButton != null)
+
+            if (m_diminishButton != null)
             {
                 RemoveListeners(m_diminishButton);
                 m_diminishButton.onClick.RemoveListener(OnDiminish);
             }
 
-            if(m_selection != null)
+            if (m_selection != null)
             {
                 m_selection.SelectionChanged -= OnSelectionChanged;
             }
         }
 
-        private void OnEventSystemUpdate()
+        private void Update()
         {
-            if (!IsActive)
+            if (m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex, false, false))
             {
-                bool dPadLeft = m_inputManager.GetButtonDown(InputAction.DPadLeft, LocalPlayerIndex, false);
-                bool dPadRight = m_inputManager.GetButtonDown(InputAction.DPadRight, LocalPlayerIndex, false);
-                bool dPadUp = m_inputManager.GetButtonDown(InputAction.DPadUp, LocalPlayerIndex, false);
-                bool dPadDown = m_inputManager.GetButtonDown(InputAction.DPadDown, LocalPlayerIndex, false);
+                if (IsOpen)
+                {
+                    IsOpen = false;
+                }
+            }
+        }
 
-                if (dPadLeft)
-                {
-                    
-                    IsActive = true;
-                    m_eventSystem.SetSelectedGameObject(m_defLeft.gameObject);
-                }
-                else if (dPadRight)
-                {
-                    
-                    IsActive = true;
-                    m_eventSystem.SetSelectedGameObject(m_defRight.gameObject);
-                }
-                else if (dPadUp)
-                {
-                    
-                    IsActive = true;
-                    m_eventSystem.SetSelectedGameObject(m_defTop.gameObject);
-                }
-                else if (dPadDown)
-                {
-                    
-                    IsActive = true;
-                    m_eventSystem.SetSelectedGameObject(m_defBottom.gameObject);
-                }
-            }
-            // else if (m_inputManager.GetButton(InputAction.))
-            else if (m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex, false))
+        private void OnContextAction(int playerIndex)
+        {
+            if(!m_gameState.IsContextActionInProgress(playerIndex))
             {
-                m_eventSystem.SetSelectedGameObject(null);
-                IsActive = false;
-            }
-            else if(m_inputManager.GetButtonDown(InputAction.Start, LocalPlayerIndex, false))
-            {
-                m_eventSystem.SetSelectedGameObject(m_minimap.gameObject);
+                IsOpen = false;
             }
         }
 
@@ -327,11 +294,17 @@ namespace Battlehub.VoxelCombat
             int playerIndex = m_gameState.LocalToPlayerIndex(LocalPlayerIndex);
             long[] selection = m_selection.GetSelection(playerIndex, playerIndex);
 
+            if(selection.Length == 0)
+            {
+                IsOpen = false;
+                return;
+            }
+
             m_cancelBtn.gameObject.SetActive(selection.Length > 0);
             m_attackBtn.gameObject.SetActive(selection.Length > 0);
             m_moveBtn.gameObject.SetActive(selection.Length > 0);
             m_autoBtn.gameObject.SetActive(selection.Length > 0);
-            
+
             m_bombBtn.gameObject.SetActive(false);
             m_wallBtn.gameObject.SetActive(false);
             m_spawnButton.gameObject.SetActive(false);
@@ -339,6 +312,26 @@ namespace Battlehub.VoxelCombat
             m_diminishButton.gameObject.SetActive(false);
             m_splitButton.gameObject.SetActive(false);
             m_split4Button.gameObject.SetActive(false);
+
+        //    HUDControlBehavior hcbCancel = m_cancelBtn.GetComponent<HUDControlBehavior>();
+         //   HUDControlBehavior hcbAttack = m_attackBtn.GetComponent<HUDControlBehavior>();
+         //   HUDControlBehavior hcbMove = m_moveBtn.GetComponent<HUDControlBehavior>();
+           // HUDControlBehavior hcbAuto = m_autoBtn.GetComponent<HUDControlBehavior>();
+            HUDControlBehavior hcbBomb = m_bombBtn.GetComponent<HUDControlBehavior>();
+            HUDControlBehavior hcbWall = m_wallBtn.GetComponent<HUDControlBehavior>();
+            HUDControlBehavior hcbSpawn = m_spawnButton.GetComponent<HUDControlBehavior>();
+            HUDControlBehavior hcbGrow = m_growButton.GetComponent<HUDControlBehavior>();
+            HUDControlBehavior hcbDiminish = m_diminishButton.GetComponent<HUDControlBehavior>();
+            HUDControlBehavior hcbSplit = m_splitButton.GetComponent<HUDControlBehavior>();
+            HUDControlBehavior hcbSplit4 = m_split4Button.GetComponent<HUDControlBehavior>();
+
+            hcbBomb.IsDisabled = true;
+            hcbWall.IsDisabled = true;
+            hcbSpawn.IsDisabled = true;
+            hcbGrow.IsDisabled = true;
+            hcbDiminish.IsDisabled = true;
+            hcbSplit.IsDisabled = true;
+            hcbSplit4.IsDisabled = true;
 
             for (int i = 0; i < selection.Length; ++i)
             {
@@ -349,135 +342,90 @@ namespace Battlehub.VoxelCombat
                     if (canBomb.HasValue)
                     {
                         m_bombBtn.gameObject.SetActive(true);
-                        //m_bombBtn.interactable = canBomb.Value;
+                        if(canBomb.Value)
+                        {
+                            hcbBomb.IsDisabled = false;
+                        }   
                     }
 
                     bool? canGround = dc.CanConvert((int)KnownVoxelTypes.Ground);
                     if (canGround.HasValue)
                     {
                         m_wallBtn.gameObject.SetActive(true);
-                        //m_wallBtn.interactable = canGround.Value;
+                        if (canGround.Value)
+                        {
+                            hcbWall.IsDisabled = false;
+                        }
                     }
 
                     bool? canSpawner = dc.CanConvert((int)KnownVoxelTypes.Spawner);
                     if (canSpawner.HasValue)
                     {
                         m_spawnButton.gameObject.SetActive(true);
-                        //m_spawnButton.interactable = canSpawner.Value;
+                        if(canSpawner.Value)
+                        {
+                            hcbSpawn.IsDisabled = false;
+                        }    
                     }
 
                     bool? canGrow = dc.CanGrow();
                     if (canGrow.HasValue)
                     {
                         m_growButton.gameObject.SetActive(true);
-                        //m_growButton.interactable = canGrow.Value;
+                        if(canGrow.Value)
+                        {
+                            hcbGrow.IsDisabled = false;
+                        }
                     }
 
                     bool? canDiminish = dc.CanDiminish();
                     if (canDiminish.HasValue)
                     {
                         m_diminishButton.gameObject.SetActive(true);
-                        //m_diminishButton.interactable = canDiminish.Value;
+                        if(canDiminish.Value)
+                        {
+                            hcbDiminish.IsDisabled = false;
+                        }
                     }
 
                     bool? canSplit = dc.CanSplit();
                     if (canSplit.HasValue)
                     {
                         m_splitButton.gameObject.SetActive(true);
-                        //m_splitButton.interactable = canSplit.Value;
+                        if(canSplit.Value)
+                        {
+                            hcbSplit.IsDisabled = false;
+                        }
                     }
 
                     bool? canSplit4 = dc.CanSplit4();
                     if (canSplit4.HasValue)
                     {
                         m_split4Button.gameObject.SetActive(true);
-                        //m_split4Button.interactable = canSplit4.Value;
+                        if(canSplit4.Value)
+                        {
+                            hcbSplit4.IsDisabled = false;
+                        }
                     }
                 }
             }
 
-            SetUpNavigation();
-        }
 
-        private void SetUpNavigation()
-        {
-            Selectable[] leftSelectables = m_leftCol.Where(t => t.childCount > 0).Select(t => t.GetChild(0).GetComponent<Selectable>()).Where(s => s.interactable).ToArray();
-            Selectable[] rightSelectables = m_rightCol.Where(t => t.childCount > 0).Select(t => t.GetChild(0).GetComponent<Selectable>()).Where(s => s.interactable).ToArray();
-            Selectable[] topSelectables = m_topRow.Where(t => t.childCount > 0).Select(t => t.GetChild(0).GetComponent<Selectable>()).Where(s => s.interactable).ToArray();
-            Selectable[] botSelectables = m_bottomRow.Where(t => t.childCount > 0).Select(t => t.GetChild(0).GetComponent<Selectable>()).Where(s => s.interactable).ToArray();
-
-            VerticalNav(leftSelectables, false);
-            VerticalNav(rightSelectables, true);
-            HorizontalNav(topSelectables, true);
-            HorizontalNav(botSelectables, false);
-
-            UnityEngine.UI.Navigation nav = m_axis.navigation;
-            nav.mode = UnityEngine.UI.Navigation.Mode.Explicit;
-
-            Selectable defaultLeft = m_defLeft.GetComponentInChildren<Selectable>();
-            nav.selectOnLeft = defaultLeft.interactable ? defaultLeft : leftSelectables.FirstOrDefault();
-
-            Selectable defaultRight = m_defRight.GetComponentInChildren<Selectable>();
-            nav.selectOnRight = defaultRight.interactable ? defaultRight : rightSelectables.FirstOrDefault();
-
-            Selectable defaultTop = m_defTop.GetComponentInChildren<Selectable>();
-            nav.selectOnUp = defaultTop.interactable ? defaultTop : topSelectables.FirstOrDefault();
-
-            Selectable defaultBot = m_defBottom.GetComponentInChildren<Selectable>();
-            nav.selectOnDown = defaultBot.interactable ? defaultBot : botSelectables.FirstOrDefault();
-
-            m_axis.navigation = nav;
-        }
-
-        private void HorizontalNav(Selectable[] selectables, bool top)
-        {
-            for (int i = 0; i < selectables.Length; ++i)
+            if(m_eventSystem.currentSelectedGameObject != null && m_eventSystem.currentSelectedGameObject.GetComponent<HUDControlBehavior>().IsDisabled)
             {
-                UnityEngine.UI.Navigation nav = selectables[i].navigation;
-                nav.mode = UnityEngine.UI.Navigation.Mode.Explicit;
-                
-                nav.selectOnRight = i + 1 < selectables.Length ? selectables[i + 1] : null;
-                nav.selectOnLeft = i - 1 >= 0 ? selectables[i - 1] : null;
-
-                if(top)
-                {
-                    nav.selectOnDown = m_axis;
-                }
-                else
-                {
-                    nav.selectOnUp = m_axis;
-                }
-
-                selectables[i].navigation = nav;
-            }
-        }
-
-        private void VerticalNav(Selectable[] selectables, bool right)
-        {
-            for (int i = 1; i < selectables.Length - 1; ++i)
-            {
-                UnityEngine.UI.Navigation nav = selectables[i].navigation;
-                nav.mode = UnityEngine.UI.Navigation.Mode.Explicit;
-
-                nav.selectOnDown = i + 1 < selectables.Length ? selectables[i + 1] : null;
-                nav.selectOnUp = i - 1 >= 0 ? selectables[i - 1] : null;
-
-                if(right)
-                {
-                    nav.selectOnLeft = m_axis;
-                }
-                else
-                {
-                    nav.selectOnRight = m_axis;
-                }
-
-                selectables[i].navigation = nav;
+                m_eventSystem.SetSelectedGameObjectOnLateUpdate(m_autoBtn.gameObject);
             }
         }
 
         private void OnCancel()
         {
-            if(Cancel != null)
+            if(m_cancelBtn.GetComponent<HUDControlBehavior>().IsDisabled)
+            {
+                return;
+            }
+
+            IsOpen = false;
+            if (Cancel != null)
             {
                 Cancel();
             }
@@ -485,14 +433,26 @@ namespace Battlehub.VoxelCombat
 
         private void OnAttack()
         {
-            if(Attack != null)
+            if (m_attackBtn.GetComponent<HUDControlBehavior>().IsDisabled)
+            {
+                return;
+            }
+
+            IsOpen = false;
+            if (Attack != null)
             {
                 Attack();
             }
         }
         private void OnMove()
         {
-            if(Move != null)
+            if (m_moveBtn.GetComponent<HUDControlBehavior>().IsDisabled)
+            {
+                return;
+            }
+
+            IsOpen = false;
+            if (Move != null)
             {
                 Move();
             }
@@ -500,6 +460,12 @@ namespace Battlehub.VoxelCombat
 
         private void OnAuto()
         {
+            if (m_autoBtn.GetComponent<HUDControlBehavior>().IsDisabled)
+            {
+                return;
+            }
+
+            IsOpen = false;
             if (Auto != null)
             {
                 Auto();
@@ -508,6 +474,12 @@ namespace Battlehub.VoxelCombat
 
         private void OnWall()
         {
+            if (m_wallBtn.GetComponent<HUDControlBehavior>().IsDisabled)
+            {
+                return;
+            }
+
+            IsOpen = false;
             if (Wall != null)
             {
                 Wall();
@@ -516,6 +488,12 @@ namespace Battlehub.VoxelCombat
 
         private void OnBomb()
         {
+            if (m_bombBtn.GetComponent<HUDControlBehavior>().IsDisabled)
+            {
+                return;
+            }
+
+            IsOpen = false;
             if (Bomb != null)
             {
                 Bomb();
@@ -524,6 +502,12 @@ namespace Battlehub.VoxelCombat
 
         private void OnSpawn()
         {
+            if (m_spawnButton.GetComponent<HUDControlBehavior>().IsDisabled)
+            {
+                return;
+            }
+
+            IsOpen = false;
             if (Spawner != null)
             {
                 Spawner();
@@ -533,6 +517,12 @@ namespace Battlehub.VoxelCombat
 
         private void OnSplit()
         {
+            if (m_splitButton.GetComponent<HUDControlBehavior>().IsDisabled)
+            {
+                return;
+            }
+
+            IsOpen = false;
             if (Split != null)
             {
                 Split();
@@ -541,6 +531,12 @@ namespace Battlehub.VoxelCombat
 
         private void OnSplit4()
         {
+            if (m_split4Button.GetComponent<HUDControlBehavior>().IsDisabled)
+            {
+                return;
+            }
+
+            IsOpen = false;
             if (Split4 != null)
             {
                 Split4();
@@ -549,6 +545,12 @@ namespace Battlehub.VoxelCombat
 
         private void OnGrow()
         {
+            if (m_growButton.GetComponent<HUDControlBehavior>().IsDisabled)
+            {
+                return;
+            }
+
+            IsOpen = false;
             if (Grow != null)
             {
                 Grow();
@@ -557,6 +559,12 @@ namespace Battlehub.VoxelCombat
 
         private void OnDiminish()
         {
+            if (m_diminishButton.GetComponent<HUDControlBehavior>().IsDisabled)
+            {
+                return;
+            }
+
+            IsOpen = false;
             if (Diminish != null)
             {
                 Diminish();
@@ -567,7 +575,7 @@ namespace Battlehub.VoxelCombat
         {
             EventTrigger trigger = selectable.GetComponent<EventTrigger>();
             EventTrigger.Entry entry = new EventTrigger.Entry();
-            entry.eventID =  eventID;
+            entry.eventID = eventID;
             entry.callback.AddListener(data => listener(selectable, data));
             trigger.triggers.Add(entry);
         }
@@ -575,7 +583,7 @@ namespace Battlehub.VoxelCombat
         private void RemoveListeners(Selectable selectable)
         {
             EventTrigger trigger = selectable.GetComponent<EventTrigger>();
-            if(trigger != null)
+            if (trigger != null)
             {
                 trigger.triggers.Clear();
             }
@@ -605,18 +613,36 @@ namespace Battlehub.VoxelCombat
             }
             else if (selectable == m_growButton)
             {
+                if (selectable.GetComponent<HUDControlBehavior>().IsDisabled)
+                {
+                    return "Can't grow. Must collect 64 cubes.";
+                }
+
                 return "Grow";
             }
             else if (selectable == m_diminishButton)
             {
+                if (selectable.GetComponent<HUDControlBehavior>().IsDisabled)
+                {
+                    return "Cube of minimal size could not be compressed.";
+                }
+
                 return "Compress";
             }
             else if (selectable == m_splitButton)
             {
+                if (selectable.GetComponent<HUDControlBehavior>().IsDisabled)
+                {
+                    return "Can't subdivide. Must collect 64 cubes.";
+                }
                 return "Subdivide";
             }
             else if (selectable == m_split4Button)
             {
+                if (selectable.GetComponent<HUDControlBehavior>().IsDisabled)
+                {
+                    return "Can't split. Must collect 64 cubes.";
+                }
                 return "Split";
             }
             else if (selectable == m_cancelBtn)
@@ -631,40 +657,12 @@ namespace Battlehub.VoxelCombat
             return null;
         }
 
-        public void UpdateAxis(Selectable selectable)
-        {
-            Selectable[] leftSelectables = m_leftCol.Where(t => t.childCount > 0).Select(t => t.GetChild(0).GetComponent<Selectable>()).ToArray();
-            if(leftSelectables.Contains(selectable))
-            {
-                m_axis.Side = 1;
-                return;
-            }
-            Selectable[] rightSelectables = m_rightCol.Where(t => t.childCount > 0).Select(t => t.GetChild(0).GetComponent<Selectable>()).ToArray();
-            if(rightSelectables.Contains(selectable))
-            {
-                m_axis.Side = 2;
-                return;
-            }
-            Selectable[] topSelectables = m_topRow.Where(t => t.childCount > 0).Select(t => t.GetChild(0).GetComponent<Selectable>()).ToArray();
-            if(topSelectables.Contains(selectable))
-            {
-                m_axis.Side = 3;
-                return;
-            }
-            Selectable[] botSelectables = m_bottomRow.Where(t => t.childCount > 0).Select(t => t.GetChild(0).GetComponent<Selectable>()).ToArray();
-            if(botSelectables.Contains(selectable))
-            {
-                m_axis.Side = 4;
-                return;
-            }
-        }
-
         public void OnSelect(Selectable selectable, BaseEventData data)
         {
             string txt = SelectableToText(selectable);
             m_tooltipRoot.SetActive(!string.IsNullOrEmpty(txt));
             m_tooltip.text = txt;
-            UpdateAxis(selectable);
+            m_lastSelected = selectable.gameObject;
         }
 
         public void OnDeselect(Selectable selectable, BaseEventData data)

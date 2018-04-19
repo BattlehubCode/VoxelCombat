@@ -41,8 +41,9 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             m_gameServer = Dependencies.GameServer;
             m_saveReplayPanel.Action += OnSaveReplayAction;
         }

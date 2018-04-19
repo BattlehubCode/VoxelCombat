@@ -112,17 +112,18 @@ namespace Battlehub.VoxelCombat
 
         bool IsKeyboardAndMouse(int index);
 
-        bool IsAnyButtonDown(int player, bool isMaskedByUI = true);
+        bool IsAnyButtonDown(int player, bool isMaskedBySelectedUI = true, bool isMaskedByPointerOverUI = true);
 
-        float GetAxisRaw(InputAction action, int player, bool isMaskedByUI = true);
+        float GetAxisRaw(InputAction action, int player, bool isMaskedBySelectedUI = true, bool isMaskedByPointerOverUI = true);
 
-        bool GetButtonDown(InputAction action, int player, bool isMaskedByUI = true);
+        bool GetButtonDown(InputAction action, int player, bool isMaskedBySelectedUI = true, bool isMaskedByPointerOverUI = true);
 
-        bool GetButton(InputAction action, int player, bool isMaskedByUI = true);
+        bool GetButton(InputAction action, int player, bool isMaskedBySelectedUI = true, bool isMaskedByPointerOverUI = true);
 
-        bool GetButtonUp(InputAction action, int player, bool isMaskedByUI = true);
+        bool GetButtonUp(InputAction action, int player, bool isMaskedBySelectedUI = true, bool isMaskedByPointerOverUI = true);
     }
 
+    /*
     public class VoxelInputManager : MonoBehaviour, IVoxelInputManager
     {
         public event InputEventHandler<int> DeviceEnabled;
@@ -349,5 +350,5 @@ namespace Battlehub.VoxelCombat
             return m_upButtons[player][m_commandToIndex[(int)action]];
         }
     }
-
+    */
 }

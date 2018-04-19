@@ -1,17 +1,27 @@
-﻿using System;
+﻿using Battlehub.UIControls;
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using UnityEngine.UI.Extensions;
 
 namespace Battlehub.VoxelCombat
 {
-    public class PlayerMinimap : UIBehaviour, IGL
+    public class PlayerMinimap : UIBehaviour
     {
         private IVoxelMinimapRenderer m_minimap;
         private IPlayerCameraController m_cameraController;
         private IVoxelInputManager m_input;
+        private IVoxelGame m_gameState;
+        private IndependentEventSystem m_eventSystem;
+
+        [SerializeField]
+        private GameObject m_root;
+
+        [SerializeField]
+        private Selectable m_selectableMinimap;
+        private HUDControlBehavior m_hudControlBehavior;
+        private RectTransformChangeListener m_rtChangeListener;
 
         [SerializeField]
         private GameViewport m_viewport;
@@ -31,45 +41,101 @@ namespace Battlehub.VoxelCombat
         private RectTransform m_rtMapBounds;
         private float m_rootRadius;
         private Vector2 m_prevCursor;
-        private bool m_manipulating;
+       
         private Vector3 m_prevCamPos;
         private Quaternion m_prevCamRot;
- 
         private CanvasScaler m_scaler;
-       
+
+        private bool m_gotFocus;
+        private bool m_mouseManipulation;
+        private Vector2 m_virtualMousePostion;
+        private Vector3[] m_corners = new Vector3[4];
+        private PlayerCamCtrlSettings m_camCtrlSettings;
+
         protected override void Awake()
         {
             base.Awake();
-
+            
+            m_gameState = Dependencies.GameState;
             m_minimap = Dependencies.Minimap;
             m_input = Dependencies.InputManager;
             m_scaler = GetComponentInParent<CanvasScaler>();
-
+       
+            m_gameState.Menu += OnMenu;
+            m_gameState.ContextAction += OnContextAction;
+            
             m_minimap.Loaded += OnLoaded;
             m_background.texture = m_minimap.Background;
             m_foreground.texture = m_minimap.Foreground;
 
-            //m_frustumProjection.Points = new Vector2[5];
+            m_rtChangeListener = m_selectableMinimap.GetComponent<RectTransformChangeListener>();
+            m_rtChangeListener.RectTransformChanged += OnMinimapRectTransformChanged;
+
+            m_hudControlBehavior = m_selectableMinimap.GetComponent<HUDControlBehavior>();
+            m_hudControlBehavior.Selected += OnMinimapSelected;
+            m_hudControlBehavior.Deselected += OnMinimapDeselected;
         }
 
         protected override void Start()
         {
-            if (GLRenderer.Instance != null)
-            {
-                GLRenderer.Instance.Add(this);
-            }
+            var nav = m_selectableMinimap.navigation;
+            nav.mode = m_input.IsKeyboardAndMouse(m_viewport.LocalPlayerIndex) ? UnityEngine.UI.Navigation.Mode.None : UnityEngine.UI.Navigation.Mode.Explicit;
+            m_selectableMinimap.navigation = nav;
 
+            m_eventSystem = Dependencies.EventSystemManager.GetEventSystem(m_viewport.LocalPlayerIndex);
             m_cameraController = Dependencies.GameView.GetCameraController(m_viewport.LocalPlayerIndex);
+            m_camCtrlSettings = Dependencies.Settings.PlayerCamCtrl[m_viewport.LocalPlayerIndex];
 
             base.Start();
             StartCoroutine(Fit());
+            UpdateVisibility();
         }
 
-        
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            if (m_minimap != null)
+            {
+                m_minimap.Loaded -= OnLoaded;
+            }
+
+            if (m_gameState != null)
+            {
+                m_gameState.Menu -= OnMenu;
+                m_gameState.ContextAction -= OnContextAction;
+            }
+
+            if(m_rtChangeListener != null)
+            {
+                m_rtChangeListener.RectTransformChanged -= OnMinimapRectTransformChanged;
+            }
+
+            if(m_hudControlBehavior != null)
+            {
+                m_hudControlBehavior.Selected -= OnMinimapSelected;
+                m_hudControlBehavior.Deselected -= OnMinimapDeselected;
+            }
+        }
+
         private void Update()
         {
-            Transform camTransform = m_viewport.Camera.transform;
+            if (m_gameState.IsContextActionInProgress(m_viewport.LocalPlayerIndex))
+            {
+                return;
+            }
 
+            if (m_gameState.IsMenuOpened(m_viewport.LocalPlayerIndex))
+            {
+                return;
+            }
+
+            if (m_gameState.IsPaused || m_gameState.IsPauseStateChanging)
+            {
+                return;
+            }
+
+            Transform camTransform = m_viewport.Camera.transform;
             if (camTransform.position != m_prevCamPos || camTransform.rotation != m_prevCamRot)
             {
                 m_prevCamPos = camTransform.position;
@@ -81,75 +147,226 @@ namespace Battlehub.VoxelCombat
                 ProjectCamera(m_rtMapBounds.rotation);
             }
 
-            bool rightStickDown = m_input.GetButtonDown(InputAction.RightStickButton, m_viewport.LocalPlayerIndex, false);
-            if (m_input.GetButtonDown(InputAction.LMB, m_viewport.LocalPlayerIndex, false) ||
-                m_input.GetButtonDown(InputAction.LB, m_viewport.LocalPlayerIndex, false) ||
-                rightStickDown)
+            if (m_input.GetButtonDown(InputAction.Start, m_viewport.LocalPlayerIndex, false, false))
+            {
+                m_gotFocus = !m_gotFocus;
+                if (m_gotFocus)
+                {
+                    m_eventSystem.SetSelectedGameObjectOnLateUpdate(m_selectableMinimap.gameObject);
+                }
+                else
+                {
+                    m_cameraController.CenterVirtualMouse();
+                    m_eventSystem.SetSelectedGameObjectOnLateUpdate(null);
+                }
+            }
+
+            if (m_input.GetButtonDown(InputAction.LMB, m_viewport.LocalPlayerIndex, false, false))
             {
                 Vector2 pt;
                 if (RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)m_rtMapBounds.parent, m_cameraController.VirtualMousePosition, null, out pt))
                 {
                     float normalizedDistance = pt.magnitude / m_rootRadius;
-                    if (normalizedDistance < 1)
+                    if (normalizedDistance <= 1)
                     {
-                        m_manipulating = true;
-                        m_cameraController.VirtualMouseSensitivityScale = 0.2f;
-                    }
-                    else if(rightStickDown)
-                    {
-                        Vector3[] corners = new Vector3[4];
-                        ((RectTransform)m_rtMapBounds.parent).GetWorldCorners(corners);
-                        Vector3 center = corners[1] + (corners[3] - corners[1]) / 2;
-                        Vector3 screenCenter = RectTransformUtility.WorldToScreenPoint(null, center);
-
-                        Vector3 toPivot = m_cameraController.TargetPivot - m_cameraController.BoundsCenter;
-                        toPivot.y = 0;
-
-                        float angle = camTransform.eulerAngles.y;
-                        Vector3 dir = Quaternion.Euler(new Vector3(0, -angle, 0)) * toPivot.normalized;
-                        dir.y = dir.z;
-                        dir.z = 0;
-
-                        float normalizedOffset = toPivot.magnitude / m_cameraController.BoundsRadius;
-                        m_cameraController.VirtualMousePosition = screenCenter + dir * normalizedOffset * m_rootRadius * m_scaler.scaleFactor;
-
-                        m_manipulating = true;
-                        m_cameraController.VirtualMouseSensitivityScale = 0.2f;
+                        m_mouseManipulation = true;
+                        m_virtualMousePostion = m_cameraController.VirtualMousePosition;
+                        Move(camTransform, true, 0, 0, 0, 0);
                     }
                 }
             }
-
-            bool leftStickButtonUp = m_input.GetButtonUp(InputAction.RightStickButton, m_viewport.LocalPlayerIndex, false);
-            if (m_input.GetButtonUp(InputAction.LMB, m_viewport.LocalPlayerIndex, false) || 
-                m_input.GetButtonUp(InputAction.LB, m_viewport.LocalPlayerIndex, false) || leftStickButtonUp)
+            else if (m_input.GetButtonUp(InputAction.LMB, m_viewport.LocalPlayerIndex, false, false))
             {
-                m_manipulating = false;
-                m_cameraController.VirtualMouseSensitivityScale = 1.0f;
+                m_mouseManipulation = false;
             }
 
-            if (m_manipulating)
+            if (m_gotFocus || m_input.GetButton(InputAction.LB, m_viewport.LocalPlayerIndex, false, false) && IsCursorInMinimapBounds())
             {
-                if (m_input.GetButton(InputAction.LMB, m_viewport.LocalPlayerIndex, false) ||
-                    m_input.GetButton(InputAction.LB, m_viewport.LocalPlayerIndex, false) ||
-                    m_input.GetButton(InputAction.RightStickButton, m_viewport.LocalPlayerIndex, false))
+                if (m_input.GetButtonDown(InputAction.B, m_viewport.LocalPlayerIndex, false, false))
                 {
-                    if (m_cameraController.VirtualMousePosition != m_prevCursor)
+                    m_gotFocus = false;
+                    m_cameraController.CenterVirtualMouse();
+                    m_eventSystem.SetSelectedGameObjectOnLateUpdate(null);
+                }
+                else if(m_input.GetButtonDown(InputAction.LB, m_viewport.LocalPlayerIndex, false, false))
+                {
+                    m_virtualMousePostion = m_cameraController.VirtualMousePosition;
+                    Move(camTransform, true, 0, 0, 0, 0);
+                }
+                else
+                {
+                    bool aPressed = m_input.GetButton(InputAction.A, m_viewport.LocalPlayerIndex, false, false);
+                    bool pivotPreciseMode = aPressed | m_input.GetButton(InputAction.RightStickButton, m_viewport.LocalPlayerIndex, false, false);
+
+                    float pivotMultiplier = 1;
+                    if (!pivotPreciseMode)
                     {
-                        Vector2 pt;
-                        if (RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)m_rtMapBounds.parent, m_cameraController.VirtualMousePosition, null, out pt))
+                        pivotMultiplier = 5;
+                    }
+
+                    float deltaY = m_input.GetAxisRaw(InputAction.MoveForward, m_viewport.LocalPlayerIndex, false, false) * Time.deltaTime * m_camCtrlSettings.MoveSensitivity * pivotMultiplier;
+                    float deltaX = m_input.GetAxisRaw(InputAction.MoveSide, m_viewport.LocalPlayerIndex, false, false) * Time.deltaTime * m_camCtrlSettings.MoveSensitivity * pivotMultiplier;
+
+                    bool cursorPreciseMode = aPressed | m_input.GetButton(InputAction.LeftStickButton, m_viewport.LocalPlayerIndex, false, false);
+                    float cursorMultiplier = 4;
+                    if (!cursorPreciseMode)
+                    {
+                        cursorMultiplier = 12;
+                    }
+                    float cursorY = m_input.GetAxisRaw(InputAction.CursorY, m_viewport.LocalPlayerIndex, false, false) * Time.deltaTime * m_camCtrlSettings.CursorSensitivity * cursorMultiplier;
+                    float cursorX = m_input.GetAxisRaw(InputAction.CursorX, m_viewport.LocalPlayerIndex, false, false) * Time.deltaTime * m_camCtrlSettings.CursorSensitivity * cursorMultiplier;
+
+                    Move(camTransform, false, deltaY, deltaX, cursorY, cursorX);
+                }
+            }
+
+            if (m_mouseManipulation)
+            {
+                if (m_input.GetButton(InputAction.LMB, m_viewport.LocalPlayerIndex, false, false))
+                {
+                    float cursorMultiplier = 12;
+                    float cursorY = m_input.GetAxisRaw(InputAction.CursorY, m_viewport.LocalPlayerIndex, false, false) * Time.deltaTime * m_camCtrlSettings.CursorSensitivity * cursorMultiplier;
+                    float cursorX = m_input.GetAxisRaw(InputAction.CursorX, m_viewport.LocalPlayerIndex, false, false) * Time.deltaTime * m_camCtrlSettings.CursorSensitivity * cursorMultiplier;
+
+                    Move(camTransform, false, cursorY, cursorX, 0, 0);
+                }
+            }
+        }
+
+
+        private void Move(Transform camTransform, bool forceSetMapPivot, float deltaY, float deltaX, float cursorY, float cursorX)
+        {
+            if(deltaX != 0 || deltaY != 0)
+            {
+                m_virtualMousePostion += new Vector2(deltaX, deltaY);
+
+                cursorX = 0;
+                cursorY = 0;
+            }
+            else
+            {
+                m_virtualMousePostion += new Vector2(cursorX, cursorY);
+            }
+
+            if (m_virtualMousePostion != m_prevCursor || forceSetMapPivot)
+            {
+                Vector2 pt;
+                if (RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)m_rtMapBounds.parent, m_virtualMousePostion, null, out pt))
+                {
+                    float normalizedDistance = pt.magnitude / m_rootRadius;
+                    float angle = camTransform.eulerAngles.y;
+                    Vector3 dir = Quaternion.Euler(new Vector3(0, angle, 0)) * new Vector3(pt.x, 0, pt.y).normalized;
+
+                    if (normalizedDistance <= 1)
+                    {
+                        if(deltaX != 0 || deltaY != 0 || forceSetMapPivot)
                         {
-                            float normalizedDistance = pt.magnitude / m_rootRadius;
-                            if (normalizedDistance < 1)
-                            {
-                                float angle = camTransform.eulerAngles.y;
-                                Vector3 dir = Quaternion.Euler(new Vector3(0, angle, 0)) * new Vector3(pt.x, 0, pt.y).normalized;
-                                m_cameraController.SetMapPivot(dir, normalizedDistance);
-                            }
+                            m_cameraController.SetMapPivot(dir, normalizedDistance);
+                        }   
+                    }
+                    else
+                    {
+                        if (deltaX != 0 || deltaY != 0 || forceSetMapPivot)
+                        {
+                            m_cameraController.SetMapPivot(dir, 1);
+                            ProjectCursorToMinimap(m_viewport.Camera.transform);
+                            m_virtualMousePostion = m_cameraController.VirtualMousePosition;
                         }
-                        m_prevCursor = m_cameraController.VirtualMousePosition;
+                        else
+                        {
+                            ((RectTransform)m_rtMapBounds.parent).GetWorldCorners(m_corners);
+                            Vector3 center = m_corners[1] + (m_corners[3] - m_corners[1]) / 2;
+                            Vector2 screenCenter = RectTransformUtility.WorldToScreenPoint(null, center);
+                            m_virtualMousePostion = screenCenter + pt.normalized * m_rootRadius;
+                        }
                     }
                 }
-               
+                else
+                {
+                    if (deltaX != 0 || deltaY != 0)
+                    {
+                        m_virtualMousePostion -= new Vector2(deltaX, deltaY);
+                    }
+                    else
+                    {
+                        m_virtualMousePostion -= new Vector2(cursorX, cursorY);
+                    }
+                }
+
+                m_prevCursor = m_virtualMousePostion;
+            }
+
+            m_cameraController.VirtualMousePosition = m_virtualMousePostion;
+        }
+
+        private void OnMinimapSelected()
+        {
+            Transform camTransform = m_viewport.Camera.transform;
+            if (!m_gotFocus)
+            {
+                // m_gotFocus = true;
+                m_eventSystem.SetSelectedGameObjectOnLateUpdate(null);
+                m_virtualMousePostion = m_cameraController.VirtualMousePosition;
+                m_prevCursor = m_virtualMousePostion;
+                Move(camTransform, true, 0, 0, 0, 0);
+            }
+            else
+            {
+                ProjectCursorToMinimap(camTransform);
+                m_virtualMousePostion = m_cameraController.VirtualMousePosition;
+                m_prevCursor = m_virtualMousePostion;
+            }
+        }
+
+        private void OnMinimapDeselected()
+        {
+            m_gotFocus = false;
+        }
+
+        private void ProjectCursorToMinimap(Transform camTransform)
+        {
+            ((RectTransform)m_rtMapBounds.parent).GetWorldCorners(m_corners);
+            Vector3 center = m_corners[1] + (m_corners[3] - m_corners[1]) / 2;
+            Vector3 screenCenter = RectTransformUtility.WorldToScreenPoint(null, center);
+
+            Vector3 toPivot = m_cameraController.Pivot - m_cameraController.BoundsCenter;
+            toPivot.y = 0;
+
+            float angle = camTransform.eulerAngles.y;
+            Vector3 dir = Quaternion.Euler(new Vector3(0, -angle, 0)) * toPivot.normalized;
+            dir.y = dir.z;
+            dir.z = 0;
+
+            float normalizedOffset = toPivot.magnitude / m_cameraController.BoundsRadius;
+            m_cameraController.VirtualMousePosition = screenCenter + dir * normalizedOffset * m_rootRadius * m_scaler.scaleFactor;
+        }
+
+        private void OnMinimapRectTransformChanged()
+        {
+            StartCoroutine(Fit());
+        }
+
+        private void OnContextAction(int localPlayerIndex)
+        {
+            UpdateVisibility();
+        }
+
+        private void OnMenu(int localPlayerIndex)
+        {
+            UpdateVisibility();
+        }
+
+        private void UpdateVisibility()
+        {
+            if (m_gameState.IsContextActionInProgress(m_viewport.LocalPlayerIndex) || m_gameState.IsMenuOpened(m_viewport.LocalPlayerIndex))
+            {
+                m_root.SetActive(false);
+                m_gotFocus = false;
+                m_mouseManipulation = false;
+            }
+            else
+            {
+                m_root.SetActive(true);
             }
         }
 
@@ -207,24 +424,12 @@ namespace Battlehub.VoxelCombat
             //m_frustumProjection.SetAllDirty();
         }
 
-        protected override void OnRectTransformDimensionsChange()
-        {
-            base.OnRectTransformDimensionsChange();
-            if(isActiveAndEnabled)
-            {
-                StartCoroutine(Fit());
-            }
-        }
-
         private IEnumerator Fit()
         {
             yield return new WaitForEndOfFrame();
-            yield return new WaitForEndOfFrame();
-
-            RectTransform parentRT = (RectTransform)m_rtMapBounds.parent;
-            Bounds bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(parentRT);
-            m_rootRadius = bounds.extents.x;
             
+            CalculateRootRadius();
+
             float offset = m_rootRadius - m_rootRadius * Mathf.Sqrt(2.0f) / 2.0f;
             m_rtMapBounds.offsetMin = new Vector2(offset, offset);
             m_rtMapBounds.offsetMax = new Vector2(-offset, -offset);
@@ -232,49 +437,30 @@ namespace Battlehub.VoxelCombat
             ProjectCamera(m_rtMapBounds.rotation);
         }
 
-        protected override void OnDestroy()
+
+        private bool IsCursorInMinimapBounds()
         {
-            base.OnDestroy();
-            if (GLRenderer.Instance != null)
+            Vector2 pt;
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)m_rtMapBounds.parent, m_cameraController.VirtualMousePosition, null, out pt))
             {
-                GLRenderer.Instance.Remove(this);
+                float normalizedDistance = pt.magnitude / m_rootRadius;
+                return normalizedDistance <= 1.1f;
             }
-            if (m_minimap != null)
-            {
-                m_minimap.Loaded -= OnLoaded;
-            }
+            return false;
+        }
+
+
+        private void CalculateRootRadius()
+        {
+            RectTransform parentRT = (RectTransform)m_rtMapBounds.parent;
+            Bounds bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(parentRT);
+            m_rootRadius = bounds.extents.x;
         }
 
         private void OnLoaded(object sender, EventArgs e)
         {
             m_background.texture = m_minimap.Background;
             m_foreground.texture = m_minimap.Foreground;
-        }
-
-        public void Draw(int cullingMask)
-        {
-            //if (m_cullingMask != cullingMask)
-            //{
-            //    return;
-            //}
-
-            //if (!m_frustumMaterial)
-            //{
-            //    Debug.LogError("Please Assign a material on the inspector");
-            //    return;
-            //}
-
-            //GL.PushMatrix();
-            //m_frustumMaterial.SetPass(0);
-            //GL.LoadOrtho();
-            //GL.Color(Color.red);
-            //GL.Begin(GL.TRIANGLES);
-            //GL.Vertex3(0.25F, 0.1351F, 0);
-            //GL.Vertex3(0.25F, 0.3F, 0);
-            //GL.Vertex3(0.5F, 0.3F, 0);
-            //GL.End();
-        
-            //GL.PopMatrix();
         }
     }
 }

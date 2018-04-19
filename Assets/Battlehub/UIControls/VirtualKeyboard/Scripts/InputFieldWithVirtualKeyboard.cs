@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace Battlehub.UIControls
 {
-    public class InputFieldWithVirtualKeyboard : IndependentSelectable, IBeforeSelectHandler, ISelectHandler, IDeselectHandler, IPointerClickHandler, IUpdateFocusedHandler
+    public class InputFieldWithVirtualKeyboard : IndependentSelectable, IBeforeSelectHandler, ISelectHandler, IDeselectHandler, IPointerClickHandler, IUpdateFocusedHandler, IPointerDownHandler
     {
         [SerializeField]
         private bool m_virtualKeyboardEnabled = true;
@@ -372,23 +372,25 @@ namespace Battlehub.UIControls
         }
 
 
+     
         protected override void OnEventSystemLateUpdate()
         {
             base.OnEventSystemLateUpdate();
 
-            //if (!m_openOnSelect)
+            if (!IsEditing)
             {
-                if (!IsEditing)
+                if (m_inputField.isFocused)
                 {
-                    if (m_inputField.isFocused)
-                    {
-                        m_inputField.DeactivateInputField();
-                    }
+                    m_inputField.DeactivateInputField();
                 }
             }
 
+
+
             RestoreTextComponent();
             TryActivateInputFieldInternal();
+
+   
         }
 
         private void TryActivateInputFieldInternal()
@@ -426,11 +428,13 @@ namespace Battlehub.UIControls
             
                 if(input.IsMouseButtonDown(0))
                 {
-                    if (IsSelected(m_inputField.gameObject))
-                    {
-                        IsEditing = true;
-                        m_activateOnEventSystemLateUpdate = true;
-                    }
+                    // if (IsSelected(m_inputField.gameObject))
+
+                        //IsEditing = true;
+                       // m_activateOnEventSystemLateUpdate = true;
+                   
+                   
+
                     return;
                 }
 
@@ -583,6 +587,12 @@ namespace Battlehub.UIControls
             {
                 eventData.Use();
             }
+        }
+
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            IsEditing = true;
+            m_activateOnEventSystemLateUpdate = true;
         }
     }
 }

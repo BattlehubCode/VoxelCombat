@@ -1,11 +1,42 @@
-﻿using System;
-using System.Linq;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
-    public interface IPlayerCameraController
+    public interface IVirtualMouse
+    {
+        Vector2 VirtualMousePosition
+        {
+            get;
+            set;
+        }
+
+        float VirtualMouseSensitivityScale
+        {
+            get;
+            set;
+        }
+
+        bool IsVirtualMouseCursorVisible
+        {
+            get;
+            set;
+        }
+
+        bool IsVirtualMouseEnabled
+        {
+            get;
+            set;
+        }
+
+
+        void CenterVirtualMouse();
+        void BackupVirtualMouse();
+        void RestoreVirtualMouse();
+    }
+
+
+    public interface IPlayerCameraController : IVirtualMouse
     {
         bool IsInputEnabled
         {
@@ -34,18 +65,6 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-        Vector2 VirtualMousePosition
-        {
-            get;
-            set;
-        }
-
-        float VirtualMouseSensitivityScale
-        {
-            get;
-            set;
-        }
-
         Ray Ray
         {
             get;
@@ -71,7 +90,7 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-   
+
         bool InScreenBounds(Vector2 point);
 
         Vector2 WorldToScreenPoint(Vector3 worldPoint);
@@ -81,6 +100,8 @@ namespace Battlehub.VoxelCombat
         void SetMapPivot(Vector3 offCenterDir, float normailzedDistance);
 
         bool IsVisible(MapPos pos, int weight);
+
+        void MovePivot(Vector2 offset);
     }
 
     public class PlayerCameraController : MonoBehaviour, IPlayerCameraController
@@ -255,6 +276,54 @@ namespace Battlehub.VoxelCombat
             m_mapCursor = m_voxelMap.GetMapPosition(m_cursor, Weight);
         }
 
+        public bool IsVirtualMouseCursorVisible
+        {
+            get { return m_cursorIcon.gameObject.activeSelf; }
+            set { m_cursorIcon.gameObject.SetActive(value); }
+        }
+
+        private bool m_isVirtualMouseEnabled = true;
+        public bool IsVirtualMouseEnabled
+        {
+            get { return m_isVirtualMouseEnabled; }
+            set { m_isVirtualMouseEnabled = value; }
+        }
+
+
+        private Vector3 m_virtualMousePostionBackup;
+        private float m_virtualMouseSensitivityScaleBackup;
+        private bool m_isVirtualMouseCursorVisibleBackup;
+        private bool m_isVirtualMouseEnabledBackup;
+        private bool m_isVirtualMouseBackup;
+        public void BackupVirtualMouse()
+        {
+            if(!m_isVirtualMouseBackup)
+            {
+                m_virtualMousePostionBackup = VirtualMousePosition;
+                m_virtualMouseSensitivityScaleBackup = VirtualMouseSensitivityScale;
+                m_isVirtualMouseCursorVisibleBackup = IsVirtualMouseCursorVisible;
+                m_isVirtualMouseEnabledBackup = IsVirtualMouseEnabled;
+                m_isVirtualMouseBackup = true;
+            }
+        }
+
+        public void RestoreVirtualMouse()
+        {
+            if(m_isVirtualMouseBackup)
+            {
+                VirtualMousePosition = m_virtualMousePostionBackup;
+                VirtualMouseSensitivityScale = m_virtualMouseSensitivityScaleBackup;
+                IsVirtualMouseCursorVisible = m_isVirtualMouseCursorVisibleBackup;
+                IsVirtualMouseEnabled = m_isVirtualMouseEnabledBackup;
+                m_isVirtualMouseBackup = false;
+            }
+        }
+
+        public void CenterVirtualMouse()
+        {
+            VirtualMousePosition = m_camPixelRect.center;
+        }
+
         private float m_allowedRadius;
         private Vector3 m_boundsCenter;
         public Vector3 BoundsCenter
@@ -397,7 +466,7 @@ namespace Battlehub.VoxelCombat
             InitCameraPixelRect();
             CreateAndInitVoxelCamera();
             InitPivot();
-        
+
             int playerIndex = m_gameState.LocalToPlayerIndex(LocalPlayerIndex);
             var units = m_gameState.GetUnits(playerIndex);
             foreach (long unit in units)
@@ -475,7 +544,10 @@ namespace Battlehub.VoxelCombat
             Rect rect = m_viewport.Camera.pixelRect;
             m_camPixelRect = rect;
 
-            VirtualMousePosition = m_camPixelRect.center;
+            if(!m_gameState.IsMenuOpened(LocalPlayerIndex) && !m_gameState.IsContextActionInProgress(LocalPlayerIndex))
+            {
+                VirtualMousePosition = m_camPixelRect.center;
+            } 
         }
 
         private void CreateAndInitVoxelCamera()
@@ -676,53 +748,54 @@ namespace Battlehub.VoxelCombat
 
         private void Update()
         {
-            if (m_gameState.IsContextActionInProgress(LocalPlayerIndex))
-            {
-                return;
-            }
-
-            //if (m_gameState.IsMenuOpened(LocalPlayerIndex))
-            //{
-            //    return;
-            //}
-
-            if (m_gameState.IsPaused || m_gameState.IsPauseStateChanging)
-            {
-                return;
-            }
-
-            if (m_camPixelRect.size == Vector2.zero)
-            {
-                return;
-            }
-
             if (CursorHelper.lockState == CursorLockMode.None)
             {
                 return;
             }
 
-            Vector3 mouseOffset = GetVirtualMouseOffset();
             PlayerCamCtrlSettings settings = m_settings.PlayerCamCtrl[LocalPlayerIndex];
+            float cursorX = m_inputManager.GetAxisRaw(InputAction.CursorX, LocalPlayerIndex, false, false);
+            float cursorY = m_inputManager.GetAxisRaw(InputAction.CursorY, LocalPlayerIndex, false, false);
+
+            if (m_gameState.IsContextActionInProgress(LocalPlayerIndex) ||
+                m_gameState.IsMenuOpened(LocalPlayerIndex) ||
+                m_gameState.IsPaused || m_gameState.IsPauseStateChanging ||
+                m_camPixelRect.size == Vector2.zero)
+            {
+                if (m_prevMouseOffset != Vector3.zero)
+                {
+                    CursorIconFromMouseOffset(Vector3.zero);
+                    m_prevMouseOffset = Vector3.zero;
+                }
+
+                if (m_isVirtualMouseEnabled)
+                {
+                    VirtualMousePosition += new Vector2(cursorX, cursorY) * settings.CursorSensitivity;
+                }
+                
+                AnimatePivotPoint(settings.MoveSensitivity / 2, settings.MoveSensitivity / 8);
+                return;
+            }
+
+            Vector3 mouseOffset = GetVirtualMouseOffset();
             if (IsInputEnabled && !m_lockInputDuringPivotAnimation)
             {
-                float cursorX = m_inputManager.GetAxisRaw(InputAction.CursorX, LocalPlayerIndex, false);
-                float cursorY = m_inputManager.GetAxisRaw(InputAction.CursorY, LocalPlayerIndex, false);
-                float deltaY = m_inputManager.GetAxisRaw(InputAction.MoveForward, LocalPlayerIndex);
-                float deltaX = m_inputManager.GetAxisRaw(InputAction.MoveSide, LocalPlayerIndex);
-                bool rotateCamCW = m_inputManager.GetButton(InputAction.LT, LocalPlayerIndex);
-                bool rotateCamCCW = m_inputManager.GetButton(InputAction.RT, LocalPlayerIndex);
+                float deltaY = m_inputManager.GetAxisRaw(InputAction.MoveForward, LocalPlayerIndex, true, false);
+                float deltaX = m_inputManager.GetAxisRaw(InputAction.MoveSide, LocalPlayerIndex, true, false);
+                bool rotateCamCW = m_inputManager.GetButton(InputAction.LT, LocalPlayerIndex, true, false);
+                bool rotateCamCCW = m_inputManager.GetButton(InputAction.RT, LocalPlayerIndex, true, false);
 
                 bool aPressed = m_inputManager.GetButton(InputAction.A, LocalPlayerIndex);
-                bool pivotPreciseMode = aPressed | m_inputManager.GetButton(InputAction.RightStickButton, LocalPlayerIndex);
-                bool cursorPreciseMode = aPressed | m_inputManager.GetButton(InputAction.LeftStickButton, LocalPlayerIndex);
-                if(pivotPreciseMode || cursorPreciseMode)
+                bool pivotPreciseMode = aPressed | m_inputManager.GetButton(InputAction.RightStickButton, LocalPlayerIndex, true, false);
+                bool cursorPreciseMode = aPressed | m_inputManager.GetButton(InputAction.LeftStickButton, LocalPlayerIndex, true, false);
+                if (m_inputManager.IsAnyButtonDown(LocalPlayerIndex, false, false))
                 {
                     m_lockMouseToWorld = false;
                 }
 
-                if(m_inputManager.GetButtonUp(InputAction.LT, LocalPlayerIndex) || m_inputManager.GetButtonUp(InputAction.RT, LocalPlayerIndex))
+                if (m_inputManager.GetButtonUp(InputAction.LT, LocalPlayerIndex, true, false) || m_inputManager.GetButtonUp(InputAction.RT, LocalPlayerIndex, true, false))
                 {
-                    if(!rotateCamCW && !rotateCamCCW)
+                    if (!rotateCamCW && !rotateCamCCW)
                     {
                         m_cursorIcon.sprite = m_spritePointer;
                     }
@@ -759,21 +832,21 @@ namespace Battlehub.VoxelCombat
                     {
                         m_cursorIcon.sprite = m_spriteRotateCW;
                         MoveVirtualMouseToCenterOfScreen();
-                        m_camAngle += Time.deltaTime * m_settings.PlayerCamCtrl[LocalPlayerIndex].RotateSensitivity;
+                        m_camAngle += Time.deltaTime * settings.RotateSensitivity;
                         SetCameraPosition();
                     }
                     else if (rotateCamCCW && !rotateCamCW)
                     {
                         m_cursorIcon.sprite = m_spriteRotateCCW;
                         MoveVirtualMouseToCenterOfScreen();
-                        m_camAngle -= Time.deltaTime * m_settings.PlayerCamCtrl[LocalPlayerIndex].RotateSensitivity;
+                        m_camAngle -= Time.deltaTime * settings.RotateSensitivity;
                         SetCameraPosition();
                     }
 
-                    if(cursorX != 0 && cursorY != 0)
+                    if (cursorX != 0 && cursorY != 0)
                     {
                         float cursorSens = settings.CursorSensitivity;
-                        if(cursorPreciseMode || pivotPreciseMode)
+                        if (cursorPreciseMode || pivotPreciseMode)
                         {
                             cursorSens /= 5.0f;
                         }
@@ -781,7 +854,11 @@ namespace Battlehub.VoxelCombat
                         {
                             cursorSens *= VirtualMouseSensitivityScale;
                         }
-                        VirtualMousePosition += new Vector2(cursorX, cursorY) * cursorSens;
+
+                        if (m_isVirtualMouseEnabled)
+                        {
+                            VirtualMousePosition += new Vector2(cursorX, cursorY) * cursorSens;
+                        }
                         m_lockMouseToWorld = false;
                     }
                 }
@@ -795,41 +872,13 @@ namespace Battlehub.VoxelCombat
                 }
                 else
                 {
-                    if(!m_lockMouseToWorld)
+                    if (!m_lockMouseToWorld)
                     {
                         offset = mouseOffset;
                     }
                 }
-               
-                if (offset != Vector3.zero)
-                {
-                    m_lockMouseToWorld = false;
 
-                    Vector3 offsetW = m_camera.cameraToWorldMatrix.MultiplyVector(offset);
-                    offsetW.y = 0;
-                  //  offsetW.Normalize();
-
-                    Vector3 newPivot = offsetW * settings.MoveSensitivity * Time.deltaTime;
-                    if(pivotPreciseMode || cursorPreciseMode)
-                    {
-                        newPivot /= 5.0f;
-                    }
-                    newPivot += m_targetPivot;
-
-                    MapPos newMapPivot = m_voxelMap.GetMapPosition(newPivot, Weight);
-                    SetMapPivot(newMapPivot);
-                    m_targetPivot = newPivot;
-                }
-                else
-                {
-                    Vector3 toPivot = m_targetPivot - m_boundsCenter;
-                    toPivot.y = 0;
-                    if (toPivot.magnitude > m_allowedRadius)
-                    {
-                        toPivot = toPivot.normalized * m_allowedRadius;
-                        m_targetPivot = Vector3.up * m_targetPivot.y + m_boundsCenter + toPivot;
-                    }
-                }
+                MovePivot(settings, pivotPreciseMode, cursorPreciseMode, offset);
 
                 if (m_prevMouseOffset != mouseOffset)
                 {
@@ -838,9 +887,9 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            AnimatePivotPoint(settings.MoveSensitivity / 2, settings.MoveSensitivity / 8);            
+            AnimatePivotPoint(settings.MoveSensitivity / 2, settings.MoveSensitivity / 8);
 
-            if(m_lockMouseToWorld)
+            if (m_lockMouseToWorld)
             {
                 Vector2 targetMousePos = m_camera.WorldToScreenPoint(m_lockMousePosWorld);
 
@@ -855,8 +904,45 @@ namespace Battlehub.VoxelCombat
                     CursorIconFromMouseOffset(mouseOffset);
                 }
             }
-
             Debug.DrawLine(Pivot, Pivot + Vector3.up, Color.red);
+        }
+
+        private void MovePivot(PlayerCamCtrlSettings settings, bool pivotPreciseMode, bool cursorPreciseMode, Vector3 offset)
+        {
+            if (offset != Vector3.zero)
+            {
+                m_lockMouseToWorld = false;
+
+                Vector3 offsetW = m_camera.cameraToWorldMatrix.MultiplyVector(offset);
+                offsetW.y = 0;
+
+                Vector3 newPivot = offsetW * settings.MoveSensitivity * Time.deltaTime;
+                if (pivotPreciseMode || cursorPreciseMode)
+                {
+                    newPivot /= 5.0f;
+                }
+                newPivot += m_targetPivot;
+
+                MapPos newMapPivot = m_voxelMap.GetMapPosition(newPivot, Weight);
+                SetMapPivot(newMapPivot);
+                m_targetPivot = newPivot;
+            }
+            else
+            {
+                Vector3 toPivot = m_targetPivot - m_boundsCenter;
+                toPivot.y = 0;
+                if (toPivot.magnitude > m_allowedRadius)
+                {
+                    toPivot = toPivot.normalized * m_allowedRadius;
+                    m_targetPivot = Vector3.up * m_targetPivot.y + m_boundsCenter + toPivot;
+                }
+            }
+        }
+
+        public void MovePivot(Vector2 offset)
+        {
+            PlayerCamCtrlSettings settings = m_settings.PlayerCamCtrl[LocalPlayerIndex];
+            MovePivot(settings, false, false, offset);
         }
     }
 }

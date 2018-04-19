@@ -395,7 +395,7 @@ namespace Battlehub.UIControls
             }
         }
 
-        public static UnityEventSystem GetEventSystem(GameObject go)
+        public static IndependentEventSystem GetEventSystem(GameObject go)
         {
             IndependentSelectable selectable = go.GetComponent<IndependentSelectable>();
             if(selectable != null)
@@ -405,7 +405,7 @@ namespace Battlehub.UIControls
 
             return null;
         }
-        public static UnityEventSystem GetEventSystem(UIBehaviour ui)
+        public static IndependentEventSystem GetEventSystem(UIBehaviour ui)
         {
             IndependentSelectable selectable = ui.GetComponent<IndependentSelectable>();
             if (selectable != null)

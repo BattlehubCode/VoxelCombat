@@ -28,6 +28,8 @@ namespace Battlehub.VoxelCombat
 
         IPlayerCameraController GetCameraController(int index);
 
+        IVirtualMouse GetVirtualMouse(int index);
+
         ITargetSelectionController GetTargetSelectionController(int index);
     }
 
@@ -173,7 +175,7 @@ namespace Battlehub.VoxelCombat
         private void Update()
         {
 
-            if (Dependencies.InputManager.GetButtonDown(InputAction.ToggleCursor, -1, false))
+            if (Dependencies.InputManager.GetButtonDown(InputAction.ToggleCursor, -1, false, false))
             {
                 CursorHelper.visible = !CursorHelper.visible;
                 if(CursorHelper.visible)
@@ -273,6 +275,16 @@ namespace Battlehub.VoxelCombat
         public IPlayerCameraController GetCameraController(int index)
         {
             if(index < 0 || m_gameViewports.Length <= index)
+            {
+                return null;
+            }
+
+            return m_gameViewports[index].GetComponent<PlayerCameraController>();
+        }
+
+        public IVirtualMouse GetVirtualMouse(int index)
+        {
+            if (index < 0 || m_gameViewports.Length <= index)
             {
                 return null;
             }

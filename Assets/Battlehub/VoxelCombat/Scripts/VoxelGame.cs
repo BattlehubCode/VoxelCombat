@@ -17,6 +17,15 @@ namespace Battlehub.VoxelCombat
         event VoxelGameStateChangedHandler<int> PlayerDefeated;
         event VoxelGameStateChangedHandler IsPausedChanged;
 
+
+        event VoxelGameStateChangedHandler<int> ContextAction;
+        bool IsContextActionInProgress(int localPlayerIndex);
+        void IsContextActionInProgress(int localPlayerIndex, bool value);
+
+        event VoxelGameStateChangedHandler<int> Menu;
+        bool IsMenuOpened(int localPlayerIndex);
+        void IsMenuOpened(int localPlayerIndex, bool value);
+
         int MaxPlayersCount
         {
             get;
@@ -32,11 +41,6 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-        bool IsContextActionInProgress(int localPlayerIndex);
-        void IsContextActionInProgress(int localPlayerIndex, bool value);
-
-        bool IsMenuOpened(int localPlayerIndex);
-        void IsMenuOpened(int localPlayerIndex, bool value);
 
         bool IsStarted
         {
@@ -119,7 +123,9 @@ namespace Battlehub.VoxelCombat
         public event VoxelGameStateChangedHandler Started;
         public event VoxelGameStateChangedHandler<int> PlayerDefeated;
         public event VoxelGameStateChangedHandler Completed;
-
+        public event VoxelGameStateChangedHandler<int> ContextAction;
+        public event VoxelGameStateChangedHandler<int> Menu;
+            
         private bool m_isStarted;
         public bool IsStarted
         {
@@ -172,6 +178,10 @@ namespace Battlehub.VoxelCombat
         public void IsContextActionInProgress(int index, bool value)
         {
             m_isContextActionInProgress[index] = value;
+            if(ContextAction != null)
+            {
+                ContextAction(index);
+            }
         }
 
         private bool[] m_isMenuOpened;
@@ -183,6 +193,10 @@ namespace Battlehub.VoxelCombat
         public void IsMenuOpened(int index, bool value)
         {
             m_isMenuOpened[index] = value;
+            if(Menu != null)
+            {
+                Menu(index);
+            }
         }
 
         public event VoxelGameStateChangedHandler IsPausedChanged;

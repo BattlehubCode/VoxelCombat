@@ -45,7 +45,11 @@ namespace Battlehub.VoxelCombat
                 if (m_localPlayerIndex != value)
                 {
                     m_localPlayerIndex = value;
-                    m_commandsPanel.LocalPlayerIndex = value;
+                    if(m_commandsPanel != null)
+                    {
+                        m_commandsPanel.LocalPlayerIndex = value;
+                    }
+                    
                     if (Dependencies.GameView != null)
                     {
                         m_cameraController = Dependencies.GameView.GetCameraController(LocalPlayerIndex);
@@ -63,13 +67,20 @@ namespace Battlehub.VoxelCombat
             m_map = Dependencies.Map;
             m_gameState = Dependencies.GameState;
 
-            m_commandsPanel.Wall += OnWall;
-            m_commandsPanel.Bomb += OnBomb;
-            m_commandsPanel.Spawner += OnSpawner;
-            m_commandsPanel.Split += OnSplit;
-            m_commandsPanel.Split4 += OnSplit4;
-            m_commandsPanel.Grow += OnGrow;
-            m_commandsPanel.Diminish += OnDiminish;
+            if(m_commandsPanel != null)
+            {
+                m_commandsPanel.Move += OnMove;
+                m_commandsPanel.Attack += OnAttack;
+                m_commandsPanel.Cancel += OnCancel;
+                m_commandsPanel.Auto += OnAuto;
+                m_commandsPanel.Wall += OnWall;
+                m_commandsPanel.Bomb += OnBomb;
+                m_commandsPanel.Spawner += OnSpawner;
+                m_commandsPanel.Split += OnSplit;
+                m_commandsPanel.Split4 += OnSplit4;
+                m_commandsPanel.Grow += OnGrow;
+                m_commandsPanel.Diminish += OnDiminish;
+            }
            // m_commandsPanel.Closed += OnClosed;
         }
 
@@ -77,6 +88,10 @@ namespace Battlehub.VoxelCombat
         {
             if(m_commandsPanel != null)
             {
+                m_commandsPanel.Move -= OnMove;
+                m_commandsPanel.Attack -= OnAttack;
+                m_commandsPanel.Cancel -= OnCancel;
+                m_commandsPanel.Auto -= OnAuto;
                 m_commandsPanel.Wall -= OnWall;
                 m_commandsPanel.Bomb -= OnBomb;
                 m_commandsPanel.Spawner -= OnSpawner;
@@ -94,6 +109,7 @@ namespace Battlehub.VoxelCombat
             m_cameraController = Dependencies.GameView.GetCameraController(LocalPlayerIndex);
         }
 
+        private bool m_wasAButtonDown;
         private void Update()
         {
             if (m_gameState.IsContextActionInProgress(LocalPlayerIndex))
@@ -111,14 +127,15 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-             if(m_inputManager.GetButtonDown(InputAction.A, LocalPlayerIndex) || m_inputManager.GetButtonDown(InputAction.RMB, LocalPlayerIndex))
+            if (m_inputManager.GetButtonDown(InputAction.A, LocalPlayerIndex) || m_inputManager.GetButtonDown(InputAction.RMB, LocalPlayerIndex))
             {
+                m_wasAButtonDown = true;
                 List<Cmd> cmd = CreateMovementCmd();
                 if (cmd != null && cmd.Count > 0)
                 {
                     MovementCmd movementCmd = (MovementCmd)cmd[0];
 
-                    if(!m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
+                    if (!m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
                     {
                         m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates[0], true, true);
                     }
@@ -126,53 +143,50 @@ namespace Battlehub.VoxelCombat
             }
             else if (m_inputManager.GetButtonUp(InputAction.A, LocalPlayerIndex) || m_inputManager.GetButtonUp(InputAction.RMB, LocalPlayerIndex))
             {
-                List<Cmd> cmd = CreateMovementCmd();
-                if (cmd != null && cmd.Count > 0)
+                if(m_wasAButtonDown)
                 {
-                    MovementCmd movementCmd = (MovementCmd)cmd[0];
-                    if (!m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
+                    List<Cmd> cmd = CreateMovementCmd();
+                    if (cmd != null && cmd.Count > 0)
                     {
-                        m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates[0], true, true);
+                        MovementCmd movementCmd = (MovementCmd)cmd[0];
+                        if (!m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
+                        {
+                            m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates[0], true, true);
+                        }
+                        SubmitToEngine(m_gameState.GetLocalPlayerId(LocalPlayerIndex), cmd);
                     }
-                    SubmitToEngine(m_gameState.GetLocalPlayerId(LocalPlayerIndex), cmd);
+                    m_wasAButtonDown = false;
                 }
             }
-            else if (m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex))
+            else if (m_inputManager.GetButtonDown(InputAction.Y, LocalPlayerIndex, false, false))
             {
-               // m_commandsPanel.IsActive = true;
-                //int playerIndex = m_gameState.LocalToPlayerIndex(LocalPlayerIndex);
-
-                //if (m_unitSelection.HasSelected(playerIndex, playerIndex))
-                //{
-                //    long[] notSelected = m_gameState.GetUnits(playerIndex).Where(u => !m_unitSelection.IsSelected(playerIndex, playerIndex, u)).ToArray();
-                //    bool atLeastOneEaterIsNotSelected = notSelected.Select(u => m_gameState.GetVoxelDataController(playerIndex, u)).Where(dc => dc != null && dc.ControlledData.Type == (int)KnownVoxelTypes.Eater).Any();
-                
-                //    var selection = m_unitSelection.GetSelection(playerIndex, playerIndex)
-                //        .Where(u => m_gameState.GetVoxelDataController(playerIndex, u) != null);
-
-                //    PlayerStats stats = m_gameState.GetStats(playerIndex);
-                //    long[] unitSelection = m_unitSelection.GetSelection(playerIndex, playerIndex);
-
-                //    bool canCreateWall = stats.ControllableUnitsCount > unitSelection.Length && atLeastOneEaterIsNotSelected && selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanConvert((int)KnownVoxelTypes.Ground));
-                //    bool canCreateBomb = stats.ControllableUnitsCount > unitSelection.Length && atLeastOneEaterIsNotSelected && selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanConvert((int)KnownVoxelTypes.Bomb));
-                //    bool canCreateSpawner = stats.ControllableUnitsCount > unitSelection.Length && atLeastOneEaterIsNotSelected && selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanConvert((int)KnownVoxelTypes.Spawner));
-                //    bool canSplit = selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanSplit());
-                //    bool canSplit4 = selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanSplit4());
-                //    bool canGrow = selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanGrow());
-                //    bool canDiminish = selection.Any(u => m_gameState.GetVoxelDataController(playerIndex, u).CanDiminish());
-
-                //    m_commandsPanel.SetIsOpen(true, canCreateWall, canCreateBomb, canCreateSpawner, canSplit, canSplit4, canGrow, canDiminish);
-                //}
-            }
-            else if(m_inputManager.GetButtonDown(InputAction.Y, LocalPlayerIndex))
-            {
-                SubmitStdCommand(() => new Cmd(CmdCode.Automatic), (playerIndex, unitId) =>
-                {
-                    return true;
-                });
-            }
+                m_commandsPanel.IsOpen = true;
+            
+            } 
         }
 
+        private void OnMove()
+        {
+            //throw new NotImplementedException();
+        }
+
+        private void OnAttack()
+        {
+           // throw new NotImplementedException();
+        }
+
+        private void OnCancel()
+        {
+           // throw new NotImplementedException();
+        }
+
+        private void OnAuto()
+        {
+            SubmitStdCommand(() => new Cmd(CmdCode.Automatic), (playerIndex, unitId) =>
+            {
+                return true;
+            });
+        }
 
         private void OnDiminish()
         {

@@ -39,9 +39,9 @@ namespace Battlehub.UIControls
 
         private void OnButtonClick()
         {
-            m_eventSystem.SetSelectedGameObject(m_selectable.gameObject);
-            m_selectable.Select();
-            m_selectable.OnSelect(null);
+            m_eventSystem.SetSelectedGameObjectOnLateUpdate(m_selectable.gameObject);
+            //m_selectable.Select();
+            //m_selectable.OnSelect(null);
         }
     }
 

@@ -34,8 +34,9 @@ namespace Battlehub.VoxelCombat
         private IVoxelInputManager m_inputManager;
         private bool m_isInitialized;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             if (!m_isInitialized)
             {
                 Initialize();
@@ -110,7 +111,7 @@ namespace Battlehub.VoxelCombat
         private IEnumerator CoSelect()
         {
             yield return new WaitForEndOfFrame();
-
+                        
             IndependentSelectable.Select(m_inputField.gameObject);
             InputFieldWithVirtualKeyboard.ActivateInputField(m_inputField);
 
@@ -136,10 +137,10 @@ namespace Battlehub.VoxelCombat
             ClearUIQueue();
         }
 
-        private void Update()
-        {
-            if (m_isExpanded && m_messageQueue.Count > 0)
-            {
+       // protected override void Update()
+        //{
+            //if (m_isExpanded && m_messageQueue.Count > 0)
+            //{
                 /*
                 if(m_inputManager.GetButtonDown(InputAction.CursorY, LocalPlayerIndex, false))
                 {
@@ -188,8 +189,8 @@ namespace Battlehub.VoxelCombat
                     }
                 }
                 */
-            }
-        }
+          //  }
+       // }
 
         private IEnumerator ScrollToBottom()
         {
@@ -252,7 +253,15 @@ namespace Battlehub.VoxelCombat
             if (notEmptyCmd)
             {
                 m_inputField.text = string.Empty;
-                Write(value);
+
+                if(m_inputManager.GetButton(InputAction.A, LocalPlayerIndex, false, false) ||
+                    m_inputManager.GetButton(InputAction.LB, LocalPlayerIndex, false, false) ||
+                    m_inputManager.GetButton(InputAction.RB, LocalPlayerIndex, false, false) ||
+                    m_inputManager.GetButton(InputAction.Submit, LocalPlayerIndex, false, false))
+                {
+                    Write(value);
+                }
+             
             }
 
             //if (m_isExpanded && notEmptyCmd)
