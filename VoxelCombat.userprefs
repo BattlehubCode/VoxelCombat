@@ -1,6 +1,6 @@
 ﻿<Properties StartupItem="VoxelCombat.csproj">
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Battlehub\VoxelCombat\Scripts\VoxelMap.cs">
+  <MonoDevelop.Ide.Workbench>
     <Files>
       <File FileName="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\CommonUIZone.cs" Line="1" Column="1" />
       <File FileName="Assets\Battlehub\VoxelCombat\Scripts\VoxelMap.cs" Line="1" Column="1" />

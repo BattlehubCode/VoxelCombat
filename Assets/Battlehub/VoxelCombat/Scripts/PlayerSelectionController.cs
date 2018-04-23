@@ -162,7 +162,19 @@ namespace Battlehub.VoxelCombat
                             m_unitSelection.ClearSelection(playerIndex);
                             m_unitSelection.Select(playerIndex, playerIndex, new[] { data.UnitOrAssetIndex });
                         }
+                        else
+                        {
+                            m_unitSelection.ClearSelection(playerIndex);
+                        }
                     }
+                    else
+                    {
+                        m_unitSelection.ClearSelection(playerIndex);
+                    }
+                }
+                else
+                {
+                    m_unitSelection.ClearSelection(playerIndex);
                 }
             }
             
