@@ -19,9 +19,13 @@ namespace Battlehub.VoxelCombat
         }
 
         void BeginUpdate();
-        void Move(VoxelData data, Coordinate from, Coordinate to);
-        void Spawn(VoxelData data, Coordinate coord);
-        void Kill(VoxelData data, Coordinate coord);
+        void Move(VoxelData data,Coordinate from, Coordinate to);
+        void Spawn(VoxelData data,  Coordinate coord);
+        void Die(VoxelData data, Coordinate coord);
+
+        void Observe(VoxelData data, Coordinate coord);
+        void Ignore(VoxelData data, Coordinate coord);
+
         void EndUpdate();
     }
 
@@ -38,6 +42,7 @@ namespace Battlehub.VoxelCombat
 
         private Texture2D m_bgTexture;
         private Texture2D m_fgTexture;
+        private Texture2D[] m_fogOfWarTextures;
         
         public Texture2D Foreground
         {
@@ -49,7 +54,6 @@ namespace Battlehub.VoxelCombat
             get { return m_bgTexture; }
         }
 
-        
         private Color m_skyColor;
         private Color m_groundBaseColor;
         private Color m_transparentColor;
@@ -72,7 +76,7 @@ namespace Battlehub.VoxelCombat
             m_gameState.Started += OnGameStarted;
             if (m_gameState.IsStarted)
             {
-                CreateTextures();
+                OnGameStarted();
             }
 
             m_skyColor = Camera.main.backgroundColor;
@@ -102,8 +106,8 @@ namespace Battlehub.VoxelCombat
         private void OnGameStarted()
         {
             CreateTextures();
-
-            if(Loaded != null)
+ 
+            if (Loaded != null)
             {
                 Loaded(this, EventArgs.Empty);
             }
@@ -150,6 +154,11 @@ namespace Battlehub.VoxelCombat
             CalculateStaticMapHeight();
             m_bgTexture = CreateTexture(size, m_skyColor);
             m_fgTexture = CreateTexture(size, new Color(1, 1, 1, 0));
+            m_fogOfWarTextures = new Texture2D[m_gameState.PlayersCount];
+            for (int i = 0; i < m_fogOfWarTextures.Length; ++i)
+            {
+                m_fogOfWarTextures[i] = CreateTexture(size, new Color(0, 0, 0, 1));
+            }
 
             Draw(m_voxelMap.Map.Root, new Coordinate(0, 0, 0, m_voxelMap.Map.Weight), m_bgTexture, cell => cell.VoxelData.GetLastStatic(), data => m_groundBaseColor);
             Draw(m_voxelMap.Map.Root, new Coordinate(0, 0, 0, m_voxelMap.Map.Weight), m_fgTexture, 
@@ -158,6 +167,10 @@ namespace Battlehub.VoxelCombat
 
             m_bgTexture.Apply();
             m_fgTexture.Apply();
+            for (int i = 0; i < m_fogOfWarTextures.Length; ++i)
+            {
+                m_fogOfWarTextures[i].Apply();
+            }
         }
 
         private static VoxelData GetLast(MapCell cell)
@@ -319,7 +332,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void Kill(VoxelData voxelData, Coordinate coord)
+        public void Die(VoxelData voxelData, Coordinate coord)
         {
             if (coord.Weight < GameConstants.MinVoxelActorWeight)
             {
@@ -344,9 +357,20 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+
+        public void Observe(VoxelData data, Coordinate coord)
+        {
+
+        }
+
+        public void Ignore(VoxelData data, Coordinate coord)
+        {
+
+        }
+
         private void Fill(Coordinate coord, Color color)
         {
-            int size = (1 << coord.Weight) * m_scale;
+            int size = (1 << coord.Weight) * m_scale; 
             coord = coord.ToWeight(0);
             coord.Row -= m_bounds.Row;
             coord.Col -= m_bounds.Col;
@@ -358,6 +382,54 @@ namespace Battlehub.VoxelCombat
                 for (int c = 0; c < size; ++c)
                 {
                     m_fgTexture.SetPixel(coord.Col + c, coord.Row + r, color);
+                }
+            }
+        }
+
+
+        private void Fill(Coordinate coord, Color color, int radius, Texture2D texture)
+        {
+            int size = ((1 << coord.Weight) + (radius << (coord.Weight + 1))) * m_scale;
+            coord.Row -= radius;
+            coord.Col -= radius;
+
+            coord = coord.ToWeight(0);
+            coord.Row -= m_bounds.Row;
+            coord.Col -= m_bounds.Col;
+            coord.Row *= m_scale;
+            coord.Col *= m_scale;
+
+            int rowsCount = size;
+            int colsCount = size;
+
+            if(coord.Row < 0)
+            {
+                rowsCount += coord.Row;
+                coord.Row = 0;
+            }
+
+            if(coord.Col < 0)
+            {
+                colsCount += coord.Col;
+                coord.Col = 0;
+            }
+
+            if(coord.Row + rowsCount > texture.height)
+            {
+                rowsCount = texture.height - coord.Row;
+            }
+
+            if(coord.Col + colsCount > texture.width)
+            {
+                colsCount = texture.width - coord.Col;
+            }
+
+
+            for (int r = 0; r < rowsCount; ++r)
+            {
+                for (int c = 0; c < colsCount; ++c)
+                {
+                    texture.SetPixel(coord.Col + c, coord.Row + r, color);
                 }
             }
         }

@@ -234,7 +234,7 @@ namespace Battlehub.VoxelCombat
                 {
                     m_map = ProtobufSerializer.Deserialize<MapRoot>(bytes);
                     CalculateBounds();
-
+                    
                     //how to make sure than no one accessing cameras during background thread job ?
                     for (int i = 0; i < m_mapCameras.Count; ++i)
                     {
@@ -281,11 +281,13 @@ namespace Battlehub.VoxelCombat
             int size = m_map.GetMapSizeWith(weight);
             MapPos min = new MapPos(size / 2, size / 2);
             MapPos max = new MapPos(size / 2, size / 2);
+
+            MapCell col0 = m_map.Get(0, 0, weight);
             for (int row = 0; row < size; ++row)
             {
-                for(int col = 0; col < size; ++col)
+                MapCell cell = col0;
+                for (int col = 0; col < size; ++col)
                 {
-                    MapCell cell = m_map.Get(row, col, weight);
                     bool nonEmpty = cell.VoxelData != null || cell.HasDescendantsWithVoxelData();
                     if (!nonEmpty)
                     {
@@ -322,11 +324,17 @@ namespace Battlehub.VoxelCombat
                             max.Col = col;
                         }
                     }
+
+                    cell = cell.SiblingPCol;
                 }
+
+                col0 = col0.SiblingPRow;
             }
 
             m_mapBounds = new MapRect(min, max);
         }
+
+      
 
         public void Save(Action<byte[]> done)
         {
@@ -374,6 +382,7 @@ namespace Battlehub.VoxelCombat
             for (int i = 0; i < m_mapCameras.Count; ++i)
             {
                 m_mapCameras[i].Map = m_map;
+
             }
 
             if(Loaded != null)

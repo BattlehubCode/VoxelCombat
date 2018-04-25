@@ -560,7 +560,7 @@ namespace Battlehub.VoxelCombat
             m_botPathFinder = MatchFactory.CreatePathFinder(m_map, playersCount);
             m_botTaskRunner = MatchFactory.CreateTaskRunner(playersCount);
 
-            m_map.DestroyExtraPlayers(playersCount);
+            m_map.SetPlayerCount(playersCount);
         }
 
        

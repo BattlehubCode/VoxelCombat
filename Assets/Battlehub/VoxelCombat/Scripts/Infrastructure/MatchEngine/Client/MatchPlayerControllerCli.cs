@@ -61,8 +61,9 @@ namespace Battlehub.VoxelCombat
     public class MatchAssetCli
     {
         private VoxelData m_voxelData;
+        private VoxelAbilities m_abilities;
         private MapCell m_cell;
-      
+        
         private Voxel m_voxel;
         private ulong m_targetSelection;
         private ulong m_selection;
@@ -72,23 +73,26 @@ namespace Battlehub.VoxelCombat
             get { return m_voxelData; }
         }
 
+        public VoxelAbilities Abilities
+        {
+            get { return m_abilities; }
+        }
+
         public MapCell Cell
         {
             get { return m_cell; }
         }
 
-
-        public MatchAssetCli(VoxelData data, MapCell cell)
+        public MatchAssetCli(VoxelData data, VoxelAbilities abilities, MapCell cell)
         {
             m_voxelData = data;
+            m_abilities = abilities;
             m_cell = cell;
 
             if(m_voxelData.VoxelRef != null)
             {
                 m_voxel = m_voxelData.VoxelRef;
             }
-
-
             m_voxelData.VoxelRefSet += OnVoxelRefSet;
             m_voxelData.VoxelRefReset += OnVoxelRefReset;
         }
@@ -278,6 +282,8 @@ namespace Battlehub.VoxelCombat
             m_playerIndex = playerIndex;
             m_isLocalPlayer = m_gameState.IsLocalPlayer(m_playerIndex);
 
+            Dictionary<int, VoxelAbilities> abilities = m_allAbilities[m_playerIndex];
+
             m_voxelMap.Map.Root.ForEach(cell =>
             {
                 cell.ForEach(voxelData =>
@@ -294,7 +300,7 @@ namespace Battlehub.VoxelCombat
                         {
                             if(!voxelData.IsNeutral)
                             {
-                                CreateAsset(voxelData, cell);
+                                CreateAsset(voxelData, abilities[voxelData.Type], cell);
                             }
                         }   
                     }
@@ -302,15 +308,16 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        private void CreateAsset(VoxelData data, MapCell cell)
+        private void CreateAsset(VoxelData data, VoxelAbilities abilities, MapCell cell)
         {
             if(data.IsNeutral)
             {
                 return;
             }
 
+
             data.UnitOrAssetIndex = m_identity;
-            MatchAssetCli asset = new MatchAssetCli(data, cell);
+            MatchAssetCli asset = new MatchAssetCli(data, abilities, cell);
 
             m_voxelDataToId.Add(data, m_identity);
             m_idToAsset.Add(m_identity, asset);
@@ -334,7 +341,7 @@ namespace Battlehub.VoxelCombat
 
                 MatchAssetCli asset = m_idToAsset[id];
 
-                m_minimap.Kill(data, new Coordinate(asset.Cell, data));
+                m_minimap.Die(data, new Coordinate(asset.Cell, data));
 
                 asset.Destroy();
 
@@ -356,6 +363,13 @@ namespace Battlehub.VoxelCombat
 
             m_idToUnit.Add(m_identity, unit);
 
+            int radius = unit.DataController.Abilities.VisionRadius;
+            m_voxelMap.Map.ForEach(coordinate, radius, (cell, pos) =>
+            {
+                cell.ObservedBy[voxelData.Owner]++;
+                m_minimap.Observe(voxelData, new Coordinate(pos, coordinate.Weight, coordinate.Altitude));
+            });
+
             m_minimap.Spawn(voxelData, coordinate);
 
             m_identity++;
@@ -369,7 +383,7 @@ namespace Battlehub.VoxelCombat
                 m_controllableUnitsCount--;
             }
 
-            m_minimap.Kill(unitController.DataController.ControlledData, unitController.DataController.Coordinate);
+            m_minimap.Die(unitController.DataController.ControlledData, unitController.DataController.Coordinate);
 
             m_idToUnit.Remove(unitId);
 
@@ -409,6 +423,8 @@ namespace Battlehub.VoxelCombat
                     unitController.ExecuteCommand(cmd, tick);
                     if(prevCoord != dc.Coordinate)
                     {
+
+
                         m_minimap.Move(dc.ControlledData, prevCoord, dc.Coordinate);
                     }
 
@@ -445,7 +461,7 @@ namespace Battlehub.VoxelCombat
                         spawnedUnitsList = PostprocessCommand(spawnedUnitsList, cmd, unitController);
                     }
 
-                    if (unitController.DataController.ControlledData.State == VoxelDataState.Dead)
+                    if (unitController.DataController.ControlledData.Unit.State == VoxelDataState.Dead)
                     {
                         //Voxel voxel = unitController.DataController.ControlledData.VoxelRef; 
                         //Debug.Assert(voxel == null);//
@@ -538,7 +554,7 @@ namespace Battlehub.VoxelCombat
                     }
                     else
                     {
-                        CreateAsset(voxelData, cell);
+                        CreateAsset(voxelData, m_allAbilities[voxelData.Owner][voxelData.Type], cell);
                     }                   
                 }
             }
@@ -698,7 +714,7 @@ namespace Battlehub.VoxelCombat
                 VoxelDataCellPair pair = createAssets[i];
                 if (pair.Data.Owner == m_playerIndex)
                 {
-                    CreateAsset(pair.Data, pair.Cell);
+                    CreateAsset(pair.Data, m_allAbilities[pair.Data.Owner][pair.Data.Type], pair.Cell);
                 }
             }
         }

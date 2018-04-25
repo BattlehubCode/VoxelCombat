@@ -30,6 +30,15 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+    [ProtoContract]
+    public class VoxelUnitData
+    {
+        [ProtoMember(1)]
+        public VoxelDataState State;
+
+        //[ProtoMember(2)]
+        //public int Vision;
+    }
 
     [ProtoContract]
     public class VoxelData
@@ -104,8 +113,8 @@ namespace Battlehub.VoxelCombat
         [ProtoMember(10)]
         public int Health;
 
-        [ProtoMember(11)]
-        public VoxelDataState State;
+        [ProtoMember(12)]
+        public VoxelUnitData Unit;
 
         public long UnitOrAssetIndex = -1;
 
@@ -203,7 +212,7 @@ namespace Battlehub.VoxelCombat
             Owner = data.Owner;
             Dir = data.Dir;
             Health = data.Health;
-            State = data.State;
+            Unit = data.Unit;
         }
 
         public static int RotateRight(int dir)
@@ -653,7 +662,16 @@ namespace Battlehub.VoxelCombat
         [ProtoMember(3)]
         public MapCell[] Children;
 
+        public MapCell SiblingPRow;
+        public MapCell SiblingPCol;
+        public MapCell SiblingMRow;
+        public MapCell SiblingMCol;
+
+        //For rendering
         public int Usages;
+        
+        //For fog of war calculation
+        public int[] ObservedBy;
 
         public MapPos GetPosition()
         {
@@ -1140,12 +1158,51 @@ namespace Battlehub.VoxelCombat
             Weight = maxWeight;
             Root = new MapCell();
             AddChildren(Root, maxWeight);
+            ConnectSiblings();
         }
 
         [OnDeserialized]
         public void OnDeserializedMethod(StreamingContext context)
         {
             SetParent(Root, null);
+            ConnectSiblings();
+        }
+
+        private void ConnectSiblings()
+        {
+            for (int w = 0; w < Weight; ++w)
+            {
+                int weight = (Weight - w);
+                int size = 1 << weight;
+
+                for (int r = 0; r < size; ++r)
+                {
+                    for (int c = 0; c < size; ++c)
+                    {
+                        MapCell cell = Get(r, c, weight);
+
+                        if (r + 1 < size)
+                        {
+                            cell.SiblingPRow = Get(r + 1, c, weight);
+                        }
+
+                        if (r - 1 >= 0)
+                        {
+                            cell.SiblingMRow = Get(r - 1, c, weight);
+                        }
+
+                        if (c - 1 >= 0)
+                        {
+                            cell.SiblingMCol = Get(r, c - 1, weight);
+                        }
+
+                        if (c + 1 < size)
+                        {
+                            cell.SiblingPCol = Get(r, c + 1, weight);
+                        }
+                    }
+                }
+            }
         }
 
         private void SetParent(MapCell cell, MapCell parent)
@@ -1256,6 +1313,105 @@ namespace Battlehub.VoxelCombat
             return Get(i, j, withWeight, currentParent.Children[row * 2 + col], currentWeight - 1);
         }
 
+        public void ForEachRow(Coordinate coord, int radius, Action<MapCell, MapPos> action)
+        {
+            int mapSize = 1 << coord.Weight;
+            int rowsCount = Mathf.Abs(radius) * 2 + 1;
+
+            MapPos pos = coord.MapPos;
+            pos.Add(-Mathf.Abs(radius), -radius);
+
+            if (pos.Row < 0)
+            {
+                rowsCount += pos.Row;
+                pos.Row = 0;
+            }
+
+            if (pos.Row + rowsCount > mapSize)
+            {
+                rowsCount = mapSize - pos.Row;
+            }
+
+            MapCell cellCol0 = Get(pos.Row, pos.Col, coord.Weight);
+            for (int r = 0; r < rowsCount; ++r)
+            {
+                action(cellCol0, new MapPos(pos.Row + r, pos.Col));
+                cellCol0 = cellCol0.SiblingPRow;
+            }
+        }
+
+        public void ForEachCol(Coordinate coord, int radius, Action<MapCell, MapPos> action)
+        {
+            int mapSize = 1 << coord.Weight;
+            int colsCount = Mathf.Abs(radius) * 2 + 1;
+
+            MapPos pos = coord.MapPos;
+            pos.Add(-radius, -Mathf.Abs(radius));
+
+            if (pos.Col < 0)
+            {
+                colsCount += pos.Col;
+                pos.Col = 0;
+            }
+
+            if (pos.Col + colsCount > mapSize)
+            {
+                colsCount = mapSize - pos.Col;
+            }
+
+            MapCell cellRow0 = Get(pos.Row, pos.Col, coord.Weight);
+            for (int c = 0; c < colsCount; ++c)
+            {
+                action(cellRow0, new MapPos(pos.Row, pos.Col + c));
+                cellRow0 = cellRow0.SiblingPCol;
+            }
+        }
+
+        public void ForEach(Coordinate coord, int radius, Action<MapCell, MapPos> action)
+        {
+            int mapSize = 1 << coord.Weight;
+            int colsCount = radius * 2 + 1;
+            int rowsCount = radius * 2 + 1;
+
+            MapPos pos = coord.MapPos;
+            pos.Add(-radius, -radius);
+
+            if (pos.Row < 0)
+            {
+                rowsCount += pos.Row;
+                pos.Row = 0;
+            }
+
+            if (pos.Col < 0)
+            {
+                colsCount += pos.Col;
+                pos.Col = 0;
+            }
+
+            if (pos.Row + rowsCount > mapSize)
+            {
+                rowsCount = mapSize - pos.Row;
+            }
+
+            if (pos.Col + colsCount > mapSize)
+            {
+                colsCount = mapSize - pos.Col;
+            }
+
+
+            MapCell cellCol0 = Get(pos.Row, pos.Col, coord.Weight);
+            for (int r = 0; r < rowsCount; ++r)
+            {
+                MapCell cell = cellCol0;
+                for (int c = 0; c < colsCount; ++c)
+                {
+                    action(cell, new MapPos(pos.Row + r, pos.Col + c));
+                    cell = cell.SiblingPCol;
+                }
+                cellCol0 = cellCol0.SiblingPRow;
+            }
+        }
+
 #if !SERVER
         public MapPos GetCellPosition(Vector3 position, int weight)
         {
@@ -1303,11 +1459,13 @@ namespace Battlehub.VoxelCombat
             return result;
         }
 #endif
-        public void DestroyExtraPlayers(int playersCount)
+        public void SetPlayerCount(int playersCount)
         {
             List<VoxelData> dataToDestroy = new List<VoxelData>();
             Root.ForEach(cell =>
             {
+                cell.ObservedBy = new int[playersCount];
+
                 cell.ForEach(voxelData =>
                 {
                     if (voxelData.Owner >= playersCount)
@@ -1324,9 +1482,6 @@ namespace Battlehub.VoxelCombat
                 dataToDestroy.Clear();
             });
         }
-
-    
-
     }
 
 #if !SERVER

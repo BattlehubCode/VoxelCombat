@@ -153,7 +153,7 @@ namespace Battlehub.VoxelCombat
             Map = map;
             MapSize = mapSize;
             m_controlledData = new VoxelData(controlledData);
-            m_controlledData.State = VoxelDataState.Idle;
+            m_controlledData.Unit.State = VoxelDataState.Idle;
             m_coordinate = coordinate;
             m_abilities = new VoxelAbilities(ablilities);
 

@@ -159,7 +159,7 @@ namespace Battlehub.VoxelCombat
 
             OnVoxelRefResetOverride(voxel);
 
-            if(m_dataController.ControlledData.State == VoxelDataState.Dead)
+            if(m_dataController.ControlledData.Unit.State == VoxelDataState.Dead)
             {
                 m_dataController.ControlledData.VoxelRefSet -= OnVoxelRefSet;
                 m_dataController.ControlledData.VoxelRefReset -= OnVoxelRefReset;

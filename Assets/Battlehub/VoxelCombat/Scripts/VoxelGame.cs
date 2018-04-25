@@ -438,7 +438,7 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            m_voxelMap.Map.DestroyExtraPlayers(players.Length);
+            m_voxelMap.Map.SetPlayerCount(players.Length);
             m_voxelMap.IsOn = true;
             m_players = players;
 

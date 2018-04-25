@@ -240,6 +240,10 @@ namespace Battlehub.VoxelCombat
             m_abilities = m_allAbilities[playerIndex][type];
 
             m_controlledData = m_map.Get(coordinate);
+            if(m_controlledData.Unit == null)
+            {
+                m_controlledData.Unit = new VoxelUnitData();
+            }
 
             if (m_controlledData == null)
             {
@@ -259,6 +263,10 @@ namespace Battlehub.VoxelCombat
             m_abilities = dataController.m_abilities;
 
             m_controlledData = dataController.ControlledData;
+            if (m_controlledData.Unit == null)
+            {
+                m_controlledData.Unit = new VoxelUnitData();
+            }
 
             m_mapSize = dataController.MapSize;
         }
@@ -283,7 +291,7 @@ namespace Battlehub.VoxelCombat
             {
                 if(data != controlledData)
                 {
-                    if(VoxelData.IsControllableUnit(data.Type) && data.Owner == controlledData.Owner && (!considerIdleAsValid || data.State != VoxelDataState.Idle))
+                    if(VoxelData.IsControllableUnit(data.Type) && data.Owner == controlledData.Owner && (!considerIdleAsValid || data.Unit.State != VoxelDataState.Idle))
                     {
                         return false;
                     }
@@ -292,7 +300,7 @@ namespace Battlehub.VoxelCombat
             }
 
             if(cell.HasDescendantsWithVoxelData(
-                descendantData =>VoxelData.IsControllableUnit(descendantData.Type) && descendantData.Owner == controlledData.Owner && (!considerIdleAsValid || descendantData.State != VoxelDataState.Idle)))
+                descendantData => VoxelData.IsControllableUnit(descendantData.Type) && descendantData.Owner == controlledData.Owner && (!considerIdleAsValid || descendantData.Unit.State != VoxelDataState.Idle)))
             {
                 return false;
             }
@@ -302,13 +310,13 @@ namespace Battlehub.VoxelCombat
 
         public bool SetVoxelDataState(VoxelDataState state)
         {
-            ControlledData.State = state;
+            ControlledData.Unit.State = state;
             return true;
         }
 
         public VoxelDataState GetVoxelDataState()
         {
-            return ControlledData.State;
+            return ControlledData.Unit.State;
         }
 
 
@@ -961,11 +969,11 @@ namespace Battlehub.VoxelCombat
             Remove(controlledDataCell, m_controlledData);
 
             VoxelData cloneData = new VoxelData(m_controlledData);
-            cloneData.State = VoxelDataState.Idle;
+            cloneData.Unit.State = VoxelDataState.Idle;
             cloneData.Health = m_abilities.DefaultHealth;
 
             VoxelData cloneData2 = new VoxelData(m_controlledData);
-            cloneData2.State = VoxelDataState.Idle;
+            cloneData.Unit.State = VoxelDataState.Idle;
             cloneData2.Altitude = coordinate.Altitude;
             cloneData2.Health = m_abilities.DefaultHealth;
 
@@ -1059,7 +1067,7 @@ namespace Battlehub.VoxelCombat
                 MapCell cell = parentCell.Children[i];
 
                 VoxelData childData = new VoxelData(m_controlledData);
-                childData.State = VoxelDataState.Idle;
+                childData.Unit.State = VoxelDataState.Idle;
                 childData.Health = m_abilities.DefaultHealth;
                 childData.Weight--;
                 childData.Height /= 2;
@@ -1367,7 +1375,7 @@ namespace Battlehub.VoxelCombat
 
             VoxelAbilities abilities = m_allAbilities[m_playerIndex][type];
             VoxelData voxelData = new VoxelData(m_controlledData);
-            voxelData.State = VoxelDataState.Idle;
+            voxelData.Unit.State = VoxelDataState.Idle;
             voxelData.Type = type;
             voxelData.Height = abilities.VariableHeight ? 
                 abilities.ClampHeight(voxelData.Height) :

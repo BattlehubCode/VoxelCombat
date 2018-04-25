@@ -19,8 +19,10 @@ namespace Battlehub.VoxelCombat
         private IProgressIndicator m_progress;
         private IVoxelInputManager m_inputManager;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
+      
             m_inputManager = Dependencies.InputManager;
             m_gSettings = Dependencies.Settings;
             m_gameServer = Dependencies.GameServer;
