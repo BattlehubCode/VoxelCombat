@@ -177,7 +177,7 @@ namespace Battlehub.VoxelCombat
                     MaxHeight = EvaluateHeight(MaxWeight, false);
                     MinHeight = EvaluateHeight(MinWeight, false);
 
-                    VisionRadius = 16;
+                    VisionRadius = 2;
 
                     break;
                 case (int)KnownVoxelTypes.Bomb:
@@ -204,7 +204,7 @@ namespace Battlehub.VoxelCombat
                     MaxHeight = EvaluateHeight(MaxWeight, false);
                     MinHeight = EvaluateHeight(MinWeight, false);
 
-                    VisionRadius = 16;
+                    VisionRadius = 2;
 
                     break;
                 case (int)KnownVoxelTypes.Ground:
@@ -221,7 +221,7 @@ namespace Battlehub.VoxelCombat
                     DefaultHealth = 3;
                     MaxHealth = 3;
 
-                    VisionRadius = 16;
+                    VisionRadius = 2;
 
                     //TBD
                     break;
@@ -238,7 +238,7 @@ namespace Battlehub.VoxelCombat
                     MaxHeight = EvaluateHeight(MaxWeight, false);
                     MinHeight = EvaluateHeight(MinWeight, false);
 
-                    VisionRadius = 16;
+                    VisionRadius = 2;
                     //TBD
                     break;
                 case (int)KnownVoxelTypes.Spawner:
@@ -258,7 +258,7 @@ namespace Battlehub.VoxelCombat
 
                     ActionInterval = 30;
 
-                    VisionRadius = 16;
+                    VisionRadius = 2;
 
                     break;
             }

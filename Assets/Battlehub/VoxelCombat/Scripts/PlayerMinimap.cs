@@ -29,6 +29,9 @@ namespace Battlehub.VoxelCombat
         private RawImage m_background;
         [SerializeField]
         private RawImage m_foreground;
+        [SerializeField]
+        private RawImage m_fogOfWar;
+
         //[SerializeField]
         //private UILineRenderer m_frustumProjection;
         //[SerializeField]
@@ -67,7 +70,7 @@ namespace Battlehub.VoxelCombat
             m_minimap.Loaded += OnLoaded;
             m_background.texture = m_minimap.Background;
             m_foreground.texture = m_minimap.Foreground;
-
+          
             m_rtChangeListener = m_selectableMinimap.GetComponent<RectTransformChangeListener>();
             m_rtChangeListener.RectTransformChanged += OnMinimapRectTransformChanged;
 
@@ -81,6 +84,8 @@ namespace Battlehub.VoxelCombat
             var nav = m_selectableMinimap.navigation;
             nav.mode = m_input.IsKeyboardAndMouse(m_viewport.LocalPlayerIndex) ? UnityEngine.UI.Navigation.Mode.None : UnityEngine.UI.Navigation.Mode.Explicit;
             m_selectableMinimap.navigation = nav;
+
+            m_fogOfWar.texture = m_minimap.FogOfWar[m_gameState.LocalToPlayerIndex(m_viewport.LocalPlayerIndex)];
 
             m_eventSystem = Dependencies.EventSystemManager.GetEventSystem(m_viewport.LocalPlayerIndex);
             m_cameraController = Dependencies.GameView.GetCameraController(m_viewport.LocalPlayerIndex);
@@ -461,6 +466,7 @@ namespace Battlehub.VoxelCombat
         {
             m_background.texture = m_minimap.Background;
             m_foreground.texture = m_minimap.Foreground;
+            m_fogOfWar.texture = m_minimap.FogOfWar[m_gameState.LocalToPlayerIndex(m_viewport.LocalPlayerIndex)];
         }
     }
 }

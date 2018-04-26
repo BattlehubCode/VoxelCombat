@@ -1152,7 +1152,7 @@ namespace Battlehub.VoxelCombat
         {
             if (maxWeight < 0)
             {
-                throw new System.ArgumentOutOfRangeException("weight");
+                throw new ArgumentOutOfRangeException("weight");
             }
 
             Weight = maxWeight;
@@ -1179,26 +1179,26 @@ namespace Battlehub.VoxelCombat
                 {
                     for (int c = 0; c < size; ++c)
                     {
-                        MapCell cell = Get(r, c, weight);
+                        MapCell cell = Get(r, c, w);
 
                         if (r + 1 < size)
                         {
-                            cell.SiblingPRow = Get(r + 1, c, weight);
+                            cell.SiblingPRow = Get(r + 1, c, w);
                         }
 
                         if (r - 1 >= 0)
                         {
-                            cell.SiblingMRow = Get(r - 1, c, weight);
+                            cell.SiblingMRow = Get(r - 1, c, w);
                         }
 
                         if (c - 1 >= 0)
                         {
-                            cell.SiblingMCol = Get(r, c - 1, weight);
+                            cell.SiblingMCol = Get(r, c - 1, w);
                         }
 
                         if (c + 1 < size)
                         {
-                            cell.SiblingPCol = Get(r, c + 1, weight);
+                            cell.SiblingPCol = Get(r, c + 1, w);
                         }
                     }
                 }
@@ -1313,13 +1313,17 @@ namespace Battlehub.VoxelCombat
             return Get(i, j, withWeight, currentParent.Children[row * 2 + col], currentWeight - 1);
         }
 
-        public void ForEachRow(Coordinate coord, int radius, Action<MapCell, MapPos> action)
+        public void ForEachRowInRadius(Coordinate coord, int radius, Action<MapCell, MapPos> action)
         {
-            int mapSize = 1 << coord.Weight;
+            int mapSize = GetMapSizeWith(coord.Weight);
             int rowsCount = Mathf.Abs(radius) * 2 + 1;
 
             MapPos pos = coord.MapPos;
             pos.Add(-Mathf.Abs(radius), -radius);
+            if(pos.Col < 0 || pos.Col >= mapSize)
+            {
+                return;
+            }
 
             if (pos.Row < 0)
             {
@@ -1340,13 +1344,17 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void ForEachCol(Coordinate coord, int radius, Action<MapCell, MapPos> action)
+        public void ForEachColInRadius(Coordinate coord, int radius, Action<MapCell, MapPos> action)
         {
-            int mapSize = 1 << coord.Weight;
+            int mapSize = GetMapSizeWith(coord.Weight);
             int colsCount = Mathf.Abs(radius) * 2 + 1;
 
             MapPos pos = coord.MapPos;
             pos.Add(-radius, -Mathf.Abs(radius));
+            if (pos.Row < 0 || pos.Row >= mapSize)
+            {
+                return;
+            }
 
             if (pos.Col < 0)
             {
@@ -1367,9 +1375,9 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void ForEach(Coordinate coord, int radius, Action<MapCell, MapPos> action)
+        public void ForEachInRadius(Coordinate coord, int radius, Action<MapCell, MapPos> action)
         {
-            int mapSize = 1 << coord.Weight;
+            int mapSize = GetMapSizeWith(coord.Weight);
             int colsCount = radius * 2 + 1;
             int rowsCount = radius * 2 + 1;
 
@@ -1409,6 +1417,27 @@ namespace Battlehub.VoxelCombat
                     cell = cell.SiblingPCol;
                 }
                 cellCol0 = cellCol0.SiblingPRow;
+            }
+        }
+
+        public void ForEach(Action<MapCell, MapPos, int> action)
+        {
+            for (int w = 0; w < Weight; ++w)
+            {
+                int weight = (Weight - w);
+                int size = 1 << weight;
+
+                MapCell cellCol0 = Get(0, 0, w);
+                for (int r = 0; r < size; ++r)
+                {
+                    MapCell cell = cellCol0;
+                    for (int c = 0; c < size; ++c)
+                    {
+                        action(cell, new MapPos(r, c), w);
+                        cell = cell.SiblingPCol;
+                    }
+                    cellCol0 = cellCol0.SiblingPRow;
+                }
             }
         }
 

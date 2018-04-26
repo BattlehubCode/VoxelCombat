@@ -291,10 +291,11 @@ namespace Battlehub.VoxelCombat
                     bool nonEmpty = cell.VoxelData != null || cell.HasDescendantsWithVoxelData();
                     if (!nonEmpty)
                     {
-                        while (cell.Parent != null)
+                        MapCell parentCell = cell;
+                        while (parentCell.Parent != null)
                         {
-                            cell = cell.Parent;
-                            if (cell.VoxelData != null)
+                            parentCell = parentCell.Parent;
+                            if (parentCell.VoxelData != null)
                             {
                                 nonEmpty = true;
                                 break;

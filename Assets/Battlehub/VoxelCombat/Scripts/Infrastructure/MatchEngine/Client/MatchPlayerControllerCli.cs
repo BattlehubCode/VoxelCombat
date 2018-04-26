@@ -308,43 +308,62 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        private void CreateAsset(VoxelData data, VoxelAbilities abilities, MapCell cell)
+        private void CreateAsset(VoxelData voxelData, VoxelAbilities abilities, MapCell cell)
         {
-            if(data.IsNeutral)
+            if(voxelData.IsNeutral)
             {
                 return;
             }
 
 
-            data.UnitOrAssetIndex = m_identity;
-            MatchAssetCli asset = new MatchAssetCli(data, abilities, cell);
+            voxelData.UnitOrAssetIndex = m_identity;
+            MatchAssetCli asset = new MatchAssetCli(voxelData, abilities, cell);
 
-            m_voxelDataToId.Add(data, m_identity);
+            m_voxelDataToId.Add(voxelData, m_identity);
             m_idToAsset.Add(m_identity, asset);
 
             m_identity++;
 
-            m_minimap.Spawn(data, new Coordinate(cell, data));
+            if (voxelData.Weight >= GameConstants.MinVoxelActorWeight)
+            {
+                Coordinate coordinate = new Coordinate(cell, voxelData);
+                int radius = abilities.VisionRadius;
+                m_voxelMap.Map.ForEachInRadius(coordinate, radius, (observedCell, pos) =>
+                {
+                    ObserveCell(asset.VoxelData.Owner, observedCell, pos, coordinate.Weight);
+                });
+
+                m_minimap.Spawn(voxelData, new Coordinate(cell, voxelData));
+            }
         }
 
-        private void RemoveAsset(VoxelData data)
+        private void RemoveAsset(VoxelData voxelData)
         {
-            if(data.IsNeutral)
+            if(voxelData.IsNeutral)
             {
                 return;
             }
 
             long id;
-            if(m_voxelDataToId.TryGetValue(data, out id))
+            if(m_voxelDataToId.TryGetValue(voxelData, out id))
             {
-                m_voxelDataToId.Remove(data);
+                m_voxelDataToId.Remove(voxelData);
 
                 MatchAssetCli asset = m_idToAsset[id];
 
-                m_minimap.Die(data, new Coordinate(asset.Cell, data));
+                if (asset.VoxelData.Weight >= GameConstants.MinVoxelActorWeight)
+                {
+                    Coordinate coordinate = new Coordinate(asset.Cell, asset.VoxelData);
+                    int radius = asset.Abilities.VisionRadius;
+                    m_voxelMap.Map.ForEachInRadius(coordinate, radius, (ignoredCell, pos) =>
+                    {
+                        IgnoreCell(asset.VoxelData.Owner, ignoredCell, pos, coordinate.Weight);
+                    });
 
+                    m_minimap.Die(voxelData, new Coordinate(asset.Cell, voxelData));
+                }
+                
                 asset.Destroy();
-
                 m_idToAsset.Remove(id);
             }
            
@@ -364,10 +383,9 @@ namespace Battlehub.VoxelCombat
             m_idToUnit.Add(m_identity, unit);
 
             int radius = unit.DataController.Abilities.VisionRadius;
-            m_voxelMap.Map.ForEach(coordinate, radius, (cell, pos) =>
+            m_voxelMap.Map.ForEachInRadius(coordinate, radius, (observedCell, pos) =>
             {
-                cell.ObservedBy[voxelData.Owner]++;
-                m_minimap.Observe(voxelData, new Coordinate(pos, coordinate.Weight, coordinate.Altitude));
+                ObserveCell(unit.DataController.ControlledData.Owner, observedCell, pos, coordinate.Weight);
             });
 
             m_minimap.Spawn(voxelData, coordinate);
@@ -382,6 +400,13 @@ namespace Battlehub.VoxelCombat
             {
                 m_controllableUnitsCount--;
             }
+
+            Coordinate coordinate = unitController.DataController.Coordinate;
+            int radius = unitController.DataController.Abilities.VisionRadius;
+            m_voxelMap.Map.ForEachInRadius(coordinate, radius, (ignoredCell, pos) =>
+            {
+                IgnoreCell(unitController.DataController.ControlledData.Owner, ignoredCell, pos, coordinate.Weight);
+            });
 
             m_minimap.Die(unitController.DataController.ControlledData, unitController.DataController.Coordinate);
 
@@ -420,12 +445,13 @@ namespace Battlehub.VoxelCombat
 
                     IVoxelDataController dc = unitController.DataController;
                     Coordinate prevCoord = dc.Coordinate;
+
+                    int radius = unitController.DataController.Abilities.VisionRadius;
+                    
                     unitController.ExecuteCommand(cmd, tick);
                     if(prevCoord != dc.Coordinate)
                     {
-
-
-                        m_minimap.Move(dc.ControlledData, prevCoord, dc.Coordinate);
+                        HandleCoordinateChange(dc, prevCoord, radius);
                     }
 
                     IList<VoxelDataCellPair> createdVoxels = unitController.CreatedVoxels;
@@ -510,6 +536,94 @@ namespace Battlehub.VoxelCombat
                         VoxelData.IsControllableUnit(m_gameState.GetVoxelDataController(m_playerIndex, u).ControlledData.Type)).ToArray();
 
                     m_selection.AddToSelection(m_playerIndex, m_playerIndex, spawnedUnits);
+                }
+            }
+        }
+
+        private void HandleCoordinateChange(IVoxelDataController dc, Coordinate prevCoord, int radius)
+        {
+            if (prevCoord.Weight != dc.Coordinate.Weight)
+            {
+                m_voxelMap.Map.ForEachInRadius(prevCoord, radius, (ignoredCell, pos) =>
+                {
+                    IgnoreCell(dc.ControlledData.Owner, ignoredCell, pos, prevCoord.Weight);
+                });
+
+                m_voxelMap.Map.ForEachInRadius(dc.Coordinate, radius, (observedCell, pos) =>
+                {
+                    ObserveCell(dc.ControlledData.Owner, observedCell, pos, dc.Coordinate.Weight);
+                });
+            }
+            else if (prevCoord.Row != dc.Coordinate.Row)
+            {
+                Debug.Assert(Mathf.Abs(prevCoord.Row - dc.Coordinate.Row) == 1);
+                m_voxelMap.Map.ForEachColInRadius(prevCoord, radius * (int)Mathf.Sign(dc.Coordinate.Row - prevCoord.Row), (ignoredCell, pos) =>
+                {
+                    IgnoreCell(dc.ControlledData.Owner, ignoredCell, pos, prevCoord.Weight);
+                });
+
+                m_voxelMap.Map.ForEachColInRadius(dc.Coordinate, -radius * (int)Mathf.Sign(dc.Coordinate.Row - prevCoord.Row), (observedCell, pos) =>
+                {
+                    ObserveCell(dc.ControlledData.Owner, observedCell, pos, dc.Coordinate.Weight);
+                });
+            }
+            else if (prevCoord.Col != dc.Coordinate.Col)
+            {
+                Debug.Assert(Mathf.Abs(prevCoord.Col - dc.Coordinate.Col) == 1);
+                m_voxelMap.Map.ForEachRowInRadius(prevCoord, radius * (int)Mathf.Sign(dc.Coordinate.Col - prevCoord.Col), (ignoredCell, pos) =>
+                {
+                    IgnoreCell(dc.ControlledData.Owner, ignoredCell, pos, prevCoord.Weight);
+                });
+
+                m_voxelMap.Map.ForEachRowInRadius(dc.Coordinate, -radius * (int)Mathf.Sign(dc.Coordinate.Col - prevCoord.Col), (observedCell, pos) =>
+                {
+                    ObserveCell(dc.ControlledData.Owner,  observedCell, pos, dc.Coordinate.Weight);
+                });
+            }
+
+            m_minimap.Move(dc.ControlledData, prevCoord, dc.Coordinate);
+        }
+
+        private void ObserveCell(int owner, MapCell observedCell, MapPos pos, int weight)
+        {
+            int counter = observedCell.ObservedBy[owner];
+            counter++;
+            observedCell.ObservedBy[owner] = counter;
+
+            if (counter == 1)
+            {
+                UpdateChildCounters(owner, observedCell, weight, 1);
+                m_minimap.ObserveCell(owner, pos, weight);
+            }
+        }
+
+        private void IgnoreCell(int owner, MapCell ignoredCell, MapPos pos, int weight)
+        {
+            int counter = ignoredCell.ObservedBy[owner];
+            counter--;
+            ignoredCell.ObservedBy[owner] = counter;
+
+            if (counter == 0)
+            {
+                UpdateChildCounters(owner, ignoredCell, weight, -1);
+                m_minimap.IgnoreCell(owner, pos, weight);
+            }
+
+            Debug.Assert(counter >= 0);
+        }
+
+        private void UpdateChildCounters(int owner, MapCell cell, int weight, int delta)
+        {
+            if (weight > GameConstants.MinVoxelActorWeight)
+            {
+                if (cell.Children != null)
+                {
+                    for (int i = 0; i < cell.Children.Length; ++i)
+                    {
+                        MapCell childCell = cell.Children[i];
+                        childCell.ObservedBy[owner] += delta;
+                        UpdateChildCounters(owner, childCell, weight - 1, delta);
+                    }
                 }
             }
         }
