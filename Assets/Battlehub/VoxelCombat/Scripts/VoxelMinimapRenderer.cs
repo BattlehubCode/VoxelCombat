@@ -68,6 +68,7 @@ namespace Battlehub.VoxelCombat
         private Color m_groundBaseColor;
         private Color m_transparentColor;
         private Color m_fogOfWarColor;
+        private Color m_fogOfWarVisitedColor;
 
         private int m_staticMapHeight;
         private MapRect m_bounds;
@@ -96,6 +97,7 @@ namespace Battlehub.VoxelCombat
             m_groundBaseColor = Color.white;
             m_transparentColor = new Color(0, 0, 0, 0);
             m_fogOfWarColor = new Color(0, 0, 0, 1);
+            m_fogOfWarVisitedColor = new Color(0, 0, 0, 0.5f);
         }
 
         private void OnDestroy()
@@ -140,9 +142,10 @@ namespace Battlehub.VoxelCombat
 
         private void CreateTextures()
         {
-            m_bounds = m_voxelMap.MapBounds;
+            //m_bounds = m_voxelMap.MapBounds;
 
             int size = m_voxelMap.Map.GetMapSizeWith(0);
+            m_bounds = new MapRect(0, 0, m_voxelMap.Map.GetMapSizeWith(2), m_voxelMap.Map.GetMapSizeWith(2));
            
             int toZeroWeight = (1 << GameConstants.MinVoxelActorWeight);
             m_bounds.ColsCount *= toZeroWeight;
@@ -190,8 +193,6 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-
-
             Draw(m_voxelMap.Map.Root, new Coordinate(0, 0, 0, m_voxelMap.Map.Weight), m_bgTexture, cell => cell.VoxelData.GetLastStatic(), data => m_groundBaseColor);
             Draw(m_voxelMap.Map.Root, new Coordinate(0, 0, 0, m_voxelMap.Map.Weight), m_fgTexture, 
                 cell => GetLast(cell), 
@@ -225,6 +226,10 @@ namespace Battlehub.VoxelCombat
 
         private static VoxelData GetLast(MapCell cell)
         {
+            if(cell.VoxelData == null)
+            {
+                return null;
+            }
             VoxelData last = cell.VoxelData.GetLast();
             if (last != null && (!VoxelData.IsStatic(last.Type) || !last.IsNeutral))
             {
@@ -441,7 +446,7 @@ namespace Battlehub.VoxelCombat
             }
             m_updateRequired = true;
 
-            Fill(texture, new Coordinate(pos, weight, 0), m_fogOfWarColor);
+            Fill(texture, new Coordinate(pos, weight, 0), m_fogOfWarVisitedColor);
 
             if (!m_updating && texture != null)
             {
@@ -458,7 +463,6 @@ namespace Battlehub.VoxelCombat
             coord.Row *= m_scale;
             coord.Col *= m_scale;
 
-
             for (int r = 0; r < size; ++r)
             {
                 for (int c = 0; c < size; ++c)
@@ -467,6 +471,31 @@ namespace Battlehub.VoxelCombat
                 }
             }
         }
+
+        //private void FillUnmasked(Texture2D texture, Coordinate coord, Color color, Texture2D maskTexture)
+        //{
+        //    int size = (1 << coord.Weight) * m_scale;
+        //    coord = coord.ToWeight(0);
+        //    coord.Row -= m_bounds.Row;
+        //    coord.Col -= m_bounds.Col;
+        //    coord.Row *= m_scale;
+        //    coord.Col *= m_scale;
+
+        //    for (int r = 0; r < size; ++r)
+        //    {
+        //        for (int c = 0; c < size; ++c)
+        //        {
+        //            if(maskTexture.GetPixel(coord.Col + c, coord.Row + r).a == 0)
+        //            {
+        //                texture.SetPixel(coord.Col + c, coord.Row + r, color);
+        //            }
+        //            else
+        //            {
+        //                texture.SetPixel(coord.Col + c, coord.Row + r, m_transparentColor);
+        //            }
+        //        }
+        //    }
+        //}
 
         public void EndUpdate()
         {

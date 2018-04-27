@@ -14,6 +14,7 @@ namespace Battlehub.VoxelCombat
         private IVoxelInputManager m_input;
         private IVoxelGame m_gameState;
         private IndependentEventSystem m_eventSystem;
+        private IVoxelMap m_voxelMap;
 
         [SerializeField]
         private GameObject m_root;
@@ -31,6 +32,8 @@ namespace Battlehub.VoxelCombat
         private RawImage m_foreground;
         [SerializeField]
         private RawImage m_fogOfWar;
+        [SerializeField]
+        private Material m_foregroundLayerMaterial;
 
         //[SerializeField]
         //private UILineRenderer m_frustumProjection;
@@ -42,7 +45,9 @@ namespace Battlehub.VoxelCombat
 
         [SerializeField]
         private RectTransform m_rtMapBounds;
+
         private float m_rootRadius;
+        //private float m_scaledRootRadius;
         private Vector2 m_prevCursor;
        
         private Vector3 m_prevCamPos;
@@ -62,14 +67,13 @@ namespace Battlehub.VoxelCombat
             m_gameState = Dependencies.GameState;
             m_minimap = Dependencies.Minimap;
             m_input = Dependencies.InputManager;
+            m_voxelMap = Dependencies.Map;
             m_scaler = GetComponentInParent<CanvasScaler>();
        
             m_gameState.Menu += OnMenu;
             m_gameState.ContextAction += OnContextAction;
             
-            m_minimap.Loaded += OnLoaded;
-            m_background.texture = m_minimap.Background;
-            m_foreground.texture = m_minimap.Foreground;
+    
           
             m_rtChangeListener = m_selectableMinimap.GetComponent<RectTransformChangeListener>();
             m_rtChangeListener.RectTransformChanged += OnMinimapRectTransformChanged;
@@ -85,7 +89,14 @@ namespace Battlehub.VoxelCombat
             nav.mode = m_input.IsKeyboardAndMouse(m_viewport.LocalPlayerIndex) ? UnityEngine.UI.Navigation.Mode.None : UnityEngine.UI.Navigation.Mode.Explicit;
             m_selectableMinimap.navigation = nav;
 
+            m_minimap.Loaded += OnLoaded;
+            m_background.texture = m_minimap.Background;
+            m_foreground.texture = m_minimap.Foreground;
             m_fogOfWar.texture = m_minimap.FogOfWar[m_gameState.LocalToPlayerIndex(m_viewport.LocalPlayerIndex)];
+
+            Material foregroundMaterial = Instantiate(m_foregroundLayerMaterial);
+            foregroundMaterial.SetTexture("_MaskTex", m_fogOfWar.texture);
+            m_foreground.material = foregroundMaterial;
 
             m_eventSystem = Dependencies.EventSystemManager.GetEventSystem(m_viewport.LocalPlayerIndex);
             m_cameraController = Dependencies.GameView.GetCameraController(m_viewport.LocalPlayerIndex);
@@ -239,8 +250,10 @@ namespace Battlehub.VoxelCombat
         }
 
 
+   
         private void Move(Transform camTransform, bool forceSetMapPivot, float deltaY, float deltaX, float cursorY, float cursorX)
         {
+                    
             if(deltaX != 0 || deltaY != 0)
             {
                 m_virtualMousePostion += new Vector2(deltaX, deltaY);
@@ -276,6 +289,7 @@ namespace Battlehub.VoxelCombat
                             m_cameraController.SetMapPivot(dir, 1);
                             ProjectCursorToMinimap(m_viewport.Camera.transform);
                             m_virtualMousePostion = m_cameraController.VirtualMousePosition;
+                          
                         }
                         else
                         {
@@ -334,13 +348,14 @@ namespace Battlehub.VoxelCombat
             Vector3 center = m_corners[1] + (m_corners[3] - m_corners[1]) / 2;
             Vector3 screenCenter = RectTransformUtility.WorldToScreenPoint(null, center);
 
-            Vector3 toPivot = m_cameraController.Pivot - m_cameraController.BoundsCenter;
+            Vector3 toPivot = m_cameraController.TargetPivot - m_cameraController.BoundsCenter;
             toPivot.y = 0;
 
             float angle = camTransform.eulerAngles.y;
             Vector3 dir = Quaternion.Euler(new Vector3(0, -angle, 0)) * toPivot.normalized;
             dir.y = dir.z;
             dir.z = 0;
+
 
             float normalizedOffset = toPivot.magnitude / m_cameraController.BoundsRadius;
             m_cameraController.VirtualMousePosition = screenCenter + dir * normalizedOffset * m_rootRadius * m_scaler.scaleFactor;
@@ -396,6 +411,7 @@ namespace Battlehub.VoxelCombat
             Debug.Assert(p.Raycast(r3, out distance));
             Vector3 p3 = r3.GetPoint(distance) - m_cameraController.BoundsCenter;
 
+    
             float scale = m_rootRadius / m_cameraController.BoundsRadius;
             p0 *= scale;
             p1 *= scale;
@@ -435,9 +451,45 @@ namespace Battlehub.VoxelCombat
             
             CalculateRootRadius();
 
+            
             float offset = m_rootRadius - m_rootRadius * Mathf.Sqrt(2.0f) / 2.0f;
-            m_rtMapBounds.offsetMin = new Vector2(offset, offset);
-            m_rtMapBounds.offsetMax = new Vector2(-offset, -offset);
+            //m_scaledRootRadius = m_rootRadius -  offset;
+
+            //m_rtMapBounds.offsetMin = new Vector2(offset, offset);
+            // m_rtMapBounds.offsetMax = new Vector2(-offset, -offset);
+
+
+            Rect mapBoundsRect = m_rtMapBounds.rect;
+            mapBoundsRect.width -= 2 * offset;
+            mapBoundsRect.height -= 2 * offset;
+            Vector3 mapCenter = new Vector3(mapBoundsRect.width, mapBoundsRect.height) * 0.5f;
+            float mapSize = mapBoundsRect.width;
+
+            int size = m_voxelMap.Map.GetMapSizeWith(GameConstants.MinVoxelActorWeight);
+            float pixelsPerUnit = mapSize / size;
+
+            MapRect mapBounds = m_voxelMap.MapBounds;
+            float mapBoundsWidth = mapBounds.ColsCount * pixelsPerUnit;
+            float mapBoundsHeight = mapBounds.RowsCount * pixelsPerUnit;
+            Vector3 mapBoundsTopLeft = new Vector3(mapBounds.Col * pixelsPerUnit, mapBounds.Row * pixelsPerUnit, 0);
+            Vector3 mapBoundsCenter = mapBoundsTopLeft + new Vector3(mapBoundsWidth, mapBoundsHeight) / 2;
+            float mapBoundsSize = Mathf.Max(mapBoundsWidth, mapBoundsHeight);
+
+            float ext = (mapSize - mapBoundsSize) / 2;
+            Vector3 offsetMin = (mapCenter - mapBoundsCenter) - new Vector3(ext, ext, 0);
+            Vector3 offsetMax = (mapCenter - mapBoundsCenter) + new Vector3(ext, ext, 0);
+
+            RectTransform rtFogOfWar = m_fogOfWar.GetComponent<RectTransform>();
+            rtFogOfWar.offsetMin = offsetMin;
+            rtFogOfWar.offsetMax = offsetMax;
+
+            RectTransform rtForeground = m_foreground.GetComponent<RectTransform>();
+            rtForeground.offsetMin = offsetMin;
+            rtForeground.offsetMax = offsetMax;
+
+            RectTransform rtBackground = m_background.GetComponent<RectTransform>();
+            rtBackground.offsetMin = offsetMin;
+            rtBackground.offsetMax = offsetMax;
 
             ProjectCamera(m_rtMapBounds.rotation);
         }
@@ -457,9 +509,14 @@ namespace Battlehub.VoxelCombat
 
         private void CalculateRootRadius()
         {
+            //RectTransform parentRT = (RectTransform)m_rtMapBounds.parent;
+            //Bounds bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(parentRT);
+            // m_rootRadius = bounds.extents.x;
+
             RectTransform parentRT = (RectTransform)m_rtMapBounds.parent;
-            Bounds bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(parentRT);
-            m_rootRadius = bounds.extents.x;
+            m_rootRadius = parentRT.rect.width / 2;
+
+            Debug.Log(m_rootRadius);
         }
 
         private void OnLoaded(object sender, EventArgs e)

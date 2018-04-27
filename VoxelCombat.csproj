@@ -13,11 +13,13 @@
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Unity Subset v3.5</TargetFrameworkProfile>
-    <CompilerResponseFile></CompilerResponseFile>
+    <CompilerResponseFile>
+    </CompilerResponseFile>
     <UnityProjectType>Game:1</UnityProjectType>
     <UnityBuildTarget>StandaloneWindows64:19</UnityBuildTarget>
     <UnityVersion>2017.2.1f1</UnityVersion>
-    <RootNamespace></RootNamespace>
+    <RootNamespace>
+    </RootNamespace>
     <LangVersion>4</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -353,7 +355,6 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\TriggerHandlers.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\TxtSlider.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\TypeModelCreator.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\HUD\HUDCmdAxis.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\HUD\HUDControlBehavior.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Dependencies.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\EventSystemManager.cs" />
@@ -635,6 +636,7 @@
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\ToonLitOutlineCutout.shader" />
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\UnlitTransparent.shader" />
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\UnlitZTestAlways.shader" />
+    <None Include="Assets\Battlehub\VoxelCombat\Scripts\HUD\Materials\MinimapForeground.shader" />
     <None Include="Assets\Battlehub\VoxelExplosion\Materials\Explosion.shader" />
     <None Include="Assets\InControl\README\README.txt" />
     <None Include="Assets\OutlineEffect\Resources\OutlineBufferShader.shader" />

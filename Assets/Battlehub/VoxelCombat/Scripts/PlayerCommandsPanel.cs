@@ -28,9 +28,6 @@ namespace Battlehub.VoxelCombat
         private GameObject m_commandsRoot;
 
         [SerializeField]
-        private HUDCmdAxis m_axis;
-
-        [SerializeField]
         private Button m_cancelBtn;
 
         [SerializeField]

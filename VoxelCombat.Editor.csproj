@@ -431,6 +431,7 @@
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\ToonLitOutlineCutout.shader" />
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\UnlitTransparent.shader" />
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\UnlitZTestAlways.shader" />
+    <None Include="Assets\Battlehub\VoxelCombat\Scripts\HUD\Materials\MinimapForeground.shader" />
     <None Include="Assets\Battlehub\VoxelExplosion\Materials\Explosion.shader" />
     <None Include="Assets\InControl\README\README.txt" />
     <None Include="Assets\OutlineEffect\Resources\OutlineBufferShader.shader" />
