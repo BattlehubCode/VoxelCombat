@@ -93,7 +93,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
- 
         public object CreateCamera(int radius, int weight)
         {
             MapCamera camera = new MapCamera(Map, radius, weight);

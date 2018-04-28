@@ -101,8 +101,11 @@ namespace Battlehub.VoxelCombat
 
         private void OnDestroy()
         {
-            if(m_matchServer != null)
+            Dependencies.RemoteGameServer.ConnectionStateChanged -= OnRemoteGameServerConnectionStateChanged;
+
+            if (m_matchServer != null)
             {
+                
                 m_matchServer.Tick -= OnTick;
                 m_matchServer.ReadyToPlayAll -= OnReadyToPlayAll;
                 m_matchServer.Ping -= OnPing;

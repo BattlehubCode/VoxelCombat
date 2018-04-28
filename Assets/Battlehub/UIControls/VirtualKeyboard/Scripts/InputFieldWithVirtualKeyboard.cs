@@ -133,7 +133,11 @@ namespace Battlehub.UIControls
                 m_inputField.textComponent = m_textComponent;
             }
 
-            m_virtualKeyboard.IsOn = false;
+            if(m_virtualKeyboard != null)
+            {
+                m_virtualKeyboard.IsOn = false;
+            }
+            
             HandleDeselect();
         }
 

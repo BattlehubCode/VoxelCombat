@@ -141,17 +141,26 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                if (m_editorCamera != null)
+
+                bool reload = true;
+                if(!reload)
                 {
-                    Destroy(m_editorCamera.gameObject);
+                    if (m_editorCamera != null)
+                    {
+                        Destroy(m_editorCamera.gameObject);
+                    }
+
+                    m_voxelMap.DestroyCamera(m_voxelCameraRef);
+                    m_gameView.IsOn = true;
                 }
+                else
+                {
+                    Dependencies.State.Clear();
 
-                m_voxelMap.DestroyCamera(m_voxelCameraRef);
-
-                m_gameView.IsOn = true;
-
-                Dependencies.State.Clear();
-                Dependencies.Navigation.Navigate("Game");
+                    int botsCount = m_gameState.BotsCount;
+                    int playersCount = m_gameState.PlayersCount - botsCount;
+                    m_console.Write(string.Format("launch {0} {1} {2}", playersCount, botsCount - 1 /*minus neutral*/, m_gameState.MapName));
+                }
             }
         }
 

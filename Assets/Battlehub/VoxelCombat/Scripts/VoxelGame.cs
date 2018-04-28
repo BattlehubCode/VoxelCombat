@@ -17,7 +17,6 @@ namespace Battlehub.VoxelCombat
         event VoxelGameStateChangedHandler<int> PlayerDefeated;
         event VoxelGameStateChangedHandler IsPausedChanged;
 
-
         event VoxelGameStateChangedHandler<int> ContextAction;
         bool IsContextActionInProgress(int localPlayerIndex);
         void IsContextActionInProgress(int localPlayerIndex, bool value);
@@ -25,6 +24,16 @@ namespace Battlehub.VoxelCombat
         event VoxelGameStateChangedHandler<int> Menu;
         bool IsMenuOpened(int localPlayerIndex);
         void IsMenuOpened(int localPlayerIndex, bool value);
+
+        string MapName
+        {
+            get;
+        }
+
+        int BotsCount
+        {
+            get;
+        }
 
         int MaxPlayersCount
         {
@@ -168,7 +177,6 @@ namespace Battlehub.VoxelCombat
             get { return m_localPlayers.Length; }
         }
 
-
         private bool[] m_isContextActionInProgress;
         public bool IsContextActionInProgress(int index)
         {
@@ -246,6 +254,20 @@ namespace Battlehub.VoxelCombat
             private set;
         }
 
+
+        public string MapName
+        {
+            get
+            {
+                return m_room != null ? m_room.MapInfo.Name : null;
+            }
+        }
+
+        public int BotsCount
+        {
+            get { return m_players.Count(p => p.IsBot); }
+        }
+
         private IMatchEngineCli m_engine;
         private IGameServer m_gameServer;
         private IGameServer m_remoteGameServer;
@@ -262,6 +284,7 @@ namespace Battlehub.VoxelCombat
         private PlayerStats[] m_playerStats;
         private Dictionary<int, VoxelAbilities>[] m_voxelAbilities;
         private IMatchPlayerControllerCli[] m_playerControllers;
+        private Room m_room;
         
         private void Awake()
         {
@@ -428,6 +451,8 @@ namespace Battlehub.VoxelCombat
 
         private void OnEngineStarted(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] voxelAbilities, Room room)
         {
+            m_room = room;
+
             IsReplay = room.Mode == GameMode.Replay;
 
             m_progress.IsVisible = false;

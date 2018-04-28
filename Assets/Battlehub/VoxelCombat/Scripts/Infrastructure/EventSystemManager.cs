@@ -13,6 +13,11 @@ namespace Battlehub.VoxelCombat
         void Apply(GameObject root, int eventSystemIndex);
 
         IndependentEventSystem GetEventSystem(int index);
+
+        IndependentEventSystem CommonEventSystem
+        {
+            get;
+        }
     }
 
     public class EventSystemManager : MonoBehaviour, IEventSystemManager
@@ -21,7 +26,15 @@ namespace Battlehub.VoxelCombat
         private IndependentEventSystem[] m_eventSystems;
 
         [SerializeField]
+        private IndependentEventSystem m_commonEventSystem;
+
+        [SerializeField]
         private VirtualKeyboard[] m_virtualKeyboards;
+
+        public IndependentEventSystem CommonEventSystem
+        {
+            get { return m_commonEventSystem; }
+        }
 
         public int EventSystemCount
         {

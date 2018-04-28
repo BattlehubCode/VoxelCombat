@@ -20,6 +20,10 @@ namespace Battlehub.VoxelCombat
         private bool[] m_isInputFieldSelected;
         private bool[] m_isPointerOverGameObject;
 
+        private GameObject m_commonSelectedGameObject;
+        private bool m_commonInputFieldSelected;
+        private bool m_commonPointerOverGameObject;
+
         private List<InputDevice> m_devices;
         private List<InputDevice> m_lastDisabledDevices;
         private IGlobalState m_gState;
@@ -125,12 +129,16 @@ namespace Battlehub.VoxelCombat
         {
             m_gState = Dependencies.State;
             m_progress = Dependencies.Progress;
+
+
             m_eventSystemManager = Dependencies.EventSystemManager;
             for (int i = 0; i < m_eventSystemManager.EventSystemCount; ++i)
             {
                 IndependentEventSystem eventSystem = m_eventSystemManager.GetEventSystem(i);
                 eventSystem.EventSystemUpdate += OnEventSystemUpdate;
             }
+            m_eventSystemManager.CommonEventSystem.EventSystemUpdate += OnCommonEventSystemUpdate;
+
             m_isPointerOverGameObject = new bool[m_eventSystemManager.EventSystemCount];
             m_isInputFieldSelected = new bool[m_eventSystemManager.EventSystemCount];
             m_selectedGameObject = new GameObject[m_eventSystemManager.EventSystemCount];
@@ -184,12 +192,17 @@ namespace Battlehub.VoxelCombat
 
         private void OnDestroy()
         {
-            for (int i = 0; i < m_eventSystemManager.EventSystemCount; ++i)
+            if(m_eventSystemManager != null)
             {
-                IndependentEventSystem eventSystem = m_eventSystemManager.GetEventSystem(i);
-                eventSystem.EventSystemUpdate -= OnEventSystemUpdate;
-            }
+                for (int i = 0; i < m_eventSystemManager.EventSystemCount; ++i)
+                {
+                    IndependentEventSystem eventSystem = m_eventSystemManager.GetEventSystem(i);
+                    eventSystem.EventSystemUpdate -= OnEventSystemUpdate;
+                }
 
+                m_eventSystemManager.CommonEventSystem.EventSystemUpdate -= OnCommonEventSystemUpdate;
+            }
+       
             InputManager.OnDeviceAttached -= OnDeviceAttached;
             InputManager.OnDeviceDetached -= OnDeviceDetached;
             InputManager.OnActiveDeviceChanged -= OnActiveDeviceChanged;
@@ -401,13 +414,48 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        private bool IsMasked(int player, bool isMaskedBySelectedUI, bool isMaskedByPointerOverUI)
+        {
+            if (isMaskedBySelectedUI)
+            {
+                if (player > -1)
+                {
+                    if (m_selectedGameObject[player] != null)
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    if (m_commonSelectedGameObject != null)
+                    {
+                        return true;
+                    }
+                }
+            }
+            else if (isMaskedByPointerOverUI)
+            {
+                if (player > -1)
+                {
+                    if (m_isPointerOverGameObject[player])
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    if (m_commonPointerOverGameObject)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         public bool IsAnyButtonDown(int player, bool isMaskedBySelectedUI, bool isMaskedByPointerOverUI)
         {
-            if (isMaskedBySelectedUI && m_selectedGameObject[player] != null)
-            {
-                return false;
-            }
-            else if (isMaskedByPointerOverUI && m_isPointerOverGameObject[player])
+            if(IsMasked(player, isMaskedBySelectedUI, isMaskedByPointerOverUI))
             {
                 return false;
             }
@@ -443,15 +491,10 @@ namespace Battlehub.VoxelCombat
 
         public float GetAxisRaw(InputAction action, int player, bool isMaskedBySelectedUI, bool isMaskedByPointerOverUI)
         {
-            if(isMaskedBySelectedUI && m_selectedGameObject[player] != null)
+            if (IsMasked(player, isMaskedBySelectedUI, isMaskedByPointerOverUI))
             {
-                return 0;
+                return 0.0f;
             }
-            else if(isMaskedByPointerOverUI && m_isPointerOverGameObject[player])
-            {
-                return 0;
-            }
-            
             InputDevice inputDevice;
             if (player >= 0)
             {
@@ -493,13 +536,11 @@ namespace Battlehub.VoxelCombat
             return 0;
         }
 
+
+
         public bool GetButton(InputAction action, int player, bool isMaskedBySelectedUI, bool isMaskedByPointerOverUI)
         {
-            if (isMaskedBySelectedUI && m_selectedGameObject[player] != null)
-            {
-                return false;
-            }
-            else if (isMaskedByPointerOverUI && m_isPointerOverGameObject[player])
+            if (IsMasked(player, isMaskedBySelectedUI, isMaskedByPointerOverUI))
             {
                 return false;
             }
@@ -537,11 +578,7 @@ namespace Battlehub.VoxelCombat
 
         public bool GetButtonDown(InputAction action, int player, bool isMaskedBySelectedUI, bool isMaskedByPointerOverUI)
         {
-            if (isMaskedBySelectedUI && m_selectedGameObject[player] != null)
-            {
-                return false;
-            }
-            else if (isMaskedByPointerOverUI && m_isPointerOverGameObject[player])
+            if (IsMasked(player, isMaskedBySelectedUI, isMaskedByPointerOverUI))
             {
                 return false;
             }
@@ -580,11 +617,7 @@ namespace Battlehub.VoxelCombat
 
         public bool GetButtonUp(InputAction action, int player, bool isMaskedBySelectedUI, bool isMaskedByPointerOverUI)
         {
-            if (isMaskedBySelectedUI && m_selectedGameObject[player] != null)
-            {
-                return false;
-            }
-            else if (isMaskedByPointerOverUI && m_isPointerOverGameObject[player])
+            if (IsMasked(player, isMaskedBySelectedUI, isMaskedByPointerOverUI))
             {
                 return false;
             }
@@ -636,6 +669,26 @@ namespace Battlehub.VoxelCombat
                 GameObject newGameObject = eventSystem.currentSelectedGameObject;
                 m_selectedGameObject[eventSystem.Index] = eventSystem.currentSelectedGameObject;
                 m_isInputFieldSelected[eventSystem.Index] = eventSystem.currentSelectedGameObject != null && eventSystem.currentSelectedGameObject.GetComponent<InputField>() != null;
+            }
+        }
+
+
+        private void OnCommonEventSystemUpdate()
+        {
+            IndependentEventSystem eventSystem = EventSystem.current as IndependentEventSystem;
+            if (eventSystem == null)
+            {
+                return;
+            }
+
+            m_commonPointerOverGameObject = eventSystem.IsPointerOverGameObject();
+
+            GameObject selectedGameObject = m_commonSelectedGameObject;
+            if (eventSystem.currentSelectedGameObject != selectedGameObject)
+            {
+                GameObject newGameObject = eventSystem.currentSelectedGameObject;
+                m_commonSelectedGameObject = eventSystem.currentSelectedGameObject;
+                m_commonInputFieldSelected = eventSystem.currentSelectedGameObject != null && eventSystem.currentSelectedGameObject.GetComponent<InputField>() != null;
             }
         }
 

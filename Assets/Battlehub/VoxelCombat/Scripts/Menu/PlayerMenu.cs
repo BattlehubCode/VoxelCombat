@@ -251,6 +251,9 @@ namespace Battlehub.VoxelCombat
                 case 5: //quit
                     m_console.GetChild(LocalPlayerIndex).Write("quit");
                     break;
+                case 6: //map editor
+                    m_console.GetChild(LocalPlayerIndex).Write("mapeditor");
+                    break;
             }
         }
 
