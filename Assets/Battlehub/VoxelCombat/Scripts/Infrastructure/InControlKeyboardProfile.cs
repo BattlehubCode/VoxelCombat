@@ -33,7 +33,7 @@ namespace Battlehub.VoxelCombat
                 {
                     Handle = "Select",
                     Target = InputControlType.LeftBumper,
-					Source = KeyCodeButton( KeyCode.Space, KeyCode.LeftShift )
+					Source = KeyCodeButton( KeyCode.LeftShift )
                 },
                 new InputControlMapping
                 {
@@ -45,7 +45,7 @@ namespace Battlehub.VoxelCombat
                 {
                     Handle = "Build",
                     Target = InputControlType.Action2,
-					Source = KeyCodeButton( KeyCode.Q, KeyCode.B )
+					Source = KeyCodeButton(KeyCode.B )
                 },
                 new InputControlMapping
                 {

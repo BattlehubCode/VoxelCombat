@@ -39,6 +39,9 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private InputField m_ownerInput;
 
+        [SerializeField]
+        private Text m_txtInfo;
+
         private int BrushSize
         {
             get { return (int)m_brushSizeSlider.value; }
@@ -138,6 +141,11 @@ namespace Battlehub.VoxelCombat
                 }
 
                 SetupEditorCamera();
+
+                if(m_txtInfo != null)
+                {
+                    m_txtInfo.text = m_gameState.MapName;
+                }
             }
             else
             {
@@ -1197,6 +1205,11 @@ namespace Battlehub.VoxelCombat
                         return;
                     }
 
+                    if (m_txtInfo != null)
+                    {
+                        m_txtInfo.text = mapName;
+                    }
+
                     Debug.Log("lastmap " + mapInfo.Name);
                     PlayerPrefs.SetString("lastmap", mapInfo.Name);
                     Debug.Log(PlayerPrefs.GetString("lastmap"));
@@ -1210,6 +1223,9 @@ namespace Battlehub.VoxelCombat
 
         private void OnSave(string mapName)
         {
+            Debug.LogWarning("Command not supported. Use upload command instead");
+
+            /*
             m_voxelMap.Save(bytes =>
             {
                 string dataPath = Application.persistentDataPath + "/Maps/";
@@ -1220,10 +1236,14 @@ namespace Battlehub.VoxelCombat
                 
                 File.WriteAllBytes(dataPath + mapName, bytes);
             });
+            */
         }
 
         private void OnLoad(string mapName)
         {
+            Debug.LogWarning("Command not supported. Use download command instead");
+
+            /*
             string dataPath = Application.persistentDataPath + "/Maps/";
             if (!Directory.Exists(dataPath))
             {
@@ -1234,9 +1254,13 @@ namespace Battlehub.VoxelCombat
 
             m_voxelMap.Load(bytes, () =>
             {
-               // MapPos mapPos = m_voxelMap.GetCellPosition(m_pivot.transform.position, m_voxelMap.GetCameraWeight());
-               // m_voxelMap.SetCameraPosition(mapPos.Row, mapPos.Col);
+                if (m_txtInfo != null)
+                {
+                    m_txtInfo.text = mapName;
+                }
+
             });
+            */
         }
 
         private void OnCreate(int weight)

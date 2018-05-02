@@ -516,7 +516,7 @@ namespace Battlehub.VoxelCombat
             RectTransform parentRT = (RectTransform)m_rtMapBounds.parent;
             m_rootRadius = parentRT.rect.width / 2;
 
-            Debug.Log(m_rootRadius);
+            //Debug.Log(m_rootRadius);
         }
 
         private void OnLoaded(object sender, EventArgs e)

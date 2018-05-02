@@ -239,7 +239,7 @@ namespace Battlehub.VoxelCombat
                     }
                 }
 
-                VoxelConsole console = GetComponent<VoxelConsole>();
+                VoxelConsole console = GetComponentInParent<VoxelConsole>();
                 console.Initialize();
 
                 for (int i = 0; i < m_viewportCount; ++i)

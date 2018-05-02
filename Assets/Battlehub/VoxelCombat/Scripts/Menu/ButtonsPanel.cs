@@ -15,10 +15,12 @@ namespace Battlehub.VoxelCombat
         public event ButtonsPanelEventHandler IsOpenedChanged;
         public event ButtonsPanelEventHandler<int> Action;
 
+        [SerializeField]
+        private int m_localPlayerIndex = -1;
         public int LocalPlayerIndex
         {
-            get;
-            set;
+            get { return m_localPlayerIndex; }
+            set { m_localPlayerIndex = value; }
         }
 
         private IndependentEventSystem m_eventSystem;
@@ -58,19 +60,30 @@ namespace Battlehub.VoxelCombat
 
         protected virtual void SelectDefault()
         {
-            m_eventSystem.SetSelectedGameObjectOnLateUpdate(m_sequence[0].gameObject);
-            m_sequence[0].OnSelect(null);
+            if(m_sequence.Length > 0)
+            {
+                m_eventSystem.SetSelectedGameObjectOnLateUpdate(m_sequence[0].gameObject);
+                m_sequence[0].OnSelect(null);
+            }
+          
          
         }
 
         public void SetText(int action, string text)
         {
-            m_sequence[action].GetComponentInChildren<Text>().text = text;
+            if(m_sequence.Length > 0)
+            {
+                m_sequence[action].GetComponentInChildren<Text>().text = text;
+            }
         }
 
         protected virtual void Awake()
         {
-            m_eventSystem = IndependentSelectable.GetEventSystem(m_sequence[0]);
+            if(m_sequence.Length > 0)
+            {
+                m_eventSystem = IndependentSelectable.GetEventSystem(m_sequence[0]);
+            }
+            
         }
  
         protected virtual void Start()

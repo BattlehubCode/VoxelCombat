@@ -67,7 +67,11 @@ namespace Battlehub.VoxelCombat
                 }
                 else
                 {
-                    InitGame(mapName, 0, 0, playersCount, botsCount, callback, error);
+                   LogoffIfNeeded(() =>
+                   {
+                       InitGame(mapName, 0, 0, playersCount, botsCount, callback, error);
+                   });
+                    
                 }
             }
             else
@@ -83,7 +87,10 @@ namespace Battlehub.VoxelCombat
                 }
                 else
                 {
-                    InitGame(mapName, 0, 0, playersCount, botsCount, callback, error);
+                    LogoffIfNeeded(() =>
+                    {
+                        InitGame(mapName, 0, 0, playersCount, botsCount, callback, error);
+                    });
                 }
             }
         }
@@ -114,13 +121,19 @@ namespace Battlehub.VoxelCombat
                         }
                     }
 
-                    InitGame(mapName, 0, 0, playersCount, botsCount, callback, error);
+                    LogoffIfNeeded(() =>
+                    {
+                        InitGame(mapName, 0, 0, playersCount, botsCount, callback, error);
+                    });
                 }
                 else
                 {
                     notification.ShowError(e);
 
-                    InitGame(mapName, 0, 0, playersCount, botsCount, callback, error);
+                    LogoffIfNeeded(() =>
+                    {
+                        InitGame(mapName, 0, 0, playersCount, botsCount, callback, error);
+                    });
                 }
 
                 remoteGameServer.ConnectionStateChanged -= connectionStateChanged;
@@ -155,27 +168,50 @@ namespace Battlehub.VoxelCombat
             server.UploadMap(gSettings.ClientId, mapInfo, mapData, error => completed(error, mapInfo));
         }
 
+
+        private static void LogoffIfNeeded(Action done)
+        {
+            IGameServer server = Dependencies.GameServer;
+            IGlobalSettings gSettings = Dependencies.Settings;
+
+            server.GetPlayers(gSettings.ClientId, (e0, players) =>
+            {
+                if (players.Length == 0)
+                {
+                    done();
+                }
+                else
+                {
+                    server.Logoff(gSettings.ClientId, players.Select(p => p.Id).ToArray(), (e1, guid) =>
+                    {
+                        done();
+                    });
+                }
+            });
+
+        }
         private static void InitGame(string mapName, int playerIndex, int botIndex, int playersCount, int botsCount, Action callback, Action<Error> error)
         {
             //IProgressIndicator progress = Dependencies.Progress;
             IGameServer server = Dependencies.GameServer;
             IGlobalSettings gSettings = Dependencies.Settings;
-           
-            if(playerIndex < playersCount)
+
+
+            if (playerIndex < playersCount)
             {
                 server.Login(m_playerNames[playerIndex], "welcome", gSettings.ClientId, (e1, playerId, pwdHash) =>
                 {
                     if (server.HasError(e1))
                     {
                         error(e1);
-                        //progress.IsVisible = false;
-                        server.SignUp(m_playerNames[playerIndex], "welcome", gSettings.ClientId, (e100, p, pwdHash2) =>
+                            //progress.IsVisible = false;
+                            server.SignUp(m_playerNames[playerIndex], "welcome", gSettings.ClientId, (e100, p, pwdHash2) =>
                         {
-                            if(server.HasError(e100))
+                            if (server.HasError(e100))
                             {
                                 error(e100);
-                                //progress.IsVisible = false;
-                                return;
+                                    //progress.IsVisible = false;
+                                    return;
                             }
 
                             LoginOrSignupCompleted(mapName, playerIndex, botIndex, playersCount, botsCount, callback, error);
@@ -200,8 +236,8 @@ namespace Battlehub.VoxelCombat
                         if (server.HasError(e4))
                         {
                             error(e4);
-                            //progress.IsVisible = false;
-                            return;
+                                //progress.IsVisible = false;
+                                return;
                         }
 
                         botIndex++;

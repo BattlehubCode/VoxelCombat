@@ -52,21 +52,9 @@ namespace Battlehub.VoxelCombat
             m_messageQueue = new Queue<string>();
             m_uiQueue = new Queue<Text>();
 
-            if (m_messageUIPrefab == null)
-            {
-                Debug.LogError("set messageUIPrefab");
-                return;
-            }
-
             if (m_inputField == null)
             {
                 Debug.LogError("set inputField");
-                return;
-            }
-
-            if (m_messageScrollRect == null)
-            {
-                Debug.LogError("set messageScrollRect");
                 return;
             }
 
@@ -81,9 +69,11 @@ namespace Battlehub.VoxelCombat
             base.Start();
 
             GameViewport parentViewport = GetComponentInParent<GameViewport>();
-
-            InputFieldWithVirtualKeyboard ifwk = m_inputField.GetComponent<InputFieldWithVirtualKeyboard>();
-            ifwk.VirtualKeyboardEnabled = !m_inputManager.IsKeyboardAndMouse(parentViewport.LocalPlayerIndex);
+            if(parentViewport != null)
+            {
+                InputFieldWithVirtualKeyboard ifwk = m_inputField.GetComponent<InputFieldWithVirtualKeyboard>();
+                ifwk.VirtualKeyboardEnabled = !m_inputManager.IsKeyboardAndMouse(parentViewport.LocalPlayerIndex);
+            }
         }
 
         protected override void OnDestroy()
@@ -104,7 +94,7 @@ namespace Battlehub.VoxelCombat
             m_coSelect = CoSelect();
             StartCoroutine(m_coSelect);
 
-            m_isExpanded = true;
+            m_isExpanded = m_messageUIPrefab != null && m_messageScrollRect != null;
             PopulateUIQueue();
         }
 
@@ -196,14 +186,17 @@ namespace Battlehub.VoxelCombat
         {
             yield return new WaitForEndOfFrame();
 
-            m_messageScrollRect.verticalNormalizedPosition = 0;
-            //m_messageScrollRect.verticalNormalizedPosition = 0;
+            if(m_messageScrollRect != null)
+            {
+                m_messageScrollRect.verticalNormalizedPosition = 0;
+            }
         }
 
         private void PopulateUIQueue()
         {
             if (m_isExpanded)
             {
+
                 for (int i = 0; i < m_maxMessages; ++i)
                 {
                     Text messageUI = Instantiate(m_messageUIPrefab);
@@ -235,7 +228,11 @@ namespace Battlehub.VoxelCombat
             {
                 Destroy(messageUI.gameObject);
             }
-            m_messageScrollRect.content.localScale = Vector2.zero;
+            if(m_messageScrollRect != null)
+            {
+                m_messageScrollRect.content.localScale = Vector2.zero;
+            }
+            
             m_uiQueue.Clear();
            // m_messages = null;
           
@@ -257,7 +254,8 @@ namespace Battlehub.VoxelCombat
                 if(m_inputManager.GetButton(InputAction.A, LocalPlayerIndex, false, false) ||
                     m_inputManager.GetButton(InputAction.LB, LocalPlayerIndex, false, false) ||
                     m_inputManager.GetButton(InputAction.RB, LocalPlayerIndex, false, false) ||
-                    m_inputManager.GetButton(InputAction.Submit, LocalPlayerIndex, false, false))
+                    m_inputManager.GetButton(InputAction.Submit, LocalPlayerIndex, false, false) || 
+                    LocalPlayerIndex == -1 && m_inputField.gameObject.activeInHierarchy)
                 {
                     Write(value);
                 }

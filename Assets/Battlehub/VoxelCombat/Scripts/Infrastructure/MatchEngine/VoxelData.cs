@@ -1303,6 +1303,10 @@ namespace Battlehub.VoxelCombat
             }
 
             int size = GetMapSize(currentWeight - withWeight);
+            if(size == 0)
+            {
+                return null;
+            }
 
             int row = i / size;
             int col = j / size;

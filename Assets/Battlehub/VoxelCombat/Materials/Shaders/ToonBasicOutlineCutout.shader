@@ -70,13 +70,13 @@ Shader "Toon/Basic Outline Cutout" {
 			{
 				fixed4 col = i.color * tex2D(_MainTex, i.texcoord);
 				clip(col.a - _Cutoff);
-				UNITY_APPLY_FOG(i.fogCoord, col);
-				
+				//UNITY_APPLY_FOG(i.fogCoord, col);
+				//return col;
 				return col;
 			}
 			ENDCG
 		}
 	}
 	
-	Fallback "Toon/Basic"
+	//Fallback "Toon/Basic"
 }
