@@ -1,27 +1,34 @@
-Shader "Toon/Basic Outline Cutout" {
-	Properties {
+Shader "Toon/Basic Outline Cutout" 
+{
+	Properties 
+	{
 		_Color ("Main Color", Color) = (.5,.5,.5,1)
 		_OutlineColor ("Outline Color", Color) = (0,0,0,1)
 		_Outline ("Outline width", Range (.002, 0.03)) = .005
 		_MainTex ("Base (RGB)", 2D) = "white" { }
 		_ToonShade ("ToonShader Cubemap(RGB)", CUBE) = "" { }
-		_Cutoff("Alpha cutoff", Range(0,1)) = 0.2
+		_Cutoff("Alpha cutoff", Range(0,1)) = 0.0
+		_FogOfWarCutoff("FogOfWar cutoff", Range(0,1)) = 0.0
 	}
 	
 	CGINCLUDE
 	#include "UnityCG.cginc"
+	#include "Common.cginc"
 	
-	struct appdata {
+	struct appdata 
+		{
 		float4 vertex : POSITION;
 		float2 texcoord : TEXCOORD0;
 		float3 normal : NORMAL;
 	};
 
-	struct v2f {
+	struct v2f
+	{
 		float4 pos : SV_POSITION;
 		float2 texcoord : TEXCOORD0;
-		UNITY_FOG_COORDS(1)
+		//UNITY_FOG_COORDS(1)
 		fixed4 color : COLOR;
+		float2 fogofwarcoord : TEXCOORD1;
 	};
 	
 	uniform float _Outline;
@@ -29,8 +36,14 @@ Shader "Toon/Basic Outline Cutout" {
 	sampler2D _MainTex;
 	float4 _MainTex_ST;
 	float _Cutoff;
-	
-	v2f vert(appdata v) {
+
+	UNITY_DECLARE_TEX2DARRAY(_FogOfWarTex);
+	int _FogOfWarTexIndex;
+	int _MapWeight;
+	float _FogOfWarCutoff;
+
+	v2f vert(appdata v) 
+	{
 		v2f o;
 		o.pos = UnityObjectToClipPos(v.vertex);
 
@@ -45,22 +58,26 @@ Shader "Toon/Basic Outline Cutout" {
 
 		o.texcoord = TRANSFORM_TEX(v.texcoord, _MainTex);
 		o.color = _OutlineColor;
-		UNITY_TRANSFER_FOG(o,o.pos);
+
+		float3 worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+		o.fogofwarcoord = GetFogOfWarUV(worldPos, _MapWeight);
+
+		//UNITY_TRANSFER_FOG(o,o.pos);
 		return o;
 	}
 	ENDCG
 
-	SubShader {
+	SubShader
+	{
 		Tags{ "Queue" = "AlphaTest" "IgnoreProjector" = "True" "RenderType" = "TransparentCutout" }
-
-		UsePass "Toon/Basic Cutout/BASE"
-		Pass {
+		Pass
+		{
 			Name "OUTLINE"
 			Tags{ "LightMode" = "Always" "Queue" = "AlphaTest" "IgnoreProjector" = "True" "RenderType" = "TransparentCutout" }
 			Cull Front
 			ZWrite On
 			ColorMask RGB
-			Blend SrcAlpha OneMinusSrcAlpha
+			//Blend SrcAlpha OneMinusSrcAlpha
 
 			CGPROGRAM
 			#pragma vertex vert
@@ -69,7 +86,13 @@ Shader "Toon/Basic Outline Cutout" {
 			fixed4 frag(v2f i) : SV_Target
 			{
 				fixed4 col = i.color * tex2D(_MainTex, i.texcoord);
+				
+				float a = 1 - UNITY_SAMPLE_TEX2DARRAY(_FogOfWarTex, float3(i.fogofwarcoord, _FogOfWarTexIndex)).a;
+				col *= a;
+			
 				clip(col.a - _Cutoff);
+				clip(col.a - _FogOfWarCutoff);
+
 				//UNITY_APPLY_FOG(i.fogCoord, col);
 				//return col;
 				return col;

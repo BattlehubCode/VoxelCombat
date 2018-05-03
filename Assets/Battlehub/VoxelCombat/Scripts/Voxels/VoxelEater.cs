@@ -99,7 +99,7 @@ namespace Battlehub.VoxelCombat
 
             m_flippedTex.Apply(false);
             m_tex.Apply(false);
-            m_primaryMaterial.mainTexture = m_tex;
+            //m_primaryMaterial.mainTexture = m_tex;
         }
 
         protected override void OnDestroyOveride()

@@ -9,8 +9,6 @@ using Battlehub.UIControls;
 
 namespace Battlehub.VoxelCombat
 {
-
-
     //[DefaultExecutionOrder(-3000)]
     public class InControlAdapter : MonoBehaviour, IVoxelInputManager
     {

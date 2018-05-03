@@ -1,4 +1,4 @@
-﻿Shader "Battlehub/Unlit/MinimapForeground"
+﻿Shader "Battlehub/Unlit/MinimapFogOfWar"
 {
 	Properties
 	{
@@ -99,8 +99,8 @@
 
 			fixed4 frag(v2f IN) : SV_Target
 			{
-				half4 color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd) * IN.color;
-			
+				half4 color = (UNITY_SAMPLE_TEX2DARRAY(_FogOfWarTex, float3(IN.texcoord, _FogOfWarTexIndex)) + _TextureSampleAdd) * IN.color;
+
 				#ifdef UNITY_UI_CLIP_RECT
 				color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
 				#endif
@@ -108,8 +108,6 @@
 				#ifdef UNITY_UI_ALPHACLIP
 				clip(color.a - 0.001);
 				#endif
-
-				color.a *= (1 - ceil(UNITY_SAMPLE_TEX2DARRAY(_FogOfWarTex, float3(IN.texcoord, _FogOfWarTexIndex)).a));
 
 				return color;
 			}

@@ -43,7 +43,7 @@ namespace Battlehub.VoxelCombat
         }
 
         private int m_localPlayerIndex = -1;
-        public int LocalPlayerIndex //starts from 1
+        public int LocalPlayerIndex 
         {
             get { return m_localPlayerIndex; }
             set
@@ -103,6 +103,12 @@ namespace Battlehub.VoxelCombat
                     {
                         gridRenderer.CullingMask = glCamera.CullingMask;
                     }
+
+                    CameraFogOfWar fogOfWar = m_camera.GetComponent<CameraFogOfWar>();
+                    if(fogOfWar != null)
+                    {
+                        fogOfWar.PlayerIndex = Dependencies.GameState.LocalToPlayerIndex(m_localPlayerIndex);
+                    }
                 }
             }
         }
@@ -118,7 +124,6 @@ namespace Battlehub.VoxelCombat
             m_camera = camera.AddComponent<Camera>();                
             m_camera.fieldOfView = 50;
             m_camera.clearFlags = CameraClearFlags.SolidColor;
-
             m_camera.backgroundColor = new Color32(0x4F, 0xC6, 0xFF, 0x00);
 
             GLCamera glCam = camera.AddComponent<GLCamera>();
@@ -136,6 +141,8 @@ namespace Battlehub.VoxelCombat
                 PostProcessingBehaviour postprocessing = camera.AddComponent<PostProcessingBehaviour>();
                 postprocessing.profile = m_postrocessingProfile;
             }
+
+            CameraFogOfWar camFogOfWar = camera.AddComponent<CameraFogOfWar>();
             
             m_viewport = GetComponent<RectTransform>();
 
@@ -155,7 +162,6 @@ namespace Battlehub.VoxelCombat
             
             m_camera.pixelRect = new Rect(new Vector2(0, 0), new Vector2(Screen.width, Screen.height));
         }
-
 
         private void OnDestroy()
         {
@@ -207,7 +213,6 @@ namespace Battlehub.VoxelCombat
                     m_viewportHeight = rect.height;
                     m_viewportWidth = rect.width;
                     m_viewportPosition = m_viewport.position;
-
                 }
             }
         }

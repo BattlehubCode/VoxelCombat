@@ -333,21 +333,25 @@ namespace Battlehub.VoxelCombat
                     int dataType = dataController.ControlledData.Type;
                     int dataWeight = dataController.ControlledData.Weight;
 
-                    VoxelData beneath;
-                    if (selectedTarget == null)
-                    {
-                        VoxelData defaultTarget;
-                        beneath = cell.GetDefaultTargetFor(dataType, dataWeight, playerIndex, false, out defaultTarget);
-                    }
-                    else
-                    {
-                        beneath = cell.GetPreviousFor(selectedTarget, dataType, dataWeight, playerIndex);
-                    }
 
+                    VoxelData beneath = null;
+                    if (cell != null)
+                    {
+                        if (selectedTarget == null)
+                        {
+                            VoxelData defaultTarget;
+                            beneath = cell.GetDefaultTargetFor(dataType, dataWeight, playerIndex, false, out defaultTarget);
+                        }
+                        else
+                        {
+                            beneath = cell.GetPreviousFor(selectedTarget, dataType, dataWeight, playerIndex);
+                        }
+                    }
+                   
                     VoxelData closestBeneath = beneath;
                     float minDistance = float.MaxValue;
 
-                    if(closestBeneath == null)
+                    if(closestBeneath == null && cell != null)
                     {
                         MapPos pos = cell.GetPosition();
                         for(int r = -1; r <= 1; r++)

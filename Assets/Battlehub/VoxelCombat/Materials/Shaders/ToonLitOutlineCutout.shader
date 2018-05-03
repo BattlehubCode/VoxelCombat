@@ -4,13 +4,14 @@ Shader "Toon/Lit Outline Cutout" {
 		_OutlineColor ("Outline Color", Color) = (0,0,0,1)
 		_Outline ("Outline width", Range (.002, 0.03)) = .005
 		_MainTex ("Base (RGB)", 2D) = "white" {}
-		_FogOfWarTex("FogOfWar", 2D) = "" {}
 		_Ramp ("Toon Ramp (RGB)", 2D) = "gray" {} 
-		_Cutoff("Alpha cutoff", Range(0,1)) = 0.2
+		_Cutoff("Alpha cutoff", Range(0,1)) = 0.0
+		_FogOfWarTex("FogOfWarTexture", 2DArray) = "" {}
+		_FogOfWarCutoff("FogOfWar cutoff", Range(0,1)) = 0.0
 	}
 
 	SubShader {
-		Tags{ "Queue" = "AlphaTest" "IgnoreProjector" = "True" "RenderType" = "TransparentCutout" }
+		//Tags{ "Queue" = "AlphaTest" "IgnoreProjector" = "True" "RenderType" = "TransparentCutout" }
 		//ZWrite Off
 		//Blend SrcAlpha OneMinusSrcAlpha
 		UsePass "Toon/Lit Cutout/FORWARD"

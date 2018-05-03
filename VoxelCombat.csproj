@@ -338,7 +338,7 @@
     <Compile Include="Assets\Battlehub\UIControls\VirtualKeyboard\Scripts\VirtualKey.cs" />
     <Compile Include="Assets\Battlehub\UIControls\VirtualKeyboard\Scripts\VirtualKeyboard.cs" />
     <Compile Include="Assets\Battlehub\UIControls\VirtualKeyboard\Scripts\VirtualToggleKey.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\CameraFollow.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\CameraFogOfWar.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Effects\ParticleEffect.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Effects\VoxelDestruction.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\BoxSelection.cs" />
@@ -362,6 +362,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\GlobalState.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\InControlAdapter.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\InControlKeyboardProfile.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\IVoxelInputManager.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\AttackTaskProcessor.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\BotController.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\BotStrategy.cs" />
@@ -413,7 +414,6 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UI\VoxelUIInputProvider.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\UnitSelection.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\VoxelFactory.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Legacy\VoxelInputManager.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\MapEditor\MapEditorPrefab.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\MapEditor\MouseOrbit.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\MapEditor\VoxelMapEditor.cs" />
@@ -436,7 +436,6 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerCameraController.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerCommandsPanel.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerConsoleCommandHandler.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerInputManager.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerMinimap.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerSelectionController.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\PlayerUnitController.cs" />
@@ -457,7 +456,6 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelEater.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelSpawner.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelStateMachineBehavior.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\ShowCursor.cs" />
     <Compile Include="Assets\Battlehub\VoxelExplosion\Scripts\CameraControl.cs" />
     <Compile Include="Assets\Battlehub\VoxelExplosion\Scripts\PlayerControl.cs" />
     <Compile Include="Assets\InControl\Examples\Basic\CubeController.cs" />
@@ -627,13 +625,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Battlehub\Dispatcher\Dispatcher Documentation.txt" />
-    <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\DepthMask.shader" />
-    <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\ToonBasicCutout.shader" />
+    <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\Common.cginc" />
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\ToonBasicOutlineCutout.shader" />
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\ToonLitCutout.shader" />
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\ToonLitOutlineCutout.shader" />
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\UnlitTransparent.shader" />
-    <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\UnlitZTestAlways.shader" />
+    <None Include="Assets\Battlehub\VoxelCombat\Scripts\HUD\Materials\MinimapFogOfWar.shader" />
     <None Include="Assets\Battlehub\VoxelCombat\Scripts\HUD\Materials\MinimapForeground.shader" />
     <None Include="Assets\Battlehub\VoxelExplosion\Materials\Explosion.shader" />
     <None Include="Assets\InControl\README\README.txt" />

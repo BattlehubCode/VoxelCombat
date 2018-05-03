@@ -64,8 +64,8 @@ namespace Battlehub.VoxelCombat
             Row = min.Row;
             Col = min.Col;
 
-            RowsCount = max.Row - Row;
-            ColsCount = max.Col - Col;
+            RowsCount = (max.Row - Row) + 1;
+            ColsCount = (max.Col - Col) + 1;
         }
 
         public bool Contains(MapPos pos)

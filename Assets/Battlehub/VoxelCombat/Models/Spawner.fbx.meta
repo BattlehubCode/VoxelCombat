@@ -3,17 +3,24 @@ guid: 6fb4e2d433a7838418e9b3943ec92d04
 timeCreated: 1507979798
 licenseType: Free
 ModelImporter:
-  serializedVersion: 21
+  serializedVersion: 22
   fileIDToRecycleName:
     100000: //RootNode
     400000: //RootNode
     2300000: //RootNode
     3300000: //RootNode
     4300000: Spawner
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Inner
+    second: {fileID: 2100000, guid: 81c160396e588a642b320eab28686a0c, type: 2}
   materials:
     importMaterials: 1
     materialName: 0
     materialSearch: 1
+    materialLocation: 0
   animations:
     legacyGenerateAnimations: 4
     bakeSimulation: 0
@@ -26,6 +33,7 @@ ModelImporter:
     animationImportWarnings: 
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
     animationCompression: 1
     animationRotationError: 0.5
     animationPositionError: 0.5
@@ -56,9 +64,9 @@ ModelImporter:
     secondaryUVPackMargin: 4
     useFileScale: 1
   tangentSpace:
-    normalSmoothAngle: 90
+    normalSmoothAngle: 127
     normalImportMode: 1
-    tangentImportMode: 3
+    tangentImportMode: 2
     normalCalculationMode: 4
   importAnimation: 1
   copyAvatar: 0

@@ -17,11 +17,6 @@ namespace Battlehub.VoxelCombat
     public class MaterialsCache : MonoBehaviour, IMaterialsCache
     {
         private IVoxelGame m_gameState;
-        private IVoxelMinimapRenderer m_minimap;
-
-#warning Should be moved to another place
-        [SerializeField]
-        private Renderer m_ground;
 
         [SerializeField]
         private Color[] m_playerColors;
@@ -59,8 +54,6 @@ namespace Battlehub.VoxelCombat
 
         private void Awake()
         {
-            m_minimap = Dependencies.Minimap;
-            m_minimap.Loaded += OnMinimapLoaded;
             m_gameState = Dependencies.GameState;
 
             if(m_playerColors.Length != m_gameState.MaxPlayersCount)
@@ -76,28 +69,6 @@ namespace Battlehub.VoxelCombat
             CreateMaterials(m_secondaryMaterial, m_secondaryMaterials, m_alpha);
         }
 
-        private void OnDestroy()
-        {
-            m_minimap.Loaded -= OnMinimapLoaded;
-        }
-
-#warning individual set of materials should be create for each viewport...
-#warning Probably should me moved to Viewport camera on prerernder...
-        private void OnMinimapLoaded(object sender, EventArgs e)
-        {
-            for(int i = 0; i < m_primaryMaterials.Length; ++i)
-            {
-                m_primaryMaterials[i].SetTexture("_FogOfWarTex", m_minimap.FogOfWar[2]);
-            }
-
-            for (int i = 0; i < m_secondaryMaterials.Length; ++i)
-            {
-                m_secondaryMaterials[i].SetTexture("_FogOfWarTex", m_minimap.FogOfWar[2]);
-            }
-
-            m_ground.sharedMaterial.SetTexture("_FogOfWarTex", m_minimap.FogOfWar[2]);
-        }
-
         private void CreateMaterials(Material material, Material[] materials, float alpha = 1)
         {
             for(int i = 0; i < materials.Length; ++i)
@@ -107,10 +78,15 @@ namespace Battlehub.VoxelCombat
                 color.a = alpha;
                 materials[i].color = color;
                 materials[i].name = material.name;
+
+                
+            }
+
+            for (int i = 1; i < materials.Length; ++i)
+            {
+                materials[i].SetFloat("_FogOfWarCutoff", 0.8f);
             }
         }
-
-
     }
 
 }

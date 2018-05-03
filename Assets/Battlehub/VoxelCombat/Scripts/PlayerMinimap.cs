@@ -34,11 +34,8 @@ namespace Battlehub.VoxelCombat
         private RawImage m_fogOfWar;
         [SerializeField]
         private Material m_foregroundLayerMaterial;
-
-        //[SerializeField]
-        //private UILineRenderer m_frustumProjection;
-        //[SerializeField]
-        //private Material m_frustumMaterial;
+        [SerializeField]
+        private Material m_fogOfWarMaterial;
 
         [SerializeField]
         private RectTransform m_frustumApproximation;
@@ -47,7 +44,6 @@ namespace Battlehub.VoxelCombat
         private RectTransform m_rtMapBounds;
 
         private float m_rootRadius;
-        //private float m_scaledRootRadius;
         private Vector2 m_prevCursor;
        
         private Vector3 m_prevCamPos;
@@ -73,8 +69,6 @@ namespace Battlehub.VoxelCombat
             m_gameState.Menu += OnMenu;
             m_gameState.ContextAction += OnContextAction;
             
-    
-          
             m_rtChangeListener = m_selectableMinimap.GetComponent<RectTransformChangeListener>();
             m_rtChangeListener.RectTransformChanged += OnMinimapRectTransformChanged;
 
@@ -89,18 +83,18 @@ namespace Battlehub.VoxelCombat
             nav.mode = m_input.IsKeyboardAndMouse(m_viewport.LocalPlayerIndex) ? UnityEngine.UI.Navigation.Mode.None : UnityEngine.UI.Navigation.Mode.Explicit;
             m_selectableMinimap.navigation = nav;
 
-            m_minimap.Loaded += OnLoaded;
-            m_background.texture = m_minimap.Background;
-            m_foreground.texture = m_minimap.Foreground;
-            m_fogOfWar.texture = m_minimap.FogOfWar[m_gameState.LocalToPlayerIndex(m_viewport.LocalPlayerIndex)];
-
-            Material foregroundMaterial = Instantiate(m_foregroundLayerMaterial);
-            foregroundMaterial.SetTexture("_MaskTex", m_fogOfWar.texture);
-            m_foreground.material = foregroundMaterial;
-
             m_eventSystem = Dependencies.EventSystemManager.GetEventSystem(m_viewport.LocalPlayerIndex);
             m_cameraController = Dependencies.GameView.GetCameraController(m_viewport.LocalPlayerIndex);
             m_camCtrlSettings = Dependencies.Settings.PlayerCamCtrl[m_viewport.LocalPlayerIndex];
+
+            if(m_minimap.IsLoaded)
+            {
+                OnMinimapLoaded(this, EventArgs.Empty);
+            }
+            else
+            {
+                m_minimap.Loaded += OnMinimapLoaded;
+            }
 
             base.Start();
             StartCoroutine(Fit());
@@ -113,7 +107,7 @@ namespace Battlehub.VoxelCombat
 
             if (m_minimap != null)
             {
-                m_minimap.Loaded -= OnLoaded;
+                m_minimap.Loaded -= OnMinimapLoaded;
             }
 
             if (m_gameState != null)
@@ -249,11 +243,8 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-
-   
         private void Move(Transform camTransform, bool forceSetMapPivot, float deltaY, float deltaX, float cursorY, float cursorX)
-        {
-                    
+        {      
             if(deltaX != 0 || deltaY != 0)
             {
                 m_virtualMousePostion += new Vector2(deltaX, deltaY);
@@ -451,13 +442,7 @@ namespace Battlehub.VoxelCombat
             
             CalculateRootRadius();
 
-            
             float offset = m_rootRadius - m_rootRadius * Mathf.Sqrt(2.0f) / 2.0f;
-            //m_scaledRootRadius = m_rootRadius -  offset;
-
-            //m_rtMapBounds.offsetMin = new Vector2(offset, offset);
-            // m_rtMapBounds.offsetMax = new Vector2(-offset, -offset);
-
 
             Rect mapBoundsRect = m_rtMapBounds.rect;
             mapBoundsRect.width -= 2 * offset;
@@ -465,19 +450,28 @@ namespace Battlehub.VoxelCombat
             Vector3 mapCenter = new Vector3(mapBoundsRect.width, mapBoundsRect.height) * 0.5f;
             float mapSize = mapBoundsRect.width;
 
-            int size = m_voxelMap.Map.GetMapSizeWith(GameConstants.MinVoxelActorWeight);
+            MapRect mapBounds = m_voxelMap.MapBounds;
+            int size = Mathf.Max(mapBounds.RowsCount, mapBounds.ColsCount);
             float pixelsPerUnit = mapSize / size;
 
-            MapRect mapBounds = m_voxelMap.MapBounds;
             float mapBoundsWidth = mapBounds.ColsCount * pixelsPerUnit;
             float mapBoundsHeight = mapBounds.RowsCount * pixelsPerUnit;
+
             Vector3 mapBoundsTopLeft = new Vector3(mapBounds.Col * pixelsPerUnit, mapBounds.Row * pixelsPerUnit, 0);
-            Vector3 mapBoundsCenter = mapBoundsTopLeft + new Vector3(mapBoundsWidth, mapBoundsHeight) / 2;
+            Vector3 mapBoundsBottomRight = mapBoundsTopLeft + new Vector3(mapBoundsWidth, mapBoundsHeight);
+            
             float mapBoundsSize = Mathf.Max(mapBoundsWidth, mapBoundsHeight);
 
-            float ext = (mapSize - mapBoundsSize) / 2;
-            Vector3 offsetMin = (mapCenter - mapBoundsCenter) - new Vector3(ext, ext, 0);
-            Vector3 offsetMax = (mapCenter - mapBoundsCenter) + new Vector3(ext, ext, 0);
+            //float ext = (mapSize - mapBoundsSize) / 2;
+            // Vector3 offsetMin = (mapCenter - mapBoundsCenter) - new Vector3(ext, ext, 0);
+            // Vector3 offsetMax = (mapCenter - mapBoundsCenter) + new Vector3(ext, ext, 0);
+
+
+            float scaledMapSize = m_voxelMap.Map.GetMapSizeWith(GameConstants.MinVoxelActorWeight) * pixelsPerUnit;
+            Vector3 offsetMin = -mapBoundsTopLeft + new Vector3(offset, offset, 0);
+            Vector3 offsetMax = new Vector3(scaledMapSize - mapBoundsBottomRight.x, scaledMapSize - mapBoundsBottomRight.y, 0) - new Vector3(offset, offset, 0);
+
+           
 
             RectTransform rtFogOfWar = m_fogOfWar.GetComponent<RectTransform>();
             rtFogOfWar.offsetMin = offsetMin;
@@ -519,11 +513,20 @@ namespace Battlehub.VoxelCombat
             //Debug.Log(m_rootRadius);
         }
 
-        private void OnLoaded(object sender, EventArgs e)
+        private void OnMinimapLoaded(object sender, EventArgs e)
         {
             m_background.texture = m_minimap.Background;
             m_foreground.texture = m_minimap.Foreground;
-            m_fogOfWar.texture = m_minimap.FogOfWar[m_gameState.LocalToPlayerIndex(m_viewport.LocalPlayerIndex)];
+
+            Material foregroundMaterial = Instantiate(m_foregroundLayerMaterial);
+            foregroundMaterial.SetTexture("_FogOfWarTex", m_minimap.FogOfWar);
+            foregroundMaterial.SetInt("_FogOfWarTexIndex", m_gameState.LocalToPlayerIndex(m_viewport.LocalPlayerIndex));
+            m_foreground.material = foregroundMaterial;
+
+            Material fogOfWarMaterial = Instantiate(m_fogOfWarMaterial);
+            fogOfWarMaterial.SetTexture("_FogOfWarTex", m_minimap.FogOfWar);
+            fogOfWarMaterial.SetInt("_FogOfWarTexIndex", m_gameState.LocalToPlayerIndex(m_viewport.LocalPlayerIndex));
+            m_fogOfWar.material = fogOfWarMaterial;
         }
     }
 }
