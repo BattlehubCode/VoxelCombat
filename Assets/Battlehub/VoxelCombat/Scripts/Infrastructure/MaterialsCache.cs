@@ -21,6 +21,9 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private Color[] m_playerColors;
         [SerializeField]
+        private Color[] m_secondaryColors;
+
+        [SerializeField]
         private Material m_primaryMaterial;
         [SerializeField]
         private Material m_secondaryMaterial;
@@ -37,6 +40,10 @@ namespace Battlehub.VoxelCombat
 
         public Color GetSecondaryColor(int player)
         {
+            if(m_secondaryColors.Length > player)
+            {
+                return m_secondaryColors[player];
+            }
             Color secondaryColor = m_playerColors[player];
             secondaryColor.a = m_alpha;
             return secondaryColor;
@@ -63,19 +70,26 @@ namespace Battlehub.VoxelCombat
             }
 
             m_primaryMaterials = new Material[m_gameState.MaxPlayersCount];
-            CreateMaterials(m_primaryMaterial, m_primaryMaterials);
+            CreateMaterials(m_primaryMaterial, m_primaryMaterials, true);
 
             m_secondaryMaterials = new Material[m_gameState.MaxPlayersCount];
-            CreateMaterials(m_secondaryMaterial, m_secondaryMaterials, m_alpha);
+            CreateMaterials(m_secondaryMaterial, m_secondaryMaterials, false, m_alpha);
         }
 
-        private void CreateMaterials(Material material, Material[] materials, float alpha = 1)
+        private void CreateMaterials(Material material, Material[] materials, bool isPrimary, float alpha = 1)
         {
             for(int i = 0; i < materials.Length; ++i)
             {
                 materials[i] = Instantiate(material);
-                Color color = m_playerColors[i];
-                color.a = alpha;
+                Color color;
+                if (isPrimary)
+                {
+                    color = GetPrimaryColor(i);
+                }
+                else
+                {
+                    color = GetSecondaryColor(i);
+                }
                 materials[i].color = color;
                 materials[i].name = material.name;
 

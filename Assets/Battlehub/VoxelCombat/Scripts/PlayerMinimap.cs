@@ -447,7 +447,7 @@ namespace Battlehub.VoxelCombat
             Rect mapBoundsRect = m_rtMapBounds.rect;
             mapBoundsRect.width -= 2 * offset;
             mapBoundsRect.height -= 2 * offset;
-            Vector3 mapCenter = new Vector3(mapBoundsRect.width, mapBoundsRect.height) * 0.5f;
+           
             float mapSize = mapBoundsRect.width;
 
             MapRect mapBounds = m_voxelMap.MapBounds;
@@ -460,18 +460,10 @@ namespace Battlehub.VoxelCombat
             Vector3 mapBoundsTopLeft = new Vector3(mapBounds.Col * pixelsPerUnit, mapBounds.Row * pixelsPerUnit, 0);
             Vector3 mapBoundsBottomRight = mapBoundsTopLeft + new Vector3(mapBoundsWidth, mapBoundsHeight);
             
-            float mapBoundsSize = Mathf.Max(mapBoundsWidth, mapBoundsHeight);
-
-            //float ext = (mapSize - mapBoundsSize) / 2;
-            // Vector3 offsetMin = (mapCenter - mapBoundsCenter) - new Vector3(ext, ext, 0);
-            // Vector3 offsetMax = (mapCenter - mapBoundsCenter) + new Vector3(ext, ext, 0);
-
-
+            
             float scaledMapSize = m_voxelMap.Map.GetMapSizeWith(GameConstants.MinVoxelActorWeight) * pixelsPerUnit;
             Vector3 offsetMin = -mapBoundsTopLeft + new Vector3(offset, offset, 0);
             Vector3 offsetMax = new Vector3(scaledMapSize - mapBoundsBottomRight.x, scaledMapSize - mapBoundsBottomRight.y, 0) - new Vector3(offset, offset, 0);
-
-           
 
             RectTransform rtFogOfWar = m_fogOfWar.GetComponent<RectTransform>();
             rtFogOfWar.offsetMin = offsetMin;

@@ -9,8 +9,10 @@ using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
-    public class VoxelMapEditor : MonoBehaviour
+    public class VoxelMapEditor : MonoBehaviour, IGL
     {
+        private Material m_debugMaterial;
+
         private MouseOrbit m_editorCamera;
         [SerializeField]
         private GameObject m_pivot;
@@ -121,7 +123,12 @@ namespace Battlehub.VoxelCombat
 
        
             if(value)
-            {             
+            {
+                if (GLRenderer.Instance != null)
+                {
+                    GLRenderer.Instance.Add(this);
+                }
+
                 GetDependencies();
 
                 m_gameState.IsPaused = true;
@@ -131,6 +138,7 @@ namespace Battlehub.VoxelCombat
                 IGameViewport zeroViewport = m_gameView.GetViewport(0);
                 Camera zeroCamera = zeroViewport.Camera;
                 Camera editorCamera = Instantiate(zeroViewport.Camera, zeroCamera.transform.parent);
+                editorCamera.gameObject.AddComponent<CameraFogOfWar>();
                 editorCamera.rect = new Rect(0, 0, 1, 1);
 
                 m_editorCamera = editorCamera.GetComponent<MouseOrbit>();
@@ -149,6 +157,10 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
+                if (GLRenderer.Instance != null)
+                {
+                    GLRenderer.Instance.Remove(this);
+                }
 
                 bool reload = true;
                 if(!reload)
@@ -202,6 +214,7 @@ namespace Battlehub.VoxelCombat
 
         private void Awake()
         {
+            m_debugMaterial = new Material(Shader.Find("GUI/Text Shader"));
             m_console = Dependencies.Console;
             m_console.Command += OnConsoleCommand;
         }
@@ -334,7 +347,12 @@ namespace Battlehub.VoxelCombat
 
         private void OnDestroy()
         {
-            if(m_console != null)
+            if (GLRenderer.Instance != null)
+            {
+                GLRenderer.Instance.Remove(this);
+            }
+
+            if (m_console != null)
             {
                 m_console.Command -= OnConsoleCommand;
             }
@@ -1224,43 +1242,11 @@ namespace Battlehub.VoxelCombat
         private void OnSave(string mapName)
         {
             Debug.LogWarning("Command not supported. Use upload command instead");
-
-            /*
-            m_voxelMap.Save(bytes =>
-            {
-                string dataPath = Application.persistentDataPath + "/Maps/";
-                if (!Directory.Exists(dataPath))
-                {
-                    Directory.CreateDirectory(dataPath);
-                }
-                
-                File.WriteAllBytes(dataPath + mapName, bytes);
-            });
-            */
         }
 
         private void OnLoad(string mapName)
         {
             Debug.LogWarning("Command not supported. Use download command instead");
-
-            /*
-            string dataPath = Application.persistentDataPath + "/Maps/";
-            if (!Directory.Exists(dataPath))
-            {
-                Directory.CreateDirectory(dataPath);
-            }
-
-            byte[] bytes = File.ReadAllBytes(dataPath + mapName);
-
-            m_voxelMap.Load(bytes, () =>
-            {
-                if (m_txtInfo != null)
-                {
-                    m_txtInfo.text = mapName;
-                }
-
-            });
-            */
         }
 
         private void OnCreate(int weight)
@@ -1274,6 +1260,54 @@ namespace Battlehub.VoxelCombat
         {
             Debug.LogWarning(StatusCode.ToString(error.Code) + " " + error.Message);
            // m_errorNotification.Show(StatusCode.ToString(error.Code) + " " + error.Message);
+        }
+
+        public void Draw(int cullingMask)
+        {
+            MapRect mapBounds = m_voxelMap.MapBounds;
+
+            int size = m_voxelMap.Map.GetMapSizeWith(GameConstants.MinVoxelActorWeight);
+            MapRect mapRect = new MapRect(0, 0, size, size);
+
+            MapRect padRect = new MapRect(m_voxelMap.MapBoundsPadding, m_voxelMap.MapBoundsPadding, size - m_voxelMap.MapBoundsPadding * 2, size - m_voxelMap.MapBoundsPadding * 2);
+
+            DrawMapRect(mapBounds, Color.gray);
+            DrawMapRect(mapRect, Color.white);
+            DrawMapRect(padRect, Color.red);
+        }
+
+        private void DrawMapRect(MapRect mapRect, Color color)
+        {
+            Vector3 p1 = m_voxelMap.GetWorldPosition(mapRect.P0, GameConstants.MinVoxelActorWeight, MapPos.Align.Minus, MapPos.Align.Minus);
+            Vector3 p2 = m_voxelMap.GetWorldPosition(mapRect.P3, GameConstants.MinVoxelActorWeight, MapPos.Align.Minus, MapPos.Align.Plus);
+            Vector3 p3 = m_voxelMap.GetWorldPosition(mapRect.P1, GameConstants.MinVoxelActorWeight, MapPos.Align.Plus, MapPos.Align.Plus);
+            Vector3 p4 = m_voxelMap.GetWorldPosition(mapRect.P2, GameConstants.MinVoxelActorWeight, MapPos.Align.Plus, MapPos.Align.Minus);
+
+            p1.y = p2.y = p3.y = p4.y = p4.y + GameConstants.UnitSize;
+
+            GL.PushMatrix();
+
+            m_debugMaterial.SetPass(0);
+
+            GL.Begin(GL.LINES);
+
+            GL.Color(color);
+
+            GL.Vertex(p1);
+            GL.Vertex(p2);
+
+            GL.Vertex(p2);
+            GL.Vertex(p3);
+
+            GL.Vertex(p3);
+            GL.Vertex(p4);
+
+            GL.Vertex(p4);
+            GL.Vertex(p1);
+
+            GL.End();
+
+            GL.PopMatrix();
         }
     }
 }

@@ -144,7 +144,7 @@ namespace Battlehub.VoxelCombat
                 m_camera.allowMSAA = false;
             }
 
-            CameraFogOfWar camFogOfWar = camera.AddComponent<CameraFogOfWar>();
+            camera.AddComponent<CameraFogOfWar>();
             
             m_viewport = GetComponent<RectTransform>();
 

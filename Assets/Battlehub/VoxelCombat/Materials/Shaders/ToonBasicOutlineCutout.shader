@@ -47,8 +47,10 @@ Shader "Toon/Basic Outline Cutout"
 		v2f o;
 		o.pos = UnityObjectToClipPos(v.vertex);
 
-		float3 norm   = normalize(mul ((float3x3)UNITY_MATRIX_IT_MV, v.normal));
-		float2 offset = TransformViewToProjection(norm.xy);
+		float3 norm   = mul ((float3x3)UNITY_MATRIX_IT_MV, v.normal);
+
+		/*do not normalize result of multiplication -> normalize TransformViewToProjection result. this will make outline thickness independent of object proportions (scale)*/
+		float2 offset = normalize(TransformViewToProjection(norm.xy));
 		
 		#ifdef UNITY_Z_0_FAR_FROM_CLIPSPACE //to handle recent standard asset package on older version of unity (before 5.5)
 			o.pos.xy += offset * UNITY_Z_0_FAR_FROM_CLIPSPACE(o.pos.z) * _Outline;

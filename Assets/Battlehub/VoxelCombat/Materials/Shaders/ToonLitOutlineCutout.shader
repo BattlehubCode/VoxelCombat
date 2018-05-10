@@ -15,8 +15,8 @@
 		//Tags{ "Queue" = "AlphaTest" "IgnoreProjector" = "True" "RenderType" = "TransparentCutout" }
 		//ZWrite Off
 		///Blend SrcAlpha OneMinusSrcAlpha
-		UsePass "Battlehub/Toon/Lit Cutout/FORWARD"
-		//UsePass "Toon/Lit Cutout/FORWARD"
+		//UsePass "Battlehub/Toon/Lit Cutout/FORWARD"
+		UsePass "Toon/Lit Cutout/FORWARD"
 		UsePass "Toon/Basic Outline Cutout/OUTLINE"
 
 		// Pass to render object as a shadow caster

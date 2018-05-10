@@ -38,6 +38,20 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        [SerializeField]
+        private int m_mapBoundsPadding = 8;
+        public int MapBoundsPadding
+        {
+            get { return m_mapBoundsPadding; }
+        }
+
+        [SerializeField]
+        private int m_minMapBoundsSize = 16;
+        public int MinMapBoundsSize
+        {
+            get { return m_minMapBoundsSize; }
+        }
+
         private MapRect m_mapBounds;
         public MapRect MapBounds
         {
@@ -274,67 +288,210 @@ namespace Battlehub.VoxelCombat
             });
         }
 
+        private static bool IsParentNonEmpty(MapCell cell)
+        {
+            bool nonEmpty = false;
+            MapCell parentCell = cell;
+            while (parentCell.Parent != null)
+            {
+                parentCell = parentCell.Parent;
+                if (parentCell.VoxelData != null)
+                {
+                    nonEmpty = true;
+                    break;
+                }
+            }
+
+            return nonEmpty;
+        }
+        private static bool IsNonEmpty(MapCell cell)
+        {
+            bool nonEmpty = cell.VoxelData != null || cell.HasDescendantsWithVoxelData();
+            if (!nonEmpty)
+            {
+                nonEmpty = IsParentNonEmpty(cell);
+            }
+            return nonEmpty;
+        }
+
         private void CalculateBounds()
         {
             int weight = GameConstants.MinVoxelActorWeight;
             int size = m_map.GetMapSizeWith(weight);
-            MapPos min = new MapPos(size / 2, size / 2);
-            MapPos max = new MapPos(size / 2, size / 2);
+            Debug.Assert(size >= m_minMapBoundsSize, "map size < m_minMapBoundsSize");
+            
+            MapPos min = new MapPos(0, 0);
+            MapPos max = new MapPos(size - 1, size - 1);
 
             MapCell col0 = m_map.Get(0, 0, weight);
             for (int row = 0; row < size; ++row)
             {
                 MapCell cell = col0;
+                bool nonEmpty = false;
                 for (int col = 0; col < size; ++col)
                 {
-                    bool nonEmpty = cell.VoxelData != null || cell.HasDescendantsWithVoxelData();
-                    if (!nonEmpty)
+                    nonEmpty = IsNonEmpty(cell);
+                    if (nonEmpty)
                     {
-                        MapCell parentCell = cell;
-                        while (parentCell.Parent != null)
-                        {
-                            parentCell = parentCell.Parent;
-                            if (parentCell.VoxelData != null)
-                            {
-                                nonEmpty = true;
-                                break;
-                            }
-                        }
+                        break;
                     }
-
-                    if(nonEmpty)
-                    {
-                        if(row < min.Row)
-                        {
-                            min.Row = row;
-                        }
-
-                        if(row > max.Row)
-                        {
-                            max.Row = row;
-                        }
-
-                        if(col < min.Col)
-                        {
-                            min.Col = col;
-                        }
-
-                        if(col > max.Col)
-                        {
-                            max.Col = col;
-                        }
-                    }
-
                     cell = cell.SiblingPCol;
+                }
+
+                if(nonEmpty)
+                {
+                    min.Row = row;
+                    break;   
+                }
+                else
+                {
+                    min.Row = row;
                 }
 
                 col0 = col0.SiblingPRow;
             }
 
+            col0 = m_map.Get(size - 1, 0, weight);
+            for (int row = size - 1; row >= 0; --row)
+            {
+                MapCell cell = col0;
+                bool nonEmpty = false;
+                for (int col = 0; col < size; ++col)
+                {
+                    nonEmpty = IsNonEmpty(cell);
+                    if (nonEmpty)
+                    {
+                        break;
+                    }
+                    cell = cell.SiblingPCol;
+                }
+
+                if (nonEmpty)
+                {
+                    max.Row = row;
+                    break;
+                }
+                else
+                {
+                    max.Row = row;
+                }
+
+                col0 = col0.SiblingMRow;
+            }
+
+            MapCell row0 = m_map.Get(0, 0, weight);
+            for (int col = 0; col < size; ++col)
+            {
+                MapCell cell = row0;
+                bool nonEmpty = false;
+                for (int row = 0; row < size; ++row)
+                {
+                    nonEmpty = IsNonEmpty(cell);
+                    if (nonEmpty)
+                    {
+                        break;
+                    }
+                    cell = cell.SiblingPRow;
+                }
+
+                if (nonEmpty)
+                {
+                    min.Col = col;
+                    break;
+                }
+                else
+                {
+                    min.Col = col;
+                }
+
+                row0 = row0.SiblingPCol;
+            }
+
+            row0 = m_map.Get(0, size - 1, weight);
+            for (int col = size - 1; col >= 0; --col)
+            {
+                MapCell cell = row0;
+                bool nonEmpty = false;
+                for (int row = 0; row < size; ++row)
+                {
+                    nonEmpty = IsNonEmpty(cell);
+                    if (nonEmpty)
+                    {
+                        break;
+                    }
+                    cell = cell.SiblingPRow;
+                }
+
+                if (nonEmpty)
+                {
+                    max.Col = col;
+                    break;
+                }
+                else
+                {
+                    max.Col = col;
+                }
+
+                row0 = row0.SiblingMCol;
+            }
+
+            if(min.Col > max.Col)
+            {
+                min.Col = max.Col;
+            }
+
+            if(min.Row > max.Row)
+            {
+                min.Row = max.Row;
+            }
+
+            int centerCol = min.Col + (max.Col - min.Col) / 2;
+            int centerRow = min.Row + (max.Row - min.Row) / 2;
+
+            int minCol = Mathf.Max(0, centerCol - m_minMapBoundsSize / 2);
+            int minRow = Mathf.Max(0, centerRow - m_minMapBoundsSize / 2);
+
+            int maxCol = minCol + m_minMapBoundsSize;
+            int maxRow = minRow + m_minMapBoundsSize;
+            if(maxCol >= size)
+            {
+                maxCol = size - 1;
+                minCol = maxCol - m_minMapBoundsSize;
+            }
+
+            if(maxRow >= size)
+            {
+                maxRow = size - 1;
+                minRow = maxRow - m_minMapBoundsSize;
+            }
+
+            if(minCol < min.Col)
+            {
+                min.Col = minCol;
+            }
+            if(minRow < min.Row)
+            {
+                min.Row = minRow;
+            }
+            if(maxCol > max.Col)
+            {
+                max.Col = maxCol;
+            }
+            if(maxRow > max.Row)
+            {
+                max.Row = maxRow;
+            }
+
+            Debug.Assert(min.Col >= m_mapBoundsPadding, "min.Col < m_mapBoundsPadding");
+            Debug.Assert(min.Row >= m_mapBoundsPadding, "min.Row < m_mapBoundsPadding");
+            Debug.Assert(max.Col < size - m_mapBoundsPadding, "min.Col >= m_mapBoundsPadding");
+            Debug.Assert(max.Row < size - m_mapBoundsPadding, "min.Row >= m_mapBoundsPadding");
+
+
             m_mapBounds = new MapRect(min, max);
+
         }
 
-      
 
         public void Save(Action<byte[]> done)
         {

@@ -1,0 +1,147 @@
+fileFormatVersion: 2
+guid: b755125e9f8695548910d8969125fca8
+timeCreated: 1436363739
+licenseType: Store
+ModelImporter:
+  serializedVersion: 18
+  fileIDToRecycleName:
+    100000: AxisBackRight
+    100002: AxisBackRight.001
+    100004: AxisBackRight.002
+    100006: AxisBackRight.003
+    100008: Dray
+    100010: //RootNode
+    100012: DrayBody
+    100014: DrayStatic
+    100016: FwdAxisConnector
+    100018: FwdAxisConnector.001
+    100020: WheelBwdRight
+    100022: WheelBwdRight.001
+    100024: WheelBwdRight.002
+    100026: WheelBwdRight.003
+    100028: DrayCollider
+    100030: DrayStaticCollider
+    100032: DrayWheelCollider
+    400000: AxisBackRight
+    400002: AxisBackRight.001
+    400004: AxisBackRight.002
+    400006: AxisBackRight.003
+    400008: Dray
+    400010: //RootNode
+    400012: DrayBody
+    400014: DrayStatic
+    400016: FwdAxisConnector
+    400018: FwdAxisConnector.001
+    400020: WheelBwdRight
+    400022: WheelBwdRight.001
+    400024: WheelBwdRight.002
+    400026: WheelBwdRight.003
+    400028: DrayCollider
+    400030: DrayStaticCollider
+    400032: DrayWheelCollider
+    2300000: AxisBackRight
+    2300002: AxisBackRight.001
+    2300004: AxisBackRight.002
+    2300006: AxisBackRight.003
+    2300008: Dray
+    2300010: DrayBody
+    2300012: DrayStatic
+    2300014: FwdAxisConnector
+    2300016: FwdAxisConnector.001
+    2300018: WheelBwdRight
+    2300020: WheelBwdRight.001
+    2300022: WheelBwdRight.002
+    2300024: WheelBwdRight.003
+    2300026: DrayCollider
+    2300028: DrayStaticCollider
+    2300030: DrayWheelCollider
+    3300000: AxisBackRight
+    3300002: AxisBackRight.001
+    3300004: AxisBackRight.002
+    3300006: AxisBackRight.003
+    3300008: Dray
+    3300010: DrayBody
+    3300012: DrayStatic
+    3300014: FwdAxisConnector
+    3300016: FwdAxisConnector.001
+    3300018: WheelBwdRight
+    3300020: WheelBwdRight.001
+    3300022: WheelBwdRight.002
+    3300024: WheelBwdRight.003
+    3300026: DrayCollider
+    3300028: DrayStaticCollider
+    3300030: DrayWheelCollider
+    4300000: DrayStatic
+    4300002: Dray
+    4300004: AxisBackRight.001
+    4300006: WheelBwdRight.001
+    4300008: DrayBody
+    4300010: AxisBackRight
+    4300012: WheelBwdRight
+    4300014: FwdAxisConnector
+    4300016: AxisBackRight.003
+    4300018: WheelBwdRight.003
+    4300020: AxisBackRight.002
+    4300022: WheelBwdRight.002
+    4300024: FwdAxisConnector.001
+    4300026: DrayWheelCollider
+    4300028: DrayCollider
+    4300030: DrayStaticCollider
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    optimizeGameObjects: 0
+    motionNodeName: 
+    animationCompression: 1
+    animationRotationError: .5
+    animationPositionError: .5
+    animationScaleError: .5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    splitTangentsAcrossUV: 1
+    normalImportMode: 0
+    tangentImportMode: 1
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    human: []
+    skeleton: []
+    armTwist: .5
+    foreArmTwist: .5
+    upperLegTwist: .5
+    legTwist: .5
+    armStretch: .0500000007
+    legStretch: .0500000007
+    feetSpacing: 0
+    rootMotionBoneName: 
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

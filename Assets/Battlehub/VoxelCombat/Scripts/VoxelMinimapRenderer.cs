@@ -104,12 +104,11 @@ namespace Battlehub.VoxelCombat
                 OnGameStarted();
             }
 
-
             m_skyColor = Camera.main.backgroundColor;
             m_skyColor.a = 1.0f;
-            m_groundBaseColor = Color.white;
+            m_groundBaseColor = m_materialCache.GetPrimaryColor(0);
             m_transparentColor = new Color(0, 0, 0, 0);
-            m_fogOfWarColor = new Color(0, 0, 0, 1);
+            m_fogOfWarColor = new Color(0.05f, 0.05f, 0.05f, 1);
             m_fogOfWarVisitedColor = new Color(0, 0, 0, 0.3f);
         }
 
@@ -152,8 +151,6 @@ namespace Battlehub.VoxelCombat
 
         private void CreateTextures()
         {
-            //m_bounds = m_voxelMap.MapBounds;
-
             int size = m_voxelMap.Map.GetMapSizeWith(0);
             m_bounds = new MapRect(0, 0, m_voxelMap.Map.GetMapSizeWith(2), m_voxelMap.Map.GetMapSizeWith(2));
            
@@ -198,7 +195,6 @@ namespace Battlehub.VoxelCombat
 
             BeginUpdate();
             m_updateRequired = true;
-
 
             Draw(m_voxelMap.Map.Root, new Coordinate(0, 0, 0, m_voxelMap.Map.Weight), m_bgColors, size, cell => cell.VoxelData.GetLastStatic(), data => m_groundBaseColor);
             Draw(m_voxelMap.Map.Root, new Coordinate(0, 0, 0, m_voxelMap.Map.Weight), m_fgColors, size,
@@ -354,7 +350,7 @@ namespace Battlehub.VoxelCombat
             if (data != null)
             {
                 float height = data.Altitude + data.Height;
-                float deltaColor = (1.0f - (height / m_staticMapHeight)) * 0.1f;
+                float deltaColor = Mathf.Max(0, (1.0f - (height / m_staticMapHeight))) * 0.1f;
                 Color32 color = colorSelector(data) - new Color(deltaColor, deltaColor, deltaColor, 0);
                 for (int r = 0; r < rows; ++r)
                 {
@@ -444,7 +440,7 @@ namespace Battlehub.VoxelCombat
         private Color GetColor(VoxelData data)
         {
             float height = data.Altitude + data.Height;
-            float deltaColor = (1.0f - (height / m_staticMapHeight)) * 0.1f;
+            float deltaColor = Mathf.Max(0, (1.0f - (height / m_staticMapHeight))) * 0.1f;
             Color color = m_materialCache.GetPrimaryColor(data.Owner) - new Color(deltaColor, deltaColor, deltaColor, 0);
             return color;
         }

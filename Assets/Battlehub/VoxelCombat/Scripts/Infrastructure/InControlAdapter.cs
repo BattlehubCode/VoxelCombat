@@ -19,7 +19,6 @@ namespace Battlehub.VoxelCombat
         private bool[] m_isPointerOverGameObject;
 
         private GameObject m_commonSelectedGameObject;
-        private bool m_commonInputFieldSelected;
         private bool m_commonPointerOverGameObject;
 
         private List<InputDevice> m_devices;
@@ -686,7 +685,6 @@ namespace Battlehub.VoxelCombat
             {
                 GameObject newGameObject = eventSystem.currentSelectedGameObject;
                 m_commonSelectedGameObject = eventSystem.currentSelectedGameObject;
-                m_commonInputFieldSelected = eventSystem.currentSelectedGameObject != null && eventSystem.currentSelectedGameObject.GetComponent<InputField>() != null;
             }
         }
 

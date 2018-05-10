@@ -1954,6 +1954,11 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
+        int MapBoundsPadding
+        {
+            get;
+        }
+
         bool IsOn
         {
             get;

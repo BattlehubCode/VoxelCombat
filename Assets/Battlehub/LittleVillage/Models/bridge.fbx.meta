@@ -1,0 +1,137 @@
+fileFormatVersion: 2
+guid: f778c4671e044954f9e0ff0f8266551f
+timeCreated: 1436377499
+licenseType: Store
+ModelImporter:
+  serializedVersion: 18
+  fileIDToRecycleName:
+    100000: //RootNode
+    100002: Bridge01
+    100004: Bridge01Collider
+    100006: BridgeLeft
+    100008: BridgeLeftCollider
+    100010: BridgeMid
+    100012: BridgeMid5
+    100014: BridgeMid5Collider
+    100016: BridgeMid5WithSupport
+    100018: BridgeMid5WithSupportCollider
+    100020: BridgeMidCollider
+    100022: BridgeRight
+    100024: BridgeRightCollider
+    100026: BridgeSrc
+    100028: BridgeSrcCollider
+    400000: //RootNode
+    400002: Bridge01
+    400004: Bridge01Collider
+    400006: BridgeLeft
+    400008: BridgeLeftCollider
+    400010: BridgeMid
+    400012: BridgeMid5
+    400014: BridgeMid5Collider
+    400016: BridgeMid5WithSupport
+    400018: BridgeMid5WithSupportCollider
+    400020: BridgeMidCollider
+    400022: BridgeRight
+    400024: BridgeRightCollider
+    400026: BridgeSrc
+    400028: BridgeSrcCollider
+    2300000: Bridge01
+    2300002: Bridge01Collider
+    2300004: BridgeLeft
+    2300006: BridgeLeftCollider
+    2300008: BridgeMid
+    2300010: BridgeMid5
+    2300012: BridgeMid5Collider
+    2300014: BridgeMid5WithSupport
+    2300016: BridgeMid5WithSupportCollider
+    2300018: BridgeMidCollider
+    2300020: BridgeRight
+    2300022: BridgeRightCollider
+    2300024: BridgeSrc
+    2300026: BridgeSrcCollider
+    3300000: Bridge01
+    3300002: Bridge01Collider
+    3300004: BridgeLeft
+    3300006: BridgeLeftCollider
+    3300008: BridgeMid
+    3300010: BridgeMid5
+    3300012: BridgeMid5Collider
+    3300014: BridgeMid5WithSupport
+    3300016: BridgeMid5WithSupportCollider
+    3300018: BridgeMidCollider
+    3300020: BridgeRight
+    3300022: BridgeRightCollider
+    3300024: BridgeSrc
+    3300026: BridgeSrcCollider
+    4300000: BridgeRight
+    4300002: BridgeMid5WithSupport
+    4300004: BridgeLeft
+    4300006: BridgeMid5WithSupportCollider
+    4300008: BridgeMidCollider
+    4300010: BridgeMid5Collider
+    4300012: BridgeRightCollider
+    4300014: BridgeLeftCollider
+    4300016: BridgeMid
+    4300018: BridgeMid5
+    4300020: Bridge01Collider
+    4300022: BridgeSrcCollider
+    4300024: Bridge01
+    4300026: BridgeSrc
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    optimizeGameObjects: 0
+    motionNodeName: 
+    animationCompression: 1
+    animationRotationError: .5
+    animationPositionError: .5
+    animationScaleError: .5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    splitTangentsAcrossUV: 1
+    normalImportMode: 0
+    tangentImportMode: 1
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    human: []
+    skeleton: []
+    armTwist: .5
+    foreArmTwist: .5
+    upperLegTwist: .5
+    legTwist: .5
+    armStretch: .0500000007
+    legStretch: .0500000007
+    feetSpacing: 0
+    rootMotionBoneName: 
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

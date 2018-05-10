@@ -97,9 +97,6 @@ namespace Battlehub.VoxelCombat
                 cmd = char.ToUpper(cmd[0]) + cmd.Substring(1);
                 if(Enum.GetNames(typeof(PlayerUnitConsoleCmd)).Contains(cmd))
                 {
-                    int playerIndex = m_gameState.LocalToPlayerIndex(LocalPlayerIndex);
-                    long[] selection = m_unitSelection.GetSelection(playerIndex, playerIndex);
-
                     IPlayerUnitController unitController = Dependencies.GameView.GetUnitController(LocalPlayerIndex);
                     unitController.SubmitConsoleCommand((PlayerUnitConsoleCmd)Enum.Parse(typeof(PlayerUnitConsoleCmd), cmd), args, console);
                 }
