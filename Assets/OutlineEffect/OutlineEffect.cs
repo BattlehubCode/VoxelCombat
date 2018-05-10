@@ -51,6 +51,8 @@ namespace cakeslice
 
         private readonly LinkedSet<Outline> outlines = new LinkedSet<Outline>();
 
+        public bool IsMSAAAllowed = true;
+
         [Range(1.0f, 6.0f)]
         public float lineThickness = 1.25f;
         [Range(0, 10)]
@@ -386,6 +388,7 @@ namespace cakeslice
             outlineCamera.cullingMask = 0;
             outlineCamera.targetTexture = renderTexture;
             outlineCamera.enabled = false;
+            outlineCamera.allowMSAA = IsMSAAAllowed;
 #if UNITY_5_6_OR_NEWER
             outlineCamera.allowHDR = false;
 #else

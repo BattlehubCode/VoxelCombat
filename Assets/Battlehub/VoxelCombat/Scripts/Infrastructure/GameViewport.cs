@@ -140,6 +140,8 @@ namespace Battlehub.VoxelCombat
             {
                 PostProcessingBehaviour postprocessing = camera.AddComponent<PostProcessingBehaviour>();
                 postprocessing.profile = m_postrocessingProfile;
+
+                m_camera.allowMSAA = false;
             }
 
             CameraFogOfWar camFogOfWar = camera.AddComponent<CameraFogOfWar>();

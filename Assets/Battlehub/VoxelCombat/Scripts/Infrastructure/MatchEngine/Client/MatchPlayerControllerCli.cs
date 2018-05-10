@@ -577,7 +577,7 @@ namespace Battlehub.VoxelCombat
 
                 m_voxelMap.Map.ForEachRowInRadius(dc.Coordinate, -radius * (int)Mathf.Sign(dc.Coordinate.Col - prevCoord.Col), (observedCell, pos) =>
                 {
-                    ObserveCell(dc.ControlledData.Owner,  observedCell, pos, dc.Coordinate.Weight);
+                    ObserveCell(dc.ControlledData.Owner, observedCell, pos, dc.Coordinate.Weight);
                 });
             }
 

@@ -13,8 +13,8 @@ namespace Battlehub.VoxelCombat
                 float scale = Mathf.Pow(2, m_weight - GameConstants.MinVoxelActorWeight);
                 
                 Vector3 localScale = Root.localScale;
-                localScale.x = scale;
-                localScale.z = scale;
+                localScale.x = scale - 0.125f;
+                localScale.z = scale - 0.125f;
                 Root.localScale = localScale;
 
               

@@ -96,7 +96,7 @@ namespace Battlehub.VoxelCombat
         private void InitializeOutlineEffect()
         {
             m_outlineEffect.fillAmount = 0;
-            m_outlineEffect.lineThickness = 3.5f;
+            m_outlineEffect.lineThickness = 2.0f;
             m_outlineEffect.lineIntensity = 10;
             m_outlineEffect.scaleWithScreenSize = false;
             m_outlineEffect.lineColor0 = m_ownColor;

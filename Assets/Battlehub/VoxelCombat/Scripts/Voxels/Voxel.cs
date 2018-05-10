@@ -190,7 +190,7 @@ namespace Battlehub.VoxelCombat
                 m_height = value;
                 
                 Vector3 localScale = Root.localScale;
-                localScale.y = EvalHeight(m_height);
+                localScale.y = EvalHeight(m_height) ;
                 Root.localScale = localScale;
             }
         }

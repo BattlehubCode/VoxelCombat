@@ -110,7 +110,7 @@ namespace Battlehub.VoxelCombat
             m_groundBaseColor = Color.white;
             m_transparentColor = new Color(0, 0, 0, 0);
             m_fogOfWarColor = new Color(0, 0, 0, 1);
-            m_fogOfWarVisitedColor = new Color(0, 0, 0, 0.5f);
+            m_fogOfWarVisitedColor = new Color(0, 0, 0, 0.3f);
         }
 
         private void OnDestroy()
@@ -199,6 +199,7 @@ namespace Battlehub.VoxelCombat
             BeginUpdate();
             m_updateRequired = true;
 
+
             Draw(m_voxelMap.Map.Root, new Coordinate(0, 0, 0, m_voxelMap.Map.Weight), m_bgColors, size, cell => cell.VoxelData.GetLastStatic(), data => m_groundBaseColor);
             Draw(m_voxelMap.Map.Root, new Coordinate(0, 0, 0, m_voxelMap.Map.Weight), m_fgColors, size,
                 cell => GetLast(cell), 
@@ -262,9 +263,23 @@ namespace Battlehub.VoxelCombat
             result.wrapMode = TextureWrapMode.Clamp;
             result.filterMode = FilterMode.Bilinear;
             colors = new Color32[count][];
+            Color color = fill;
             for(int k = 0; k < count; ++k)
             {
-                if(!m_gameState.IsLocalPlayer(k))
+                bool skip = !m_gameState.IsLocalPlayer(k);
+
+#if UNITY_EDITOR
+                if(k == 0)
+                {
+                    skip = false;
+                    color = m_transparentColor;
+                }
+                else
+                {
+                    color = fill;
+                }
+#endif
+                if (skip)
                 {
                     continue;
                 }
@@ -273,7 +288,7 @@ namespace Battlehub.VoxelCombat
                 {
                     for (int j = 0; j < size; ++j)
                     {
-                        colors[k][i * size + j] = fill;
+                        colors[k][i * size + j] = color;
                     }
                 }
 
@@ -442,7 +457,6 @@ namespace Battlehub.VoxelCombat
                 return;
             }
             m_updateRequired = true;
-
             Fill(colors, new Coordinate(pos, weight, 0), m_transparentColor);
         }
 
@@ -476,7 +490,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-     
         public void EndUpdate()
         {
             if(m_updateRequired)

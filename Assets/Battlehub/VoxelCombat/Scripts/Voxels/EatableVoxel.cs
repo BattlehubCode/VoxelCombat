@@ -10,6 +10,27 @@ namespace Battlehub.VoxelCombat
             get { return (int)KnownVoxelTypes.Eatable; }
         }
 
+        public override int Weight
+        {
+            get
+            {
+                return m_weight;
+            }
+
+            set
+            {
+                m_weight = value;
+
+                float scale = Mathf.Pow(2, m_weight);
+                Vector3 localScale = Root.localScale;
+                localScale.x = scale - 0.5f;
+                localScale.y = scale - 0.5f;
+                localScale.z = scale - 0.5f;
+                Root.localScale = localScale;
+
+            }
+        }
+
         private MeshRenderer m_meshRenderer;
         
         private void Awake()

@@ -19,7 +19,7 @@ Shader "Toon/Lit Cutout"
 		CGPROGRAM
 		#include "Common.cginc"
 
-		#pragma surface surf ToonRamp alphatest:_Cutoff addshadow vertex:vert
+		#pragma surface surf ToonRamp  addshadow vertex:vert
 
 		sampler2D _Ramp;
 
@@ -37,6 +37,7 @@ Shader "Toon/Lit Cutout"
 	
 			half4 c;
 			c.rgb = s.Albedo * _LightColor0.rgb * ramp * (atten * 2);
+			
 			c.a = 0;
 			return c;
 		}
@@ -44,11 +45,11 @@ Shader "Toon/Lit Cutout"
 
 		sampler2D _MainTex;
 		float4 _Color;
-
 		UNITY_DECLARE_TEX2DARRAY(_FogOfWarTex);
 		int _FogOfWarTexIndex;
 		int _MapWeight;
 		float _FogOfWarCutoff;
+		float _Cutoff;
 
 		struct Input 
 		{
@@ -67,17 +68,20 @@ Shader "Toon/Lit Cutout"
 		void surf (Input IN, inout SurfaceOutput o)
 		{
 			half4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
+			
 			float originalA = c.a;
+			clip(originalA - _Cutoff);
+			
 			float a = 1 - UNITY_SAMPLE_TEX2DARRAY(_FogOfWarTex, float3(IN.fogofwarcoord, _FogOfWarTexIndex)).a;
 			c *= a;
 
-			clip(a - _FogOfWarCutoff);
+			clip(c.a - _FogOfWarCutoff);
 	
 			o.Albedo = c.rgb;
 			o.Alpha = originalA;
+			
 		}
 		ENDCG
-
 	} 
 	Fallback "Diffuse"
 }

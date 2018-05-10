@@ -49,7 +49,7 @@ Shader "Toon/Basic Outline Cutout"
 
 		float3 norm   = normalize(mul ((float3x3)UNITY_MATRIX_IT_MV, v.normal));
 		float2 offset = TransformViewToProjection(norm.xy);
-
+		
 		#ifdef UNITY_Z_0_FAR_FROM_CLIPSPACE //to handle recent standard asset package on older version of unity (before 5.5)
 			o.pos.xy += offset * UNITY_Z_0_FAR_FROM_CLIPSPACE(o.pos.z) * _Outline;
 		#else
@@ -86,11 +86,12 @@ Shader "Toon/Basic Outline Cutout"
 			fixed4 frag(v2f i) : SV_Target
 			{
 				fixed4 col = i.color * tex2D(_MainTex, i.texcoord);
-				
+	
+				clip(col.a - _Cutoff);
+
 				float a = 1 - UNITY_SAMPLE_TEX2DARRAY(_FogOfWarTex, float3(i.fogofwarcoord, _FogOfWarTexIndex)).a;
 				col *= a;
 			
-				clip(col.a - _Cutoff);
 				clip(col.a - _FogOfWarCutoff);
 
 				//UNITY_APPLY_FOG(i.fogCoord, col);

@@ -52,6 +52,19 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        public override int Height
+        {
+            get { return m_height; }
+            set
+            {
+                m_height = value;
+
+                Vector3 localScale = Root.localScale;
+                localScale.y = EvalHeight(m_height) - 0.5f;
+                Root.localScale = localScale;
+            }
+        }
+
         public override int Health
         {
             get { return base.Health; }

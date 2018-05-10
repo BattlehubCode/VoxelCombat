@@ -427,6 +427,7 @@
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\Common.cginc" />
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\ToonBasicOutlineCutout.shader" />
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\ToonLitCutout.shader" />
+    <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\ToonLitCutout2.shader" />
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\ToonLitOutlineCutout.shader" />
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\UnlitTransparent.shader" />
     <None Include="Assets\Battlehub\VoxelCombat\Scripts\HUD\Materials\MinimapFogOfWar.shader" />
