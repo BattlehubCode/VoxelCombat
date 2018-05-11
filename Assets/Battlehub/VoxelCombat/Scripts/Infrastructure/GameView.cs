@@ -26,6 +26,8 @@ namespace Battlehub.VoxelCombat
 
         IPlayerSelectionController GetSelectionController(int index);
 
+        IBoxSelector GetBoxSelector(int index);
+
         IPlayerCameraController GetCameraController(int index);
 
         IVirtualMouse GetVirtualMouse(int index);
@@ -269,6 +271,15 @@ namespace Battlehub.VoxelCombat
                 return null;
             }
             return m_gameViewports[index].GetComponent<PlayerSelectionController>();
+        }
+
+        public IBoxSelector GetBoxSelector(int index)
+        {
+            if (index < 0 || m_gameViewports.Length <= index)
+            {
+                return null;
+            }
+            return m_gameViewports[index].GetComponent<BoxSelection>();
         }
 
         public IPlayerCameraController GetCameraController(int index)

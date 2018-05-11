@@ -430,7 +430,8 @@ namespace Battlehub.VoxelCombat
                     }
                 }
             }
-            else if (isMaskedByPointerOverUI)
+
+            if (isMaskedByPointerOverUI)
             {
                 if (player > -1)
                 {

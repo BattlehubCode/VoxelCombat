@@ -18,6 +18,8 @@ namespace Battlehub.VoxelCombat
             get;
             set;
         }
+
+        bool ScreenPointToViewport(Vector2 point, out Vector2 localPoint);
     }
 
 
@@ -234,6 +236,11 @@ namespace Battlehub.VoxelCombat
             {
                 ViewportChanged();
             }
+        }
+
+        public bool ScreenPointToViewport(Vector2 point, out Vector2 localPoint)
+        {
+            return RectTransformUtility.ScreenPointToLocalPointInRectangle(m_viewport, point, null, out localPoint);
         }
 
     }

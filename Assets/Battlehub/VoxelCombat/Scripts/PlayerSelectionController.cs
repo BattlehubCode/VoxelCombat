@@ -70,12 +70,24 @@ namespace Battlehub.VoxelCombat
         private IVoxelInputManager m_inputManager;
         private IVoxelGame m_gameState;
         private IVoxelMap m_map;
+        private IBoxSelector m_boxSelector;
 
         private readonly HashSet<long> m_wasSelected = new HashSet<long>();
         private MapPos m_mapCursor = new MapPos(-1, -1);
         private float m_selectInterval;
         private float m_unselectInterval;
         private bool m_multiselectMode;
+
+        private void InitializeOutlineEffect()
+        {
+            m_outlineEffect.fillAmount = 0;
+            m_outlineEffect.lineThickness = 2.0f;
+            m_outlineEffect.lineIntensity = 10;
+            m_outlineEffect.scaleWithScreenSize = false;
+            m_outlineEffect.lineColor0 = m_ownColor;
+            m_outlineEffect.lineColor1 = m_enemyColor;
+            m_outlineEffect.lineColor2 = m_neutralColor;
+        }
 
         private void Awake()
         {
@@ -90,18 +102,13 @@ namespace Battlehub.VoxelCombat
         {
             LocalPlayerIndex = m_viewport.LocalPlayerIndex;
             m_cameraController = Dependencies.GameView.GetCameraController(LocalPlayerIndex);
-           
-        }
 
-        private void InitializeOutlineEffect()
-        {
-            m_outlineEffect.fillAmount = 0;
-            m_outlineEffect.lineThickness = 2.0f;
-            m_outlineEffect.lineIntensity = 10;
-            m_outlineEffect.scaleWithScreenSize = false;
-            m_outlineEffect.lineColor0 = m_ownColor;
-            m_outlineEffect.lineColor1 = m_enemyColor;
-            m_outlineEffect.lineColor2 = m_neutralColor;
+            if(m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
+            {
+                m_boxSelector = Dependencies.GameView.GetBoxSelector(LocalPlayerIndex);
+                m_boxSelector.Filtering += OnBoxSelectionFiltering;
+                m_boxSelector.Selected += OnBoxSelection;
+            }
         }
 
         private void OnDestroy()
@@ -109,6 +116,12 @@ namespace Battlehub.VoxelCombat
             if(m_outlineEffect != null)
             {
                 Destroy(m_outlineEffect);
+            }
+
+            if(m_boxSelector != null)
+            {
+                m_boxSelector.Filtering -= OnBoxSelectionFiltering;
+                m_boxSelector.Selected -= OnBoxSelection;
             }
         }
 
@@ -175,6 +188,11 @@ namespace Battlehub.VoxelCombat
                 else
                 {
                     m_unitSelection.ClearSelection(playerIndex);
+                }
+
+                if(m_boxSelector != null)
+                {
+                    m_boxSelector.Activate();
                 }
             }
             
@@ -245,7 +263,22 @@ namespace Battlehub.VoxelCombat
                     }
                 }
             }   
-            
+        }
+
+        private void OnBoxSelectionFiltering(object sender, FilteringArgs e)
+        {
+            GameObject go = e.Object;
+            Voxel voxel = go.GetComponentInParent<Voxel>();
+            if(voxel == null || !VoxelData.IsControllableUnit(voxel.Type) || voxel.Owner != PlayerIndex)
+            {
+                e.Cancel = true;
+            }
+        }
+
+        private void OnBoxSelection(object sender, BoxSelectEventArgs e)
+        {
+            long[] selection = e.Result.Select(go => go.GetComponentInParent<Voxel>().VoxelData.UnitOrAssetIndex).ToArray();
+            m_unitSelection.Select(PlayerIndex, PlayerIndex, selection);
         }
 
         private void Unselect(int playerIndex)
@@ -395,17 +428,6 @@ namespace Battlehub.VoxelCombat
             return -1;
         }
 
-        //private bool IsVisible(int playerIndex, long unitIndex)
-        //{
-        //    if (!m_gameState.ContainsUnit(playerIndex, unitIndex))
-        //    {
-        //        return false;
-        //    }
-
-        //    IVoxelDataController controller = m_gameState.GetVoxelDataController(playerIndex, unitIndex);
-        //    Plane[] planes = GeometryUtility.CalculateFrustumPlanes(m_viewport.Camera);
-        //    return IsVisible(planes, controller.ControlledData.VoxelRef);
-        //}
 
         private bool IsVisible(Plane[] planes, Voxel voxel)
         {

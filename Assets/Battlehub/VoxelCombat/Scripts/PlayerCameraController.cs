@@ -127,7 +127,8 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private Sprite[] m_spriteArrows;
 
-        private const int MouseMargin = 15;
+        private const int MoveViewportMargin = 13;
+        private int m_clampCursorPadding = 0;
         private Vector3 m_prevMouseOffset;
         
         private Camera m_camera;
@@ -144,6 +145,7 @@ namespace Battlehub.VoxelCombat
         private IGlobalSettings m_settings;
         private IVoxelMap m_voxelMap;
         private IVoxelGame m_gameState;
+        private IBoxSelector m_boxSelector;
 
         private int m_localPlayerIndex;
         private int LocalPlayerIndex
@@ -357,7 +359,7 @@ namespace Battlehub.VoxelCombat
         {
             Vector3 vmpos = point;
 
-            const float cornerMargin = MouseMargin * 1.5f;
+            const float cornerMargin = MoveViewportMargin;// * 1.5f;
             
             if (vmpos.x < m_camPixelRect.xMin + cornerMargin &&
                vmpos.y < m_camPixelRect.yMin + cornerMargin)
@@ -381,19 +383,19 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                if (vmpos.x < m_camPixelRect.xMin + MouseMargin)
+                if (vmpos.x < m_camPixelRect.xMin + MoveViewportMargin)
                 {
                     return false;
                 }
-                if (vmpos.x > m_camPixelRect.xMax - MouseMargin)
+                if (vmpos.x > m_camPixelRect.xMax - MoveViewportMargin)
                 {
                     return false;
                 }
-                if (vmpos.y < m_camPixelRect.yMin + MouseMargin)
+                if (vmpos.y < m_camPixelRect.yMin + MoveViewportMargin)
                 {
                     return false;
                 }
-                if (vmpos.y > m_camPixelRect.yMax - MouseMargin)
+                if (vmpos.y > m_camPixelRect.yMax - MoveViewportMargin)
                 {
                     return false;
                 }
@@ -459,6 +461,11 @@ namespace Battlehub.VoxelCombat
         private void Start()
         {
             LocalPlayerIndex = m_viewport.LocalPlayerIndex;
+
+          
+            m_boxSelector = Dependencies.GameView.GetBoxSelector(LocalPlayerIndex);
+            
+            
 
             GetViewportAndCamera();
             ReadPlayerCamSettings();
@@ -570,7 +577,7 @@ namespace Battlehub.VoxelCombat
 
         private Vector3 GetVirtualMouseOffset()
         {
-            const float cornerMargin = MouseMargin * 1.5f;
+            const float cornerMargin = MoveViewportMargin;// * 1.5f;
 
             Vector3 vmpos = VirtualMousePosition;
             Vector3 offset = Vector3.zero;
@@ -600,19 +607,19 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                if (vmpos.x < m_camPixelRect.xMin + MouseMargin)
+                if (vmpos.x < m_camPixelRect.xMin + MoveViewportMargin)
                 {
                     offset.x = -1;
                 }
-                if (vmpos.x > m_camPixelRect.xMax - MouseMargin)
+                if (vmpos.x > m_camPixelRect.xMax - MoveViewportMargin)
                 {
                     offset.x = 1;
                 }
-                if (vmpos.y < m_camPixelRect.yMin + MouseMargin)
+                if (vmpos.y < m_camPixelRect.yMin + MoveViewportMargin)
                 {
                     offset.y = -1;
                 }
-                if (vmpos.y > m_camPixelRect.yMax - MouseMargin)
+                if (vmpos.y > m_camPixelRect.yMax - MoveViewportMargin)
                 {
                     offset.y = 1;
                 }
@@ -653,10 +660,10 @@ namespace Battlehub.VoxelCombat
         private void ClampVirtualMousePosition()
         {
             Rect r = m_cursorIconTransform.rect;
-            float minX = m_camPixelRect.xMin + r.width / 2;
-            float maxX = m_camPixelRect.xMax - r.width / 2;
-            float minY = m_camPixelRect.yMin + r.height / 2;
-            float maxY = m_camPixelRect.yMax - r.width / 2;
+            float minX = m_camPixelRect.xMin + r.width / 2 + m_clampCursorPadding;
+            float maxX = m_camPixelRect.xMax - r.width / 2 - m_clampCursorPadding;
+            float minY = m_camPixelRect.yMin + r.height / 2 + m_clampCursorPadding;
+            float maxY = m_camPixelRect.yMax - r.width / 2 - m_clampCursorPadding;
 
             Vector2 vmPos = m_virtualMousePosition;
 
@@ -760,7 +767,8 @@ namespace Battlehub.VoxelCombat
             if (m_gameState.IsContextActionInProgress(LocalPlayerIndex) ||
                 m_gameState.IsMenuOpened(LocalPlayerIndex) ||
                 m_gameState.IsPaused || m_gameState.IsPauseStateChanging ||
-                m_camPixelRect.size == Vector2.zero)
+                m_camPixelRect.size == Vector2.zero ||
+                m_boxSelector.IsActive)
             {
                 if (m_prevMouseOffset != Vector3.zero)
                 {
@@ -770,7 +778,9 @@ namespace Battlehub.VoxelCombat
 
                 if (m_isVirtualMouseEnabled)
                 {
+                    m_clampCursorPadding = 1;
                     VirtualMousePosition += new Vector2(cursorX, cursorY) * settings.CursorSensitivity;
+                    m_clampCursorPadding = 0;
                 }
                 
                 AnimatePivotPoint(settings.MoveSensitivity / 2, settings.MoveSensitivity / 8);
