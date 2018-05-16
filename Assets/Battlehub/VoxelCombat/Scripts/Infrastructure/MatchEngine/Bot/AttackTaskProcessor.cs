@@ -64,7 +64,7 @@ namespace Battlehub.VoxelCombat
         {
             UnityEngine.Debug.Assert(task.TargetData.Owner > -1);
 
-            return new MovementCmd(CmdCode.Move)
+            return new MovementCmd(CmdCode.MoveConditional)
             {
                 UnitIndex = task.Unit.Id,
                 Coordinates = new[] { task.TargetCoordinate },

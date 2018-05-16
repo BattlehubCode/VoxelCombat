@@ -282,14 +282,13 @@ namespace Battlehub.VoxelCombat
 
         protected override void OnSetCommand(Cmd cmd)
         {
-            if (cmd.Code == CmdCode.Move)
+            if (cmd.Code == CmdCode.MoveConditional)
             {
-                OnMove(cmd);
+                OnMoveConditional(cmd);
             }
         }
 
- 
-        protected override Cmd OnMoveCommand(Cmd cmd)
+        protected override Cmd OnMoveConditionalCmd(Cmd cmd)
         {
             MovementCmd movementCmd = (MovementCmd)cmd;
             Coordinate to = movementCmd.Coordinates[1];
@@ -301,17 +300,17 @@ namespace Battlehub.VoxelCombat
 
                 if (target == null || explodeCoordinate != to.ToWeight(target.Weight))
                 {
-                    return base.OnMoveCommand(cmd);
+                    return base.OnMoveConditionalCmd(cmd);
                 }
 
                 if (!m_dataController.Explode(to, target, EatOrDestroyCallback))
                 {
-                    return base.OnMoveCommand(cmd);
+                    return base.OnMoveConditionalCmd(cmd);
                 }
             }
             else
             {
-                return base.OnMoveCommand(cmd);
+                return base.OnMoveConditionalCmd(cmd);
             }
 
             if (!m_dataController.IsAlive)
@@ -381,11 +380,11 @@ namespace Battlehub.VoxelCombat
             return cmd;
         }
 
-        protected override void PopulateCommandsQueue(long unitIndex, Coordinate[] path, bool isAutomatedAction)
+        protected override void PopulateCommandsQueue(long unitIndex, Coordinate[] path, bool isAutomatedAction, int cmdCode)
         {
             if (path.Length > 1)
             {
-                base.PopulateCommandsQueue(unitIndex, path, isAutomatedAction);
+                base.PopulateCommandsQueue(unitIndex, path, isAutomatedAction, cmdCode);
             }
             else if (path.Length == 1)
             {
@@ -610,9 +609,13 @@ namespace Battlehub.VoxelCombat
 
         protected override void OnSetCommand(Cmd cmd)
         {
-            if (cmd.Code == CmdCode.Move)
+            if (cmd.Code == CmdCode.MoveUnconditional)
             {
-                OnMove(cmd);
+                OnMoveUnconditinal(cmd);
+            }
+            else if (cmd.Code == CmdCode.MoveConditional)
+            {
+                OnMoveConditional(cmd);
             }
             else if (cmd.Code == CmdCode.Split)
             {
@@ -652,7 +655,51 @@ namespace Battlehub.VoxelCombat
             m_commandsQueue.Clear();
         }
 
-        protected void OnMove(Cmd cmd)
+        private bool ValidatePath(Coordinate[] path)
+        {
+            if(path.Length < 2)
+            {
+                return false;
+            }
+
+            for(int i = 1; i < path.Length; ++i)
+            {
+                int diff = Math.Abs(path[i - 1].Row - path[i].Row) + Math.Abs(path[i - 1].Col - path[i].Col);
+                if(diff != 1)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        protected void OnMoveUnconditinal(Cmd cmd)
+        {
+            CoordinateCmd coordinateCmd = (CoordinateCmd)cmd;
+            Coordinate[] path = coordinateCmd.Coordinates;
+            if(!ValidatePath(path))
+            {
+                return;
+            }
+
+            if(m_dataController.Coordinate != coordinateCmd.Coordinates[0])
+            {
+                return;
+            }
+
+            if (State == VoxelDataState.SearchingPath)
+            {
+                m_pathFinder.Terminate(cmd.UnitIndex, m_dataController.PlayerIndex);
+            }
+
+            m_waypoints = null;
+            m_commandsQueue.Clear();
+            CancelTarget();
+            State = VoxelDataState.Moving;
+            PopulateCommandsQueue(Id, path, false, CmdCode.MoveUnconditional);
+        }
+
+        protected void OnMoveConditional(Cmd cmd)
         {
             if (State == VoxelDataState.SearchingPath)
             {
@@ -662,7 +709,7 @@ namespace Battlehub.VoxelCombat
             State = VoxelDataState.SearchingPath;
 
             //m_ticksBeforeNextCommand = 0;// <-- this will enable immediate commands
-
+          
             m_commandsQueue.Clear();
 
             MovementCmd coordinateCmd = (MovementCmd)cmd;
@@ -693,19 +740,19 @@ namespace Battlehub.VoxelCombat
 
             m_pathFinder.Find(Id, -1, m_dataController.Clone(), m_waypoints, (unitIndex, path) =>
             {
-                if (HasTarget && path[path.Length -1] != m_waypoints[m_waypoints.Length - 1])
+                if (HasTarget && path[path.Length - 1] != m_waypoints[m_waypoints.Length - 1])
                 {
                     UnityEngine.Debug.Log("Targeted Search");
                     m_pathFinder.Find(Id, TargetId, m_dataController.Clone(), m_waypoints, (altUnitIndex, altPath) =>
                     {
                         State = VoxelDataState.Moving;
-                        PopulateCommandsQueue(altUnitIndex, altPath, false);
+                        PopulateCommandsQueue(altUnitIndex, altPath, false, CmdCode.MoveConditional);
                     }, null);
                 }
                 else
                 {
                     State = VoxelDataState.Moving;
-                    PopulateCommandsQueue(unitIndex, path, false);
+                    PopulateCommandsQueue(unitIndex, path, false, CmdCode.MoveConditional);
                 }
                 
             }, null);
@@ -723,7 +770,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        protected virtual void PopulateCommandsQueue(long unitIndex, Coordinate[] path, bool isAutomatedAction)
+        protected virtual void PopulateCommandsQueue(long unitIndex, Coordinate[] path, bool isAutomatedAction, int moveCode)
         {
             int dir = m_dataController.ControlledData.Dir;
 
@@ -760,7 +807,7 @@ namespace Battlehub.VoxelCombat
 
                 MovementCmd moveCmd = new MovementCmd
                 {
-                    Code = CmdCode.Move,
+                    Code = moveCode,
                     Duration = m_dataController.Abilities.MovementDuration,
                     Coordinates = new[] { from, to },
                     UnitIndex = unitIndex,
@@ -813,9 +860,20 @@ namespace Battlehub.VoxelCombat
 
                     bool dequeue = true;
 
-                    if (cmd.Code == CmdCode.Move)
+                    if (cmd.Code == CmdCode.MoveUnconditional)
                     {
-                        cmd = OnMoveCommand(cmd);
+                        cmd = OnMoveUnconditionalCmd(cmd);
+                        if (cmd == null)
+                        {
+                            if(State != VoxelDataState.Idle)
+                            {
+                                dequeue = false;
+                            }
+                        }
+                    }
+                    else if (cmd.Code == CmdCode.MoveConditional)
+                    {
+                        cmd = OnMoveConditionalCmd(cmd);
                         if(cmd == null)
                         {
                             m_failedMoveAttempts++;
@@ -825,8 +883,7 @@ namespace Battlehub.VoxelCombat
                         {
                             m_failedMoveAttempts = 0;
                         }
-
-                        dequeue = cmd != null; //if null then wait al little bit and try again
+                        dequeue = cmd != null; //if null then wait a little bit and try again
                     }
                     else if (cmd.Code == CmdCode.RotateLeft)
                     {
@@ -1050,7 +1107,7 @@ namespace Battlehub.VoxelCombat
             m_pathFinder.Find(Id, TargetId, m_dataController.Clone(), m_waypoints, (unitIndex, path) =>
             {
                 State = VoxelDataState.Moving;
-                PopulateCommandsQueue(unitIndex, path, false);
+                PopulateCommandsQueue(unitIndex, path, false, CmdCode.MoveConditional);
             }, 
             null);
         }
@@ -1153,7 +1210,7 @@ namespace Battlehub.VoxelCombat
                     {
                         State = VoxelDataState.Moving;
                         completedCallback(true, data, path);
-                        PopulateCommandsQueue(unitIndex, path, false);
+                        PopulateCommandsQueue(unitIndex, path, false, CmdCode.MoveConditional);
                     }
                 },
                 null);
@@ -1243,9 +1300,60 @@ namespace Battlehub.VoxelCombat
 
             return cell != null && predicate(cell) != null;
         }
-    
 
-        protected virtual Cmd OnMoveCommand(Cmd cmd)
+        protected virtual Cmd OnMoveUnconditionalCmd(Cmd cmd)
+        {
+            MovementCmd movementCmd = (MovementCmd)cmd;
+            Coordinate to = movementCmd.Coordinates[1];
+
+            bool isLastCmdInSequence = movementCmd.IsLastCmdInSequence;
+            //m_commandsQueue.Count > 1 and isLastCmdInSequence is not the same
+            if (m_commandsQueue.Count > 1)
+            {
+                bool considerIdleStateAsValid = true;
+                if (!m_dataController.IsValidAndEmpty(to, considerIdleStateAsValid))
+                {
+                    if (m_failedMoveAttempts < m_maxFailedMoveAttempts)
+                    {
+                        m_failedMoveAttempts++;
+                        //Do not move if there is voxel actor or voxel bomb in one of active states. just wait a little bit
+                    }
+                    else
+                    {
+                        m_commandsQueue.Clear();
+                        State = VoxelDataState.Idle;
+                    }
+                    return null;
+                }
+            }
+            else
+            {
+                if (!m_dataController.IsValidAndEmpty(to, false))
+                {
+                    m_commandsQueue.Clear();
+                    State = VoxelDataState.Idle;
+                    return null;
+                    //return TryToFinishMovementInValidCell(cmd);
+                }
+            }
+
+            if (!m_dataController.Move(to, isLastCmdInSequence, EatOrDestroyCallback))
+            {
+                m_commandsQueue.Clear();
+                State = VoxelDataState.Idle;
+                return null;
+            }
+
+            if (!m_dataController.IsAlive)
+            {
+                m_commandsQueue.Clear();
+                State = VoxelDataState.Dead;
+            }
+
+            return cmd;
+        }
+
+        protected virtual Cmd OnMoveConditionalCmd(Cmd cmd)
         {
             MovementCmd movementCmd = (MovementCmd)cmd;
             
@@ -1293,7 +1401,7 @@ namespace Battlehub.VoxelCombat
                         {
                             State = VoxelDataState.Moving;
 
-                            PopulateCommandsQueue(unitIndex, path, false);
+                            PopulateCommandsQueue(unitIndex, path, false, CmdCode.MoveConditional);
                         }, null);
                     }
                 }
@@ -1303,7 +1411,7 @@ namespace Battlehub.VoxelCombat
                     {
                         State = VoxelDataState.Moving;
 
-                        PopulateCommandsQueue(unitIndex, path, false);
+                        PopulateCommandsQueue(unitIndex, path, false, CmdCode.MoveConditional);
                     }, null);
                 }
 
@@ -1363,7 +1471,7 @@ namespace Battlehub.VoxelCombat
 
                     m_ticksBeforeNextCommand = 0;
 
-                    PopulateCommandsQueue(unitIndex, path, true);
+                    PopulateCommandsQueue(unitIndex, path, true, CmdCode.MoveConditional);
                 }, null);
                 return null;
             }

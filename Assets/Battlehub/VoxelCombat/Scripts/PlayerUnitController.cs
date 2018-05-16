@@ -406,7 +406,7 @@ namespace Battlehub.VoxelCombat
                         }
 
                         Coordinate targetCoordinate = new Coordinate(mapPos, weight, altitude);
-                        movementCmd.Code = CmdCode.Move;
+                        movementCmd.Code = CmdCode.MoveConditional;
                         movementCmd.Coordinates = new[] { targetCoordinate };
                         movementCmd.UnitIndex = unitIndex;
                         commandsToSubmit.Add(movementCmd);
@@ -492,7 +492,7 @@ namespace Battlehub.VoxelCombat
                     long selectedUnitIndex = selectedUnits[i];
 
                     CoordinateCmd coordCmd = new CoordinateCmd();
-                    coordCmd.Code = CmdCode.Move;
+                    coordCmd.Code = CmdCode.MoveConditional;
                     coordCmd.Coordinates = new[] { new Coordinate(row, col, weight, altitude) };
                     coordCmd.UnitIndex = selectedUnitIndex;
                     commandsToSubmit.Add(coordCmd);

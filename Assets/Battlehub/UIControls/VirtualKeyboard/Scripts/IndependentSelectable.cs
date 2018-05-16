@@ -50,6 +50,7 @@ namespace Battlehub.UIControls
         private Selectable m_selectable;
 
         private int m_selectOnEventSystemLateUpdate;
+        private bool m_unselect;
 
         public IndependentEventSystem EventSystem
         {
@@ -116,6 +117,7 @@ namespace Battlehub.UIControls
         protected virtual void OnDisable()
         {
             m_selectOnEventSystemLateUpdate = 0;
+            m_unselect = false;
 
             if (m_eventSystem != null)
             {
@@ -354,15 +356,27 @@ namespace Battlehub.UIControls
 
                 Selectable selectable = gameObject.GetComponent<Selectable>();
                 
-                if (selectable == null || selectable.IsInteractable())
+                if(m_unselect)
                 {
-                    EventSystem.SetSelectedGameObject(gameObject);
+                    if (m_eventSystem.currentSelectedGameObject == gameObject)
+                    {
+                        EventSystem.SetSelectedGameObject(null);
+                    }
+                    m_unselect = false;
                 }
+                else
+                {
+                    if (selectable == null || selectable.IsInteractable())
+                    {
+                        EventSystem.SetSelectedGameObject(gameObject);
+                    }
+                }  
             }
             else if(m_selectOnEventSystemLateUpdate > 1)
             {
                 m_selectOnEventSystemLateUpdate--;
             }
+
         }
 
         public static bool IsSelected(GameObject go)
@@ -381,6 +395,7 @@ namespace Battlehub.UIControls
             IndependentSelectable selectable = go.GetComponent<IndependentSelectable>();
             if (selectable != null)
             {
+                selectable.m_unselect = false;
                 selectable.m_selectOnEventSystemLateUpdate = 1 + skipFrames;
             }
         }
@@ -391,6 +406,28 @@ namespace Battlehub.UIControls
             IndependentSelectable selectable = ui.GetComponent<IndependentSelectable>();
             if (selectable != null)
             {
+                selectable.m_unselect = false;
+                selectable.m_selectOnEventSystemLateUpdate = 1 + skipFrames;
+            }
+        }
+
+        public static void Unselect(GameObject go, int skipFrames = 0)
+        {
+            IndependentSelectable selectable = go.GetComponent<IndependentSelectable>();
+            if (selectable != null)
+            {
+                selectable.m_unselect = true;
+                selectable.m_selectOnEventSystemLateUpdate = 1 + skipFrames;
+            }
+        }
+
+
+        public static void Unselect(UIBehaviour ui, int skipFrames = 0)
+        {
+            IndependentSelectable selectable = ui.GetComponent<IndependentSelectable>();
+            if (selectable != null)
+            {
+                selectable.m_unselect = true;
                 selectable.m_selectOnEventSystemLateUpdate = 1 + skipFrames;
             }
         }

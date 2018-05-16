@@ -8,8 +8,10 @@ namespace Battlehub.VoxelCombat
     {
         public const int Nop = 0;
         public const int Spawn = 1;
-       // public const int Die = 2;
-        public const int Move = 3;
+        
+
+        public const int MoveUnconditional = 2;
+        public const int MoveConditional = 3;
         public const int RotateLeft = 4;
         public const int RotateRight = 5;
         //public const int Jump = 6; //Needed?
@@ -644,7 +646,7 @@ namespace Battlehub.VoxelCombat
                         return unitController.DataController.CanSplit4() == true;
                     case CmdCode.Split:
                         return unitController.DataController.CanSplit() == true;
-                    case CmdCode.Move:
+                    case CmdCode.MoveConditional:
                         return !unitController.DataController.IsCollapsedOrBlocked;
                     case CmdCode.Explode:
                         return unitController.Data.Type == (int)KnownVoxelTypes.Bomb;

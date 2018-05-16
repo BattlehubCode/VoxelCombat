@@ -188,8 +188,13 @@ namespace Battlehub.VoxelCombat
         private void SnapCursor()
         {
             m_rt.GetWorldCorners(m_coners);
-            Vector3 mid = m_coners[0] + (m_coners[2] - m_coners[0]) / 2;
-            m_virtualMouse.VirtualMousePosition = RectTransformUtility.WorldToScreenPoint(null, mid);
+            Vector3 size = (m_coners[2] - m_coners[0]);
+            Vector3 center = m_coners[0] + size / 2;
+            Bounds b = new Bounds(center, size);
+            if(!b.Contains(m_virtualMouse.VirtualMousePosition))
+            {
+                m_virtualMouse.VirtualMousePosition = RectTransformUtility.WorldToScreenPoint(null, center);
+            } 
         }
     }
 }

@@ -53,5 +53,25 @@ namespace Battlehub.VoxelCombat
             MatchPlayerControllerCli component = (MatchPlayerControllerCli)controller;
             Object.Destroy(component.gameObject);
         }
+
+        public static ITaskRunner CreateTaskRunner(int playersCount)
+        {
+            return new TaskRunner(playersCount);
+        }
+
+        public static void DestroyTaskRunner(ITaskRunner taskRunner)
+        {
+            taskRunner.Destroy();
+        }
+
+        public static IPathFinder CreatePathFinder(MapRoot map, int playersCount)
+        {
+            return new PathFinder2(map, playersCount);
+        }
+
+        public static void DestroyPathFinder(IPathFinder pathFinder)
+        {
+            pathFinder.Destroy();
+        }
     }
 }

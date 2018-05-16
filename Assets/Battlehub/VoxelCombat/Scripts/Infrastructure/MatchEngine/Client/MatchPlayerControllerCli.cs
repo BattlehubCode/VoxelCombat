@@ -586,46 +586,78 @@ namespace Battlehub.VoxelCombat
 
         private void ObserveCell(int owner, MapCell observedCell, MapPos pos, int weight)
         {
-            int counter = observedCell.ObservedBy[owner];
-            counter++;
-            observedCell.ObservedBy[owner] = counter;
-
-            if (counter == 1)
-            {
-                UpdateChildCounters(owner, observedCell, weight, 1);
-                m_minimap.ObserveCell(owner, pos, weight);
-            }
+            ObserveRecursive(owner, observedCell, pos,  weight);
         }
 
         private void IgnoreCell(int owner, MapCell ignoredCell, MapPos pos, int weight)
         {
-            int counter = ignoredCell.ObservedBy[owner];
-            counter--;
-            ignoredCell.ObservedBy[owner] = counter;
-
-            if (counter == 0)
-            {
-                UpdateChildCounters(owner, ignoredCell, weight, -1);
-                m_minimap.IgnoreCell(owner, pos, weight);
-            }
-
-            Debug.Assert(counter >= 0);
+            IgnoreRecursive(owner, ignoredCell, pos, weight);
         }
 
-        private void UpdateChildCounters(int owner, MapCell cell, int weight, int delta)
+        private void ObserveRecursive(int owner, MapCell cell, MapPos pos, int weight)
         {
+            Debug.Assert(weight >= GameConstants.MinVoxelActorWeight);
+
+            int counter = cell.ObservedBy[owner];
+            counter++;
+            cell.ObservedBy[owner] = counter;
+
             if (weight > GameConstants.MinVoxelActorWeight)
             {
                 if (cell.Children != null)
                 {
                     for (int i = 0; i < cell.Children.Length; ++i)
                     {
-                        MapCell childCell = cell.Children[i];
-                        childCell.ObservedBy[owner] += delta;
-                        UpdateChildCounters(owner, childCell, weight - 1, delta);
+                        MapPos childPos = pos;
+                        childPos.Row *= 2;
+                        childPos.Row += i / 2;
+                        childPos.Col *= 2;
+                        childPos.Col += i % 2;
+                        ObserveRecursive(owner, cell.Children[i], childPos, weight - 1);
                     }
                 }
             }
+            else
+            {
+                if (counter == 1)
+                {
+                    m_minimap.ObserveCell(owner, pos, weight);
+                }
+            }
+        }
+
+        private void IgnoreRecursive(int owner, MapCell cell, MapPos pos, int weight)
+        {
+            Debug.Assert(weight >= GameConstants.MinVoxelActorWeight);
+
+            int counter = cell.ObservedBy[owner];
+            counter--;
+            cell.ObservedBy[owner] = counter;
+
+            if (weight > GameConstants.MinVoxelActorWeight)
+            {
+                if (cell.Children != null)
+                {
+                    for (int i = 0; i < cell.Children.Length; ++i)
+                    {
+                        MapPos childPos = pos;
+                        childPos.Row *= 2;
+                        childPos.Row += i / 2;
+                        childPos.Col *= 2;
+                        childPos.Col += i % 2;
+                        IgnoreRecursive(owner, cell.Children[i], childPos, weight - 1);
+                    }
+                }
+            }
+            else 
+            {
+                if (counter == 0)
+                {
+                    m_minimap.IgnoreCell(owner, pos, weight);
+                }
+            }
+
+            Debug.Assert(counter >= 0);
         }
 
         private List<long> PostprocessCommand(List<long> spawnedUnitsList, Cmd cmd, IMatchUnitControllerCli unitController)

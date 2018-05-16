@@ -43,7 +43,7 @@ namespace Battlehub.VoxelCombat
         {
             if(task.Stage == 0)
             {
-                return new MovementCmd(CmdCode.Move)
+                return new MovementCmd(CmdCode.MoveConditional)
                 {
                     UnitIndex = task.Unit.Id,
                     Coordinates = new[] { task.TargetCoordinate }

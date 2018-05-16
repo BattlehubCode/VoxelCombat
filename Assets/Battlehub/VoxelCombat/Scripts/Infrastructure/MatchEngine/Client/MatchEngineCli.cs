@@ -58,12 +58,19 @@ namespace Battlehub.VoxelCombat
 
         private IMatchServer m_matchServer;
         private IGlobalSettings m_gSettings;
+        private IVoxelMap m_map;
+        private IVoxelGame m_game;
 
         private float m_pauseTime;
         private float m_prevTickTime;
         private long m_tick;
         private readonly Queue<CommandsBundle> m_commands = new Queue<CommandsBundle>();
         private bool m_isInitialized;
+
+        private IPathFinder m_pathFinder;
+        private ITaskRunner m_taskRunner;
+        private IPathFinder m_botPathFinder;
+        private ITaskRunner m_botTaskRunner;
 
         private void Awake()
         {
@@ -89,6 +96,8 @@ namespace Battlehub.VoxelCombat
         {
             m_matchServer = Dependencies.MatchServer;
             m_gSettings = Dependencies.Settings;
+            m_map = Dependencies.Map;
+            m_game = Dependencies.GameState;
 
             m_matchServer.Tick += OnTick;
             m_matchServer.ReadyToPlayAll += OnReadyToPlayAll;
@@ -105,21 +114,50 @@ namespace Battlehub.VoxelCombat
 
             if (m_matchServer != null)
             {
-                
                 m_matchServer.Tick -= OnTick;
                 m_matchServer.ReadyToPlayAll -= OnReadyToPlayAll;
                 m_matchServer.Ping -= OnPing;
                 m_matchServer.Paused -= OnPaused;
                 m_matchServer.ConnectionStateChanged -= OnConnectionStateChanged;
             }
+
+            if(m_pathFinder != null)
+            {
+                MatchFactoryCli.DestroyPathFinder(m_pathFinder);
+            }
+            if(m_taskRunner != null)
+            {
+                MatchFactoryCli.DestroyTaskRunner(m_taskRunner);
+            }
+            if(m_botPathFinder != null)
+            {
+                MatchFactoryCli.DestroyPathFinder(m_botPathFinder);
+            }
+            if(m_botTaskRunner != null)
+            {
+                MatchFactoryCli.DestroyTaskRunner(m_botTaskRunner);
+            }
+        }
+
+        private void Update()
+        {
+            m_pathFinder.Update();
+            m_taskRunner.Update();
+            m_botPathFinder.Update();
+            m_botTaskRunner.Update();
         }
 
         private void FixedUpdate()
         {
             while ((Time.realtimeSinceStartup - m_prevTickTime) >= GameConstants.MatchEngineTick)
             {
+                m_pathFinder.Tick();
+                m_taskRunner.Tick();
+                m_botPathFinder.Tick();
+                m_botTaskRunner.Tick();
+
                 //Exec commands from current tick
-                if(m_commands.Count != 0)
+                if (m_commands.Count != 0)
                 {
                     Error error = new Error(StatusCode.OK);
                     CommandsBundle commands = m_commands.Peek();
@@ -254,7 +292,14 @@ namespace Battlehub.VoxelCombat
                 //In case of low rtt we offset client timer by one tick to the past
                 m_prevTickTime += GameConstants.MatchEngineTick;
             }
-            
+
+
+            m_pathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map, m_game.PlayersCount);
+            m_taskRunner = MatchFactoryCli.CreateTaskRunner(m_game.PlayersCount);
+
+            m_botPathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map, m_game.BotsCount);
+            m_botTaskRunner = MatchFactoryCli.CreateTaskRunner(m_game.BotsCount);
+
             m_isInitialized = true;
 
             if (Started != null)

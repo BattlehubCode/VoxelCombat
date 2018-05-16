@@ -63,7 +63,7 @@ namespace Battlehub.VoxelCombat
 
         public virtual Cmd CreateCommand(BotTask task)
         {
-            return new MovementCmd(CmdCode.Move)
+            return new MovementCmd(CmdCode.MoveConditional)
             {
                 UnitIndex = task.Unit.Id,
                 Coordinates = new[] { task.TargetCoordinate }

@@ -36,8 +36,15 @@ namespace Battlehub.VoxelCombat
         [ProtoMember(1)]
         public VoxelDataState State;
 
-        //[ProtoMember(2)]
-        //public int Vision;
+
+        public VoxelUnitData()
+        {
+        }
+      
+        public VoxelUnitData(VoxelUnitData data)
+        {
+            State = data.State;
+        }
     }
 
     [ProtoContract]
@@ -212,7 +219,7 @@ namespace Battlehub.VoxelCombat
             Owner = data.Owner;
             Dir = data.Dir;
             Health = data.Health;
-            Unit = data.Unit;
+            Unit = new VoxelUnitData(data.Unit);
         }
 
         public static int RotateRight(int dir)

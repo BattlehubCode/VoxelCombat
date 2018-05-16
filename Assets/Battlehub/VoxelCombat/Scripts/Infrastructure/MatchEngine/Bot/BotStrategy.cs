@@ -486,13 +486,13 @@ namespace Battlehub.VoxelCombat
             switch (taskType)
             {
                 case BotTaskType.Attack:
-                    return CmdCode.Move;
+                    return CmdCode.MoveConditional;
                 case BotTaskType.ConvertToBomb:
                     return CmdCode.Convert;
                 case BotTaskType.ConvertToSpawner:
                     return CmdCode.Convert;
                 case BotTaskType.Eat:
-                    return CmdCode.Move;
+                    return CmdCode.MoveConditional;
                 case BotTaskType.Grow:
                     return CmdCode.Grow;
                 case BotTaskType.Split4:

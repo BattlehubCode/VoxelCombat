@@ -153,6 +153,23 @@ namespace Battlehub.VoxelCombat
             m_growButton.onClick.AddListener(OnGrow);
             m_diminishButton.onClick.AddListener(OnDiminish);
 
+        }
+
+        private void AddListeners(Selectable selectable)
+        {
+            AddListener(selectable, EventTriggerType.Select, OnSelect);
+            AddListener(selectable, EventTriggerType.Deselect, OnDeselect);
+            if(m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
+            {
+                AddListener(selectable, EventTriggerType.PointerEnter, OnPointerEnter);
+                AddListener(selectable, EventTriggerType.PointerExit, OnPointerExit);
+            }
+        }
+
+        private void Start()
+        {
+            m_eventSystem = m_eventSystemMananger.GetEventSystem(LocalPlayerIndex);
+
             AddListeners(m_cancelBtn);
             AddListeners(m_attackBtn);
             AddListeners(m_moveBtn);
@@ -165,19 +182,6 @@ namespace Battlehub.VoxelCombat
             AddListeners(m_growButton);
             AddListeners(m_diminishButton);
         }
-
-
-        private void AddListeners(Selectable selectable)
-        {
-            AddListener(selectable, EventTriggerType.Select, OnSelect);
-            AddListener(selectable, EventTriggerType.Deselect, OnDeselect);
-        }
-
-        private void Start()
-        {
-            m_eventSystem = m_eventSystemMananger.GetEventSystem(LocalPlayerIndex);
-        }
-
         private void OnDestroy()
         {
             if(m_gameState != null)
@@ -668,6 +672,15 @@ namespace Battlehub.VoxelCombat
             m_tooltip.text = null;
         }
 
+        public void OnPointerEnter(Selectable selectable, BaseEventData data)
+        {
+            IndependentSelectable.Select(selectable);
+        }
+
+        public void OnPointerExit(Selectable selectable, BaseEventData data)
+        {
+            IndependentSelectable.Unselect(selectable);
+        }
 
     }
 }
