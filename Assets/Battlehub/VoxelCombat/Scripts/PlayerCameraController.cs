@@ -292,7 +292,7 @@ namespace Battlehub.VoxelCombat
         }
 
 
-        private Vector3 m_virtualMousePostionBackup;
+       
         private float m_virtualMouseSensitivityScaleBackup;
         private bool m_isVirtualMouseCursorVisibleBackup;
         private bool m_isVirtualMouseEnabledBackup;
@@ -301,7 +301,6 @@ namespace Battlehub.VoxelCombat
         {
             if(!m_isVirtualMouseBackup)
             {
-                m_virtualMousePostionBackup = VirtualMousePosition;
                 m_virtualMouseSensitivityScaleBackup = VirtualMouseSensitivityScale;
                 m_isVirtualMouseCursorVisibleBackup = IsVirtualMouseCursorVisible;
                 m_isVirtualMouseEnabledBackup = IsVirtualMouseEnabled;
@@ -313,7 +312,6 @@ namespace Battlehub.VoxelCombat
         {
             if(m_isVirtualMouseBackup)
             {
-                VirtualMousePosition = m_virtualMousePostionBackup;
                 VirtualMouseSensitivityScale = m_virtualMouseSensitivityScaleBackup;
                 IsVirtualMouseCursorVisible = m_isVirtualMouseCursorVisibleBackup;
                 IsVirtualMouseEnabled = m_isVirtualMouseEnabledBackup;

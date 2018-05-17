@@ -866,16 +866,19 @@ namespace Battlehub.VoxelCombat
             while ((m_time.Time - m_prevTickTime) >= GameConstants.MatchEngineTick)
             {
                 m_replay.Tick(m_engine, m_tick);
-
-                CommandsBundle commands = ProtobufSerializer.DeepClone(m_engine.Tick());
-                commands.Tick = m_tick;
-
-                if (Tick != null)
+                
+                CommandsBundle commands;
+                if (m_engine.Tick(out commands))
                 {
-                    Error error = new Error(StatusCode.OK);
-                    m_tickArgs.Except = Guid.Empty;
-                    m_tickArgs.Arg = commands;
-                    Tick(error, m_tickArgs);
+                    commands = ProtobufSerializer.DeepClone(commands);
+                    commands.Tick = m_tick;
+                    if (Tick != null)
+                    {
+                        Error error = new Error(StatusCode.OK);
+                        m_tickArgs.Except = Guid.Empty;
+                        m_tickArgs.Arg = commands;
+                        Tick(error, m_tickArgs);
+                    }
                 }
 
                 m_tick++;

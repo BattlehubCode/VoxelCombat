@@ -1327,10 +1327,10 @@ namespace Battlehub.VoxelCombat
         public void ForEachRowInRadius(Coordinate coord, int radius, Action<MapCell, MapPos> action)
         {
             int mapSize = GetMapSizeWith(coord.Weight);
-            int rowsCount = Mathf.Abs(radius) * 2 + 1;
+            int rowsCount = Math.Abs(radius) * 2 + 1;
 
             MapPos pos = coord.MapPos;
-            pos.Add(-Mathf.Abs(radius), -radius);
+            pos.Add(-Math.Abs(radius), -radius);
             if(pos.Col < 0 || pos.Col >= mapSize)
             {
                 return;
@@ -1358,10 +1358,10 @@ namespace Battlehub.VoxelCombat
         public void ForEachColInRadius(Coordinate coord, int radius, Action<MapCell, MapPos> action)
         {
             int mapSize = GetMapSizeWith(coord.Weight);
-            int colsCount = Mathf.Abs(radius) * 2 + 1;
+            int colsCount = Math.Abs(radius) * 2 + 1;
 
             MapPos pos = coord.MapPos;
-            pos.Add(-radius, -Mathf.Abs(radius));
+            pos.Add(-radius, -Math.Abs(radius));
             if (pos.Row < 0 || pos.Row >= mapSize)
             {
                 return;

@@ -18,7 +18,7 @@ namespace Battlehub.VoxelCombat
 
         void Submit(Cmd command);
 
-        CommandsArray Tick();
+        bool Tick(out CommandsArray commands);
 
         IMatchUnitController GetUnitController(long index);
 
@@ -319,16 +319,18 @@ namespace Battlehub.VoxelCombat
         }
 
 
-        public CommandsArray Tick()
+        public bool Tick(out CommandsArray commands)
         {
             m_isPlayerInRoom = !m_isPlayerLeftRoom;
+
+            bool isChanged = false;
 
             if (m_units.Length != m_commandBuffer.Commands.Length)
             {
                 m_commandBuffer = new CommandsArray(new Cmd[m_idToUnit.Count]);
             }
 
-            bool unitsChanged = false;
+            bool newCommands = false;
             for (int i = 0; i < m_units.Length; ++i)
             {
                 IMatchUnitController unitController = m_units[i];
@@ -360,33 +362,35 @@ namespace Battlehub.VoxelCombat
 
                 if (cmd != null)
                 {
+                    isChanged = true;
+
                     if (cmd.Code == CmdCode.Composite)
                     {
                         CompositeCmd composite = (CompositeCmd)cmd;
                         for (int c = 0; c < composite.Commands.Length; ++c)
                         {
-                            unitsChanged = PostprocessCmd(unitsChanged, unitController, composite.Commands[c]);
+                            newCommands = PostprocessCmd(newCommands, unitController, composite.Commands[c]);
                         }
                     }
                     else
                     {
-                        unitsChanged = PostprocessCmd(unitsChanged, unitController, cmd);
+                        newCommands = PostprocessCmd(newCommands, unitController, cmd);
                     }
                 }
 
                 if (unitController.IsDead)
                 {
-                    unitsChanged = RemoveUnitController(unitsChanged, unitController);
+                    newCommands = RemoveUnitController(newCommands, unitController);
                 }
             }
 
-            if (unitsChanged)
+            if (newCommands)
             {
                 m_units = m_idToUnit.Values.ToArray();
             }
 
-
-            return m_commandBuffer;
+            commands = m_commandBuffer;
+            return isChanged;
         }
 
      

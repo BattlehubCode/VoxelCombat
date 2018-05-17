@@ -106,6 +106,12 @@ namespace Battlehub.VoxelCombat
             {
                 OnLeaveRoom(cmd);
             }
+            else if(cmd.Code == CmdCode.Cancel)
+            {
+                m_commandsQueue.Clear();
+                State = VoxelDataState.Idle;
+                OnStop();
+            }
             else
             {
                 if (State == VoxelDataState.Busy) //<-- Maybe should remove it later
@@ -224,6 +230,7 @@ namespace Battlehub.VoxelCombat
             m_commandsQueue.Clear();
         }
 
+        protected abstract void OnStop();
         protected abstract void OnBeforeSetCommand(Cmd cmd);
         protected abstract void OnSetCommand(Cmd cmd);
 
@@ -247,6 +254,11 @@ namespace Battlehub.VoxelCombat
         protected override void OnSetCommand(Cmd cmd)
         {
 
+        }
+
+        protected override void OnStop()
+        {
+            
         }
 
         protected override Cmd OnTick()
@@ -416,7 +428,6 @@ namespace Battlehub.VoxelCombat
             {
                 m_pathFinder.Terminate(Id, m_dataController.PlayerIndex);
                 m_commandsQueue.Clear(); 
-
                 State = VoxelDataState.Idle;
             }
             else
@@ -580,6 +591,12 @@ namespace Battlehub.VoxelCombat
             m_taskRunner = m_engine.TaskRunner;
         }
 
+        protected override void OnStop()
+        {
+            m_pathFinder.Terminate(Id, m_dataController.PlayerIndex);
+            m_taskRunner.Terminate(Id, m_dataController.PlayerIndex);
+        }
+
         protected override void OnBeforeSetCommand(Cmd cmd)
         {
             m_failedMoveAttempts = 0;
@@ -673,16 +690,12 @@ namespace Battlehub.VoxelCombat
             return true;
         }
 
+
         protected void OnMoveUnconditinal(Cmd cmd)
         {
             CoordinateCmd coordinateCmd = (CoordinateCmd)cmd;
             Coordinate[] path = coordinateCmd.Coordinates;
             if(!ValidatePath(path))
-            {
-                return;
-            }
-
-            if(m_dataController.Coordinate != coordinateCmd.Coordinates[0])
             {
                 return;
             }
@@ -695,8 +708,33 @@ namespace Battlehub.VoxelCombat
             m_waypoints = null;
             m_commandsQueue.Clear();
             CancelTarget();
-            State = VoxelDataState.Moving;
-            PopulateCommandsQueue(Id, path, false, CmdCode.MoveUnconditional);
+
+            Coordinate closestCoordinate;
+            int coordIndex = Array.IndexOf(path, m_dataController.Coordinate);
+            if (coordIndex > -1)  //data control is on path
+            {
+                path = path.Skip(coordIndex).ToArray();
+                if(path.Length > 1)
+                {
+                    State = VoxelDataState.Moving;
+                    PopulateCommandsQueue(Id, path, false, CmdCode.MoveUnconditional);
+                }
+            }
+            else if(DataController.Coordinate.FindClosestTo(path, out closestCoordinate))
+            {
+                //find path segment connection current unity coordinate with path found on client
+                m_pathFinder.Find(Id, -1, m_dataController.Clone(),
+                    new[] { m_dataController.Coordinate, closestCoordinate }, (unitIndex, foundPath) =>
+                    {
+                        State = VoxelDataState.Moving;
+                        PopulateCommandsQueue(Id, Coordinate.MergePath(foundPath, path), false, CmdCode.MoveUnconditional);
+                    },
+                    null);
+            } 
+            else
+            {
+                State = VoxelDataState.Idle;
+            } 
         }
 
         protected void OnMoveConditional(Cmd cmd)

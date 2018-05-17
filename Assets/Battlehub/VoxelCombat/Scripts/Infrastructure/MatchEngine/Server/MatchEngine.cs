@@ -1,6 +1,7 @@
 ﻿using ProtoBuf;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Battlehub.VoxelCombat
 {
@@ -9,15 +10,12 @@ namespace Battlehub.VoxelCombat
         public const int Nop = 0;
         public const int Spawn = 1;
         
-
         public const int MoveUnconditional = 2;
         public const int MoveConditional = 3;
         public const int RotateLeft = 4;
         public const int RotateRight = 5;
-        //public const int Jump = 6; //Needed?
-        //public const int Capture = 7;
-        //public const int Eat = 8;
-        //public const int Attack = 9;
+        public const int Cancel = 10;
+      
         public const int Split = 20;
         public const int Split4 = 24;
         public const int Grow = 25;
@@ -301,6 +299,45 @@ namespace Battlehub.VoxelCombat
 
             return this;
         }
+
+        public bool FindClosestTo(Coordinate[] path, out Coordinate result)
+        {
+            int minSqDistance = int.MaxValue;
+            int minIndex = -1;
+            for (int i = 0; i < path.Length; ++i)
+            {
+                Coordinate pathCoord = path[i];
+                int sqDistance = pathCoord.MapPos.SqDistanceTo(MapPos);
+                if (sqDistance < minSqDistance)
+                {
+                    minIndex = i;
+                    minSqDistance = sqDistance;
+                }
+            }
+
+            if (minIndex != -1)
+            {
+                result = path[minIndex];
+                return true;
+            }
+            result = new Coordinate();
+            return false;
+        }
+
+        public static Coordinate[] MergePath(Coordinate[] start, Coordinate[] end)
+        {
+            int index = Array.IndexOf(end, start.Last());
+            if(index < 0)
+            {
+                throw new ArgumentException("unable to merge", "end");
+            }
+            List<Coordinate> result = new List<Coordinate>(start);
+            for(int i = index + 1; i < end.Length; ++i)
+            {
+                result.Add(end[i]);
+            }
+            return result.ToArray();
+        }
     }
 
     [ProtoContract]
@@ -503,7 +540,7 @@ namespace Battlehub.VoxelCombat
 
         void CompletePlayerRegistration();
 
-        CommandsBundle Tick();
+        bool Tick(out CommandsBundle commands);
 
         void Destroy();
     }
@@ -668,13 +705,14 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public CommandsBundle Tick()
+        public bool Tick(out CommandsBundle commands)
         {
             m_pathFinder.Tick();
             m_taskRunner.Tick();
             m_botPathFinder.Tick();
             m_botTaskRunner.Tick();
 
+            bool newCommands = false;
             List<IMatchPlayerController> defeatedPlayers = null;
             for (int i = 0; i < m_players.Length; ++i)
             {
@@ -683,7 +721,12 @@ namespace Battlehub.VoxelCombat
 
                 bool wasInRoom = playerController.IsPlayerInRoom;
 
-                CommandsArray playerCommands = playerController.Tick();
+                CommandsArray playerCommands;
+
+                if(playerController.Tick(out playerCommands))
+                {
+                    newCommands = true;
+                }
 
                 if (wasInRoom && !playerController.IsPlayerInRoom)
                 {
@@ -722,10 +765,17 @@ namespace Battlehub.VoxelCombat
                     defeatedPlayer.DestroyAllUnitsAndAssets();
                 }
             }
-            
+
+            bool wasGameCompleted = m_serverCommands.IsGameCompleted;
             m_serverCommands.IsGameCompleted = IsCompleted();
 
-            return m_serverCommands;
+            if(wasGameCompleted != m_serverCommands.IsGameCompleted)
+            {
+                newCommands = true;
+            }
+
+            commands = m_serverCommands;
+            return newCommands;
         }
 
     

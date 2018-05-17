@@ -27,12 +27,31 @@ namespace Battlehub.VoxelCombat
         event MatchEngineCliEvent Stopped;
         event MatchEngineCliEvent<bool> Paused;
 
+        IPathFinder PathFinder
+        {
+            get;
+        }
+
+        ITaskRunner TaskRunner
+        {
+            get;
+        }
+
+        IPathFinder BotPathFinder
+        {
+            get;
+        }
+
+        ITaskRunner BotTaskRunner
+        {
+            get;
+        }
+
         bool HasError(Error error);
 
         void  DownloadMapData(MatchEngineCliEvent<MapData> callback);
         
         void ReadyToPlay(MatchEngineCliEvent callback);
-
 
         void Pause(bool pause, MatchEngineCliEvent callback);
 
@@ -71,6 +90,26 @@ namespace Battlehub.VoxelCombat
         private ITaskRunner m_taskRunner;
         private IPathFinder m_botPathFinder;
         private ITaskRunner m_botTaskRunner;
+
+        public IPathFinder PathFinder
+        {
+            get { return m_pathFinder; }
+        }
+
+        public ITaskRunner TaskRunner
+        {
+            get { return m_taskRunner; }
+        }
+
+        public IPathFinder BotPathFinder
+        {
+            get { return m_botPathFinder; }
+        }
+
+        public ITaskRunner BotTaskRunner
+        {
+            get { return m_botTaskRunner; }
+        }
 
         private void Awake()
         {
@@ -253,6 +292,21 @@ namespace Battlehub.VoxelCombat
 
         public void Submit(Guid playerId, Cmd command)
         {
+            int playerIndex = m_game.GetPlayerIndex(playerId);
+            if(command.Code == CmdCode.Composite)
+            {
+                CompositeCmd composite = (CompositeCmd)command;
+                for(int i = 0; i < composite.Commands.Length; ++i)
+                {
+                    long unitId = composite.Commands[i].UnitIndex;
+                    m_pathFinder.Terminate(unitId, playerIndex);
+                }
+            }
+            else
+            {
+                m_pathFinder.Terminate(command.UnitIndex, playerIndex);
+            }
+            
             m_matchServer.Submit(m_gSettings.ClientId, playerId, command, error =>
             {
                 if (m_matchServer.HasError(error))
@@ -293,19 +347,18 @@ namespace Battlehub.VoxelCombat
                 m_prevTickTime += GameConstants.MatchEngineTick;
             }
 
-
-            m_pathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map, m_game.PlayersCount);
-            m_taskRunner = MatchFactoryCli.CreateTaskRunner(m_game.PlayersCount);
-
-            m_botPathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map, m_game.BotsCount);
-            m_botTaskRunner = MatchFactoryCli.CreateTaskRunner(m_game.BotsCount);
-
             m_isInitialized = true;
 
             if (Started != null)
             {
                 Started(new Error(StatusCode.OK), players, localPlayers, payload, room);
             }
+
+            m_pathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map, m_game.PlayersCount);
+            m_taskRunner = MatchFactoryCli.CreateTaskRunner(m_game.PlayersCount);
+
+            m_botPathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map, m_game.PlayersCount);
+            m_botTaskRunner = MatchFactoryCli.CreateTaskRunner(m_game.PlayersCount);
         }
 
         private void OnPing(Error error, RTTInfo payload)

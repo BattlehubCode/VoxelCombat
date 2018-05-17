@@ -130,38 +130,42 @@ namespace Battlehub.VoxelCombat
             if (m_inputManager.GetButtonDown(InputAction.A, LocalPlayerIndex) || m_inputManager.GetButtonDown(InputAction.RMB, LocalPlayerIndex))
             {
                 m_wasAButtonDown = true;
-                List<Cmd> cmd = CreateMovementCmd();
-                if (cmd != null && cmd.Count > 0)
+                
+                CreateMovementCmd(false, cmd =>
                 {
-                    MovementCmd movementCmd = (MovementCmd)cmd[0];
-
-                    if (!m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
+                    if (cmd != null && cmd.Count > 0)
                     {
-                        m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates[0], true, true);
+                        MovementCmd movementCmd = (MovementCmd)cmd[0];
+
+                        if (!m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
+                        {
+                            m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates[0], true, true);
+                        }
                     }
-                }
+                });
             }
             else if (m_inputManager.GetButtonUp(InputAction.A, LocalPlayerIndex) || m_inputManager.GetButtonUp(InputAction.RMB, LocalPlayerIndex))
             {
                 if(m_wasAButtonDown)
                 {
-                    List<Cmd> cmd = CreateMovementCmd();
-                    if (cmd != null && cmd.Count > 0)
+                    CreateMovementCmd(false, cmd =>
                     {
-                        MovementCmd movementCmd = (MovementCmd)cmd[0];
-                        if (!m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
+                        if (cmd != null && cmd.Count > 0)
                         {
-                            m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates[0], true, true);
+                            MovementCmd movementCmd = (MovementCmd)cmd[0];
+                            if (!m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
+                            {
+                                m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates[0], true, true);
+                            }
+                            SubmitToEngine(m_gameState.GetLocalPlayerId(LocalPlayerIndex), cmd);
                         }
-                        SubmitToEngine(m_gameState.GetLocalPlayerId(LocalPlayerIndex), cmd);
-                    }
+                    });
                     m_wasAButtonDown = false;
                 }
             }
             else if (m_inputManager.GetButtonDown(InputAction.Y, LocalPlayerIndex, false, false))
             {
                 m_commandsPanel.IsOpen = true;
-            
             } 
         }
 
@@ -177,7 +181,10 @@ namespace Battlehub.VoxelCombat
 
         private void OnCancel()
         {
-           // throw new NotImplementedException();
+            SubmitStdCommand(() => new Cmd(CmdCode.Cancel), (playerIndex, unitId) =>
+            {
+                return true;
+            });
         }
 
         private void OnAuto()
@@ -283,11 +290,11 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        private List<Cmd> CreateMovementCmd()
+        private void CreateMovementCmd(bool serverSide, Action<List<Cmd>> callback)
         {
             Guid playerId = m_gameState.GetLocalPlayerId(m_localPlayerIndex);
             int playerIndex = m_gameState.GetPlayerIndex(playerId);
-
+            
             long[] selectedUnitIds = m_unitSelection.GetSelection(playerIndex, playerIndex);
             if (selectedUnitIds.Length > 0)
             {
@@ -297,7 +304,7 @@ namespace Battlehub.VoxelCombat
                 {
                     long unitIndex = selectedUnitIds[i];
                     IVoxelDataController dataController = m_gameState.GetVoxelDataController(playerIndex, unitIndex);
-
+                 
                     MapCell cell = m_map.GetCell(m_cameraController.MapCursor, m_cameraController.Weight, null);
                     int deltaWeight = dataController.ControlledData.Weight - m_cameraController.Weight;
                     while (deltaWeight > 0)
@@ -305,8 +312,6 @@ namespace Battlehub.VoxelCombat
                         cell = cell.Parent;
                         deltaWeight--;
                     }
-
-                    
 
                     VoxelData selectedTarget = null;
                     //MapCell selectedTargetCell = null;
@@ -396,26 +401,49 @@ namespace Battlehub.VoxelCombat
                         MapPos mapPos = cell.GetPosition();
                         int altitude = beneath.Altitude + beneath.Height;
 
-                        MovementCmd movementCmd = new MovementCmd();
-
-                        if (selectedTarget != null)
+                        if(serverSide)
                         {
-                            movementCmd.HasTarget = true;
-                            movementCmd.TargetIndex = selectedTarget.UnitOrAssetIndex;
-                            movementCmd.TargetPlayerIndex = selectedTarget.Owner;
-                        }
+                            MovementCmd movementCmd = new MovementCmd();
 
-                        Coordinate targetCoordinate = new Coordinate(mapPos, weight, altitude);
-                        movementCmd.Code = CmdCode.MoveConditional;
-                        movementCmd.Coordinates = new[] { targetCoordinate };
-                        movementCmd.UnitIndex = unitIndex;
-                        commandsToSubmit.Add(movementCmd);
+                            if (selectedTarget != null)
+                            {
+                                movementCmd.HasTarget = true;
+                                movementCmd.TargetIndex = selectedTarget.UnitOrAssetIndex;
+                                movementCmd.TargetPlayerIndex = selectedTarget.Owner;
+                            }
+
+
+                            Coordinate targetCoordinate = new Coordinate(mapPos, weight, altitude);
+                            movementCmd.Code = CmdCode.MoveConditional;
+                            movementCmd.Coordinates = new[] { targetCoordinate };
+                            movementCmd.UnitIndex = unitIndex;
+                            commandsToSubmit.Add(movementCmd);
+                        }
+                        else
+                        {
+                            Coordinate targetCoordinate = new Coordinate(mapPos, weight, altitude);
+                            m_engine.PathFinder.Find(unitIndex, -1, dataController.Clone(), new[] { dataController.Coordinate, targetCoordinate },
+                                 (unitId, path) =>
+                                 {
+                                     MovementCmd movementCmd = new MovementCmd();
+                                     movementCmd.Code = CmdCode.MoveUnconditional;
+                                     movementCmd.Coordinates = path;
+                                     movementCmd.UnitIndex = unitIndex;
+                                     commandsToSubmit.Add(movementCmd);
+                                     callback(commandsToSubmit);
+                                 },
+                                 null);
+                        }
                     }
                 }
 
-                return commandsToSubmit;
+                if(serverSide)
+                {
+                    callback(commandsToSubmit);
+                }
+                
             }
-            return null;
+            callback(null);
         }
 
 
@@ -450,7 +478,13 @@ namespace Battlehub.VoxelCombat
 
         private void SubmitToEngine(Guid playerId, List<Cmd> commandsToSubmit)
         {
-            if (commandsToSubmit.Count > 0)
+            if (commandsToSubmit.Count == 1)
+            {
+                m_engine.Submit(playerId, commandsToSubmit[0]);
+
+                //Render hit;
+            }
+            else if(commandsToSubmit.Count > 1)
             {
                 CompositeCmd cmd = new CompositeCmd
                 {
@@ -458,8 +492,6 @@ namespace Battlehub.VoxelCombat
                 };
 
                 m_engine.Submit(playerId, cmd);
-
-                //Render hit;
             }
             else
             {

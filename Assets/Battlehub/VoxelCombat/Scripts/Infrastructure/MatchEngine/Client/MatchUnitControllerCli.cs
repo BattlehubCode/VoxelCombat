@@ -600,7 +600,8 @@ namespace Battlehub.VoxelCombat
             {
                 OnStateChanged(cmd);
             }
-            else if (cmd.Code == CmdCode.MoveConditional)
+            else if (cmd.Code == CmdCode.MoveConditional || 
+                     cmd.Code == CmdCode.MoveUnconditional)
             {
                 OnMove(cmd);
             }

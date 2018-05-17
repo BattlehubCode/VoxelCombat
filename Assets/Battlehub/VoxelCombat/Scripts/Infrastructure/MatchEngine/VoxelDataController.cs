@@ -116,15 +116,12 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-
-
         bool SetVoxelDataState(VoxelDataState state);
 
         VoxelDataState GetVoxelDataState();
 
         bool IsValidAndEmpty(Coordinate coord, bool considerIdleAsValid);
 
-        
         bool Move(Coordinate to, bool isLastStep,
             Action<VoxelData, VoxelData, int, int> eatCallback, 
             Action<VoxelData, int> collapseCallback = null,

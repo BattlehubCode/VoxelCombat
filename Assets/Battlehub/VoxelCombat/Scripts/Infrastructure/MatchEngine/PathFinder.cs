@@ -346,8 +346,6 @@ namespace Battlehub.VoxelCombat
             m_activeTasks.Add(task);
         }
 
-        
-
         public void Terminate(long unitId, int playerIndex)
         {
             PathFinderTask task;
@@ -367,7 +365,7 @@ namespace Battlehub.VoxelCombat
                 Debug.Assert(!task.IsTerminated);
                 if (task.CallbackIfCompleted())
                 {
-                    if (m_activeTasks[i] == task)
+                    if (!task.IsTerminated && m_activeTasks[i] == task)
                     {
                         m_activeTasks.RemoveAt(i);
                         m_idToActiveTask[task.PlayerIndex].Remove(task.UnitId);
