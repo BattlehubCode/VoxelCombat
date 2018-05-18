@@ -549,6 +549,9 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelEater.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelSpawner.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelStateMachineBehavior.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Tests\MapCellTests.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Tests\VoxelDataTests.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Tests\VoxelTaskTests.cs" />
     <Compile Include="Assets\Battlehub\VoxelExplosion\Scripts\CameraControl.cs" />
     <Compile Include="Assets\Battlehub\VoxelExplosion\Scripts\PlayerControl.cs" />
     <Compile Include="Assets\InControl\Examples\Basic\CubeController.cs" />

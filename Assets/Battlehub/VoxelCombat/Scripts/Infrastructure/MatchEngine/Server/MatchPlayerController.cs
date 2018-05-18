@@ -530,7 +530,7 @@ namespace Battlehub.VoxelCombat
                 }
                 Coordinate c = unit.DataController.Coordinate;
                 MapCell cell = m_engine.Map.Get(c.Row, c.Col, c.Weight);
-                cell.DestroyVoxelData(unit.Data);
+                cell.RemoveVoxelDataAndDecreaseHeight(unit.Data);
                 RemoveUnitController(true, unit);
             }
 
@@ -541,7 +541,7 @@ namespace Battlehub.VoxelCombat
             {
                 long assetId = assetIds[i];
                 MatchAsset asset = m_idToAsset[assetId];
-                asset.Cell.DestroyVoxelData(asset.VoxelData);
+                asset.Cell.RemoveVoxelDataAndDecreaseHeight(asset.VoxelData);
                 RemoveAsset(asset.VoxelData);
             }
         }

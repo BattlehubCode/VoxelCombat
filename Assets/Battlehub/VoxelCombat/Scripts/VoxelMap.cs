@@ -295,7 +295,7 @@ namespace Battlehub.VoxelCombat
             while (parentCell.Parent != null)
             {
                 parentCell = parentCell.Parent;
-                if (parentCell.VoxelData != null)
+                if (parentCell.First != null)
                 {
                     nonEmpty = true;
                     break;
@@ -306,7 +306,7 @@ namespace Battlehub.VoxelCombat
         }
         private static bool IsNonEmpty(MapCell cell)
         {
-            bool nonEmpty = cell.VoxelData != null || cell.HasDescendantsWithVoxelData();
+            bool nonEmpty = cell.First != null || cell.HasDescendantsWithVoxelData();
             if (!nonEmpty)
             {
                 nonEmpty = IsParentNonEmpty(cell);
@@ -487,9 +487,7 @@ namespace Battlehub.VoxelCombat
             Debug.Assert(max.Col < size - m_mapBoundsPadding, "min.Col >= m_mapBoundsPadding");
             Debug.Assert(max.Row < size - m_mapBoundsPadding, "min.Row >= m_mapBoundsPadding");
 
-
             m_mapBounds = new MapRect(min, max);
-
         }
 
 

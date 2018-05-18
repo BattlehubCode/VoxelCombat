@@ -278,12 +278,12 @@ namespace Battlehub.VoxelCombat
         public static bool IsValidAndEmpty(VoxelData controlledData, MapRoot map, Coordinate coord, bool considerIdleAsValid)
         {
             MapCell cell = map.Get(coord.Row, coord.Col, coord.Weight);
-            if(cell.VoxelData == null)
+            if(cell.First == null)
             {
                 return true;
             }
 
-            VoxelData data = cell.VoxelData;
+            VoxelData data = cell.First;
             while(data != null)
             {
                 if(data != controlledData)
@@ -408,7 +408,7 @@ namespace Battlehub.VoxelCombat
         private Coordinate CollapseOrDestroyEqualWeight(Coordinate coordinate, int type, int weight, int altitude, Action<VoxelData> destroyCallback, Action<VoxelData, int> collapseCallback)
         {
             MapCell cell = m_map.Get(coordinate.Row, coordinate.Col, coordinate.Weight);
-            VoxelData voxelData = cell.VoxelData;
+            VoxelData voxelData = cell.First;
             if (voxelData == null)
             {
                 return coordinate;
@@ -475,9 +475,9 @@ namespace Battlehub.VoxelCombat
 
         private bool WillExplode(MapCell cell, VoxelData controlledData)
         {
-            if(cell.VoxelData != null)
+            if(cell.First != null)
             {
-                VoxelData next = cell.VoxelData;
+                VoxelData next = cell.First;
                 while(next != null)
                 {
                     if(controlledData.IsExplodableBy(next.Type, next.Weight) && controlledData.Owner != next.Owner && !next.IsCollapsed)
@@ -559,7 +559,7 @@ namespace Battlehub.VoxelCombat
             if (canMove)
             {
                 MapCell fromCell = m_map.Get(from.Row, from.Col, from.Weight);
-                Remove(fromCell, m_controlledData);
+                fromCell.RemoveVoxeData(m_controlledData);
       
                 if(CanExpandDescendants(fromCell))
                 {
@@ -592,7 +592,7 @@ namespace Battlehub.VoxelCombat
                     }
 
                     destroyedVoxel.Health = 0;
-                    Remove(toCell, destroyedVoxel);
+                    toCell.RemoveVoxeData(destroyedVoxel);
                 },
                 collapseCallback);
 
@@ -706,7 +706,7 @@ namespace Battlehub.VoxelCombat
             if(from == to)
             {
                 MapCell toCell = m_map.Get(to.Row, to.Col, to.Weight);
-                Remove(toCell, m_controlledData);
+                toCell.RemoveVoxeData(m_controlledData);
 
                 int health = m_controlledData.Health;
                 int explodeDataHealth = explodeData.Health;
@@ -740,7 +740,7 @@ namespace Battlehub.VoxelCombat
                     }
 
                     toCell = GetCellFor(toCell, explodeData, to.Weight);
-                    Remove(toCell, explodeData);
+                    toCell.RemoveVoxeData(explodeData);
 
                     if (CanExpandDescendants(toCell))
                     {
@@ -763,7 +763,7 @@ namespace Battlehub.VoxelCombat
                 if (CanMove(m_controlledData, m_abilities, m_map, m_mapSize, from, to, dontCare, willDie, true, out cell))
                 {
                     MapCell fromCell = m_map.Get(from.Row, from.Col, from.Weight);
-                    Remove(fromCell, m_controlledData);
+                    fromCell.RemoveVoxeData(m_controlledData);
                     if (CanExpandDescendants(fromCell))
                     {
                         ExpandDescendants(0, fromCell, expandCallback);
@@ -805,7 +805,7 @@ namespace Battlehub.VoxelCombat
 
                         MapCell toCell = m_map.Get(to.Row, to.Col, to.Weight);
                         toCell = GetCellFor(toCell, explodeData, to.Weight);
-                        Remove(toCell, explodeData);
+                        toCell.RemoveVoxeData(explodeData);
                         if (CanExpandDescendants(toCell))
                         {
                             ExpandDescendants(0, toCell, expandCallback);
@@ -963,7 +963,7 @@ namespace Battlehub.VoxelCombat
             coordinates[1] = coordinate;
 
             MapCell controlledDataCell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
-            Remove(controlledDataCell, m_controlledData);
+            controlledDataCell.RemoveVoxeData(m_controlledData);
 
             VoxelData cloneData = new VoxelData(m_controlledData);
             cloneData.Unit.State = VoxelDataState.Idle;
@@ -1014,13 +1014,13 @@ namespace Battlehub.VoxelCombat
             }
 
             MapCell cell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
-            if(cell.VoxelData == null)
+            if(cell.First == null)
             {
                 Debug.LogError(string.Format("cell.VoxelData == null at {0}. Something wrong. IsAlive? {1} ", m_position, IsAlive));
                 return false;
             }
 
-            VoxelData penultimate = cell.VoxelData.GetPenultimate();
+            VoxelData penultimate = cell.First.GetPenultimate();
             if(penultimate != null )
             {
                 if(penultimate.IsCollapsed)
@@ -1049,7 +1049,7 @@ namespace Battlehub.VoxelCombat
                
 
             MapCell parentCell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
-            Remove(parentCell, m_controlledData);
+            parentCell.RemoveVoxeData(m_controlledData);
 
             m_controlledData.Health = 0;
 
@@ -1089,7 +1089,7 @@ namespace Battlehub.VoxelCombat
                 MapCell cell = parentCell.Children[i];
 
                 int altitude = 0;
-                VoxelData penultimate = cell.VoxelData.GetPenultimate();
+                VoxelData penultimate = cell.First.GetPenultimate();
                 if (penultimate != null)
                 {
                     altitude = penultimate.Altitude + penultimate.Height;
@@ -1171,7 +1171,7 @@ namespace Battlehub.VoxelCombat
             }
 
             MapCell cell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
-            Remove(cell, m_controlledData);
+            cell.RemoveVoxeData(m_controlledData);
 
             //After grow operation altitude change could be required (if growed up standing on other voxels
 
@@ -1233,7 +1233,7 @@ namespace Battlehub.VoxelCombat
             }
 
             MapCell parentCell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
-            Remove(parentCell, m_controlledData);
+            parentCell.RemoveVoxeData(m_controlledData);
 
             MapCell cell = parentCell.Children[0];
             
@@ -1255,7 +1255,7 @@ namespace Battlehub.VoxelCombat
             }
 
             int altitude = 0;
-            VoxelData penultimate = cell.VoxelData.GetPenultimate();
+            VoxelData penultimate = cell.First.GetPenultimate();
             if(penultimate != null)
             {
                 altitude = penultimate.Altitude + penultimate.Height;
@@ -1314,13 +1314,13 @@ namespace Battlehub.VoxelCombat
         private bool IsValidLocationFor(MapRoot map, int type, VoxelData controlledVoxelData, Coordinate coordinate)
         {
             MapCell cell = map.Get(coordinate.Row, coordinate.Col, coordinate.Weight);
-            if (cell.VoxelData == null || cell.VoxelData == controlledVoxelData)
+            if (cell.First == null || cell.First == controlledVoxelData)
             {
                 bool isAtTopOfNothing = true;
                 MapCell parent = cell.Parent;
                 while (parent != null)
                 {
-                    if (parent.VoxelData != null)
+                    if (parent.First != null)
                     {
                         VoxelData target;
                         VoxelData previous = parent.GetDefaultTargetFor(type, controlledVoxelData.Weight, controlledVoxelData.Owner, false, out target);
@@ -1352,7 +1352,7 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                VoxelData previous = cell.VoxelData.GetPrevious(controlledVoxelData);
+                VoxelData previous = cell.First.GetPrevious(controlledVoxelData);
                 if (!previous.IsBaseFor(type, coordinate.Weight))
                 {
                     DebugLog("Can't perform action  on top of " + previous.Type);
@@ -1380,15 +1380,16 @@ namespace Battlehub.VoxelCombat
             voxelData.Health = abilities.DefaultHealth;
 
             MapCell cell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
-            if(cell.VoxelData == m_controlledData)
+            if(cell.First == m_controlledData)
             {
-                cell.VoxelData = voxelData;
+                cell.First = voxelData;
             }
             else
             {
-                VoxelData penultimate = cell.VoxelData.GetPenultimate();
+                VoxelData penultimate = cell.First.GetPenultimate();
                 Debug.Assert(penultimate.Next == m_controlledData);
                 penultimate.Next = voxelData;
+                voxelData.Prev = penultimate;
             }
 
             m_controlledData.Health = 0;
@@ -1418,12 +1419,12 @@ namespace Battlehub.VoxelCombat
                         MapCell childCell = cell.Children[i];
                        
                      
-                        if (childCell.VoxelData == null)
+                        if (childCell.First == null)
                         {
                             int j = 3 - i;
 
                             MapCell targetCell = childCell.Children[j];
-                            if(targetCell.VoxelData == null)
+                            if(targetCell.First == null)
                             {
                                 return true;
                             }
@@ -1452,11 +1453,11 @@ namespace Battlehub.VoxelCombat
                 for (int i = 0; i < cell.Children.Length; ++i)
                 {
                     MapCell childCell = cell.Children[i];
-                    if (childCell.VoxelData == null)
+                    if (childCell.First == null)
                     {
                         int j = 3 - i;
                         MapCell targetCell = childCell.Children[j];
-                        if (targetCell.VoxelData == null)
+                        if (targetCell.First == null)
                         {
                             int type = (int)KnownVoxelTypes.Eatable;
 
@@ -1474,7 +1475,7 @@ namespace Battlehub.VoxelCombat
                             voxelData.Height = abilities.EvaluateHeight(voxelData.Weight, true);
                             voxelData.Health = abilities.DefaultHealth;
 
-                            targetCell.VoxelData = voxelData;
+                            targetCell.First = voxelData;
 
                             coordinates[index] = new Coordinate(targetCell.GetPosition(), voxelData);
                             index++;
@@ -1505,7 +1506,7 @@ namespace Battlehub.VoxelCombat
             if(health == 0)
             {
                 MapCell cell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
-                Remove(cell, m_controlledData);
+                cell.RemoveVoxeData(m_controlledData);
 
                 if(dieCallback != null)
                 {
@@ -1514,39 +1515,11 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void Remove(MapCell cell, VoxelData dataToRemove)
-        {
-            if(cell.VoxelData == null)
-            {
-                return;
-            }
-
-            if(cell.VoxelData == dataToRemove)
-            {
-                cell.VoxelData = dataToRemove.Next;
-            }
-            else
-            {
-                VoxelData previous = cell.VoxelData;
-                while(previous.Next != null)
-                {
-                    if(previous.Next == dataToRemove)
-                    {
-                        previous.Next = dataToRemove.Next;
-                        break;
-                    }
-
-                    previous = previous.Next;
-                }
-            }
-        }
-
-
         private bool CanExpandDescendants(MapCell cell)
         {
-            if (cell.VoxelData != null)
+            if (cell.First != null)
             {
-                VoxelData last = cell.VoxelData.GetLast();
+                VoxelData last = cell.First.GetLast();
                 if(last.Type != (int)KnownVoxelTypes.Bomb && last.Type != (int)KnownVoxelTypes.Eater)
                 {
                     return true;
@@ -1573,9 +1546,9 @@ namespace Battlehub.VoxelCombat
 
         private int ExpandCell(int deltaAltitude, MapCell cell, Action<VoxelData> expandCallback)
         {
-            if (cell.VoxelData != null)
+            if (cell.First != null)
             {
-                VoxelData data = cell.VoxelData;
+                VoxelData data = cell.First;
                 while (data != null)
                 {
                     if(data.IsCollapsed)
@@ -1613,9 +1586,9 @@ namespace Battlehub.VoxelCombat
 
         private void EatDestroyCollapseDescendants(int deltaAltitude, VoxelData destroyer, MapCell cell, Action<VoxelData, VoxelData, int, int> eatOrDestroyCallback, Action<VoxelData, int> collapseCallback)
         {
-            if (cell.VoxelData != null)
+            if (cell.First != null)
             {
-                VoxelData data = cell.VoxelData;
+                VoxelData data = cell.First;
 
                 if (data != null && data.Weight < destroyer.Weight)
                 {
@@ -1654,7 +1627,7 @@ namespace Battlehub.VoxelCombat
 
                             deltaAltitude += data.Height;
                             data = data.Next;
-                            Remove(cell, removeData);
+                            cell.RemoveVoxeData(removeData);
                         }
                         else
                         {

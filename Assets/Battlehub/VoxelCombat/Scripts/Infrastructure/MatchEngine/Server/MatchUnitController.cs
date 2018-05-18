@@ -298,6 +298,10 @@ namespace Battlehub.VoxelCombat
             {
                 OnMoveConditional(cmd);
             }
+            else if(cmd.Code == CmdCode.MoveUnconditional)
+            {
+                OnMoveUnconditinal(cmd);
+            }
         }
 
         protected override Cmd OnMoveConditionalCmd(Cmd cmd)
@@ -323,6 +327,44 @@ namespace Battlehub.VoxelCombat
             else
             {
                 return base.OnMoveConditionalCmd(cmd);
+            }
+
+            if (!m_dataController.IsAlive)
+            {
+                m_commandsQueue.Clear();
+                State = VoxelDataState.Dead;
+            }
+
+            to.Altitude = m_dataController.ControlledData.Altitude;
+            movementCmd.Coordinates[1] = to;
+            movementCmd.Code = CmdCode.Explode;
+
+            return cmd;
+        }
+
+        protected override Cmd OnMoveUnconditionalCmd(Cmd cmd)
+        {
+            MovementCmd movementCmd = (MovementCmd)cmd;
+            Coordinate to = movementCmd.Coordinates[1];
+
+            if (HasTarget)
+            {
+                Coordinate explodeCoordinate;
+                VoxelData target = GetTargetData(TargetData.UnitOrAssetIndex, TargetData.Owner, out explodeCoordinate);
+
+                if (target == null || explodeCoordinate != to.ToWeight(target.Weight))
+                {
+                    return base.OnMoveUnconditionalCmd(cmd);
+                }
+
+                if (!m_dataController.Explode(to, target, EatOrDestroyCallback))
+                {
+                    return base.OnMoveUnconditionalCmd(cmd);
+                }
+            }
+            else
+            {
+                return base.OnMoveUnconditionalCmd(cmd);
             }
 
             if (!m_dataController.IsAlive)

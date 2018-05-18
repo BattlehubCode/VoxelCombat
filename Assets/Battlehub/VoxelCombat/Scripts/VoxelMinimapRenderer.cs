@@ -196,7 +196,7 @@ namespace Battlehub.VoxelCombat
             BeginUpdate();
             m_updateRequired = true;
 
-            Draw(m_voxelMap.Map.Root, new Coordinate(0, 0, 0, m_voxelMap.Map.Weight), m_bgColors, size, cell => cell.VoxelData.GetLastStatic(), data => m_groundBaseColor);
+            Draw(m_voxelMap.Map.Root, new Coordinate(0, 0, 0, m_voxelMap.Map.Weight), m_bgColors, size, cell => cell.First.GetLastStatic(), data => m_groundBaseColor);
             Draw(m_voxelMap.Map.Root, new Coordinate(0, 0, 0, m_voxelMap.Map.Weight), m_fgColors, size,
                 cell => GetLast(cell), 
                 data => m_materialCache.GetPrimaryColor(data.Owner));
@@ -224,11 +224,11 @@ namespace Battlehub.VoxelCombat
 
         private static VoxelData GetLast(MapCell cell)
         {
-            if(cell.VoxelData == null)
+            if(cell.First == null)
             {
                 return null;
             }
-            VoxelData last = cell.VoxelData.GetLast();
+            VoxelData last = cell.First.GetLast();
             if (last != null && (!VoxelData.IsStatic(last.Type) || !last.IsNeutral))
             {
                 return last;
@@ -298,9 +298,9 @@ namespace Battlehub.VoxelCombat
         {
             m_voxelMap.Map.Root.ForEach(cell =>
             {
-                if (cell.VoxelData != null)
+                if (cell.First != null)
                 {
-                    VoxelData lastStatic = cell.VoxelData.GetLastStatic();
+                    VoxelData lastStatic = cell.First.GetLastStatic();
                     if (lastStatic != null)
                     {
                         if (lastStatic.Height + lastStatic.Altitude > m_staticMapHeight)
@@ -342,7 +342,7 @@ namespace Battlehub.VoxelCombat
             p0.Col *= m_scale;
 
             VoxelData data = null;
-            if (cell.VoxelData != null)
+            if (cell.First != null)
             {
                 data = voxelDataSelector(cell);
             }

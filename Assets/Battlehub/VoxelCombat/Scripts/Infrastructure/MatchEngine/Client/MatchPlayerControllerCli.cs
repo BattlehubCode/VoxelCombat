@@ -893,7 +893,7 @@ namespace Battlehub.VoxelCombat
                 Coordinate c = unit.DataController.Coordinate;
                 MapCell cell = m_voxelMap.Map.Get(c.Row, c.Col, c.Weight);
 
-                cell.DestroyVoxelData(unit.DataController.ControlledData);
+                cell.RemoveVoxelDataAndDecreaseHeight(unit.DataController.ControlledData);
 
                 if(unit.DataController.ControlledData.VoxelRef != null)
                 {
@@ -909,7 +909,7 @@ namespace Battlehub.VoxelCombat
                 long assetId = assetIds[i];
                 MatchAssetCli asset = m_idToAsset[assetId];
 
-                asset.Cell.DestroyVoxelData(asset.VoxelData);
+                asset.Cell.RemoveVoxelDataAndDecreaseHeight(asset.VoxelData);
 
                 if(asset.VoxelData.VoxelRef != null)
                 {

@@ -92,7 +92,7 @@ namespace Battlehub.VoxelCombat
 
         [ProtoMember(1)]
         public VoxelData Next;
-
+        public VoxelData Prev;
 
         [ProtoMember(4)]
         public int Weight;
@@ -212,6 +212,7 @@ namespace Battlehub.VoxelCombat
         public VoxelData(VoxelData data)
         {
             Next = data.Next;
+            Prev = data.Prev;
             Weight = data.Weight;
             Height = data.Height;
             Altitude = data.Altitude;
@@ -529,6 +530,7 @@ namespace Battlehub.VoxelCombat
             return current;
         }
 
+#warning Rewrite this method to use prev ref
         public VoxelData GetPenultimate()
         {
             VoxelData current = this;
@@ -541,6 +543,7 @@ namespace Battlehub.VoxelCombat
             return previous;
         }
 
+#warning Rewrite this method to use prev ref
         public VoxelData GetPrevious(VoxelData voxel)
         {
             VoxelData current = this;
@@ -642,6 +645,7 @@ namespace Battlehub.VoxelCombat
                 if (data.Next == null)
                 {
                     data.Next = appendData;
+                    appendData.Prev = data;
                     break;
                 }
                 data = data.Next;
@@ -659,7 +663,8 @@ namespace Battlehub.VoxelCombat
     public class MapCell
     {
         [ProtoMember(1)]
-        public VoxelData VoxelData;
+        public VoxelData First;
+        public VoxelData Last;
 
         public MapCell Parent;
 
@@ -704,9 +709,9 @@ namespace Battlehub.VoxelCombat
             MapCell cell = this;
             while(cell != null)
             {
-                if (cell.VoxelData != null)
+                if (cell.First != null)
                 {
-                    VoxelData voxelData = cell.VoxelData.GetLast();
+                    VoxelData voxelData = cell.First.GetLast();
                     if (voxelData != null && !voxelData.IsCollapsed)
                     {
                         return voxelData.Altitude + voxelData.Height;
@@ -723,9 +728,9 @@ namespace Battlehub.VoxelCombat
             MapCell cell = this;
             while (cell != null)
             {
-                if (cell.VoxelData != null)
+                if (cell.First != null)
                 {
-                    VoxelData voxelData = cell.VoxelData.GetLastOfType(type);
+                    VoxelData voxelData = cell.First.GetLastOfType(type);
                     if(voxelData != null && !voxelData.IsCollapsed)
                     {
                         return voxelData.Altitude + voxelData.Height;
@@ -737,10 +742,6 @@ namespace Battlehub.VoxelCombat
             return 0;
         }
 
-       
-
-
-
         /// <summary>
         /// This method will not return VoxelData of zero height
         /// </summary>
@@ -748,7 +749,7 @@ namespace Battlehub.VoxelCombat
         /// <returns></returns>
         public VoxelData GetVoxelDataAt(int altitude)
         {
-            VoxelData next = VoxelData;
+            VoxelData next = First;
             while(next != null)
             {
                 if(next.Altitude == altitude && next.Height > 0)
@@ -760,25 +761,34 @@ namespace Battlehub.VoxelCombat
             return null;
         }
 
-
         public void AppendVoxelData(VoxelData voxelData)
         {
-            if(VoxelData == null)
+            if(First == null)
             {
-                VoxelData = voxelData;
+                First = voxelData;
+                Last = voxelData;
+
+                MapCell parent = Parent;
+                while(parent != null)
+                {
+                    if(parent.Last != null)
+                    {
+                        First.Prev = parent.Last;
+                        break;
+                    }
+
+                    parent = parent.Parent;
+                }
             }
             else
             {
-
-                VoxelData.Append(voxelData);
+                First.Append(voxelData);
+                Last = voxelData;
             }
         }
 
-        public void DestroyVoxelData(VoxelData data)
+        public void RemoveVoxelDataAndDecreaseHeight(VoxelData data)
         {
-            //Debug.Assert(data.VoxelRef == null);
-           
-
             int height = data.Height;
             VoxelData next = data.Next;
 
@@ -788,45 +798,72 @@ namespace Battlehub.VoxelCombat
 
             ForEachDescendant(descendant =>
             {
-                if (descendant.VoxelData != null)
+                if (descendant.First != null)
                 {
-                    DecreaseHeight(height, descendant.VoxelData);
+                    DecreaseHeight(height, descendant.First);
                 }
             });
 
 
-            if (VoxelData == data)
+            if (First == data)
             {
-                VoxelData = data.Next;
+                First = data.Next;
             }
 
+            if(First == null)
+            {
+                Last = null;
+            }
+        }
+
+        public void RemoveVoxeData(VoxelData dataToRemove)
+        {
+            if (First == null)
+            {
+                return;
+            }
+
+            if (First == dataToRemove)
+            {
+                First = dataToRemove.Next;
+                if (First != null)
+                {
+                    First.Prev = dataToRemove.Prev;
+                }
+                else
+                {
+                    Last = null;
+                }
+            }
+            else
+            {
+                Remove(dataToRemove);
+            }
         }
 
         private void Remove(VoxelData voxelData)
         {
-            VoxelData data = VoxelData;
-            VoxelData prev = null;
-            do
+            VoxelData prev = voxelData.Prev;
+            if(prev != null)
             {
-                if (data.Altitude == voxelData.Altitude)
+                if(prev.Weight == voxelData.Weight)
                 {
-                    Debug.Assert(data.Type == voxelData.Type);
-                    Debug.Assert(data.Height == voxelData.Height);
-
-                    if (prev != null)
-                    {
-                        prev.Next = data.Next;
-                    }
-
-                    break;
+                    prev.Next = voxelData.Next;
                 }
-
-                prev = data;
-                data = data.Next;
+               
+                if (voxelData.Next != null)
+                {
+                    voxelData.Next.Prev = prev;
+                }
             }
-            while (data != null);
+
+            if(Last == voxelData)
+            {
+                Last = prev;
+            }
         }
 
+       
         private static void DecreaseHeight(int height, VoxelData next)
         {
             while (next != null)
@@ -847,7 +884,7 @@ namespace Battlehub.VoxelCombat
             MapCell cell = this;
             while(cell != null)
             {
-                VoxelData data = cell.VoxelData;
+                VoxelData data = cell.First;
                 while(data != null)
                 {
                     if(data.UnitOrAssetIndex == unitId)
@@ -873,6 +910,7 @@ namespace Battlehub.VoxelCombat
         /// <returns>voxel data on top of which voxel should be located</returns>
         public VoxelData GetDefaultTargetFor(int type, int weight, int playerIndex, bool lowestPossible, out VoxelData target, params int[] exceptOwners)
         {
+#warning This method is really wierd (maybe rewrite using Prev pointer)
             target = null;
 
             MapCell cell = this;
@@ -881,9 +919,9 @@ namespace Battlehub.VoxelCombat
             {
                 VoxelData beneath = null;
            
-                if (cell.VoxelData != null  /* && !cell.VoxelData.HasWeightLessThen(weight)*/)
+                if (cell.First != null  /* && !cell.VoxelData.HasWeightLessThen(weight)*/)
                 {
-                    VoxelData data = cell.VoxelData;
+                    VoxelData data = cell.First;
                     while (data != null)
                     {
                         if (!data.IsCollapsed)
@@ -967,6 +1005,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+#warning Rewrite using Prev reference
         public VoxelData GetPreviousFor(VoxelData data, int type, int weight, int playerIndex)
         {
             VoxelData target;
@@ -1003,10 +1042,9 @@ namespace Battlehub.VoxelCombat
 
         }
 
-
         public bool HasVoxelData(VoxelData hasData)
         {
-            VoxelData voxelData = VoxelData;
+            VoxelData voxelData = First;
             while(voxelData != null)
             {
                 if(voxelData == hasData)
@@ -1019,10 +1057,9 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
-
         public VoxelData GetVoxelData(Func<VoxelData, bool> predicate)
         {
-            VoxelData voxelData = VoxelData;
+            VoxelData voxelData = First;
             while (voxelData != null)
             {
                 if (predicate(voxelData))
@@ -1057,9 +1094,9 @@ namespace Battlehub.VoxelCombat
                 for (int i = 0; i < cell.Children.Length; ++i)
                 {
                     MapCell child = cell.Children[i];
-                    if (child.VoxelData != null && predicate(child.VoxelData))
+                    if (child.First != null && predicate(child.First))
                     {
-                        return child.VoxelData;
+                        return child.First;
                     }
 
                     VoxelData result = GetDescendantsWithVoxelData(child, predicate);
@@ -1072,15 +1109,14 @@ namespace Battlehub.VoxelCombat
             return null;
         }
 
-
         public void ForEach(Action<VoxelData> action)
         {
-            if (VoxelData == null)
+            if (First == null)
             {
                 return;
             }
 
-            VoxelData data = VoxelData;
+            VoxelData data = First;
             while (data != null)
             {
                 action(data);
@@ -1090,12 +1126,12 @@ namespace Battlehub.VoxelCombat
 
         public bool ForEach(Func<VoxelData, bool> predicate)
         {
-            if (VoxelData == null)
+            if (First == null)
             {
                 return true;
             }
 
-            VoxelData data = VoxelData;
+            VoxelData data = First;
             while (data != null)
             {
                 if(!predicate(data))
@@ -1106,7 +1142,6 @@ namespace Battlehub.VoxelCombat
             }
             return true;
         }
-
 
         public void ForEach(Action<MapCell> action)
         {
@@ -1172,7 +1207,37 @@ namespace Battlehub.VoxelCombat
         public void OnDeserializedMethod(StreamingContext context)
         {
             SetParent(Root, null);
+            SetRefs(Root);
             ConnectSiblings();
+        }
+
+        private void SetRefs(MapCell root)
+        {
+            root.ForEach(cell =>
+            {
+                if(cell.First != null)
+                {
+                    VoxelData data = cell.First;
+                    if(cell.Parent != null)
+                    {
+                        data.Prev = cell.Parent.Last;
+                    }
+
+                    while(data != null)
+                    {
+                        if(data.Next != null)
+                        {
+                            data.Next.Prev = data;
+                        }
+                        else
+                        {
+                            cell.Last = data;
+                        }
+
+                        data = data.Next;
+                    } 
+                }
+            });
         }
 
         private void ConnectSiblings()
@@ -1517,7 +1582,7 @@ namespace Battlehub.VoxelCombat
                 for (int i = 0; i < dataToDestroy.Count; ++i)
                 {
                     VoxelData data = dataToDestroy[i];
-                    cell.DestroyVoxelData(data);
+                    cell.RemoveVoxelDataAndDecreaseHeight(data);
                 }
                 dataToDestroy.Clear();
             });
@@ -1867,7 +1932,7 @@ namespace Battlehub.VoxelCombat
         {
             if(cell.Usages == 0)
             {
-                VoxelData data = cell.VoxelData;
+                VoxelData data = cell.First;
                 while (data != null)
                 {
                     if (data.VoxelRef == null)
@@ -1900,7 +1965,7 @@ namespace Battlehub.VoxelCombat
             cell.Usages--;
             if (cell.Usages == 0)
             {
-                VoxelData data = cell.VoxelData;
+                VoxelData data = cell.First;
                 while (data != null)
                 {
                     if (data.VoxelRef != null)
