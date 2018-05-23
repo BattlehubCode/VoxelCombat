@@ -476,6 +476,8 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Server\MatchPlayerController.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Server\MatchUnitController.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Server\ReplaySystem.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskEngine.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskInfo.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskRunner.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\VoxelAbilities.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\VoxelData.cs" />
@@ -549,9 +551,10 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelEater.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelSpawner.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelStateMachineBehavior.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Tests\Infrastructure\MatchEngine\TaskEngineTests.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Tests\Infrastructure\MatchEngine\TaskInfoTests.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Tests\MapCellTests.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Tests\VoxelDataTests.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Tests\VoxelTaskTests.cs" />
     <Compile Include="Assets\Battlehub\VoxelExplosion\Scripts\CameraControl.cs" />
     <Compile Include="Assets\Battlehub\VoxelExplosion\Scripts\PlayerControl.cs" />
     <Compile Include="Assets\InControl\Examples\Basic\CubeController.cs" />

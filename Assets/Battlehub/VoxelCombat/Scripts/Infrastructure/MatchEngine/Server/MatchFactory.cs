@@ -6,6 +6,16 @@ namespace Battlehub.VoxelCombat
 {
     public static class MatchFactory 
     {
+        public static ITaskEngine CreateTaskEngine()
+        {
+            return new TaskEngine();
+        }
+
+        public static void DestroyTaskEngine(ITaskEngine taskEngine)
+        {
+            taskEngine.Destroy();
+        }
+
         public static IBotController CreateBotController(Player player, IMatchView matchView, IPathFinder pathFinder, ITaskRunner taskRunner)
         {
             return new BotController(player, matchView, pathFinder, taskRunner);

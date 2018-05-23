@@ -1,9 +1,11 @@
 ﻿
+using ProtoBuf;
 using System;
 using System.IO;
 
 namespace Battlehub.VoxelCombat
 {
+
     [ProtoBuf.ProtoContract]
     public class NilContainer { }
 

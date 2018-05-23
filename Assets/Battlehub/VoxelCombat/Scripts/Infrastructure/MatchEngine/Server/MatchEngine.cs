@@ -14,6 +14,7 @@ namespace Battlehub.VoxelCombat
         public const int MoveConditional = 3;
         public const int RotateLeft = 4;
         public const int RotateRight = 5;
+        public const int Task = 8;
         public const int Cancel = 10;
       
         public const int Split = 20;
@@ -31,7 +32,7 @@ namespace Battlehub.VoxelCombat
 
         //Debug command
         public const int SetHealth = 200;
-        public const int Kill = 201;
+        public const int Kill = 201;      
     }
 
     public struct MapRect
@@ -223,11 +224,14 @@ namespace Battlehub.VoxelCombat
 
         public override int GetHashCode()
         {
-            int hash = 17 * Weight;
-            hash = 17 * hash + Row;
-            hash = 17 * hash + Col;
-            hash = 17 * hash + Altitude;
-            return hash;
+            unchecked
+            {
+                int hash = 17 * Weight;
+                hash = 17 * hash + Row;
+                hash = 17 * hash + Col;
+                hash = 17 * hash + Altitude;
+                return hash;
+            }
         }
 
         public override bool Equals(object obj)
@@ -562,9 +566,7 @@ namespace Battlehub.VoxelCombat
             get { return m_map; }
         }
 
-
         private IPathFinder m_pathFinder;
-
         public IPathFinder PathFinder
         {
             get { return m_pathFinder; }
@@ -611,8 +613,6 @@ namespace Battlehub.VoxelCombat
 
             m_map.SetPlayerCount(playersCount);
         }
-
-       
 
         public void Destroy()
         {
