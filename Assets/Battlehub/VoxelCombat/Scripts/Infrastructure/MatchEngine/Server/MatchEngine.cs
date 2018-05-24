@@ -14,7 +14,7 @@ namespace Battlehub.VoxelCombat
         public const int MoveConditional = 3;
         public const int RotateLeft = 4;
         public const int RotateRight = 5;
-        public const int Task = 8;
+        public const int ExecuteTask = 8;
         public const int Cancel = 10;
       
         public const int Split = 20;
@@ -349,6 +349,7 @@ namespace Battlehub.VoxelCombat
     [ProtoInclude(51, typeof(ChangeParamsCmd))]
     [ProtoInclude(52, typeof(CompositeCmd))]
     [ProtoInclude(53, typeof(TargetCmd))]
+    [ProtoInclude(54, typeof(ExecuteTaskCmd))]
     public class Cmd
     {
         [ProtoMember(1)]
@@ -359,9 +360,6 @@ namespace Battlehub.VoxelCombat
 
         [ProtoMember(3)]
         public int Duration;
-
-        //[ProtoMember(4)]
-        //public long Tick; //Delivery tick
 
         public Cmd()
         {
@@ -386,6 +384,25 @@ namespace Battlehub.VoxelCombat
             Duration = cmd.Duration;
         }
     }
+
+    [ProtoContract]
+    public class ExecuteTaskCmd : Cmd
+    {
+        [ProtoMember(1)]
+        public TaskInfo Task;
+
+        public ExecuteTaskCmd()
+        {
+            Code = CmdCode.ExecuteTask;
+        }
+
+        public ExecuteTaskCmd(TaskInfo task)
+        {
+            Code = CmdCode.ExecuteTask;
+            Task = task;
+        }
+    }
+
 
     /// <summary>
     /// Command that has one or more coordinates (for example move from coord 0 to coord 1, or attack from coord 0 coord 1, or spawn at coord 0, etc.
@@ -535,6 +552,10 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
+        ITaskEngine TaskEngine
+        {
+            get;
+        }
 
         IMatchUnitController GetUnitController(int playerIndex, long unitIndex);
 
@@ -557,7 +578,7 @@ namespace Battlehub.VoxelCombat
         private readonly IMatchPlayerController[] m_players;
         private readonly Guid[] m_playerGuids;
         //private readonly List<float> m_rtt = new List<float>();
-        private readonly CommandsBundle m_serverCommands = new CommandsBundle();
+        private readonly CommandsBundle m_serverCommands = new CommandsBundle() { TasksStateInfo = new List<TaskStateInfo>() };
 
         private MapRoot m_map;
 
@@ -598,6 +619,12 @@ namespace Battlehub.VoxelCombat
             get { return m_players.Length; }
         }
 
+        private ITaskEngine m_taskEngine;
+        public ITaskEngine TaskEngine
+        {
+            get { return m_taskEngine; }
+        }
+
         public MatchEngine(MapRoot map, int playersCount)
         {
             m_map = map;
@@ -612,6 +639,9 @@ namespace Battlehub.VoxelCombat
             m_botTaskRunner = MatchFactory.CreateTaskRunner(playersCount);
 
             m_map.SetPlayerCount(playersCount);
+
+            m_taskEngine = MatchFactory.CreateTaskEngine(this);
+            m_taskEngine.TaskStateChanged += OnTaskStateChanged;
         }
 
         public void Destroy()
@@ -621,6 +651,9 @@ namespace Battlehub.VoxelCombat
 
             MatchFactory.DestroyPathFinder(m_botPathFinder);
             MatchFactory.DestroyTaskRunner(m_botTaskRunner);
+
+            m_taskEngine.TaskStateChanged -= OnTaskStateChanged;
+            MatchFactory.DestroyTaskEngine(m_taskEngine);
         }
 
         public IMatchUnitController GetUnitController(int playerIndex, long unitIndex)
@@ -692,27 +725,43 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
+   
         public void Submit(Guid playerId, Cmd cmd)
         {
+            if(cmd.Code == CmdCode.ExecuteTask)
+            {
+                ExecuteTaskCmd execCmd = (ExecuteTaskCmd)cmd;
+                m_taskEngine.Submit(execCmd.Task);
+            }
+
+            //should be completely replaced with tasks
             IMatchPlayerController playerController;
             if (m_idToPlayers.TryGetValue(playerId, out playerController))
             {
                 playerController.Submit(cmd);
             }
+
             if(OnSubmitted != null)
             {
                 OnSubmitted(playerId, cmd);
             }
         }
 
+        private void OnTaskStateChanged(TaskInfo taskInfo)
+        {
+            m_serverCommands.TasksStateInfo.Add(new TaskStateInfo(taskInfo.TaskId, taskInfo.State));
+            m_hasNewCommands = true;
+        }
+
+        private bool m_hasNewCommands;
         public bool Tick(out CommandsBundle commands)
         {
             m_pathFinder.Tick();
             m_taskRunner.Tick();
             m_botPathFinder.Tick();
             m_botTaskRunner.Tick();
+            m_taskEngine.Tick();
 
-            bool newCommands = false;
             List<IMatchPlayerController> defeatedPlayers = null;
             for (int i = 0; i < m_players.Length; ++i)
             {
@@ -725,7 +774,7 @@ namespace Battlehub.VoxelCombat
 
                 if(playerController.Tick(out playerCommands))
                 {
-                    newCommands = true;
+                    m_hasNewCommands = true;
                 }
 
                 if (wasInRoom && !playerController.IsPlayerInRoom)
@@ -761,7 +810,6 @@ namespace Battlehub.VoxelCombat
                 for(int i = 0; i < defeatedPlayers.Count; ++i)
                 {
                     IMatchPlayerController defeatedPlayer = defeatedPlayers[i];
-//#warning Temporary disabled due to strange bugs
                     defeatedPlayer.DestroyAllUnitsAndAssets();
                 }
             }
@@ -771,14 +819,24 @@ namespace Battlehub.VoxelCombat
 
             if(wasGameCompleted != m_serverCommands.IsGameCompleted)
             {
-                newCommands = true;
+                m_hasNewCommands = true;
             }
 
-            commands = m_serverCommands;
-            return newCommands;
+            if(m_hasNewCommands)
+            {
+                commands = ProtobufSerializer.DeepClone(m_serverCommands);
+                if (m_serverCommands.TasksStateInfo.Count > 0)
+                {
+                    m_serverCommands.TasksStateInfo.Clear();
+                }
+                m_hasNewCommands = false;
+                return true;
+            }
+            
+            commands = null;                       
+            return false;
         }
 
-    
         public bool IsCompleted()
         {
             int alivePlayersCount = 0;
@@ -793,7 +851,6 @@ namespace Battlehub.VoxelCombat
 
             return alivePlayersCount <= 1;
         }
-
 
         IMatchPlayerView IMatchView.GetPlayerView(int index)
         {

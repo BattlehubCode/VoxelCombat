@@ -1,48 +1,77 @@
 ﻿using UnityEngine.TestTools;
 using NUnit.Framework;
 using System.Collections;
+using UnityEngine;
+using System.Diagnostics;
+using System.IO;
 
 namespace Battlehub.VoxelCombat.Tests
 {
-    public class TaskEngineTests
+    public class MatchEngineTestsBase
     {
-        // A UnityTest behaves like a coroutine in PlayMode
-        // and allows you to yield null to skip a frame in EditMode
+        private int m_ticksCount = 0;
+        protected IMatchEngine m_engine;
+        private float m_prevTickTime;
+        private long m_tick;
 
-        private bool m_moveTaskCompleted;
-        private TaskInfo m_moveTask;
+        //4 Players, Depth 6, Flat square, Size 4x4, Cell weight 4
+        protected readonly string TestEnv0 = "021ef2f8-789c-44ff-b59b-0f43064c581b.data";
 
-        [UnityTest]
-        public IEnumerator ExecuteMoveTask()
+        protected void BeginTest(string mapName, int playersCount)
         {
-            ITaskEngine taskEngine = MatchFactory.CreateTaskEngine();
-            taskEngine.TaskStateChanged += OnTaskStateChanged;
+            string dataPath = Application.streamingAssetsPath + "/Maps/";
 
-            TaskInfo taskInfo = new TaskInfo(TaskType.Command, new Cmd(CmdCode.RotateRight));
-            taskEngine.Submit(taskInfo);
-
-            int iteration = 0;
-            while(!m_moveTaskCompleted)
-            {
-                taskEngine.Update();
-                taskEngine.Tick();
-
-                yield return null;
-
-                iteration++;
-                Assert.LessOrEqual(iteration, 100);
-            }
-
-            taskEngine.TaskStateChanged -= OnTaskStateChanged;
-            MatchFactory.DestroyTaskEngine(taskEngine);
+            string filePath = dataPath + mapName;
+           
+            MapData mapData = ProtobufSerializer.Deserialize<MapData>(File.ReadAllBytes(filePath));
+            MapRoot map = ProtobufSerializer.Deserialize<MapRoot>(mapData.Bytes);
+            m_engine = MatchFactory.CreateMatchEngine(map, playersCount);
         }
 
-        private void OnTaskStateChanged(TaskInfo taskInfo)
+        protected void RunEngine()
         {
-            if(taskInfo == m_moveTask && taskInfo.State == TaskState.Completed)
+            m_engine.PathFinder.Update();
+            m_engine.TaskRunner.Update();
+            m_engine.BotPathFinder.Update();
+            m_engine.BotTaskRunner.Update();
+            m_engine.TaskEngine.Update();
+            //Stopwatch sw = new Stopwatch();
+            while ((Time.realtimeSinceStartup - m_prevTickTime) >= GameConstants.MatchEngineTick)
             {
-                m_moveTaskCompleted = true;
+                CommandsBundle commands;
+                if (m_engine.Tick(out commands))
+                {
+                    commands.Tick = m_tick;
+                }
+
+                m_tick++;
+                m_prevTickTime += GameConstants.MatchEngineTick;
             }
+        }
+
+        protected void EndTest()
+        {
+            MatchFactory.DestroyMatchEngine(m_engine);
+        }
+
+    }
+
+    public class TaskEngineTests : MatchEngineTestsBase
+    {
+        [UnityTest]
+        public IEnumerator TestEnvInitTest()
+        {
+            Assert.DoesNotThrow(() =>
+            {
+                BeginTest(TestEnv0, 2);
+            });
+
+            yield return null;
+
+            Assert.DoesNotThrow(() =>
+            {
+                EndTest();
+            });
         }
     }
 

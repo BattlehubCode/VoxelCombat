@@ -674,6 +674,7 @@ namespace Battlehub.VoxelCombat
             m_engine.TaskRunner.Update();
             m_engine.BotPathFinder.Update();
             m_engine.BotTaskRunner.Update();
+            m_engine.TaskEngine.Update();
 
             for (int i = 0; i < m_bots.Length; ++i)
             {
@@ -697,7 +698,6 @@ namespace Battlehub.VoxelCombat
                 CommandsBundle commands;
                 if(m_engine.Tick(out commands))
                 {
-                    commands = ProtobufSerializer.DeepClone(commands);
                     commands.Tick = m_tick;
                     if (Tick != null)
                     {

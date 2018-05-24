@@ -58,8 +58,6 @@ namespace Battlehub.VoxelCombat
         void Submit(Guid playerId, Cmd command);
     }
 
-
-
     public class MatchEngineCli : MonoBehaviour, IMatchEngineCli
     {
         private RTTInfo m_rttInfo = new RTTInfo { RTT = 0, RTTMax = 0 };

@@ -2,7 +2,6 @@
 
 namespace Battlehub.VoxelCombat
 {
-
     public delegate void TaskEngineEvent(TaskInfo taskInfo);
 
     public interface ITaskEngine
@@ -29,11 +28,19 @@ namespace Battlehub.VoxelCombat
     {
         public event TaskEngineEvent TaskStateChanged;
 
+        private IMatchView m_match;
+
+        public TaskEngine(IMatchView match)
+        {
+            m_match = match;
+        }
+
         public int Submit(TaskInfo taskInfo)
         {
             throw new NotImplementedException();
         }
 
+    
         public void Terminate(int taskId)
         {
 

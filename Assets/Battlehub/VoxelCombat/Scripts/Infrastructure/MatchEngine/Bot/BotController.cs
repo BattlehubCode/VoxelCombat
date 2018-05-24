@@ -69,9 +69,8 @@ namespace Battlehub.VoxelCombat
         IMatchUnitAssetView GetUnitOrAsset(long id);
     }
 
-    public interface IMatchUnitAssetView
+    public interface IMatchUnitAssetView 
     {
-
         long Id
         {
             get;
@@ -96,6 +95,7 @@ namespace Battlehub.VoxelCombat
         {
             get;
         }
+
     }
 
 

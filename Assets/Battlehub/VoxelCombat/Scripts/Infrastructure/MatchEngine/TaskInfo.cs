@@ -82,8 +82,22 @@ namespace Battlehub.VoxelCombat
             get { return m_children; }
             set { m_children = value; }
         }
+    }
 
-     
+    [ProtoContract]
+    public class TaskStateInfo
+    {
+        [ProtoMember(1)]
+        public int TaskId;
+
+        [ProtoMember(2)]
+        public TaskState State;
+
+        public TaskStateInfo(int taskId, TaskState state)
+        {
+            TaskId = taskId;
+            State = state;
+        }
     }
 
     [ProtoContract]

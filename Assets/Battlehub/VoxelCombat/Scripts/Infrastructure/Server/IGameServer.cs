@@ -1034,7 +1034,6 @@ namespace Battlehub.VoxelCombat
     }
 
 
-
     [ProtoContract]
     public class CommandsBundle
     {
@@ -1048,6 +1047,9 @@ namespace Battlehub.VoxelCombat
         public CommandsArray[] Commands;
 
         [ProtoMember(4)]
+        public List<TaskStateInfo> TasksStateInfo;
+        
+        [ProtoMember(5)]
         public bool IsGameCompleted;
     }
 
