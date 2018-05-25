@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Battlehub.VoxelCombat
 {
@@ -13,7 +14,7 @@ namespace Battlehub.VoxelCombat
         /// </summary>
         /// <param name="taskInfo"></param>
         /// <returns>unique task id</returns>
-        int Submit(TaskInfo taskInfo);
+        void Submit(TaskInfo taskInfo);
 
         void Terminate(int taskId);
 
@@ -29,26 +30,51 @@ namespace Battlehub.VoxelCombat
         public event TaskEngineEvent TaskStateChanged;
 
         private IMatchView m_match;
-
+        private int m_identity;
+        private readonly Dictionary<int, TaskInfo> m_tasks = new Dictionary<int, TaskInfo>();
+       
         public TaskEngine(IMatchView match)
         {
             m_match = match;
         }
 
-        public int Submit(TaskInfo taskInfo)
+        public void Submit(TaskInfo taskInfo)
         {
-            throw new NotImplementedException();
+            AddTasks(taskInfo);
+
+            taskInfo.State = TaskState.Active;
+            RaiseTaskStateChanged(taskInfo);
         }
 
-    
         public void Terminate(int taskId)
         {
+            TaskInfo task;
+            if (m_tasks.TryGetValue(taskId, out task))
+            {
+                do
+                {
+                    task.State = TaskState.Terminated;
+                    RaiseTaskStateChanged(task);
+                    m_tasks.Remove(taskId);
 
+                    if(task.Parent == null)
+                    {
+                        RemoveTasks(task);
+                        break;
+                    }
+
+                    task = task.Parent;
+                }
+                while (true);
+            }
         }
 
+  
         public void Tick()
         {
+            //Check completion state
 
+            //Submit new commands to engine
         }
 
         public void Update()
@@ -59,6 +85,42 @@ namespace Battlehub.VoxelCombat
         public void Destroy()
         {
 
+        }
+
+        private void RaiseTaskStateChanged(TaskInfo task)
+        {
+            if(TaskStateChanged != null)
+            {
+                TaskStateChanged(task);
+            }
+        }
+
+        private void AddTasks(TaskInfo task)
+        {
+            if (task.Children != null)
+            {
+                for (int i = 0; i < task.Children.Length; ++i)
+                {
+                    AddTasks(task.Children[i]);
+                }
+            }
+
+            m_identity++;
+            task.TaskId = m_identity;
+            m_tasks.Add(task.TaskId, task);
+        }
+
+        private void RemoveTasks(TaskInfo task)
+        {
+            if (task.Children != null)
+            {
+                for (int i = 0; i < task.Children.Length; ++i)
+                {
+                    RemoveTasks(task.Children[i]);
+                }
+            }
+
+            m_tasks.Remove(task.TaskId);
         }
     }
 }

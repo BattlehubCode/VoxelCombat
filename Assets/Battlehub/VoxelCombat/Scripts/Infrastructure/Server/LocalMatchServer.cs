@@ -357,31 +357,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void SetClientDisconnected(Guid clientId, Guid[] disconnectedClientIds, ServerEventHandler callback)
-        {
-            Error error = new Error();
-
-            error.Code = StatusCode.OK;
-
-            if (m_room != null)
-            {
-                foreach (Guid playerId in m_loggedInPlayers)
-                {
-                    m_room.Players.Remove(playerId);
-                    m_abilities.Remove(playerId);
-                    m_engine.Submit(playerId, new Cmd(CmdCode.LeaveRoom, -1));
-                }
-            }
-
-            if (Lag == 0)
-            {
-                callback(error);
-            }
-            else
-            {
-                m_job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error));
-            }
-        }
 
         public void ReadyToPlay(Guid clientId, ServerEventHandler callback)
         {
@@ -405,7 +380,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void Submit(Guid clientId, Guid playerId, Cmd cmd, ServerEventHandler callback)
+        public void Submit(Guid clientId, Guid playerId, Cmd cmd, ServerEventHandler<Cmd> callback)
         {
             Error error = new Error();
             error.Code = StatusCode.OK;
@@ -436,11 +411,11 @@ namespace Battlehub.VoxelCombat
             
             if (Lag == 0)
             {
-                callback(error);
+                callback(error, cmd);
             }
             else
             {
-                m_job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error));
+                m_job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, cmd));
             }
         }
 

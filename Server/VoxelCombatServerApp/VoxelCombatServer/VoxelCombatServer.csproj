@@ -106,6 +106,12 @@
     <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Server\ReplaySystem.cs">
       <Link>MatchEngine\Server\ReplaySystem.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskEngine.cs">
+      <Link>MatchEngine\TaskEngine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskInfo.cs">
+      <Link>MatchEngine\TaskInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskRunner.cs">
       <Link>MatchEngine\TaskRunner.cs</Link>
     </Compile>

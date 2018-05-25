@@ -476,13 +476,13 @@ namespace Battlehub.VoxelCombat
             TryToInitEngine(callback);
         }
 
-        public void Submit(Guid clientId, Guid playerId, Cmd cmd, ServerEventHandler callback)
+        public void Submit(Guid clientId, Guid playerId, Cmd cmd, ServerEventHandler<Cmd> callback)
         {
             Error error = new Error(StatusCode.OK);
             if (!m_clientIdToPlayers.ContainsKey(clientId))
             {
                 error.Code = StatusCode.NotRegistered;
-                callback(error);
+                callback(error, cmd);
                 return;
             }
             
@@ -508,7 +508,7 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            callback(error);
+            callback(error, cmd);
         }
 
         private void OnEngineCommandSubmitted(Guid playerId, Cmd cmd)

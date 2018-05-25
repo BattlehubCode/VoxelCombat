@@ -349,7 +349,7 @@ namespace Battlehub.VoxelCombat
     [ProtoInclude(51, typeof(ChangeParamsCmd))]
     [ProtoInclude(52, typeof(CompositeCmd))]
     [ProtoInclude(53, typeof(TargetCmd))]
-    [ProtoInclude(54, typeof(ExecuteTaskCmd))]
+    [ProtoInclude(54, typeof(TaskCmd))]
     public class Cmd
     {
         [ProtoMember(1)]
@@ -386,17 +386,17 @@ namespace Battlehub.VoxelCombat
     }
 
     [ProtoContract]
-    public class ExecuteTaskCmd : Cmd
+    public class TaskCmd : Cmd
     {
         [ProtoMember(1)]
         public TaskInfo Task;
 
-        public ExecuteTaskCmd()
+        public TaskCmd()
         {
             Code = CmdCode.ExecuteTask;
         }
 
-        public ExecuteTaskCmd(TaskInfo task)
+        public TaskCmd(TaskInfo task)
         {
             Code = CmdCode.ExecuteTask;
             Task = task;
@@ -725,22 +725,23 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
-   
         public void Submit(Guid playerId, Cmd cmd)
         {
             if(cmd.Code == CmdCode.ExecuteTask)
             {
-                ExecuteTaskCmd execCmd = (ExecuteTaskCmd)cmd;
+                TaskCmd execCmd = (TaskCmd)cmd;
                 m_taskEngine.Submit(execCmd.Task);
             }
-
-            //should be completely replaced with tasks
-            IMatchPlayerController playerController;
-            if (m_idToPlayers.TryGetValue(playerId, out playerController))
+            else
             {
-                playerController.Submit(cmd);
+                //should be completely replaced with tasks
+                IMatchPlayerController playerController;
+                if (m_idToPlayers.TryGetValue(playerId, out playerController))
+                {
+                    playerController.Submit(cmd);
+                }
             }
-
+        
             if(OnSubmitted != null)
             {
                 OnSubmitted(playerId, cmd);
@@ -760,8 +761,7 @@ namespace Battlehub.VoxelCombat
             m_taskRunner.Tick();
             m_botPathFinder.Tick();
             m_botTaskRunner.Tick();
-            m_taskEngine.Tick();
-
+            
             List<IMatchPlayerController> defeatedPlayers = null;
             for (int i = 0; i < m_players.Length; ++i)
             {
@@ -833,7 +833,10 @@ namespace Battlehub.VoxelCombat
                 return true;
             }
             
-            commands = null;                       
+            commands = null;
+
+            m_taskEngine.Tick();
+
             return false;
         }
 

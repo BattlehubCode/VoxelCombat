@@ -38,7 +38,7 @@ namespace Battlehub.VoxelCombat
         Idle,
         Active,
         Completed,
-        Aborted
+        Terminated
     }
 
     [ProtoContract]

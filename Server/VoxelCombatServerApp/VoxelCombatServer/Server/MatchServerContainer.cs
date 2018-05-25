@@ -232,9 +232,9 @@ namespace Battlehub.VoxelCombat
                     });
                     break;
                 case RemoteCall.Proc.Submit:
-                    m_matchServer.Submit(rpc.ClientId, rpc.Get<Guid>(0), rpc.Get<Cmd>(1), error =>
+                    m_matchServer.Submit(rpc.ClientId, rpc.Get<Guid>(0), rpc.Get<Cmd>(1), (error, returnedCommand) =>
                     {
-                        Return(sender, request, error);
+                        Return(sender, request, error, RemoteArg.Create(returnedCommand));
                     });
                     break;
                 case RemoteCall.Proc.Pong:

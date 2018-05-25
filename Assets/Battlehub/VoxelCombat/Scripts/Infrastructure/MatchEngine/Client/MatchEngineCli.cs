@@ -305,7 +305,7 @@ namespace Battlehub.VoxelCombat
                 m_pathFinder.Terminate(command.UnitIndex, playerIndex);
             }
             
-            m_matchServer.Submit(m_gSettings.ClientId, playerId, command, error =>
+            m_matchServer.Submit(m_gSettings.ClientId, playerId, command, (error, returnedCommand) =>
             {
                 if (m_matchServer.HasError(error))
                 {

@@ -1176,8 +1176,6 @@ namespace Battlehub.VoxelCombat
     [ProtoContract]
     public class MapRoot
     {
-        public readonly object SyncRoot = new object();
-
         [ProtoMember(1)]
         public int Weight;
 
@@ -1586,6 +1584,54 @@ namespace Battlehub.VoxelCombat
                 }
                 dataToDestroy.Clear();
             });
+        }
+
+        public Coordinate[] FindUnits(int type)
+        {
+            List<Coordinate> result = new List<Coordinate>();
+            Root.ForEach(cell =>
+            {
+                cell.ForEach(voxelData =>
+                {
+                    if (voxelData.Type == type)
+                    {
+                        result.Add(new Coordinate(cell, voxelData));
+                    }
+                });
+            });
+            return result.ToArray();
+        }
+
+        public Coordinate[] FindUnits(int type, int owner)
+        {
+            List<Coordinate> result = new List<Coordinate>();
+            Root.ForEach(cell =>
+            {
+                cell.ForEach(voxelData =>
+                {
+                    if (voxelData.Type == type && voxelData.Owner == owner)
+                    {
+                        result.Add(new Coordinate(cell, voxelData));
+                    }
+                });
+            });
+            return result.ToArray();
+        }
+
+        public Coordinate[] FindUnits(int type, int owner, int weight)
+        {
+            List<Coordinate> result = new List<Coordinate>();
+            Root.ForEach(cell =>
+            {
+                cell.ForEach(voxelData =>
+                {
+                    if (voxelData.Type == type && voxelData.Owner == owner && voxelData.Weight == weight)
+                    {
+                        result.Add(new Coordinate(cell, voxelData));
+                    }
+                });
+            });
+            return result.ToArray();
         }
     }
 
