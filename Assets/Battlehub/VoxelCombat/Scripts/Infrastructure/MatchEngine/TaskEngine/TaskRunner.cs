@@ -19,88 +19,6 @@ namespace Battlehub.VoxelCombat
         void Destroy();
     }
 
-    public class Task
-    {
-        private Action<long, object, object> m_completeCallback;
-        private Func<long, object, object> m_udateCallback;
-        private Action<long, object> m_terminateCallback;
-        private object m_result;
-        private object m_context;
- 
-        private long m_unitId;
-        public long UnitId
-        {
-            get { return m_unitId; }
-        }
-
-        private int m_playerIndex;
-        public int PlayerIndex
-        {
-            get { return m_playerIndex; }
-        }
-
-        private bool m_isTerminated;
-        public bool IsTerminated
-        {
-            get { return m_isTerminated; }
-        }
-
-        public bool IsCompleted
-        {
-            get { return m_result != null; }
-        }
-
-
-        public Task(int playerIndex, long unitId, object context, Func<long, object, object> updateCallback,  Action<long, object, object> completeCallback, Action<long, object> terminateCallback)
-        {
-            m_udateCallback = updateCallback;
-            m_completeCallback = completeCallback;
-            m_terminateCallback = terminateCallback;
-            m_context = context;
-
-            m_playerIndex = playerIndex;
-            m_unitId = unitId;
-        }
-
-        public object Update()
-        {
-            return m_udateCallback(m_unitId, m_context);
-        }
-
-        public void SetCompleted(object result)
-        {
-            m_result = result;
-        }
-
-        public void Terminate()
-        {
-            if(m_terminateCallback != null)
-            {
-                m_terminateCallback(m_unitId, m_context);
-            }
-
-            m_isTerminated = true;
-        }
-
-        public bool CallbackIfCompleted()
-        {
-            if (m_isTerminated)
-            {
-                return true;
-            }
-
-            if (m_result != null)
-            {
-                if (m_completeCallback != null)
-                {
-                    m_completeCallback(m_unitId, m_context, m_result);
-                }
-                return true;
-            }
-            return false;
-        }
-    }
-
     public class TaskRunner : ITaskRunner
     {
         private Dictionary<long, Task>[] m_idToActiveTask;
@@ -210,6 +128,88 @@ namespace Battlehub.VoxelCombat
                         task.SetCompleted(result);
                     }  
                 }
+            }
+        }
+
+        private class Task
+        {
+            private Action<long, object, object> m_completeCallback;
+            private Func<long, object, object> m_udateCallback;
+            private Action<long, object> m_terminateCallback;
+            private object m_result;
+            private object m_context;
+
+            private long m_unitId;
+            public long UnitId
+            {
+                get { return m_unitId; }
+            }
+
+            private int m_playerIndex;
+            public int PlayerIndex
+            {
+                get { return m_playerIndex; }
+            }
+
+            private bool m_isTerminated;
+            public bool IsTerminated
+            {
+                get { return m_isTerminated; }
+            }
+
+            public bool IsCompleted
+            {
+                get { return m_result != null; }
+            }
+
+
+            public Task(int playerIndex, long unitId, object context, Func<long, object, object> updateCallback, Action<long, object, object> completeCallback, Action<long, object> terminateCallback)
+            {
+                m_udateCallback = updateCallback;
+                m_completeCallback = completeCallback;
+                m_terminateCallback = terminateCallback;
+                m_context = context;
+
+                m_playerIndex = playerIndex;
+                m_unitId = unitId;
+            }
+
+            public object Update()
+            {
+                return m_udateCallback(m_unitId, m_context);
+            }
+
+            public void SetCompleted(object result)
+            {
+                m_result = result;
+            }
+
+            public void Terminate()
+            {
+                if (m_terminateCallback != null)
+                {
+                    m_terminateCallback(m_unitId, m_context);
+                }
+
+                m_isTerminated = true;
+            }
+
+            public bool CallbackIfCompleted()
+            {
+                if (m_isTerminated)
+                {
+                    return true;
+                }
+
+                if (m_result != null)
+                {
+                    if (m_completeCallback != null)
+                    {
+                        m_completeCallback(m_unitId, m_context, m_result);
+                    }
+                    return true;
+                }
+                return false;
             }
         }
     }

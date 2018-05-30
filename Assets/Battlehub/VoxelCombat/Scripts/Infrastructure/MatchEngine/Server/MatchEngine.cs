@@ -640,7 +640,7 @@ namespace Battlehub.VoxelCombat
 
             m_map.SetPlayerCount(playersCount);
 
-            m_taskEngine = MatchFactory.CreateTaskEngine(this);
+            m_taskEngine = MatchFactory.CreateTaskEngine(this, m_taskRunner);
             m_taskEngine.TaskStateChanged += OnTaskStateChanged;
         }
 
@@ -730,6 +730,7 @@ namespace Battlehub.VoxelCombat
             if(cmd.Code == CmdCode.ExecuteTask)
             {
                 TaskCmd execCmd = (TaskCmd)cmd;
+                execCmd.Task.PlayerId = playerId;
                 m_taskEngine.Submit(execCmd.Task);
             }
             else

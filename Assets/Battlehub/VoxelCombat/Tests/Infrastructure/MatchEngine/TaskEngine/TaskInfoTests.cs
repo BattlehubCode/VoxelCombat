@@ -9,35 +9,35 @@ namespace Battlehub.VoxelCombat.Tests
         [Test]
         public void ExpressionSerializationDeserialization()
         {
-            Expression expression = new Expression();
+            ExpressionInfo expression = new ExpressionInfo();
             expression.Code = ExpressionCode.And;
-            expression.Chidren = new[]
+            expression.Children = new[]
             {
-                new Expression
+                new ExpressionInfo
                 {
                     Code = ExpressionCode.Eq,
-                    Chidren = new[]
+                    Children = new[]
                     {
-                        new Expression
+                        new ExpressionInfo
                         {
                             Code = ExpressionCode.Var,
                             Value = new Coordinate(1, 1, 1, 1)
                         },
-                        new Expression
+                        new ExpressionInfo
                         {
                             Code = ExpressionCode.Var,
                             Value = new Coordinate(1, 1, 1, 1)
                         },
                     }
                 },
-                new Expression
+                new ExpressionInfo
                 {
                     Code = ExpressionCode.Var,
                     Value = PrimitiveContract.Create(true),
                 }
             };
 
-            Expression clone = null;
+            ExpressionInfo clone = null;
             Assert.DoesNotThrow(() =>
             {
                 clone = ProtobufSerializer.DeepClone(expression);
@@ -45,26 +45,26 @@ namespace Battlehub.VoxelCombat.Tests
 
             Assert.IsNotNull(clone);
             Assert.AreEqual(expression.Code, clone.Code);
-            Assert.IsNotNull(clone.Chidren);
-            Assert.AreNotSame(expression.Chidren, clone.Chidren);
-            Assert.AreEqual(expression.Chidren.Length, clone.Chidren.Length);
-            Assert.IsNotNull(clone.Chidren[0].Chidren);
-            Assert.AreEqual(expression.Chidren[0].Chidren.Length, clone.Chidren[0].Chidren.Length);
-            Assert.AreEqual(expression.Chidren[0].Chidren[0].Code, clone.Chidren[0].Chidren[0].Code);
-            Assert.AreEqual(expression.Chidren[0].Chidren[0].Value, clone.Chidren[0].Chidren[0].Value);
-            Assert.AreEqual(expression.Chidren[1].Code, clone.Chidren[1].Code);
-            Assert.AreEqual(expression.Chidren[1].Value, clone.Chidren[1].Value);
+            Assert.IsNotNull(clone.Children);
+            Assert.AreNotSame(expression.Children, clone.Children);
+            Assert.AreEqual(expression.Children.Length, clone.Children.Length);
+            Assert.IsNotNull(clone.Children[0].Children);
+            Assert.AreEqual(expression.Children[0].Children.Length, clone.Children[0].Children.Length);
+            Assert.AreEqual(expression.Children[0].Children[0].Code, clone.Children[0].Children[0].Code);
+            Assert.AreEqual(expression.Children[0].Children[0].Value, clone.Children[0].Children[0].Value);
+            Assert.AreEqual(expression.Children[1].Code, clone.Children[1].Code);
+            Assert.AreEqual(expression.Children[1].Value, clone.Children[1].Value);
         }
 
         [Test]
         public void TaskInfoSerializationDeserialization()
         {
-            TaskInfo taskInfo = new TaskInfo(TaskType.Branch, new Cmd(CmdCode.Nop), TaskState.Active, null);
+            TaskInfo taskInfo = new TaskInfo(TaskType.Branch, TaskState.Active);
             taskInfo.TaskId = 1234;
-            taskInfo.Expression = new Expression(ExpressionCode.FoodVisible, new PrimitiveContract<bool>(true));
+            taskInfo.Expression = new ExpressionInfo(ExpressionCode.FoodVisible, new PrimitiveContract<bool>(true));
             taskInfo.Children = new[]
             {
-                new TaskInfo(TaskType.Command, new Cmd(CmdCode.RotateLeft), TaskState.Active, new Expression(ExpressionCode.EnemyVisible, new PrimitiveContract<bool>(true)), taskInfo),
+                new TaskInfo(new Cmd(CmdCode.RotateLeft), TaskState.Active, new ExpressionInfo(ExpressionCode.EnemyVisible, new PrimitiveContract<bool>(true)), taskInfo),
                 new TaskInfo
                 {
                     TaskId = 1236,

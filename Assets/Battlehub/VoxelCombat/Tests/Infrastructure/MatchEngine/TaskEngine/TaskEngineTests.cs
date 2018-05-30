@@ -12,7 +12,6 @@ namespace Battlehub.VoxelCombat.Tests
 {
     public class MatchEngineTestsBase
     {
-        private int m_ticksCount = 0;
         protected IMatchEngine m_engine;
         protected IReplaySystem m_replay;
         protected MapRoot m_map;
@@ -25,8 +24,7 @@ namespace Battlehub.VoxelCombat.Tests
         protected readonly string TestEnv0 = "021ef2f8-789c-44ff-b59b-0f43064c581b.data";
 
         protected Guid[] m_players;
-        protected Dictionary<int, VoxelAbilities[]> m_abilities = new Dictionary<int, VoxelAbilities[]>();
-
+        protected Dictionary<int, VoxelAbilities[]> m_abilities;
 
         private VoxelAbilities[] CreateTemporaryAbilies()
         {
@@ -42,6 +40,7 @@ namespace Battlehub.VoxelCombat.Tests
 
         protected void BeginTest(string mapName, int playersCount)
         {
+            m_abilities = new Dictionary<int, VoxelAbilities[]>();
             m_players = new Guid[playersCount];
             for(int i = 0; i < m_players.Length; ++i)
             {
@@ -50,14 +49,10 @@ namespace Battlehub.VoxelCombat.Tests
             }
 
             string dataPath = Application.streamingAssetsPath + "/Maps/";
-
             string filePath = dataPath + mapName;
 
-            if (m_replay == null)
-            {
-                m_replay = MatchFactory.CreateReplayRecorder();
-            }
-
+            m_replay = MatchFactory.CreateReplayRecorder();
+           
             Dictionary<int, VoxelAbilities>[] allAbilities = new Dictionary<int, VoxelAbilities>[m_players.Length];
             for (int i = 0; i < m_players.Length; ++i)
             {
@@ -73,8 +68,6 @@ namespace Battlehub.VoxelCombat.Tests
                 m_replay.RegisterPlayer(m_players[i], i);
             }
             m_engine.CompletePlayerRegistration();
-
-          
         }
 
     
@@ -86,8 +79,7 @@ namespace Battlehub.VoxelCombat.Tests
                 m_engine.TaskRunner.Update();
                 m_engine.BotPathFinder.Update();
                 m_engine.BotTaskRunner.Update();
-                m_engine.TaskEngine.Update();
-
+                
                 m_replay.Tick(m_engine, m_tick);
                 CommandsBundle commands;
                 if (m_engine.Tick(out commands))
@@ -109,43 +101,79 @@ namespace Battlehub.VoxelCombat.Tests
         {
 
         }
-
-
     }
 
     public class TaskEngineTests : MatchEngineTestsBase
     {
-        [UnityTest]
-        public IEnumerator TestEnvInitTest()
+        private void PrepareTestData1(int playerId, int offsetX, int offsetY, out Cmd cmd, out ExpressionInfo expression)
+        {
+            Coordinate[] coords = m_map.FindUnits((int)KnownVoxelTypes.Eater, playerId);
+            Assert.AreEqual(coords.Length, 1);
+
+            VoxelData unit = m_map.Get(coords[0]);
+            Coordinate targetCoordinate = coords[0].Add(offsetX, offsetY);
+
+            cmd = new MovementCmd(CmdCode.MoveConditional, unit.UnitOrAssetIndex, 0)
+            {
+                Coordinates = new[] { targetCoordinate },
+            };
+            expression = ExpressionInfo.MoveTaskExpression(unit.UnitOrAssetIndex, playerId, targetCoordinate);
+        }
+
+        [Test]
+        public void SimpleMoveUsingExpression()
         {
             Assert.DoesNotThrow(() =>
             {
                 BeginTest(TestEnv0, 2);
             });
-
-            Coordinate[] coords = m_map.FindUnits((int)KnownVoxelTypes.Eater, 1);
-            Assert.AreEqual(coords.Length, 1);
-
-            VoxelData unit = m_map.Get(coords[0]);
-            TaskInfo task = new TaskInfo(
-                TaskType.Command,
-                new MovementCmd(CmdCode.MoveConditional, unit.UnitOrAssetIndex, 0)
-                {
-                    Coordinates = new[] { coords[0].Add(1, 1) },
-                });
-
-            m_engine.Submit(m_players[1], new TaskCmd(task));
-            m_engine.TaskEngine.TaskStateChanged += TestEnvInitTest_OnTaskStateChanged;
-
-            RunEngine();
-            yield return null;
-
-            Assert.Fail();
+            const int playerId = 1;
+            Cmd cmd;
+            ExpressionInfo expression;
+            PrepareTestData1(playerId, -1, 1,
+                out cmd, 
+                out expression);
+            TaskInfo task = new TaskInfo(cmd, expression);
+            FinializeTest(playerId, task, TaskMovementCompleted);
         }
 
-        protected void TestEnvInitTest_OnTaskStateChanged(TaskInfo taskInfo)
+        [Test]
+        public void SimpleMoveWithoutExpression()
         {
-            m_engine.TaskEngine.TaskStateChanged -= TestEnvInitTest_OnTaskStateChanged;
+            Assert.DoesNotThrow(() =>
+            {
+                BeginTest(TestEnv0, 2);
+            });
+            const int playerId = 1;
+            Cmd cmd;
+            ExpressionInfo notUsed;
+            PrepareTestData1(playerId, -1, 1,
+                out cmd,
+                out notUsed);
+            TaskInfo task = new TaskInfo(cmd);
+            FinializeTest(playerId, task, TaskMovementCompleted);
+        }
+
+        [Test]
+        public void SimpleMoveFailWithoutExpression()
+        {
+            Assert.DoesNotThrow(() =>
+            {
+                BeginTest(TestEnv0, 2);
+            });
+            const int playerId = 1;
+            Cmd cmd;
+            ExpressionInfo notUsed;
+            PrepareTestData1(playerId, 10, 1,
+                out cmd,
+                out notUsed);
+            TaskInfo task = new TaskInfo(cmd);
+            FinializeTest(playerId, task, TaskMovementFailed);
+        }
+
+        protected void TaskMovementCompleted(TaskInfo taskInfo)
+        {
+            m_engine.TaskEngine.TaskStateChanged -= TaskMovementCompleted;
 
             Assert.DoesNotThrow(() =>
             {
@@ -156,11 +184,38 @@ namespace Battlehub.VoxelCombat.Tests
             {
                 MovementCmd cmd = (MovementCmd)taskInfo.Cmd;
                 Coordinate[] coords = m_map.FindUnits((int)KnownVoxelTypes.Eater, 1);
-                Assert.AreEqual(coords[0], cmd.Coordinates[0]);
+                Assert.AreEqual(cmd.Coordinates[0], coords[0]);
             }
-
             Assert.Pass();
         }
+
+        protected void TaskMovementFailed(TaskInfo taskInfo)
+        {
+            m_engine.TaskEngine.TaskStateChanged -= TaskMovementCompleted;
+
+            Assert.DoesNotThrow(() =>
+            {
+                EndTest();
+            });
+
+            if (taskInfo.State == TaskState.Failed)
+            {
+                MovementCmd cmd = (MovementCmd)taskInfo.Cmd;
+                Coordinate[] coords = m_map.FindUnits((int)KnownVoxelTypes.Eater, 1);
+                Assert.AreNotEqual(cmd.Coordinates[0], coords[0]);
+            }
+            Assert.Pass();
+        }
+
+        protected void FinializeTest(int playerId, TaskInfo task, TaskEngineEvent eventHandler)
+        {
+            m_engine.Submit(m_players[playerId], new TaskCmd(task));
+            m_engine.TaskEngine.TaskStateChanged += eventHandler;
+            RunEngine();
+            Assert.Fail();
+        }
+
+
     }
 
 }
