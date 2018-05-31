@@ -134,12 +134,12 @@ namespace Battlehub.VoxelCombat
 
         private class PlayerCmd
         {
-            public Guid PlayerId;
+            public int PlayerIndex;
             public Cmd Cmd;
 
-            public PlayerCmd(Guid playerId, Cmd cmd)
+            public PlayerCmd(int playerIndex, Cmd cmd)
             {
-                PlayerId = playerId;
+                PlayerIndex = playerIndex;
                 Cmd = cmd;
             }
         }
@@ -304,22 +304,21 @@ namespace Battlehub.VoxelCombat
             {
                 foreach (Guid playerId in disconnectedPlayers.Keys)
                 {
-                    if (m_room != null)
-                    {
-                        m_room.Players.Remove(playerId);
-                        m_players.Remove(playerId);
-                    }
+                    int playerIndex = m_room.Players.IndexOf(playerId);
+
+                    m_room.Players.RemoveAt(playerIndex);
+                    m_players.Remove(playerId);
 
                     Cmd cmd = new Cmd(CmdCode.LeaveRoom, -1);
 
                     //#warning Fix Engine to handle LeaveRoom command without removing PlayerControllers. Just change colors or destroy units
                     if (m_initialized)
                     {
-                        m_engine.Submit(playerId, cmd);
+                        m_engine.Submit(playerIndex, cmd);
                     }
                     else
                     {
-                        m_preInitCommands.Enqueue(new PlayerCmd(playerId, cmd));
+                        m_preInitCommands.Enqueue(new PlayerCmd(playerIndex, cmd));
                     }
 
                     m_playerToClientId.Remove(playerId);
@@ -476,7 +475,7 @@ namespace Battlehub.VoxelCombat
             TryToInitEngine(callback);
         }
 
-        public void Submit(Guid clientId, Guid playerId, Cmd cmd, ServerEventHandler<Cmd> callback)
+        public void Submit(Guid clientId, int playerIndex, Cmd cmd, ServerEventHandler<Cmd> callback)
         {
             Error error = new Error(StatusCode.OK);
             if (!m_clientIdToPlayers.ContainsKey(clientId))
@@ -504,16 +503,16 @@ namespace Battlehub.VoxelCombat
                 }
                 else
                 {
-                    m_engine.Submit(playerId, cmd); // if I will use RTT Ticks then it will be possible to reverse order of commands sent by client (which is BAD!)
+                    m_engine.Submit(playerIndex, cmd); // if I will use RTT Ticks then it will be possible to reverse order of commands sent by client (which is BAD!)
                 }
             }
 
             callback(error, cmd);
         }
 
-        private void OnEngineCommandSubmitted(Guid playerId, Cmd cmd)
+        private void OnEngineCommandSubmitted(int playerIndex, Cmd cmd)
         {
-            m_replay.Record(playerId, cmd, m_tick);
+            m_replay.Record(playerIndex, cmd, m_tick);
         }
 
         public void Pong(Guid clientId, ServerEventHandler callback)
@@ -750,7 +749,6 @@ namespace Battlehub.VoxelCombat
                     {
                         Guid playerGuid = m_room.Players[i];
                         engine.RegisterPlayer(m_room.Players[i], i, allAbilities);
-                        m_replay.RegisterPlayer(m_room.Players[i], i);
                     }
                     engine.CompletePlayerRegistration();
 
@@ -825,7 +823,7 @@ namespace Battlehub.VoxelCombat
             while(m_preInitCommands.Count > 0)
             {
                 PlayerCmd playerCmd = m_preInitCommands.Dequeue();
-                m_engine.Submit(playerCmd.PlayerId, playerCmd.Cmd);
+                m_engine.Submit(playerCmd.PlayerIndex, playerCmd.Cmd);
             }
 
             return true;
@@ -847,8 +845,7 @@ namespace Battlehub.VoxelCombat
             m_engine.TaskRunner.Update();
             m_engine.BotPathFinder.Update();
             m_engine.BotTaskRunner.Update();
-            m_engine.TaskEngine.Update();
-
+           
             for (int i = 0; i < m_bots.Length; ++i)
             {
                 m_bots[i].Update(m_time.Time);

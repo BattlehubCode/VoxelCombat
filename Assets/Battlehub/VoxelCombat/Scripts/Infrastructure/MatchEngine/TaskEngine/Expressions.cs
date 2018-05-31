@@ -128,7 +128,7 @@ namespace Battlehub.VoxelCombat
             long unitId = ((PrimitiveContract<long>)expression.Children[0].Value).Value;
             int playerId = ((PrimitiveContract<int>)expression.Children[1].Value).Value;
 
-            IMatchPlayerView player = taskEngine.MatchView.GetPlayerView(playerId);
+            IMatchPlayerView player = taskEngine.MatchEngine.GetPlayerView(playerId);
             IMatchUnitAssetView unit = player.GetUnitOrAsset(unitId);
 
             OnEvaluating(player, unit, taskEngine, callback);
@@ -177,7 +177,7 @@ namespace Battlehub.VoxelCombat
                 }
                 else
                 {
-                    taskEngine.GetExpression(completedExpression.Code).Evaluate(completedExpression, taskEngine, isFailed =>
+                    taskEngine.GetExpression(failedExpression.Code).Evaluate(failedExpression, taskEngine, isFailed =>
                     {
                         if ((bool)isFailed)
                         {

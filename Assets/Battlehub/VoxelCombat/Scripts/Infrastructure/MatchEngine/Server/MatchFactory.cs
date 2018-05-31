@@ -6,9 +6,9 @@ namespace Battlehub.VoxelCombat
 {
     public static class MatchFactory 
     {
-        public static ITaskEngine CreateTaskEngine(IMatchView matchView, ITaskRunner taskRunner)
+        public static ITaskEngine CreateTaskEngine(IMatchEngine matchEngine, ITaskRunner taskRunner)
         {
-            return new TaskEngine(matchView, taskRunner);
+            return new TaskEngine(matchEngine, taskRunner);
         }
 
         public static void DestroyTaskEngine(ITaskEngine taskEngine)
@@ -85,6 +85,11 @@ namespace Battlehub.VoxelCombat
             {
                 throw new System.NotSupportedException(string.Format("Type {0} is not supported", type));
             }  
+        }
+
+        public static void DestroyUnitController(IMatchUnitController unitController)
+        {
+            unitController.Destroy();
         }
 
         public static IVoxelDataController CreateVoxelDataController(MapRoot map, Coordinate coordinate, int type, int playerIndex, Dictionary<int, VoxelAbilities>[] allAbilities)

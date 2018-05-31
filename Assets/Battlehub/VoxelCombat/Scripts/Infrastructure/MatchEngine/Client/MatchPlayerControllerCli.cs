@@ -487,7 +487,8 @@ namespace Battlehub.VoxelCombat
                         spawnedUnitsList = PostprocessCommand(spawnedUnitsList, cmd, unitController);
                     }
 
-                    if (unitController.DataController.ControlledData.Unit.State == VoxelDataState.Dead)
+                    //if (unitController.DataController.ControlledData.Unit.State == VoxelDataState.Dead)
+                    if (!unitController.DataController.IsAlive)
                     {
                         //Voxel voxel = unitController.DataController.ControlledData.VoxelRef; 
                         //Debug.Assert(voxel == null);//

@@ -14,7 +14,7 @@ namespace Battlehub.VoxelCombat
         Idle,
         SearchingPath,
         Moving,
-        Dead,
+        //Dead,
         Busy,
     }
 
@@ -1586,7 +1586,7 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        public Coordinate[] FindUnits(int type)
+        public Coordinate[] FindDataOfType(int type)
         {
             List<Coordinate> result = new List<Coordinate>();
             Root.ForEach(cell =>
@@ -1602,7 +1602,7 @@ namespace Battlehub.VoxelCombat
             return result.ToArray();
         }
 
-        public Coordinate[] FindUnits(int type, int owner)
+        public Coordinate[] FindDataOfType(int type, int owner)
         {
             List<Coordinate> result = new List<Coordinate>();
             Root.ForEach(cell =>
@@ -1618,7 +1618,7 @@ namespace Battlehub.VoxelCombat
             return result.ToArray();
         }
 
-        public Coordinate[] FindUnits(int type, int owner, int weight)
+        public Coordinate[] FindDataOfType(int type, int owner, int weight)
         {
             List<Coordinate> result = new List<Coordinate>();
             Root.ForEach(cell =>

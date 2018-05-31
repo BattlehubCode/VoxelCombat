@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace Battlehub.VoxelCombat
 {
+    /*
     public class AttackTaskProcessor : ChooseTaskProcessor
     {
         public AttackTaskProcessor(IMatchView matchView, IPathFinder pathFinder, ITaskRunner taskRunner) : base(matchView, pathFinder, taskRunner)
@@ -75,5 +76,6 @@ namespace Battlehub.VoxelCombat
         }
 
     }
+    */
 
 }

@@ -3,10 +3,9 @@ using System.Collections.Generic;
 
 namespace Battlehub.VoxelCombat
 {
+    /*
     public class EatTaskProcessor : SearchTaskProcessor
     {
-      
-
         public EatTaskProcessor(IMatchView matchView, IPathFinder pathFinder, ITaskRunner taskRunner) :
             base(matchView, pathFinder, taskRunner)
         {
@@ -59,5 +58,5 @@ namespace Battlehub.VoxelCombat
             }
         }
     }
-
+    */
 }

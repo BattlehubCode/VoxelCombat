@@ -3,6 +3,7 @@
 
 namespace Battlehub.VoxelCombat
 {
+    /*
     public class Split4TaskProcessor : IBotTaskProcessor
     {
         public bool ChangeStage(BotTask task)
@@ -30,5 +31,5 @@ namespace Battlehub.VoxelCombat
             return false;
         }
     }
-
+    */
 }

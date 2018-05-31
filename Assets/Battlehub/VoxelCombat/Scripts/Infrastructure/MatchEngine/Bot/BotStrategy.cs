@@ -94,7 +94,7 @@ namespace Battlehub.VoxelCombat
         }
     }
 
-
+    /*
     public class DefaultBotStrategy : IBotStrategy
     {
         private IMatchView m_matchView;
@@ -556,5 +556,6 @@ namespace Battlehub.VoxelCombat
             UnityEngine.Debug.Assert(counter >= 0);
         }
     }
+    */
 
 }

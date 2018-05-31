@@ -55,7 +55,7 @@ namespace Battlehub.VoxelCombat
 
         void Pause(bool pause, MatchEngineCliEvent callback);
 
-        void Submit(Guid playerId, Cmd command);
+        void Submit(int playerIndex, Cmd command);
     }
 
     public class MatchEngineCli : MonoBehaviour, IMatchEngineCli
@@ -288,9 +288,8 @@ namespace Battlehub.VoxelCombat
             m_matchServer.Pause(m_gSettings.ClientId, pause, error => callback(error));
         }
 
-        public void Submit(Guid playerId, Cmd command)
+        public void Submit(int playerIndex, Cmd command)
         {
-            int playerIndex = m_game.GetPlayerIndex(playerId);
             if(command.Code == CmdCode.Composite)
             {
                 CompositeCmd composite = (CompositeCmd)command;
@@ -305,7 +304,7 @@ namespace Battlehub.VoxelCombat
                 m_pathFinder.Terminate(command.UnitIndex, playerIndex);
             }
             
-            m_matchServer.Submit(m_gSettings.ClientId, playerId, command, (error, returnedCommand) =>
+            m_matchServer.Submit(m_gSettings.ClientId, playerIndex, command, (error, returnedCommand) =>
             {
                 if (m_matchServer.HasError(error))
                 {

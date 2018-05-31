@@ -1,4 +1,6 @@
-﻿namespace Battlehub.VoxelCombat
+﻿using System;
+
+namespace Battlehub.VoxelCombat
 {
     public delegate void TaskEvent(TaskInfo taskInfo);
     public abstract class TaskBase
@@ -32,6 +34,11 @@
             bool isStateChanged = m_prevState != m_taskInfo.State;
             m_prevState = m_taskInfo.State;
             return isStateChanged;
+        }
+
+        public virtual void Destroy()
+        {
+
         }
 
         protected abstract void OnTick();
@@ -157,11 +164,11 @@
         }
     }
 
-    public class ExecuteCmdTask : TaskBase
+    public class ExecuteCmdTaskWithExpression : TaskBase
     {
-        public ExecuteCmdTask(TaskInfo taskInfo, ITaskEngine taskEngine) : base(taskInfo, taskEngine)
+        public ExecuteCmdTaskWithExpression(TaskInfo taskInfo, ITaskEngine taskEngine) : base(taskInfo, taskEngine)
         {
-            taskEngine.MatchView.Submit(taskInfo.PlayerId, taskInfo.Cmd);
+            taskEngine.MatchEngine.Submit(taskInfo.PlayerIndex, taskInfo.Cmd);
         }
 
         protected override void OnTick()
@@ -179,45 +186,45 @@
         }
     }
 
-    public class ExecuteMoveCmdTask : TaskBase
+    public class ExecuteCmdTask : TaskBase
     {
-        private IVoxelDataController m_dataController;
-        private Coordinate m_targetCoordinate;
+        private IMatchUnitController m_unit;
 
-        public ExecuteMoveCmdTask(TaskInfo taskInfo, ITaskEngine taskEngine) : base(taskInfo, taskEngine)
+        public ExecuteCmdTask(TaskInfo taskInfo, ITaskEngine taskEngine) : base(taskInfo, taskEngine)
         {
-            IMatchPlayerView player = taskEngine.MatchView.GetPlayerView(taskInfo.PlayerId);
-            IMatchUnitAssetView unit = player.GetUnit(taskInfo.Cmd.UnitIndex);
-            m_dataController = unit.DataController;
+            m_unit = taskEngine.MatchEngine.GetUnitController(taskInfo.PlayerIndex, taskInfo.Cmd.UnitIndex);
+            if(m_unit != null)
+            {
+                m_unit.CmdExecuted += OnCmdExecuted;
+                taskEngine.MatchEngine.Submit(taskInfo.PlayerIndex, taskInfo.Cmd);
+            }
+            else
+            {
+                taskInfo.State = TaskState.Failed;
+            }
+        }
 
-            CoordinateCmd cmd = (CoordinateCmd)taskInfo.Cmd;
-            m_targetCoordinate = cmd.Coordinates[cmd.Coordinates.Length - 1];
+        private void OnCmdExecuted(int cmdErrorCode)
+        {
+            m_unit.CmdExecuted -= OnCmdExecuted;
+            if (cmdErrorCode == CmdErrorCode.Success)
+            {
+                m_taskInfo.State = TaskState.Completed;
+            }
+            else
+            {
+                m_taskInfo.State = TaskState.Failed;
+            }      
+        }
 
-            taskEngine.MatchView.Submit(taskInfo.PlayerId, taskInfo.Cmd);
+        public override void Destroy()
+        {
+            base.Destroy();
+            m_unit.CmdExecuted -= OnCmdExecuted;
         }
 
         protected override void OnTick()
         {
-            if (m_taskInfo.State == TaskState.Active)
-            {
-                VoxelDataState state = m_dataController.GetVoxelDataState();
-                switch(state)
-                {
-                    case VoxelDataState.Idle:
-                        if(m_dataController.Coordinate == m_targetCoordinate)
-                        {
-                            m_taskInfo.State = TaskState.Completed;
-                        }
-                        else
-                        {
-                            m_taskInfo.State = TaskState.Failed;
-                        }
-                        break;
-                    case VoxelDataState.Dead:
-                        m_taskInfo.State = TaskState.Failed;
-                        break;
-                }                
-            }
         }
     }
 }

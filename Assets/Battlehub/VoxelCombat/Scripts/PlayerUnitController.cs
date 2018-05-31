@@ -157,7 +157,7 @@ namespace Battlehub.VoxelCombat
                             {
                                 m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates[0], true, true);
                             }
-                            SubmitToEngine(m_gameState.GetLocalPlayerId(LocalPlayerIndex), cmd);
+                            SubmitToEngine(m_gameState.LocalToPlayerIndex(LocalPlayerIndex), cmd);
                         }
                     });
                     m_wasAButtonDown = false;
@@ -189,10 +189,11 @@ namespace Battlehub.VoxelCombat
 
         private void OnAuto()
         {
-            SubmitStdCommand(() => new Cmd(CmdCode.Automatic), (playerIndex, unitId) =>
-            {
-                return true;
-            });
+            throw new NotImplementedException();
+            //SubmitStdCommand(() => new Cmd(CmdCode.Automatic), (playerIndex, unitId) =>
+            //{
+            //    return true;
+            //});
         }
 
         private void OnDiminish()
@@ -414,7 +415,7 @@ namespace Battlehub.VoxelCombat
 
 
                             Coordinate targetCoordinate = new Coordinate(mapPos, weight, altitude);
-                            movementCmd.Code = CmdCode.MoveConditional;
+                            movementCmd.Code = CmdCode.MoveSearch;
                             movementCmd.Coordinates = new[] { targetCoordinate };
                             movementCmd.UnitIndex = unitIndex;
                             commandsToSubmit.Add(movementCmd);
@@ -426,7 +427,7 @@ namespace Battlehub.VoxelCombat
                                  (unitId, path) =>
                                  {
                                      MovementCmd movementCmd = new MovementCmd();
-                                     movementCmd.Code = CmdCode.MoveUnconditional;
+                                     movementCmd.Code = CmdCode.Move;
                                      movementCmd.Coordinates = path;
                                      movementCmd.UnitIndex = unitIndex;
                                      commandsToSubmit.Add(movementCmd);
@@ -449,9 +450,8 @@ namespace Battlehub.VoxelCombat
 
         private void SubmitStdCommand(Func<Cmd> createCmd, Func<int, long, bool> check)
         {
-            Guid playerId = m_gameState.GetLocalPlayerId(m_localPlayerIndex);
-            int playerIndex = m_gameState.GetPlayerIndex(playerId);
-
+            int playerIndex = m_gameState.LocalToPlayerIndex(m_localPlayerIndex);
+            
             long[] selectedUnitIds = m_unitSelection.GetSelection(playerIndex, playerIndex);
                 //.OrderBy(unitIndex => m_gameState.GetVoxelDataController(playerIndex, unitIndex).ControlledVoxelData.Altitude).ToArray();
 
@@ -473,14 +473,14 @@ namespace Battlehub.VoxelCombat
                     commandsToSubmit.Add(command);
                 }
             }
-            SubmitToEngine(playerId, commandsToSubmit);
+            SubmitToEngine(playerIndex, commandsToSubmit);
         }
 
-        private void SubmitToEngine(Guid playerId, List<Cmd> commandsToSubmit)
+        private void SubmitToEngine(int playerIndex, List<Cmd> commandsToSubmit)
         {
             if (commandsToSubmit.Count == 1)
             {
-                m_engine.Submit(playerId, commandsToSubmit[0]);
+                m_engine.Submit(playerIndex, commandsToSubmit[0]);
 
                 //Render hit;
             }
@@ -491,7 +491,7 @@ namespace Battlehub.VoxelCombat
                     Commands = commandsToSubmit.ToArray()
                 };
 
-                m_engine.Submit(playerId, cmd);
+                m_engine.Submit(playerIndex, cmd);
             }
             else
             {
@@ -501,8 +501,8 @@ namespace Battlehub.VoxelCombat
 
         public void SubmitConsoleCommand(PlayerUnitConsoleCmd cmd, string[] args, IConsole console)
         {
-            Guid playerId = m_gameState.GetLocalPlayerId(m_localPlayerIndex);
-            int playerIndex = m_gameState.GetPlayerIndex(playerId);
+            int playerIndex = m_gameState.LocalToPlayerIndex(m_localPlayerIndex);
+
             long[] selectedUnits = m_unitSelection.GetSelection(playerIndex, playerIndex);
 
             List<Cmd> commandsToSubmit = new List<Cmd>();
@@ -524,7 +524,7 @@ namespace Battlehub.VoxelCombat
                     long selectedUnitIndex = selectedUnits[i];
 
                     CoordinateCmd coordCmd = new CoordinateCmd();
-                    coordCmd.Code = CmdCode.MoveConditional;
+                    coordCmd.Code = CmdCode.MoveSearch;
                     coordCmd.Coordinates = new[] { new Coordinate(row, col, weight, altitude) };
                     coordCmd.UnitIndex = selectedUnitIndex;
                     commandsToSubmit.Add(coordCmd);
@@ -579,7 +579,7 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            SubmitToEngine(playerId, commandsToSubmit);
+            SubmitToEngine(playerIndex, commandsToSubmit);
         }
 
         private static void CreateStdCommand(long[] selectedUnits, List<Cmd> commandsToSubmit, int cmdCode, Func<Cmd> createCmd = null)

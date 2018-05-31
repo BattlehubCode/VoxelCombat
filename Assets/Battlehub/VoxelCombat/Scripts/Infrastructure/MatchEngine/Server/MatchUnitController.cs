@@ -6,6 +6,8 @@ namespace Battlehub.VoxelCombat
 {
     public interface IMatchUnitController : IMatchUnitAssetView
     {
+        event Action<int> CmdExecuted;
+
         int Type
         {
             get;
@@ -27,28 +29,27 @@ namespace Battlehub.VoxelCombat
 
         Cmd Tick();
 
+        void Destroy();
     }
 
     public abstract class MatchUnitControllerBase : IMatchUnitController
     {
+        protected VoxelDataState m_prevState; //last tick state
         private VoxelDataState m_state;
+
+        protected int m_ticksBeforeNextCommand;
+        protected readonly Queue<Cmd> m_commandsQueue;
+        protected readonly IVoxelDataController m_dataController;
+        protected readonly List<VoxelDataCellPair> m_createdVoxels;
+        protected readonly List<VoxelData> m_eatenOrDestroyedVoxels;
+
+        public event Action<int> CmdExecuted;
+
         protected VoxelDataState State
         {
             get { return m_state; }
-            set
-            {
-                m_state = value;
-            }
+            set { m_state = value; }
         }
-
-        protected VoxelDataState m_prevState; //last tick state
-        protected readonly Queue<Cmd> m_commandsQueue = new Queue<Cmd>();
-        protected int m_ticksBeforeNextCommand;
-
-        protected readonly IVoxelDataController m_dataController;
-
-        protected readonly List<VoxelDataCellPair> m_createdVoxels = new List<VoxelDataCellPair>();
-        protected readonly List<VoxelData> m_eatenOrDestroyedVoxels = new List<VoxelData>();
 
         public IList<VoxelDataCellPair> CreatedVoxels
         {
@@ -58,11 +59,6 @@ namespace Battlehub.VoxelCombat
         public IList<VoxelData> EatenOrDestroyedVoxels
         {
             get { return m_eatenOrDestroyedVoxels; }
-        }
-
-        public virtual bool IsDead
-        {
-            get { return State == VoxelDataState.Dead; }
         }
 
         public long Id
@@ -75,54 +71,51 @@ namespace Battlehub.VoxelCombat
             get { return m_dataController.ControlledData.Type; }
         }
 
+        public bool IsAlive
+        {
+            get { return m_dataController.IsAlive; }
+        }
+
+        public MapPos Position
+        {
+            get { return m_dataController.Coordinate.MapPos; }
+        }
+
+        public VoxelData Data
+        {
+            get { return m_dataController.ControlledData; }
+        }
+
         public IVoxelDataController DataController
         {
             get { return m_dataController; }
         }
 
-        VoxelData IMatchUnitAssetView.Data
-        {
-            get { return m_dataController.ControlledData; }
-        }
-
-        MapPos IMatchUnitAssetView.Position
-        {
-            get { return m_dataController.Coordinate.MapPos; }
-        }
-
         public MatchUnitControllerBase(IVoxelDataController dataController)
         {
             m_dataController = dataController;
+            m_commandsQueue = new Queue<Cmd>();
+            m_createdVoxels = new List<VoxelDataCellPair>();
+            m_eatenOrDestroyedVoxels = new List<VoxelData>();
         }
 
         public void SetCommand(Cmd cmd)
         {
-            if (State == VoxelDataState.Dead)
+            if(!m_dataController.IsAlive)
             {
                 return;
             }
 
-            if (cmd.Code == CmdCode.LeaveRoom)
+            GoToIdleState();
+
+            if (cmd.Code != CmdCode.Cancel && cmd.Code != CmdCode.LeaveRoom)
             {
-                OnLeaveRoom(cmd);
-            }
-            else if(cmd.Code == CmdCode.Cancel)
-            {
-                m_commandsQueue.Clear();
-                State = VoxelDataState.Idle;
-                OnStop();
-            }
-            else
-            {
-                if (State == VoxelDataState.Busy) //<-- Maybe should remove it later
+                if (State == VoxelDataState.Busy)
                 {
                     return;
                 }
-
-                OnBeforeSetCommand(cmd);
                 OnSetCommand(cmd);
             }
-            
         }
 
         public Cmd Tick()
@@ -139,24 +132,15 @@ namespace Battlehub.VoxelCombat
 
             if (!m_dataController.IsAlive)
             {
-                m_commandsQueue.Clear();
-
-                State = VoxelDataState.Dead;
-                System.Diagnostics.Debug.Assert(State != m_prevState);
-
-                ChangeParamsCmd stateChangedCmd = new ChangeParamsCmd(CmdCode.StateChanged);
-                stateChangedCmd.UnitIndex = Id;
-                stateChangedCmd.IntParams = new int[]
+                if(State != VoxelDataState.Idle)
                 {
-                    (int)m_prevState,
-                    (int)State
-                };
-
-                bool noFail = m_dataController.SetVoxelDataState(State);
-                System.Diagnostics.Debug.Assert(noFail);
-
-                m_prevState = State;
-                return stateChangedCmd;
+                    RaiseCmdFailed(null);
+                }
+                else
+                {
+                    GoToIdleState();
+                }
+                return null;
             }
 
             if (m_ticksBeforeNextCommand == 0)
@@ -193,18 +177,821 @@ namespace Battlehub.VoxelCombat
                         {
                             UnitIndex = Id,
                             IntParams = new[]
-                                    {
-                                        (int)m_prevState,
-                                        (int)State
-                                    }
+                            {
+                                (int)m_prevState,
+                                (int)State
+                            }
                         };
                     }
 
                     bool noFail = m_dataController.SetVoxelDataState(State);
                     System.Diagnostics.Debug.Assert(noFail);
+                    m_prevState = State;
                 }
 
-                m_prevState = State;
+                return result;
+            }
+            else
+            {
+                m_ticksBeforeNextCommand--;
+            }
+
+            return null;
+        }
+
+        protected void GoToIdleState()
+        {
+            OnGoToIdleState();
+            m_commandsQueue.Clear();
+            State = VoxelDataState.Idle;
+        }
+
+        protected void RaiseCmdExecuted()
+        {
+            GoToIdleState();
+            if(CmdExecuted != null)
+            {
+                CmdExecuted(CmdErrorCode.Success);
+            }
+        }
+
+        protected void RaiseCmdFailed(Cmd cmd)
+        {
+            if(cmd != null)
+            {
+                cmd.ErrorCode = CmdErrorCode.Failed;
+            }
+
+            GoToIdleState();
+            if(CmdExecuted != null)
+            {
+                CmdExecuted(CmdErrorCode.Failed);
+            }
+        }
+
+        protected void OnInstantCmd(Cmd cmd, int duration)
+        {
+            State = VoxelDataState.Busy;
+            cmd.Duration = duration;
+            m_commandsQueue.Enqueue(cmd);
+        }
+
+        protected virtual void OnGoToIdleState() { }
+        protected abstract void OnSetCommand(Cmd cmd);
+        protected abstract Cmd OnTick();
+
+        public void Destroy()
+        {
+            if(State != VoxelDataState.Idle)
+            {
+                RaiseCmdFailed(null);
+            }
+        }
+    }
+
+    public class VoxelActorUnitController : MatchUnitControllerBase
+    {
+        protected readonly IPathFinder m_pathFinder;
+        private readonly IMatchEngine m_engine;
+
+        private int m_failedMoveAttempts;
+        private int m_maxFailedMoveAttempts = 3;
+
+        public VoxelActorUnitController(IVoxelDataController dataController, IMatchEngine engine)
+            : base(dataController)
+        {
+            m_engine = engine;
+            m_pathFinder = m_engine.PathFinder;
+        }
+
+        protected override void OnSetCommand(Cmd cmd)
+        {
+            switch (cmd.Code)
+            {
+                case CmdCode.MoveSearch:
+                    OnMoveCmd(cmd);
+                    break;
+                case CmdCode.Move:
+                    OnMoveWithSearchCmd(cmd);
+                    break;
+                case CmdCode.Split:
+                    OnInstantCmd(cmd, m_dataController.Abilities.SplitDuration);
+                    break;
+                case CmdCode.Split4:
+                    OnInstantCmd(cmd, m_dataController.Abilities.SplitDuration);
+                    break;
+                case CmdCode.Grow:
+                    OnInstantCmd(cmd, m_dataController.Abilities.GrowDuration);
+                    break;
+                case CmdCode.Diminish:
+                    OnInstantCmd(cmd, m_dataController.Abilities.DiminishDuration);
+                    break;
+                case CmdCode.Convert:
+                    OnInstantCmd(cmd, m_dataController.Abilities.ConvertDuration);
+                    break;
+                case CmdCode.SetHealth:
+                    OnInstantCmd(cmd, 0);
+                    break;
+            }
+        }
+
+        protected override void OnGoToIdleState()
+        {
+            if(State == VoxelDataState.SearchingPath)
+            {
+                m_pathFinder.Terminate(Id, m_dataController.PlayerIndex);
+            } 
+        }
+  
+        protected void OnMoveCmd(Cmd cmd)
+        {
+            CoordinateCmd coordinateCmd = (CoordinateCmd)cmd;
+            Coordinate[] path = coordinateCmd.Coordinates;
+            if (!ValidatePath(path))
+            {
+                RaiseCmdFailed(cmd);
+                return;
+            }
+
+            Coordinate closestCoordinate;
+            int coordIndex = Array.IndexOf(path, m_dataController.Coordinate);
+            if (coordIndex > -1)  //data control is on path
+            {
+                path = path.Skip(coordIndex).ToArray();
+                if (path.Length > 1)
+                {
+                    State = VoxelDataState.Moving;
+                    PopulateCommandsQueue(Id, path, false, CmdCode.Move);
+                }
+            }
+            else if (DataController.Coordinate.FindClosestTo(path, out closestCoordinate))
+            {
+                State = VoxelDataState.SearchingPath;
+                //find path segment connection current unity coordinate with path found on client
+                m_pathFinder.Find(Id, -1, m_dataController.Clone(),
+                    new[] { m_dataController.Coordinate, closestCoordinate }, (unitIndex, foundPath) =>
+                    {
+                        State = VoxelDataState.Moving;
+                        PopulateCommandsQueue(Id, Coordinate.MergePath(foundPath, path), false, CmdCode.Move);
+                    },
+                    null);
+            }
+            else
+            {
+                RaiseCmdFailed(cmd);
+            }
+        }
+
+        protected void OnMoveWithSearchCmd(Cmd cmd)
+        {
+            //m_ticksBeforeNextCommand = 0;// <-- this will enable immediate commands
+
+            MovementCmd coordinateCmd = (MovementCmd)cmd;
+            Coordinate[] cmdCoordinates = coordinateCmd.Coordinates;
+
+            State = VoxelDataState.SearchingPath;
+            m_pathFinder.Find(Id, -1, m_dataController.Clone(), ToWaypoints(cmdCoordinates), (unitIndex, path) =>
+            {
+                State = VoxelDataState.Moving;
+                PopulateCommandsQueue(unitIndex, path, false, CmdCode.MoveSearch);
+            }, null);
+        }
+
+    
+        protected override Cmd OnTick() //Tick should be able return several commands
+        {
+            if (State == VoxelDataState.Moving)
+            {
+                if (m_commandsQueue.Count > 0 && !m_dataController.IsCollapsedOrBlocked)
+                {
+                    Cmd cmd = m_commandsQueue.Peek();
+                    m_ticksBeforeNextCommand = cmd.Duration;
+
+                    bool dequeue = true;
+                    switch(cmd.Code)
+                    {
+                        case CmdCode.Move:
+                        case CmdCode.MoveSearch:
+                        {
+                            cmd = HandleNextMoveCmd(cmd);
+                            if (cmd == null)
+                            {
+                                m_failedMoveAttempts++;
+                                m_failedMoveAttempts %= (m_maxFailedMoveAttempts + 1);
+                            }
+                            else
+                            {
+                                m_failedMoveAttempts = 0;
+                            }
+                            dequeue = cmd != null; //if null then wait a little bit and try again
+                            break;
+                        }
+                            
+                        case CmdCode.RotateLeft:
+                        {
+                            m_dataController.RotateLeft();
+                            break;
+                        }
+                          
+                        case CmdCode.RotateRight:
+                        {
+                            m_dataController.RotateRight();
+                            break;
+                        }
+                           
+                        default:
+                        {
+                            cmd = HandleNextCmd(cmd);
+                            dequeue = cmd != null; //if null then wait al little bit and try again
+                            break;
+                        }      
+                    }
+
+                    if (dequeue && m_commandsQueue.Count > 0)
+                    {
+                        m_commandsQueue.Dequeue();
+                    }
+
+                    if (m_commandsQueue.Count == 0)
+                    {
+                        RaiseCmdExecuted();
+                    }
+
+                    return cmd;
+                }
+
+                if (m_commandsQueue.Count == 0)
+                {
+                    RaiseCmdExecuted();
+                }
+
+                return null;
+            }
+            else if (State == VoxelDataState.Busy)
+            {
+                if (m_commandsQueue.Count > 0)
+                {
+                    Cmd cmd = m_commandsQueue.Dequeue();
+                    m_ticksBeforeNextCommand = cmd.Duration;
+
+                    switch (cmd.Code)
+                    {
+                        case CmdCode.Split:
+                        {
+                            CoordinateCmd coordinateCmd = new CoordinateCmd(cmd.Code, cmd.UnitIndex, cmd.Duration);
+                            Coordinate[] coordinates;
+                            if (m_dataController.Split(out coordinates, EatOrDestroyCallback))
+                            {
+                                coordinateCmd.Coordinates = coordinates;
+                                RaiseCmdExecuted();
+                            }
+                            else
+                            {
+                                RaiseCmdFailed(coordinateCmd);
+                            }
+                          
+                            return coordinateCmd;
+                        }
+
+                        case CmdCode.Split4:
+                        {
+                            CoordinateCmd coordinateCmd = new CoordinateCmd(cmd.Code, cmd.UnitIndex, cmd.Duration);
+                            Coordinate[] coordinates;
+                            if (m_dataController.Split4(out coordinates))
+                            {
+                                coordinateCmd.Coordinates = coordinates;
+                                RaiseCmdExecuted();
+                            }
+                            else
+                            {
+                                RaiseCmdFailed(coordinateCmd);
+                            }
+                            
+                            return coordinateCmd;
+                        }
+
+                        case CmdCode.Grow:
+                        {
+                            if (m_dataController.Grow(EatOrDestroyCallback))
+                            {
+                                RaiseCmdExecuted();
+                            }
+                            else
+                            {
+                                RaiseCmdFailed(cmd);
+                            }
+                            
+                            return cmd;
+                        }
+
+                        case CmdCode.Diminish:
+                        {
+                            if (m_dataController.Diminish())
+                            {
+                                RaiseCmdExecuted();
+                            }
+                            else
+                            {
+                                RaiseCmdFailed(cmd);
+                            }
+                            
+                            return cmd;
+                        }
+                           
+                        case CmdCode.Convert:
+                        {
+                            ChangeParamsCmd convertCmd = (ChangeParamsCmd)cmd;
+
+                            int type = convertCmd.IntParams[0];
+
+                            if (m_dataController.Convert(type))
+                            {
+                                RaiseCmdExecuted();
+                            }
+                            else
+                            {
+                                RaiseCmdFailed(cmd);
+                            }
+                            
+                            return cmd;
+                        }
+                           
+                        case CmdCode.SetHealth:
+                        {
+                            ChangeParamsCmd changeCmd = (ChangeParamsCmd)cmd;
+                            int health = changeCmd.IntParams[0];
+                            m_dataController.SetHealth(health);
+                            RaiseCmdExecuted();
+                            return changeCmd;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        protected virtual Cmd HandleNextMoveCmd(Cmd cmd)
+        {
+            MovementCmd movementCmd = (MovementCmd)cmd;
+            Coordinate to = movementCmd.Coordinates[1];
+
+            bool isLastCmdInSequence = movementCmd.IsLastCmdInSequence;
+
+            const bool considerIdleStateAsValid = true;
+            if (!m_dataController.IsValidAndEmpty(to, considerIdleStateAsValid))
+            {
+                if (m_failedMoveAttempts < m_maxFailedMoveAttempts)
+                {
+                    //Do not move if there is voxel actor or voxel bomb in one of active states. just wait a little bit
+                    return null;
+                }
+            }
+
+            if (!m_dataController.Move(to, isLastCmdInSequence, EatOrDestroyCallback))
+            {
+                RaiseCmdFailed(cmd);
+            }
+
+            return cmd;
+        }
+
+        protected virtual Cmd HandleNextCmd(Cmd cmd)
+        {
+            return cmd;
+        }
+
+        protected void EatOrDestroyCallback(VoxelData eater, VoxelData voxelData, int deltaHealth, int voxelDataHealth)
+        {
+            m_eatenOrDestroyedVoxels.Add(voxelData);
+        }
+
+        protected bool ValidatePath(Coordinate[] path)
+        {
+            if (path.Length < 2)
+            {
+                return false;
+            }
+
+            for (int i = 1; i < path.Length; ++i)
+            {
+                int diff = Math.Abs(path[i - 1].Row - path[i].Row) + Math.Abs(path[i - 1].Col - path[i].Col);
+                if (diff != 1)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        protected Coordinate[] ToWaypoints(Coordinate[] cmdCoordinates)
+        {
+            Coordinate[] waypoints = new Coordinate[cmdCoordinates.Length + 1];
+
+            waypoints[0] = m_dataController.Coordinate;
+            for (int i = 1; i < waypoints.Length; ++i)
+            {
+                waypoints[i] = cmdCoordinates[i - 1];
+            }
+
+            return waypoints;
+        }
+
+        protected virtual void PopulateCommandsQueue(long unitIndex, Coordinate[] path, bool isAutomatedAction, int moveCode)
+        {
+            int dir = m_dataController.ControlledData.Dir;
+
+            for (int i = 0; i < path.Length - 1; ++i)
+            {
+                Coordinate from = path[i];
+                Coordinate to = path[i + 1];
+
+                int rotateLeft = VoxelData.ShouldRotateLeft(dir, from, to);
+                int rotateRight = VoxelData.ShouldRotateRight(dir, from, to);
+                if (rotateLeft > 0)
+                {
+                    for (int r = 0; r < rotateLeft; ++r)
+                    {
+                        dir = VoxelData.RotateLeft(dir);
+
+                        Cmd rotateCmd = new Cmd(CmdCode.RotateLeft, unitIndex);
+                        rotateCmd.Duration = m_dataController.Abilities.RotationDuration;
+                        m_commandsQueue.Enqueue(rotateCmd);
+                    }
+                }
+                else if (rotateRight > 0)
+                {
+                    for (int r = 0; r < rotateRight; ++r)
+                    {
+                        dir = VoxelData.RotateRight(dir);
+
+                        Cmd rotateCmd = new Cmd(CmdCode.RotateRight, unitIndex);
+                        rotateCmd.Duration = m_dataController.Abilities.RotationDuration;
+
+                        m_commandsQueue.Enqueue(rotateCmd);
+                    }
+                }
+
+                MovementCmd moveCmd = new MovementCmd
+                {
+                    Code = moveCode,
+                    Duration = m_dataController.Abilities.MovementDuration,
+                    Coordinates = new[] { from, to },
+                    UnitIndex = unitIndex
+                };
+
+                if (i == path.Length - 1)
+                {
+                    moveCmd.IsLastCmdInSequence = true && !isAutomatedAction;
+                }
+
+                m_commandsQueue.Enqueue(moveCmd);
+            }
+        }
+    }
+
+    public class SpawnerUnitController : MatchUnitControllerBase
+    {
+        public SpawnerUnitController(IVoxelDataController dataController) 
+            : base(dataController)
+        {
+            m_ticksBeforeNextCommand = dataController.Abilities.ActionInterval;
+        }
+
+        protected override void OnSetCommand(Cmd cmd)
+        {
+
+        }
+
+        protected override Cmd OnTick()
+        {
+            m_ticksBeforeNextCommand = DataController.Abilities.ActionInterval;
+
+            Coordinate[] coordinates;
+            if (m_dataController.PerformSpawnAction(out coordinates))
+            {
+                for (int i = 0; i < coordinates.Length; ++i)
+                {
+                    Coordinate coordinate = coordinates[i];
+                    MapCell cell = m_dataController.Map.Get(coordinate.Row, coordinate.Col, coordinate.Weight);
+                    VoxelData data = cell.GetVoxelDataAt(coordinate.Altitude);
+                    m_createdVoxels.Add(new VoxelDataCellPair(data, cell));
+                }
+
+                Cmd cmd = new Cmd(CmdCode.Spawn, Id);
+                cmd.Duration = m_ticksBeforeNextCommand;
+                return cmd;
+            }
+            return null;
+        }
+    }
+
+    public class VoxelBombUnitController : VoxelActorUnitController
+    {
+         public VoxelBombUnitController(IVoxelDataController dataController, IMatchEngine engine) 
+            : base(dataController, engine)
+        {
+        }
+
+
+        //protected override void OnSetCommand(Cmd cmd)
+        //{
+        //    if (cmd.Code == CmdCode.MoveSearch)
+        //    {
+        //        OnMoveWithSearchCmd(cmd);
+        //    }
+        //    else if(cmd.Code == CmdCode.Move)
+        //    {
+        //        OnMoveCmd(cmd);
+        //    }
+        //}
+
+       
+        //protected override Cmd HandleNextMoveCmd(Cmd cmd)
+        //{
+        //    MovementCmd movementCmd = (MovementCmd)cmd;
+        //    Coordinate to = movementCmd.Coordinates[1];
+
+        //    if (HasTarget)
+        //    {
+        //        Coordinate explodeCoordinate;
+        //        VoxelData target = GetTargetData(TargetData.UnitOrAssetIndex, TargetData.Owner, out explodeCoordinate);
+
+        //        if (target == null || explodeCoordinate != to.ToWeight(target.Weight))
+        //        {
+        //            return base.HandleNextMoveCmd(cmd);
+        //        }
+
+        //        if (!m_dataController.Explode(to, target, EatOrDestroyCallback))
+        //        {
+        //            return base.HandleNextMoveCmd(cmd);
+        //        }
+        //    }
+        //    else
+        //    {
+        //        return base.HandleNextMoveCmd(cmd);
+        //    }
+
+        //    if (!m_dataController.IsAlive)
+        //    {
+        //        m_commandsQueue.Clear();
+        //        //State = VoxelDataState.Dead;
+        //    }
+
+        //    to.Altitude = m_dataController.ControlledData.Altitude;
+        //    movementCmd.Coordinates[1] = to;
+        //    movementCmd.Code = CmdCode.Explode;
+
+        //    return cmd;
+        //}
+
+//        protected override Cmd HandleNextCmd(Cmd cmd)
+//        {
+//            if(cmd.Code == CmdCode.Explode)
+//            {
+//                Coordinate coordinate = m_dataController.Coordinate;
+//                if (HasTarget)
+//                {
+//                    Coordinate explodeCoordinate;
+//                    VoxelData target = GetTargetData(TargetData.UnitOrAssetIndex, TargetData.Owner, out explodeCoordinate);
+
+//                    Coordinate weightedCoordinate = coordinate.ToWeight(target.Weight);
+
+//#warning Following lines could cause errors 
+//                    if (target == null || explodeCoordinate.MapPos != weightedCoordinate.MapPos ||
+//                        explodeCoordinate.Altitude != weightedCoordinate.Altitude &&
+//                        explodeCoordinate.Altitude + TargetData.Height != weightedCoordinate.Altitude)
+//                    {
+//                        if (!m_dataController.IsValidAndEmpty(coordinate, false))
+//                        {
+//                            return TryToFinishMovementInValidCell(cmd);
+//                        }
+
+//                        cmd.ErrorCode = CmdErrorCode.Failed;
+//                        return cmd;
+//                    }
+//                    else
+//                    {
+//                        if (!m_dataController.Explode(coordinate, target, EatOrDestroyCallback))
+//                        {
+//                            if (!m_dataController.IsValidAndEmpty(coordinate, false))
+//                            {
+//                                return TryToFinishMovementInValidCell(cmd);
+//                            }
+
+//                            cmd.ErrorCode = CmdErrorCode.Failed;
+//                            return cmd;
+//                        }
+//                    }
+//                }
+//                else
+//                {
+//                    if (!m_dataController.IsValidAndEmpty(coordinate, false))
+//                    {
+//                        return TryToFinishMovementInValidCell(cmd);
+//                    }
+
+//                    cmd.ErrorCode = CmdErrorCode.Failed;
+//                    return cmd;
+//                }
+//            }
+
+//            return cmd;
+//        }
+    }
+}
+
+
+/*
+ * 
+ * using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Battlehub.VoxelCombat
+{
+    public interface IMatchUnitController : IMatchUnitAssetView
+    {
+        int Type
+        {
+            get;
+        }
+
+        void SetCommand(Cmd cmd);
+
+        //Tick side effect
+        IList<VoxelDataCellPair> CreatedVoxels
+        {
+            get;
+        }
+
+        //Tick side effect
+        IList<VoxelData> EatenOrDestroyedVoxels
+        {
+            get;
+        }
+
+        Cmd Tick();
+
+    }
+
+    public abstract class MatchUnitControllerBase : IMatchUnitController
+    {
+        protected VoxelDataState m_prevState; //last tick state
+        private VoxelDataState m_state;
+
+        protected int m_ticksBeforeNextCommand;
+        protected readonly Queue<Cmd> m_commandsQueue;
+        protected readonly IVoxelDataController m_dataController;
+        protected readonly List<VoxelDataCellPair> m_createdVoxels;
+        protected readonly List<VoxelData> m_eatenOrDestroyedVoxels;
+
+        protected VoxelDataState State
+        {
+            get { return m_state; }
+            set { m_state = value; }
+        }
+
+        public IList<VoxelDataCellPair> CreatedVoxels
+        {
+            get { return m_createdVoxels; }
+        }
+
+        public IList<VoxelData> EatenOrDestroyedVoxels
+        {
+            get { return m_eatenOrDestroyedVoxels; }
+        }
+
+        public long Id
+        {
+            get { return m_dataController.ControlledData.UnitOrAssetIndex; }
+        }
+
+        public int Type
+        {
+            get { return m_dataController.ControlledData.Type; }
+        }
+
+        public MapPos Position
+        {
+            get { return m_dataController.Coordinate.MapPos; }
+        }
+
+        public VoxelData Data
+        {
+            get { return m_dataController.ControlledData; }
+        }
+
+        public IVoxelDataController DataController
+        {
+            get { return m_dataController; }
+        }
+
+        public virtual bool IsDead
+        {
+            get { return !m_dataController.IsAlive; }
+        }
+
+        public MatchUnitControllerBase(IVoxelDataController dataController)
+        {
+            m_dataController = dataController;
+            m_commandsQueue = new Queue<Cmd>();
+            m_createdVoxels = new List<VoxelDataCellPair>();
+            m_eatenOrDestroyedVoxels = new List<VoxelData>();
+        }
+
+        public void SetCommand(Cmd cmd)
+        {
+            if(!m_dataController.IsAlive)
+            {
+                return;
+            }
+
+            if (cmd.Code == CmdCode.LeaveRoom)
+            {
+                OnLeaveRoom(cmd);
+            }
+            else if(cmd.Code == CmdCode.Cancel)
+            {
+                m_commandsQueue.Clear();
+                State = VoxelDataState.Idle;
+                OnStop();
+            }
+            else
+            {
+                if (State == VoxelDataState.Busy)
+                {
+                    return;
+                }
+                OnBeforeSetCommand(cmd);
+                OnSetCommand(cmd);
+            }
+        }
+
+        public Cmd Tick()
+        {
+            if(m_createdVoxels.Count != 0)
+            {
+                m_createdVoxels.Clear();
+            }
+
+            if(m_eatenOrDestroyedVoxels.Count != 0)
+            {
+                m_eatenOrDestroyedVoxels.Clear();
+            }
+
+            if (!m_dataController.IsAlive)
+            {
+                m_commandsQueue.Clear();
+                return null;
+            }
+
+            if (m_ticksBeforeNextCommand == 0)
+            {
+                Cmd result = OnTick();
+
+                if (State != m_prevState)
+                {
+                    if (result != null)
+                    {
+                        result = new CompositeCmd
+                        {
+                            UnitIndex = result.UnitIndex,
+                            Duration = result.Duration,
+                            Commands = new[]
+                            {
+                                result,
+                                new ChangeParamsCmd(CmdCode.StateChanged)
+                                {
+                                    UnitIndex = result.UnitIndex,
+                                    Duration = result.Duration,
+                                    IntParams = new[]
+                                    {
+                                        (int)m_prevState,
+                                        (int)State
+                                    }
+                                }
+                            }
+                        };
+                    }
+                    else
+                    {
+                        result = new ChangeParamsCmd(CmdCode.StateChanged)
+                        {
+                            UnitIndex = Id,
+                            IntParams = new[]
+                            {
+                                (int)m_prevState,
+                                (int)State
+                            }
+                        };
+                    }
+
+                    bool noFail = m_dataController.SetVoxelDataState(State);
+                    System.Diagnostics.Debug.Assert(noFail);
+                    m_prevState = State;
+                }
+
                 return result;
             }
             else
@@ -233,7 +1020,6 @@ namespace Battlehub.VoxelCombat
         protected abstract void OnStop();
         protected abstract void OnBeforeSetCommand(Cmd cmd);
         protected abstract void OnSetCommand(Cmd cmd);
-
         protected abstract Cmd OnTick();
     }
 
@@ -332,7 +1118,7 @@ namespace Battlehub.VoxelCombat
             if (!m_dataController.IsAlive)
             {
                 m_commandsQueue.Clear();
-                State = VoxelDataState.Dead;
+                //State = VoxelDataState.Dead;
             }
 
             to.Altitude = m_dataController.ControlledData.Altitude;
@@ -370,7 +1156,7 @@ namespace Battlehub.VoxelCombat
             if (!m_dataController.IsAlive)
             {
                 m_commandsQueue.Clear();
-                State = VoxelDataState.Dead;
+                //State = VoxelDataState.Dead;
             }
 
             to.Altitude = m_dataController.ControlledData.Altitude;
@@ -402,7 +1188,7 @@ namespace Battlehub.VoxelCombat
                             return TryToFinishMovementInValidCell(cmd);
                         }
 
-                        cmd.Code = CmdCode.Failed;
+                        cmd.ErrorCode = CmdErrorCode.Failed;
                         return cmd;
                     }
                     else
@@ -414,7 +1200,7 @@ namespace Battlehub.VoxelCombat
                                 return TryToFinishMovementInValidCell(cmd);
                             }
 
-                            cmd.Code = CmdCode.Failed;
+                            cmd.ErrorCode = CmdErrorCode.Failed;
                             return cmd;
                         }
                     }
@@ -426,7 +1212,7 @@ namespace Battlehub.VoxelCombat
                         return TryToFinishMovementInValidCell(cmd);
                     }
 
-                    cmd.Code = CmdCode.Failed;
+                    cmd.ErrorCode = CmdErrorCode.Failed;
                     return cmd;
                 }
             }
@@ -1012,7 +1798,7 @@ namespace Battlehub.VoxelCombat
                         }
                         else
                         {
-                            coordinateCmd.Code = CmdCode.Failed;
+                            coordinateCmd.ErrorCode = CmdErrorCode.Failed;
                         }
                         State = VoxelDataState.Idle;
                         return coordinateCmd;
@@ -1027,7 +1813,7 @@ namespace Battlehub.VoxelCombat
                         }
                         else
                         {
-                            coordinateCmd.Code = CmdCode.Failed;
+                            coordinateCmd.ErrorCode = CmdErrorCode.Failed;
                         }
                         State = VoxelDataState.Idle;
                         return coordinateCmd;
@@ -1036,7 +1822,7 @@ namespace Battlehub.VoxelCombat
                     {
                         if (!m_dataController.Grow(EatOrDestroyCallback))
                         {
-                            cmd.Code = CmdCode.Failed;
+                            cmd.ErrorCode = CmdErrorCode.Failed;
                         }
 
                         State = VoxelDataState.Idle;
@@ -1046,7 +1832,7 @@ namespace Battlehub.VoxelCombat
                     {
                         if (!m_dataController.Diminish())
                         {
-                            cmd.Code = CmdCode.Failed;
+                            cmd.ErrorCode = CmdErrorCode.Failed;
                         }
 
                         State = VoxelDataState.Idle;
@@ -1060,7 +1846,7 @@ namespace Battlehub.VoxelCombat
 
                         if (!m_dataController.Convert(type))
                         {
-                            cmd.Code = CmdCode.Failed;
+                            cmd.ErrorCode = CmdErrorCode.Failed;
                         }
 
                         State = VoxelDataState.Idle;
@@ -1237,12 +2023,12 @@ namespace Battlehub.VoxelCombat
         }
         protected void FindAndMoveToClosest(Func<MapCell, VoxelData> filterCallback, int radius, int currentRadius, int deltaRow, int deltaCol, Action<bool, VoxelData, Coordinate[]> completedCallback)
         {
-            Coordinate to = m_dataController.Coordinate.Add(deltaRow /* * currentRadius*/,  deltaCol  /* currentRadius*/);
+            Coordinate to = m_dataController.Coordinate.Add(deltaRow ,  deltaCol );
         
             int mapSize = m_dataController.MapSize;
 
-            MapCell cell = null;
-            if(to.Row >= 0 && to.Row < mapSize && to.Col >= 0 && to.Col < mapSize)
+MapCell cell = null;
+            if(to.Row >= 0 && to.Row<mapSize && to.Col >= 0 && to.Col<mapSize)
             {
                 if(deltaRow != 0 || deltaCol != 0)
                 {
@@ -1256,7 +2042,7 @@ namespace Battlehub.VoxelCombat
 
                 State = VoxelDataState.SearchingPath;
 
-                /*no target needed here because this is area search process*/
+              
                 m_pathFinder.Find(Id, -1, m_dataController.Clone(), new[] { m_dataController.Coordinate, to }, (unitIndex, path) =>
                 {
                     if (to != path[path.Length - 1])
@@ -1308,258 +2094,259 @@ namespace Battlehub.VoxelCombat
         }
 
         private VoxelData GetAttackableDescendants(MapCell cell)
+{
+    VoxelData destroyer = m_dataController.ControlledData;
+    return cell.GetDescendantsWithVoxelData(data => data.IsAttackableBy(destroyer) && (data.IsNeutral || data.Owner == destroyer.Owner));
+}
+
+private void FindClosestMatchingCellCompleted(long unitIndex, object ctx, object result)
+{
+    FindClosestContext context = (FindClosestContext)ctx;
+    if (context.Found)
+    {
+        FindAndMoveToClosest(context.FilterCallback, context.Radius, context.CurrentRadius, context.DeltaRow, context.DeltaCol, context.CompletedCallback);
+    }
+    else
+    {
+        State = VoxelDataState.Idle;
+        context.CompletedCallback(false, null, null);
+    }
+}
+
+private object FindClosestMatchingCell(long unitIndex, object ctx)
+{
+    FindClosestContext context = (FindClosestContext)ctx;
+
+    context.DeltaCol++;
+
+    if (context.DeltaRow == context.CurrentRadius && context.DeltaCol == context.CurrentRadius + 1)
+    {
+        context.CurrentRadius++;
+        if (context.CurrentRadius > context.Radius)
         {
-            VoxelData destroyer = m_dataController.ControlledData;
-            return cell.GetDescendantsWithVoxelData(data => data.IsAttackableBy(destroyer) && (data.IsNeutral || data.Owner == destroyer.Owner));
+            context.Found = false;
+            return context;
         }
 
-        private void FindClosestMatchingCellCompleted(long unitIndex, object ctx, object result)
+        context.DeltaRow = -context.CurrentRadius;
+        context.DeltaCol = -context.CurrentRadius;
+    }
+
+    else if (context.DeltaCol == context.CurrentRadius + 1)
+    {
+        context.DeltaRow++;
+        context.DeltaCol = -context.CurrentRadius;
+    }
+
+    if (HasMatchingCell(context.FilterCallback, context.DeltaRow, context.DeltaCol, context.CurrentRadius))
+    {
+        context.Found = true;
+        return context;
+    }
+
+    return null;
+}
+
+private bool HasMatchingCell(Func<MapCell, VoxelData> predicate, int deltaRow, int deltaCol, int currentRadius)
+{
+    if (deltaRow == 0 && deltaCol == 0)
+    {
+        return false;
+    }
+
+    Coordinate to = m_dataController.Coordinate.Add(deltaRow , deltaCol);
+
+    int mapSize = m_dataController.MapSize;
+
+    MapCell cell = null;
+    if (to.Row >= 0 && to.Row < mapSize && to.Col >= 0 && to.Col < mapSize)
+    {
+        cell = m_dataController.Map.Get(to.Row, to.Col, to.Weight);
+    }
+
+    return cell != null && predicate(cell) != null;
+}
+
+protected virtual Cmd OnMoveUnconditionalCmd(Cmd cmd)
+{
+    MovementCmd movementCmd = (MovementCmd)cmd;
+    Coordinate to = movementCmd.Coordinates[1];
+
+    bool isLastCmdInSequence = movementCmd.IsLastCmdInSequence;
+    //m_commandsQueue.Count > 1 and isLastCmdInSequence is not the same
+    if (m_commandsQueue.Count > 1)
+    {
+        bool considerIdleStateAsValid = true;
+        if (!m_dataController.IsValidAndEmpty(to, considerIdleStateAsValid))
         {
-            FindClosestContext context = (FindClosestContext)ctx;
-            if (context.Found)
+            if (m_failedMoveAttempts < m_maxFailedMoveAttempts)
             {
-                FindAndMoveToClosest(context.FilterCallback, context.Radius, context.CurrentRadius, context.DeltaRow, context.DeltaCol, context.CompletedCallback);
+                m_failedMoveAttempts++;
+                //Do not move if there is voxel actor or voxel bomb in one of active states. just wait a little bit
             }
             else
             {
+                m_commandsQueue.Clear();
                 State = VoxelDataState.Idle;
-                context.CompletedCallback(false, null, null);
             }
-        }
-
-        private object FindClosestMatchingCell(long unitIndex, object ctx)
-        {
-            FindClosestContext context = (FindClosestContext)ctx;
-
-            context.DeltaCol++;
-
-            if (context.DeltaRow == context.CurrentRadius && context.DeltaCol == context.CurrentRadius + 1)
-            {
-                context.CurrentRadius++;
-                if (context.CurrentRadius > context.Radius)
-                {
-                    context.Found = false;
-                    return context;
-                }
-
-                context.DeltaRow = -context.CurrentRadius;
-                context.DeltaCol = -context.CurrentRadius;
-            }
-
-            else if (context.DeltaCol == context.CurrentRadius + 1)
-            {
-                context.DeltaRow++;
-                context.DeltaCol = -context.CurrentRadius;
-            }
-
-            if (HasMatchingCell(context.FilterCallback, context.DeltaRow, context.DeltaCol, context.CurrentRadius))
-            {
-                context.Found = true;
-                return context;
-            }
-
             return null;
         }
-
-        private bool HasMatchingCell(Func<MapCell, VoxelData> predicate, int deltaRow, int deltaCol, int currentRadius)
+    }
+    else
+    {
+        if (!m_dataController.IsValidAndEmpty(to, false))
         {
-            if(deltaRow == 0 && deltaCol == 0)
-            {
-                return false;
-            }
-
-            Coordinate to = m_dataController.Coordinate.Add(deltaRow /* * currentRadius*/, deltaCol /* * currentRadius*/);
-
-            int mapSize = m_dataController.MapSize;
-
-            MapCell cell = null;
-            if (to.Row >= 0 && to.Row < mapSize && to.Col >= 0 && to.Col < mapSize)
-            {
-                cell = m_dataController.Map.Get(to.Row, to.Col, to.Weight);
-            }
-
-            return cell != null && predicate(cell) != null;
+            m_commandsQueue.Clear();
+            State = VoxelDataState.Idle;
+            return null;
+            //return TryToFinishMovementInValidCell(cmd);
         }
+    }
 
-        protected virtual Cmd OnMoveUnconditionalCmd(Cmd cmd)
+    if (!m_dataController.Move(to, isLastCmdInSequence, EatOrDestroyCallback))
+    {
+        m_commandsQueue.Clear();
+        State = VoxelDataState.Idle;
+        return null;
+    }
+
+    if (!m_dataController.IsAlive)
+    {
+        m_commandsQueue.Clear();
+        //State = VoxelDataState.Dead;
+    }
+
+    return cmd;
+}
+
+protected virtual Cmd OnMoveConditionalCmd(Cmd cmd)
+{
+    MovementCmd movementCmd = (MovementCmd)cmd;
+
+    Coordinate to = movementCmd.Coordinates[1];
+
+    bool isLastCmdInSequence = movementCmd.IsLastCmdInSequence;
+    //m_commandsQueue.Count > 1 and isLastCmdInSequence is not the same
+    if (m_commandsQueue.Count > 1)
+    {
+        bool considerIdleStateAsValid = true;
+        if (!m_dataController.IsValidAndEmpty(to, considerIdleStateAsValid))
         {
-            MovementCmd movementCmd = (MovementCmd)cmd;
-            Coordinate to = movementCmd.Coordinates[1];
-
-            bool isLastCmdInSequence = movementCmd.IsLastCmdInSequence;
-            //m_commandsQueue.Count > 1 and isLastCmdInSequence is not the same
-            if (m_commandsQueue.Count > 1)
+            if (m_failedMoveAttempts < m_maxFailedMoveAttempts)
             {
-                bool considerIdleStateAsValid = true;
-                if (!m_dataController.IsValidAndEmpty(to, considerIdleStateAsValid))
-                {
-                    if (m_failedMoveAttempts < m_maxFailedMoveAttempts)
-                    {
-                        m_failedMoveAttempts++;
-                        //Do not move if there is voxel actor or voxel bomb in one of active states. just wait a little bit
-                    }
-                    else
-                    {
-                        m_commandsQueue.Clear();
-                        State = VoxelDataState.Idle;
-                    }
-                    return null;
-                }
-            }
-            else
-            {
-                if (!m_dataController.IsValidAndEmpty(to, false))
-                {
-                    m_commandsQueue.Clear();
-                    State = VoxelDataState.Idle;
-                    return null;
-                    //return TryToFinishMovementInValidCell(cmd);
-                }
-            }
-
-            if (!m_dataController.Move(to, isLastCmdInSequence, EatOrDestroyCallback))
-            {
-                m_commandsQueue.Clear();
-                State = VoxelDataState.Idle;
+                //Do not move if there is voxel actor or voxel bomb in one of active states. just wait a little bit
                 return null;
             }
-
-            if (!m_dataController.IsAlive)
-            {
-                m_commandsQueue.Clear();
-                State = VoxelDataState.Dead;
-            }
-
-            return cmd;
         }
-
-        protected virtual Cmd OnMoveConditionalCmd(Cmd cmd)
+    }
+    else
+    {
+        if (!m_dataController.IsValidAndEmpty(to, false))
         {
-            MovementCmd movementCmd = (MovementCmd)cmd;
-            
-            Coordinate to = movementCmd.Coordinates[1];
+            return TryToFinishMovementInValidCell(cmd);
+        }
+    }
 
-            bool isLastCmdInSequence = movementCmd.IsLastCmdInSequence;
-            //m_commandsQueue.Count > 1 and isLastCmdInSequence is not the same
-            if (m_commandsQueue.Count > 1)
+    if (!m_dataController.Move(to, isLastCmdInSequence, EatOrDestroyCallback))
+    {
+        m_pathFinder.Terminate(cmd.UnitIndex, m_dataController.PlayerIndex);
+        m_commandsQueue.Clear();
+
+        State = VoxelDataState.SearchingPath;
+
+        if (HasTarget)
+        {
+            TargetData = GetTargetData(TargetData.UnitOrAssetIndex, TargetData.Owner, out m_targetCoordinate);
+            if (HasTarget)
             {
-                bool considerIdleStateAsValid = true; 
-                if (!m_dataController.IsValidAndEmpty(to, considerIdleStateAsValid))
-                {
-                    if(m_failedMoveAttempts < m_maxFailedMoveAttempts)
-                    {
-                        //Do not move if there is voxel actor or voxel bomb in one of active states. just wait a little bit
-                        return null;
-                    }
-                }
+                HandleTargetCoordinateChange(m_targetCoordinate);
             }
             else
             {
-                if (!m_dataController.IsValidAndEmpty(to, false))
-                {
-                    return TryToFinishMovementInValidCell(cmd);
-                }
-            }
-
-            if (!m_dataController.Move(to, isLastCmdInSequence, EatOrDestroyCallback))
-            {
-                m_pathFinder.Terminate(cmd.UnitIndex, m_dataController.PlayerIndex);
-                m_commandsQueue.Clear();
-
-                State = VoxelDataState.SearchingPath;
-
-                if(HasTarget)
-                {
-                    TargetData = GetTargetData(TargetData.UnitOrAssetIndex, TargetData.Owner, out m_targetCoordinate);
-                    if(HasTarget)
-                    {
-                        HandleTargetCoordinateChange(m_targetCoordinate);
-                    }
-                    else
-                    {
-                        m_pathFinder.Find(Id, -1, m_dataController.Clone(), m_waypoints, (unitIndex, path) =>
-                        {
-                            State = VoxelDataState.Moving;
-
-                            PopulateCommandsQueue(unitIndex, path, false, CmdCode.MoveConditional);
-                        }, null);
-                    }
-                }
-                else
-                {
-                    m_pathFinder.Find(Id, -1, m_dataController.Clone(), m_waypoints, (unitIndex, path) =>
-                    {
-                        State = VoxelDataState.Moving;
-
-                        PopulateCommandsQueue(unitIndex, path, false, CmdCode.MoveConditional);
-                    }, null);
-                }
-
-                return null; 
-            }
-
-            if (!m_dataController.IsAlive)
-            {
-                m_pathFinder.Terminate(cmd.UnitIndex, m_dataController.PlayerIndex);
-                m_commandsQueue.Clear();
-                State = VoxelDataState.Dead;
-                return cmd;
-            }
-
-            return cmd;
-        }
-
-        protected virtual Cmd OnCustomCommand(Cmd cmd)
-        {
-            return cmd;
-        }
-
-        protected Cmd TryToFinishMovementInValidCell(Cmd cmd)
-        {
-            m_ticksBeforeTargetCheck = 0;
-
-            if (!m_dataController.IsValidAndEmpty(m_dataController.Coordinate, false))
-            {
-                return FinishMovementInValidCell(cmd);
-            }
-
-            State = VoxelDataState.Idle;
-            cmd.Code = CmdCode.Failed;
-            return cmd;
-        }
-
-        private Cmd FinishMovementInValidCell(Cmd cmd)
-        {
-            if (m_dataController.IsValidAndEmpty(m_dataController.Coordinate, false))
-            {
-                State = VoxelDataState.Idle;
-                cmd.Code = CmdCode.Failed;
-                return cmd;
-            }
-            else
-            {
-                m_pathFinder.Terminate(cmd.UnitIndex, m_dataController.PlayerIndex);
-                m_commandsQueue.Clear();
-
-                State = VoxelDataState.SearchingPath;
-
-                const int searchRadius = 10;
-
-                m_pathFinder.FindEmptySpace(Id, m_dataController.Clone(), searchRadius, (unitIndex, path) =>
+                m_pathFinder.Find(Id, -1, m_dataController.Clone(), m_waypoints, (unitIndex, path) =>
                 {
                     State = VoxelDataState.Moving;
 
-                    m_ticksBeforeNextCommand = 0;
-
-                    PopulateCommandsQueue(unitIndex, path, true, CmdCode.MoveConditional);
+                    PopulateCommandsQueue(unitIndex, path, false, CmdCode.MoveConditional);
                 }, null);
-                return null;
             }
         }
-
-        protected void EatOrDestroyCallback(VoxelData eater, VoxelData voxelData, int deltaHealth, int voxelDataHealth)
+        else
         {
-            m_eatenOrDestroyedVoxels.Add(voxelData);
+            m_pathFinder.Find(Id, -1, m_dataController.Clone(), m_waypoints, (unitIndex, path) =>
+            {
+                State = VoxelDataState.Moving;
+
+                PopulateCommandsQueue(unitIndex, path, false, CmdCode.MoveConditional);
+            }, null);
         }
+
+        return null;
+    }
+
+    if (!m_dataController.IsAlive)
+    {
+        m_pathFinder.Terminate(cmd.UnitIndex, m_dataController.PlayerIndex);
+        m_commandsQueue.Clear();
+        // State = VoxelDataState.Dead;
+        return cmd;
+    }
+
+    return cmd;
+}
+
+protected virtual Cmd OnCustomCommand(Cmd cmd)
+{
+    return cmd;
+}
+
+protected Cmd TryToFinishMovementInValidCell(Cmd cmd)
+{
+    m_ticksBeforeTargetCheck = 0;
+
+    if (!m_dataController.IsValidAndEmpty(m_dataController.Coordinate, false))
+    {
+        return FinishMovementInValidCell(cmd);
+    }
+
+    State = VoxelDataState.Idle;
+    cmd.ErrorCode = CmdErrorCode.Failed;
+    return cmd;
+}
+
+private Cmd FinishMovementInValidCell(Cmd cmd)
+{
+    if (m_dataController.IsValidAndEmpty(m_dataController.Coordinate, false))
+    {
+        State = VoxelDataState.Idle;
+        cmd.ErrorCode = CmdErrorCode.Failed;
+        return cmd;
+    }
+    else
+    {
+        m_pathFinder.Terminate(cmd.UnitIndex, m_dataController.PlayerIndex);
+        m_commandsQueue.Clear();
+
+        State = VoxelDataState.SearchingPath;
+
+        const int searchRadius = 10;
+
+        m_pathFinder.FindEmptySpace(Id, m_dataController.Clone(), searchRadius, (unitIndex, path) =>
+        {
+            State = VoxelDataState.Moving;
+
+            m_ticksBeforeNextCommand = 0;
+
+            PopulateCommandsQueue(unitIndex, path, true, CmdCode.MoveConditional);
+        }, null);
+        return null;
     }
 }
+
+protected void EatOrDestroyCallback(VoxelData eater, VoxelData voxelData, int deltaHealth, int voxelDataHealth)
+{
+    m_eatenOrDestroyedVoxels.Add(voxelData);
+}
+    }
+}
+*/

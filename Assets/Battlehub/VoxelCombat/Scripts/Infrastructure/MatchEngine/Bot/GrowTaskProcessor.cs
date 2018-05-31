@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace Battlehub.VoxelCombat
 {
+    /*
     public class GrowTaskProcessor : SearchTaskProcessor
     {
         public GrowTaskProcessor(IMatchView matchView, IPathFinder pathFinder, ITaskRunner taskRunner) :
@@ -89,4 +90,5 @@ namespace Battlehub.VoxelCombat
             }
         }
     }
+    */
 }

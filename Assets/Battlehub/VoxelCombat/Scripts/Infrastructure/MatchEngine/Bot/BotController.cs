@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Battlehub.VoxelCombat
 {
     public interface IMatchView
     {
-        event Action<Guid, Cmd> OnSubmitted;
+        event Action<int, Cmd> OnSubmitted;
 
         int PlayersCount
         {
@@ -21,7 +20,7 @@ namespace Battlehub.VoxelCombat
         IMatchPlayerView GetPlayerView(Guid guid);
 
         bool IsSuitableCmdFor(Guid playerId, long unitIndex, int cmdCode);
-        void Submit(Guid playerId, Cmd cmd);
+        void Submit(int playerId, Cmd cmd);
     }
 
     public delegate void MatchPlayerEventHandler<T>(T arg);
@@ -76,6 +75,16 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
+        bool IsAlive
+        {
+            get;
+        }
+
+        MapPos Position
+        {
+            get;
+        }
+
         VoxelData Data
         {
             get;
@@ -86,16 +95,7 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-        MapPos Position
-        {
-            get;
-        }
-
-        bool IsDead
-        {
-            get;
-        }
-
+        
     }
 
 
@@ -149,7 +149,7 @@ namespace Battlehub.VoxelCombat
                     throw new NotImplementedException();
             }
 
-            m_strategy = new DefaultBotStrategy(m_player, m_matchView, m_pathFinder, m_taskRunner);
+           // m_strategy = new DefaultBotStrategy(m_player, m_matchView, m_pathFinder, m_taskRunner);
         }
 
         public void Update(float time)
@@ -160,7 +160,7 @@ namespace Battlehub.VoxelCombat
 
                 if (cmd != null && cmd.Commands != null && cmd.Commands.Length > 0)
                 {
-                    m_matchView.Submit(m_player.Id, cmd);
+                //    m_matchView.Submit(m_player., cmd);
                 }
                 m_timeToThink = time + m_thinkInterval;
             }

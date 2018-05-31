@@ -10,7 +10,7 @@ namespace Battlehub.VoxelCombat
     {
         event TaskEngineEvent TaskStateChanged;
 
-        IMatchView MatchView
+        IMatchEngine MatchEngine
         {
             get;
         }
@@ -40,13 +40,13 @@ namespace Battlehub.VoxelCombat
     {
         public event TaskEngineEvent TaskStateChanged;
 
-        private IMatchView m_match;
+        private IMatchEngine m_match;
         private ITaskRunner m_taskRunner;
         private int m_identity;
         private List<TaskBase> m_activeTasks;
         private readonly Dictionary<int, IExpression> m_expressions;
 
-        public IMatchView MatchView
+        public IMatchEngine MatchEngine
         {
             get { return m_match; }
         }
@@ -62,9 +62,10 @@ namespace Battlehub.VoxelCombat
             return m_expressions[expressionCode];
         }
 
-        public TaskEngine(IMatchView match, ITaskRunner taskRunner)
+        public TaskEngine(IMatchEngine match, ITaskRunner taskRunner)
         {
             m_match = match;
+            m_taskRunner = taskRunner;
             m_activeTasks = new List<TaskBase>();
 
             m_expressions = new Dictionary<int, IExpression>
@@ -171,18 +172,11 @@ namespace Battlehub.VoxelCombat
 
                         if(taskInfo.Expression != null)
                         {
-                            return new ExecuteCmdTask(taskInfo, this);
+                            return new ExecuteCmdTaskWithExpression(taskInfo, this);
                         }
                         else
                         {
-                            switch (taskInfo.Cmd.Code)
-                            {
-                                case CmdCode.MoveConditional:
-                                case CmdCode.MoveUnconditional:
-                                    return new ExecuteMoveCmdTask(taskInfo, this);
-                                default:
-                                    return new ExecuteCmdTask(taskInfo, this);
-                            }
+                            return new ExecuteCmdTask(taskInfo, this);
                         } 
                     }
                     

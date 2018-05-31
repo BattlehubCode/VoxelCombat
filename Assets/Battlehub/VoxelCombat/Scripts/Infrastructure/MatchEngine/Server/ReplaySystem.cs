@@ -8,11 +8,9 @@ namespace Battlehub.VoxelCombat
     {
         void Load(ReplayData replay);
 
-        ReplayData Save();
+        ReplayData Save();        
 
-        void RegisterPlayer(Guid guid, int index);
-
-        void Record(Guid playerId, Cmd cmd, long tick);
+        void Record(int playerIndex, Cmd cmd, long tick);
 
         void Tick(IMatchEngine engine, long tick);
     }
@@ -62,7 +60,7 @@ namespace Battlehub.VoxelCombat
 
     public class ReplayPlayer : ReplaySystem
     {
-        public override void Record(Guid playerId, Cmd cmd, long tick)
+        public override void Record(int playerId, Cmd cmd, long tick)
         {
             
         }
@@ -73,15 +71,7 @@ namespace Battlehub.VoxelCombat
         private Queue<long> m_ticks = new Queue<long>();
         private Queue<int> m_playerIndices = new Queue<int>();
         private Queue<Cmd> m_commands = new Queue<Cmd>();
-        private readonly Dictionary<Guid, int> m_playerToIndex = new Dictionary<Guid, int>();
-        private readonly Dictionary<int, Guid> m_indexToPlayer = new Dictionary<int, Guid>();
-
-        public void RegisterPlayer(Guid guid, int index)
-        {
-            m_playerToIndex.Add(guid, index);
-            m_indexToPlayer.Add(index, guid);
-        }
-
+       
         public virtual void Load(ReplayData replay)
         {
             m_ticks = new Queue<long>(replay.Ticks);
@@ -99,10 +89,8 @@ namespace Battlehub.VoxelCombat
             };
         }
 
-
-        public virtual void Record(Guid playerId, Cmd cmd, long tick)
+        public virtual void Record(int playerIndex, Cmd cmd, long tick)
         {
-            int playerIndex = m_playerToIndex[playerId];
             m_playerIndices.Enqueue(playerIndex);
             m_ticks.Enqueue(tick);
             m_commands.Enqueue(cmd);
@@ -115,9 +103,7 @@ namespace Battlehub.VoxelCombat
                 Cmd cmd = m_commands.Dequeue();
                 int playerIndex = m_playerIndices.Dequeue();
                 m_ticks.Dequeue();
-
-                Guid playerId = m_indexToPlayer[playerIndex];
-                engine.Submit(playerId, cmd);
+                engine.Submit(playerIndex, cmd);
             }
         }
     }

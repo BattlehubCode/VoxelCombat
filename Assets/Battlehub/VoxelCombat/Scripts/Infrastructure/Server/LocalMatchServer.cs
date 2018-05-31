@@ -380,7 +380,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void Submit(Guid clientId, Guid playerId, Cmd cmd, ServerEventHandler<Cmd> callback)
+        public void Submit(Guid clientId, int playerIndex, Cmd cmd, ServerEventHandler<Cmd> callback)
         {
             Error error = new Error();
             error.Code = StatusCode.OK;
@@ -404,8 +404,8 @@ namespace Battlehub.VoxelCombat
                 }
                 else
                 {
-                    m_replay.Record(playerId, cmd, m_tick);
-                    m_engine.Submit(playerId, cmd); // if I will use RTT Ticks then it will be possible to reverse order of commands sent by client (which is BAD!)
+                    m_replay.Record(playerIndex, cmd, m_tick);
+                    m_engine.Submit(playerIndex, cmd); // if I will use RTT Ticks then it will be possible to reverse order of commands sent by client (which is BAD!)
                 }
             }
             
@@ -618,7 +618,6 @@ namespace Battlehub.VoxelCombat
                         {
                             Guid playerGuid = m_room.Players[i];
                             engine.RegisterPlayer(m_room.Players[i], i, allAbilities);
-                            m_replay.RegisterPlayer(m_room.Players[i], i);
                         }
                         engine.CompletePlayerRegistration();
                  

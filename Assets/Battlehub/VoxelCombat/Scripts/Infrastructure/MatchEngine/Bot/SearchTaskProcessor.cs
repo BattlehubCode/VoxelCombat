@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace Battlehub.VoxelCombat
 {
+    /*
     public interface IBotTaskProcessor
     {
         void Process(BotTask task, Action<BotTask> cancelledCallback, Action<BotTask> processedCallback);
@@ -403,4 +404,5 @@ namespace Battlehub.VoxelCombat
             }
         }
     }
+    */
 }

@@ -10,8 +10,8 @@ namespace Battlehub.VoxelCombat
         public const int Nop = 0;
         public const int Spawn = 1;
         
-        public const int MoveUnconditional = 2;
-        public const int MoveConditional = 3;
+        public const int Move = 2;
+        public const int MoveSearch = 3;
         public const int RotateLeft = 4;
         public const int RotateRight = 5;
         public const int ExecuteTask = 8;
@@ -21,18 +21,24 @@ namespace Battlehub.VoxelCombat
         public const int Split4 = 24;
         public const int Grow = 25;
         public const int Diminish = 26;
-        public const int Automatic = 40;
+       // public const int Automatic = 40;
         public const int Convert = 50;
         public const int Explode = 75;
         public const int StateChanged = 90;
 
-        public const int Failed = 98; //Last command was failed -> disable animations return to idle state
+        //public const int Failed = 98; //Last command was failed -> disable animations return to idle state
         public const int LeaveRoom = 99;
         public const int Composite = 100;
 
         //Debug command
         public const int SetHealth = 200;
         public const int Kill = 201;      
+    }
+
+    public static class CmdErrorCode
+    {
+        public const int Success = 0;
+        public const int Failed = 1;
     }
 
     public struct MapRect
@@ -344,6 +350,8 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+
+    public delegate void CmdEventHandler(Cmd cmd);
     [ProtoContract]
     [ProtoInclude(50, typeof(CoordinateCmd))]
     [ProtoInclude(51, typeof(ChangeParamsCmd))]
@@ -360,6 +368,14 @@ namespace Battlehub.VoxelCombat
 
         [ProtoMember(3)]
         public int Duration;
+
+        [ProtoMember(4)]
+        public int ErrorCode;
+
+        public bool IsFailed
+        {
+            get { return ErrorCode != 0; }
+        }
 
         public Cmd()
         {
@@ -465,12 +481,15 @@ namespace Battlehub.VoxelCombat
     [ProtoContract]
     public class MovementCmd : CoordinateCmd
     {
+        [Obsolete]
         [ProtoMember(1, IsRequired = true)]
         public int TargetPlayerIndex = -1;
 
+        [Obsolete]
         [ProtoMember(2, IsRequired = true)]
         public long TargetIndex = -1;
 
+        [Obsolete]
         [ProtoMember(3)]
         public bool HasTarget;
 
@@ -573,7 +592,7 @@ namespace Battlehub.VoxelCombat
     public class MatchEngine : IMatchEngine
     {
         //private const bool EnableLog = true;
-        public event Action<Guid, Cmd> OnSubmitted;
+        public event Action<int, Cmd> OnSubmitted;
         private readonly Dictionary<Guid, IMatchPlayerController> m_idToPlayers = new Dictionary<Guid, IMatchPlayerController>();
         private readonly IMatchPlayerController[] m_players;
         private readonly Guid[] m_playerGuids;
@@ -706,8 +725,8 @@ namespace Battlehub.VoxelCombat
                 }
                 switch(cmdCode)
                 {
-                    case CmdCode.Automatic:
-                        return true;
+                    //case CmdCode.Automatic:
+                    //    return true;
                     case CmdCode.Convert:
                         return !unitController.DataController.IsCollapsedOrBlocked;
                     case CmdCode.Grow:
@@ -716,7 +735,7 @@ namespace Battlehub.VoxelCombat
                         return unitController.DataController.CanSplit4() == true;
                     case CmdCode.Split:
                         return unitController.DataController.CanSplit() == true;
-                    case CmdCode.MoveConditional:
+                    case CmdCode.MoveSearch:
                         return !unitController.DataController.IsCollapsedOrBlocked;
                     case CmdCode.Explode:
                         return unitController.Data.Type == (int)KnownVoxelTypes.Bomb;
@@ -725,28 +744,34 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
-        public void Submit(Guid playerId, Cmd cmd)
+        public void Submit(int playerIndex, Cmd cmd)
         {
             if(cmd.Code == CmdCode.ExecuteTask)
             {
                 TaskCmd execCmd = (TaskCmd)cmd;
-                execCmd.Task.PlayerId = playerId;
+                execCmd.Task.PlayerIndex = playerIndex;
                 m_taskEngine.Submit(execCmd.Task);
+                if (OnSubmitted != null)
+                {
+                    OnSubmitted(playerIndex, cmd);
+                }
             }
             else
             {
-                //should be completely replaced with tasks
-                IMatchPlayerController playerController;
-                if (m_idToPlayers.TryGetValue(playerId, out playerController))
+                if (playerIndex >= 0 && playerIndex < m_players.Length)
                 {
-                    playerController.Submit(cmd);
+                    IMatchPlayerController player = m_players[playerIndex];
+                    if(player != null)
+                    {
+                        player.Submit(cmd);
+
+                        if (OnSubmitted != null)
+                        {
+                            OnSubmitted(playerIndex, cmd);
+                        }
+                    }
                 }
-            }
-        
-            if(OnSubmitted != null)
-            {
-                OnSubmitted(playerId, cmd);
-            }
+            }       
         }
 
         private void OnTaskStateChanged(TaskInfo taskInfo)

@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace Battlehub.VoxelCombat
 {
+    /*
     public class SplitTaskProcessor : IBotTaskProcessor
     {
         public bool ChangeStage(BotTask task)
@@ -30,6 +31,6 @@ namespace Battlehub.VoxelCombat
             return false;
         }
     }
-
+    */
 }
 

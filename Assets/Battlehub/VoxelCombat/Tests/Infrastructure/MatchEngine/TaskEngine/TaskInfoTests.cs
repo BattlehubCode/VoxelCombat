@@ -69,7 +69,7 @@ namespace Battlehub.VoxelCombat.Tests
                 {
                     TaskId = 1236,
                     TaskType = TaskType.Command,
-                    Cmd = new MovementCmd(CmdCode.MoveUnconditional, 10, 10),
+                    Cmd = new MovementCmd(CmdCode.Move, 10, 10),
                     Parent = taskInfo,
                     State = TaskState.Idle
                 }

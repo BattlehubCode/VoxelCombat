@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace Battlehub.VoxelCombat
 {
+    /*
     public class ConvertTaskProcessor : SearchTaskProcessor
     {
         public ConvertTaskProcessor(IMatchView matchView, IPathFinder pathFinder, ITaskRunner taskRunner) : base(matchView, pathFinder, taskRunner)
@@ -101,5 +102,5 @@ namespace Battlehub.VoxelCombat
             }
         }
     }
-
+    */
 }

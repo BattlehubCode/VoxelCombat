@@ -1227,7 +1227,7 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// Return error if called before Launched event
         /// </summary>
-        void Submit(Guid clientId, Guid playerId, Cmd cmd, ServerEventHandler<Cmd> callback);
+        void Submit(Guid clientId, int playerIndex, Cmd cmd, ServerEventHandler<Cmd> callback);
 
         void Pong(Guid clientId, ServerEventHandler callback);
 

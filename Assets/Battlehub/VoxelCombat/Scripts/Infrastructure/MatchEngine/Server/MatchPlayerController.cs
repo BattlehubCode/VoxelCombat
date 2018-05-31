@@ -38,7 +38,6 @@ namespace Battlehub.VoxelCombat
         private MapCell m_cell;
         private MapPos m_pos;
         
-
         public VoxelData VoxelData
         {
             get { return m_voxelData; }
@@ -69,9 +68,9 @@ namespace Battlehub.VoxelCombat
             get { return m_voxelData;  }
         }
 
-        bool IMatchUnitAssetView.IsDead
+        bool IMatchUnitAssetView.IsAlive
         {
-            get { return !m_voxelData.IsAlive; }
+            get { return m_voxelData.IsAlive; }
         }
 
         public IVoxelDataController DataController
@@ -259,6 +258,7 @@ namespace Battlehub.VoxelCombat
                     m_controllableUnitsCount--;
                 }
 
+                MatchFactory.DestroyUnitController(unitController);
                 m_idToUnit.Remove(unitController.Id);
                 unitsChanged = true;
 
@@ -330,7 +330,7 @@ namespace Battlehub.VoxelCombat
                 m_commandBuffer = new CommandsArray(new Cmd[m_idToUnit.Count]);
             }
 
-            bool newCommands = false;
+            bool unitsChanged = false;
             for (int i = 0; i < m_units.Length; ++i)
             {
                 IMatchUnitController unitController = m_units[i];
@@ -369,22 +369,22 @@ namespace Battlehub.VoxelCombat
                         CompositeCmd composite = (CompositeCmd)cmd;
                         for (int c = 0; c < composite.Commands.Length; ++c)
                         {
-                            newCommands = PostprocessCmd(newCommands, unitController, composite.Commands[c]);
+                            unitsChanged = PostprocessCmd(unitsChanged, unitController, composite.Commands[c]);
                         }
                     }
                     else
                     {
-                        newCommands = PostprocessCmd(newCommands, unitController, cmd);
+                        unitsChanged = PostprocessCmd(unitsChanged, unitController, cmd);
                     }
                 }
 
-                if (unitController.IsDead)
+                if (!unitController.IsAlive)
                 {
-                    newCommands = RemoveUnitController(newCommands, unitController);
+                    unitsChanged = RemoveUnitController(unitsChanged, unitController);
                 }
             }
 
-            if (newCommands)
+            if (unitsChanged)
             {
                 m_units = m_idToUnit.Values.ToArray();
             }
@@ -524,7 +524,7 @@ namespace Battlehub.VoxelCombat
             for(int i = 0; i < m_units.Length; ++i)
             {
                 IMatchUnitController unit = m_units[i];
-                if(unit.IsDead)
+                if(!unit.IsAlive)
                 {
                     continue;
                 }

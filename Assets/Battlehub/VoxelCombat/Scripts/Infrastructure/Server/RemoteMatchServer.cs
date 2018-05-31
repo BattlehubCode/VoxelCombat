@@ -131,11 +131,11 @@ namespace Battlehub.VoxelCombat
             Call(rpc, (error, result) => callback(error));
         }
 
-        private RemoteArg<Guid> m_playerIdArg = new RemoteArg<Guid>();
+        private RemoteArg<int> m_playerIdArg = new RemoteArg<int>();
         private RemoteArg<Cmd> m_cmdArg = new RemoteArg<Cmd>();
-        public void Submit(Guid clientId, Guid playerId, Cmd cmd, ServerEventHandler<Cmd> callback)
+        public void Submit(Guid clientId, int playerIndex, Cmd cmd, ServerEventHandler<Cmd> callback)
         {
-            m_playerIdArg.Value = playerId;
+            m_playerIdArg.Value = playerIndex;
             m_cmdArg.Value = cmd;
 
             RemoteCall rpc = new RemoteCall(

@@ -159,7 +159,8 @@ namespace Battlehub.VoxelCombat
 
             OnVoxelRefResetOverride(voxel);
 
-            if(m_dataController.ControlledData.Unit.State == VoxelDataState.Dead)
+            //if(m_dataController.ControlledData.Unit.State == VoxelDataState.Dead)
+            if (!m_dataController.IsAlive)
             {
                 m_dataController.ControlledData.VoxelRefSet -= OnVoxelRefSet;
                 m_dataController.ControlledData.VoxelRefReset -= OnVoxelRefReset;
@@ -596,12 +597,20 @@ namespace Battlehub.VoxelCombat
 
         private void ExecuteCommand(Cmd cmd)
         {
+            if (cmd.ErrorCode != CmdErrorCode.Success)
+            {
+                Debug.LogErrorFormat("Cmd {0} failed with error {1}", cmd.Code, cmd.ErrorCode);
+                if (m_controlledVoxel != null)
+                {
+                    //Last command was failed go to idle state 
+                }
+            }
             if (cmd.Code == CmdCode.StateChanged)
             {
                 OnStateChanged(cmd);
             }
-            else if (cmd.Code == CmdCode.MoveConditional || 
-                     cmd.Code == CmdCode.MoveUnconditional)
+            else if (cmd.Code == CmdCode.MoveSearch || 
+                     cmd.Code == CmdCode.Move)
             {
                 OnMove(cmd);
             }
@@ -636,13 +645,6 @@ namespace Battlehub.VoxelCombat
             else if (cmd.Code == CmdCode.SetHealth)
             {
                 OnSetHealth(cmd);
-            }
-            else if (cmd.Code == CmdCode.Failed)
-            {
-                if (m_controlledVoxel != null)
-                {
-                    //Last command was failed go to idle state 
-                }
             }
             else
             {

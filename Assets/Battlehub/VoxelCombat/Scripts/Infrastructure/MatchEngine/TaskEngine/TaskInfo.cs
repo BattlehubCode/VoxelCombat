@@ -287,6 +287,7 @@ namespace Battlehub.VoxelCombat
         private ExpressionInfo m_expression;
         
         private Guid m_playerId;
+        private int m_playerIndex;
         private TaskInfo m_parent;
 
         public TaskInfo(TaskType taskType, Cmd cmd, TaskState state, ExpressionInfo expression, TaskInfo parent)
@@ -375,10 +376,10 @@ namespace Battlehub.VoxelCombat
             set { m_expression = value; }
         }
 
-        public Guid PlayerId
+        public int PlayerIndex
         {
-            get { return m_playerId; }
-            set { m_playerId = value; }
+            get { return m_playerIndex; }
+            set { m_playerIndex = value; }
         }
 
         [OnDeserialized]

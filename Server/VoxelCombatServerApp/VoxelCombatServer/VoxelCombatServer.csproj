@@ -88,9 +88,6 @@
     <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\SplitTaskProcessor.cs">
       <Link>MatchEngine\Bot\SplitTaskProcessor.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\PathFinder.cs">
-      <Link>MatchEngine\PathFinder.cs</Link>
-    </Compile>
     <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Server\MatchEngine.cs">
       <Link>MatchEngine\Server\MatchEngine.cs</Link>
     </Compile>
@@ -106,14 +103,23 @@
     <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Server\ReplaySystem.cs">
       <Link>MatchEngine\Server\ReplaySystem.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskEngine.cs">
-      <Link>MatchEngine\TaskEngine.cs</Link>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskEngine\Expressions.cs">
+      <Link>MatchEngine\TaskEngine\Expressions.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskInfo.cs">
-      <Link>MatchEngine\TaskInfo.cs</Link>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskEngine\PathFinder.cs">
+      <Link>MatchEngine\TaskEngine\PathFinder.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskRunner.cs">
-      <Link>MatchEngine\TaskRunner.cs</Link>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskEngine\TaskEngine.cs">
+      <Link>MatchEngine\TaskEngine\TaskEngine.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskEngine\TaskInfo.cs">
+      <Link>MatchEngine\TaskEngine\TaskInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskEngine\TaskRunner.cs">
+      <Link>MatchEngine\TaskEngine\TaskRunner.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\TaskEngine\Tasks.cs">
+      <Link>MatchEngine\TaskEngine\Tasks.cs</Link>
     </Compile>
     <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\VoxelAbilities.cs">
       <Link>MatchEngine\VoxelAbilities.cs</Link>
