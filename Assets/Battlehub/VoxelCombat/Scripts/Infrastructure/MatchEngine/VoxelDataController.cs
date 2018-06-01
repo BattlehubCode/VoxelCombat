@@ -1383,6 +1383,7 @@ namespace Battlehub.VoxelCombat
             if(cell.First == m_controlledData)
             {
                 cell.First = voxelData;
+                cell.Last = voxelData;
             }
             else
             {
@@ -1476,6 +1477,7 @@ namespace Battlehub.VoxelCombat
                             voxelData.Health = abilities.DefaultHealth;
 
                             targetCell.First = voxelData;
+                            targetCell.Last = voxelData;
 
                             coordinates[index] = new Coordinate(targetCell.GetPosition(), voxelData);
                             index++;

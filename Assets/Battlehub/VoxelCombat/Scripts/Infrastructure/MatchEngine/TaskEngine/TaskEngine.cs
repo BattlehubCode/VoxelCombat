@@ -176,6 +176,10 @@ namespace Battlehub.VoxelCombat
                         }
                         else
                         {
+                            if(taskInfo.Cmd.Code == CmdCode.MoveSearch)
+                            {
+                                return new ExecuteMoveSearchCmdTask(taskInfo, this);
+                            }
                             return new ExecuteCmdTask(taskInfo, this);
                         } 
                     }

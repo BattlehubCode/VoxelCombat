@@ -188,7 +188,7 @@ namespace Battlehub.VoxelCombat
 
     public class ExecuteCmdTask : TaskBase
     {
-        private IMatchUnitController m_unit;
+        protected readonly IMatchUnitController m_unit;
 
         public ExecuteCmdTask(TaskInfo taskInfo, ITaskEngine taskEngine) : base(taskInfo, taskEngine)
         {
@@ -209,12 +209,22 @@ namespace Battlehub.VoxelCombat
             m_unit.CmdExecuted -= OnCmdExecuted;
             if (cmdErrorCode == CmdErrorCode.Success)
             {
-                m_taskInfo.State = TaskState.Completed;
+                OnCompleted();
             }
             else
             {
-                m_taskInfo.State = TaskState.Failed;
+                OnFailed();
             }      
+        }
+
+        protected virtual void OnCompleted()
+        {
+            m_taskInfo.State = TaskState.Completed;
+        }
+
+        protected virtual void OnFailed()
+        {
+            m_taskInfo.State = TaskState.Failed;
         }
 
         public override void Destroy()
@@ -225,6 +235,26 @@ namespace Battlehub.VoxelCombat
 
         protected override void OnTick()
         {
+        }
+    }
+
+    public class ExecuteMoveSearchCmdTask : ExecuteCmdTask
+    {
+        public ExecuteMoveSearchCmdTask(TaskInfo taskInfo, ITaskEngine taskEngine) : base(taskInfo, taskEngine)
+        {
+        }
+
+        protected override void OnCompleted()
+        {
+            MovementCmd cmd = (MovementCmd)m_taskInfo.Cmd;
+            if(cmd.Coordinates[cmd.Coordinates.Length - 1].MapPos == m_unit.DataController.Coordinate.MapPos)
+            {
+                m_taskInfo.State = TaskState.Completed;
+            }
+            else
+            {
+                m_taskInfo.State = TaskState.Failed;
+            }
         }
     }
 }

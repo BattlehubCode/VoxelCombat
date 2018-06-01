@@ -1216,9 +1216,15 @@ namespace Battlehub.VoxelCombat
                 if(cell.First != null)
                 {
                     VoxelData data = cell.First;
-                    if(cell.Parent != null)
+                    MapCell parent = cell.Parent;
+                    while(parent != null)
                     {
-                        data.Prev = cell.Parent.Last;
+                        if(parent.Last != null)
+                        {
+                            data.Prev = parent.Last;
+                            break;
+                        }
+                        parent = parent.Parent;
                     }
 
                     while(data != null)

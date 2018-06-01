@@ -20,7 +20,7 @@ namespace Battlehub.VoxelCombat.Tests
 
 
         protected const int MAX_TICKS = 1000;
-        //4 Players, Depth 6, Flat square, Size 4x4, Cell weight 4
+        //4 Players, Depth 6, Flat square, Size 4x4, Cell weight 4 (Map name test_env_0 4 players)
         protected readonly string TestEnv0 = "021ef2f8-789c-44ff-b59b-0f43064c581b.data";
 
         protected Guid[] m_players;
@@ -107,7 +107,7 @@ namespace Battlehub.VoxelCombat.Tests
         private void PrepareTestData1(int playerId, int offsetX, int offsetY, out Cmd cmd, out ExpressionInfo expression)
         {
             Coordinate[] coords = m_map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
-            Assert.AreEqual(coords.Length, 1);
+            Assert.AreEqual(coords.Length, 2);
 
             VoxelData unit = m_map.Get(coords[0]);
             Coordinate targetCoordinate = coords[0].Add(offsetX, offsetY);
@@ -119,11 +119,11 @@ namespace Battlehub.VoxelCombat.Tests
             expression = ExpressionInfo.MoveTaskExpression(unit.UnitOrAssetIndex, playerId, targetCoordinate);
         }
 
-        private Cmd PrepareTestData2(int playerId, int cmdCode, int type)
+        private Cmd PrepareTestData2(int playerId, int cmdCode, int param)
         {
             Cmd cmd;
             Coordinate[] coords = m_map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
-            Assert.AreEqual(coords.Length, 1);
+            Assert.AreEqual(coords.Length, 2);
 
             VoxelData unit = m_map.Get(coords[0]);
 
@@ -134,7 +134,7 @@ namespace Battlehub.VoxelCombat.Tests
                     cmd = new ChangeParamsCmd(CmdCode.Convert)
                     {
                         UnitIndex = unit.UnitOrAssetIndex,
-                        IntParams = new int[] { type }
+                        IntParams = new int[] { param }
                     };
                     break;
                 }
@@ -146,6 +146,17 @@ namespace Battlehub.VoxelCombat.Tests
                     cmd = new Cmd(cmdCode, unit.UnitOrAssetIndex);
                     break;
                 }
+                case CmdCode.SetHealth:
+                {
+                    cmd = new ChangeParamsCmd(CmdCode.SetHealth)
+                    {
+                        UnitIndex = unit.UnitOrAssetIndex,
+                        IntParams = new int[] { param }
+                    };
+
+                    break;
+                }
+                
                 default:
                 {
                     cmd = null;
@@ -155,6 +166,7 @@ namespace Battlehub.VoxelCombat.Tests
 
             return cmd;  
         }
+
 
         [Test]
         public void SimpleMoveUsingExpression()
@@ -231,14 +243,32 @@ namespace Battlehub.VoxelCombat.Tests
         [Test]
         public void GrowTaskTest()
         {
-            ExecuteGenericTaskTest(CmdCode.Grow, GrowTaskCompleted);
+            const int playerId = 1;
+            ExecuteTaskTest(() => PrepareTestData2(playerId, CmdCode.SetHealth, 64), setHealthTaskInfo =>
+            {
+                Assert.AreEqual(setHealthTaskInfo.State, TaskState.Completed);
+                ExecuteGenericTaskTest(CmdCode.Grow, GrowTaskCompleted, false);
+            });
+            
         }
 
-        //[Test]
-        //public void DiminishTaskTest()
-        //{
-        //    ExecuteGenericTaskTest(CmdCode.Diminish);
-        //}
+        [Test]
+        public void DiminishTaskTest()
+        {
+            const int playerId = 1;
+            ExecuteTaskTest(() => PrepareTestData2(playerId, CmdCode.SetHealth, 64), setHealthTaskInfo =>
+            {
+                Assert.AreEqual(TaskState.Completed, setHealthTaskInfo.State);
+                ExecuteGenericTaskTest(CmdCode.Grow, growTaskInfo =>
+                {
+                    Assert.AreEqual(TaskState.Completed, growTaskInfo.State);
+                    ExecuteGenericTaskTest(CmdCode.Diminish, DiminishTaskCompleted, false);
+                }, 
+                false);
+
+            });
+            
+        }
 
         //[Test]
         //public void SplitTaskTest()
@@ -252,21 +282,25 @@ namespace Battlehub.VoxelCombat.Tests
         //    ExecuteGenericTaskTest(CmdCode.Split4);
         //}
 
-        private void ExecuteGenericTaskTest(int cmdCode, TaskEngineEvent taskStateChangeEventHandler)
+        private void ExecuteGenericTaskTest(int cmdCode, TaskEngineEvent taskStateChangeEventHandler, bool begin = true)
         {
             ExecuteTaskTest(() =>
             {
                 const int playerId = 1;
                 return PrepareTestData2(playerId, cmdCode, 0);
-            }, taskStateChangeEventHandler);
+            }, taskStateChangeEventHandler, begin);
         }
 
-        private void ExecuteTaskTest(Func<Cmd> runTestCallback, TaskEngineEvent taskStateChangeEventHandler)
+        private void ExecuteTaskTest(Func<Cmd> runTestCallback,  TaskEngineEvent taskStateChangeEventHandler, bool begin = true)
         {
-            Assert.DoesNotThrow(() =>
+            if(begin)
             {
-                BeginTest(TestEnv0, 2);
-            });
+                Assert.DoesNotThrow(() =>
+                {
+                    BeginTest(TestEnv0, 2);
+                });
+            }
+           
             Cmd cmd = runTestCallback();
             const int playerId = 1;
             TaskInfo task = new TaskInfo(cmd);
@@ -275,8 +309,6 @@ namespace Battlehub.VoxelCombat.Tests
 
         protected void TaskMovementCompleted(TaskInfo taskInfo)
         {
-            m_engine.TaskEngine.TaskStateChanged -= TaskMovementCompleted;
-
             Assert.DoesNotThrow(() =>
             {
                 EndTest();
@@ -293,8 +325,6 @@ namespace Battlehub.VoxelCombat.Tests
 
         protected void TaskMovementFailed(TaskInfo taskInfo)
         {
-            m_engine.TaskEngine.TaskStateChanged -= TaskMovementFailed;
-
             Assert.DoesNotThrow(() =>
             {
                 EndTest();
@@ -311,8 +341,6 @@ namespace Battlehub.VoxelCombat.Tests
 
         protected void ConvertTaskCompleted(TaskInfo taskInfo)
         {
-            m_engine.TaskEngine.TaskStateChanged -= ConvertTaskCompleted;
-
             Assert.DoesNotThrow(() =>
             {
                 EndTest();
@@ -331,8 +359,6 @@ namespace Battlehub.VoxelCombat.Tests
 
         protected void GrowTaskCompleted(TaskInfo taskInfo)
         {
-            m_engine.TaskEngine.TaskStateChanged -= GrowTaskCompleted;
-
             Assert.DoesNotThrow(() =>
             {
                 EndTest();
@@ -347,13 +373,39 @@ namespace Battlehub.VoxelCombat.Tests
             Assert.Pass();
         }
 
-        protected void FinializeTest(int playerIndex, TaskInfo task, TaskEngineEvent eventHandler)
+        protected void DiminishTaskCompleted(TaskInfo taskInfo)
+        {
+            Assert.DoesNotThrow(() =>
+            {
+                EndTest();
+            });
+
+            Assert.AreEqual(TaskState.Completed, taskInfo.State);
+
+            IMatchUnitController controller = m_engine.GetUnitController(1, taskInfo.Cmd.UnitIndex);
+            Assert.IsNotNull(controller);
+            Assert.AreEqual(controller.Data.Weight, 2);
+
+            Assert.Pass();
+        }
+
+        protected void FinializeTest(int playerIndex, TaskInfo task, TaskEngineEvent callback)
         {
             m_engine.Submit(playerIndex, new TaskCmd(task));
-            m_engine.TaskEngine.TaskStateChanged += eventHandler;
+
+            TaskEngineEvent taskStateChangedEventHandler = null;
+            taskStateChangedEventHandler = taskInfo =>
+            {
+                m_engine.TaskEngine.TaskStateChanged -= taskStateChangedEventHandler;
+                callback(task);
+            };
+            m_engine.TaskEngine.TaskStateChanged += taskStateChangedEventHandler;
+
             RunEngine();
             Assert.Fail();
         }
+
+        
     }
 
 }

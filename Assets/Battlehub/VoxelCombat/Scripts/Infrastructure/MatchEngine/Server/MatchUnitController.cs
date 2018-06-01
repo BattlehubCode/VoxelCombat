@@ -269,10 +269,10 @@ namespace Battlehub.VoxelCombat
             switch (cmd.Code)
             {
                 case CmdCode.MoveSearch:
-                    OnMoveCmd(cmd);
+                    OnMoveWithSearchCmd(cmd);
                     break;
                 case CmdCode.Move:
-                    OnMoveWithSearchCmd(cmd);
+                    OnMoveCmd(cmd);
                     break;
                 case CmdCode.Split:
                     OnInstantCmd(cmd, m_dataController.Abilities.SplitDuration);
