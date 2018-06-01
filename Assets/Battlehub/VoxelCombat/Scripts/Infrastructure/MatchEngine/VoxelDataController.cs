@@ -1217,7 +1217,7 @@ namespace Battlehub.VoxelCombat
 
             Coordinate coordinate = new Coordinate(m_position, m_controlledData);
             coordinate.Weight--;
-            if (IsValidLocationFor(Map, m_controlledData.Type, m_controlledData, coordinate))
+            if (!IsValidLocationFor(Map, m_controlledData.Type, m_controlledData, coordinate))
             {
                 return false;
             }

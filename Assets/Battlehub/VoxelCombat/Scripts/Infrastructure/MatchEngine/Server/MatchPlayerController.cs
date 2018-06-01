@@ -397,6 +397,10 @@ namespace Battlehub.VoxelCombat
 
         private bool PostprocessCmd(bool unitsChanged, IMatchUnitController unitController, Cmd cmd)
         {
+            if(cmd.IsFailed)
+            {
+                return unitsChanged;
+            }
             if (cmd.Code == CmdCode.Split || cmd.Code == CmdCode.Split4)
             {
                 CoordinateCmd splitCmd = (CoordinateCmd)cmd;
