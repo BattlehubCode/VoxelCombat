@@ -80,6 +80,7 @@ namespace Battlehub.VoxelCombat
     public class LocalMatchServer : MonoBehaviour, IMatchServer
     {
         public event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], Room> ReadyToPlayAll;
+        
         public event ServerEventHandler<CommandsBundle> Tick;
         public event ServerEventHandler<RTTInfo> Ping;
         public event ServerEventHandler<bool> Paused;
@@ -119,30 +120,31 @@ namespace Battlehub.VoxelCombat
         private Room m_room;
 
         [SerializeField]
-        private int Lag = 200;
+        private int m_lag = 0;
+        public int Lag
+        {
+            get { return m_lag; }
+            set { m_lag = value; }
+        }
 
         private string m_persistentDataPath;
 
-
         private void Awake()
         {
-            if (Dependencies.RemoteGameServer.IsConnected)
+            if (Dependencies.RemoteGameServer != null && Dependencies.RemoteGameServer.IsConnected)
             {
                 gameObject.SetActive(false);
                 return;
             }
             m_gState = Dependencies.State;
             m_job = Dependencies.Job;
-         
+
             //Adding neutral player to room
             m_neutralPlayer = new Player();
             m_neutralPlayer.BotType = BotType.Neutral;
             m_neutralPlayer.Name = "Neutral";
             m_neutralPlayer.Id = Guid.NewGuid();
-        }
 
-        private void Start()
-        {
             enabled = false; //Will be set to true when match engine will be ready
         }
 
@@ -177,9 +179,18 @@ namespace Battlehub.VoxelCombat
 
         public void Activate()
         {
-            if (Dependencies.RemoteGameServer.IsConnected)
+            if (Dependencies.RemoteGameServer != null && Dependencies.RemoteGameServer.IsConnected)
             {
                 return;
+            }
+
+            if(m_gState == null)
+            {
+                m_gState = Dependencies.State;
+            }
+            if(m_job == null)
+            {
+                m_job = Dependencies.Job;
             }
             //m_persistentDataPath = Application.persistentDataPath;
             m_persistentDataPath = Application.streamingAssetsPath;
@@ -323,13 +334,13 @@ namespace Battlehub.VoxelCombat
             {
                 error.Code = StatusCode.NotFound;
 
-                if (Lag == 0)
+                if (m_lag == 0)
                 {
                     callback(error, mapData);
                 }
                 else
                 {
-                    m_job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, mapData));
+                    m_job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, mapData));
                 }
             }
             else
@@ -363,7 +374,7 @@ namespace Battlehub.VoxelCombat
             Error error = new Error();
             error.Code = StatusCode.OK;
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 InitEngine(clientId, callback); 
             }
@@ -371,7 +382,7 @@ namespace Battlehub.VoxelCombat
             {
                 m_job.Submit(() => 
                 {
-                    Thread.Sleep(Lag); return null;
+                    Thread.Sleep(m_lag); return null;
                 }, 
                 result =>
                 {
@@ -409,13 +420,43 @@ namespace Battlehub.VoxelCombat
                 }
             }
             
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, cmd);
             }
             else
             {
-                m_job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, cmd));
+                m_job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, cmd));
+            }
+        }
+
+        public void SubmitResponse(Guid clientId, ClientRequest response, ServerEventHandler<ClientRequest> callback)
+        {
+            Error error = new Error();
+            error.Code = StatusCode.OK;
+
+            if (!m_initialized)
+            {
+                error.Code = StatusCode.NotAllowed;
+                error.Message = "Match is not initialized";
+            }
+            else if (!enabled)
+            {
+                error.Code = StatusCode.Paused;
+                error.Message = "Match is paused";
+            }
+            else
+            {
+                m_engine.SubmitResponse(response);
+            }
+
+            if (m_lag == 0)
+            {
+                callback(error, response);
+            }
+            else
+            {
+                m_job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, response));
             }
         }
 
@@ -528,7 +569,7 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error);
                 if(Paused != null)
@@ -538,7 +579,7 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                m_job.Submit(() => { Thread.Sleep(Lag); return null; }, result =>
+                m_job.Submit(() => { Thread.Sleep(m_lag); return null; }, result =>
                 {
                     callback(error);
                     if(Paused != null)
@@ -558,13 +599,13 @@ namespace Battlehub.VoxelCombat
                 error.Code = StatusCode.NotAllowed;
                 error.Message = "Match was not initialized";
             }
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, replay, m_room);
             }
             else
             {
-                m_job.Submit(() => { Thread.Sleep(Lag); return null; }, result =>
+                m_job.Submit(() => { Thread.Sleep(m_lag); return null; }, result =>
                 {
                     callback(error, replay, m_room);
                 });
@@ -649,11 +690,10 @@ namespace Battlehub.VoxelCombat
             m_engine.BotPathFinder.Update();
             m_engine.BotTaskRunner.Update();
          
-            for (int i = 0; i < m_bots.Length; ++i)
-            {
-                m_bots[i].Update(Time.realtimeSinceStartup);
-            }
-
+            //for (int i = 0; i < m_bots.Length; ++i)
+            //{
+            //    m_bots[i].Update(Time.realtimeSinceStartup);
+            //}
         }
 
         private void FixedUpdate()
@@ -692,7 +732,7 @@ namespace Battlehub.VoxelCombat
         public void SendMessage(Guid clientId, ChatMessage message, ServerEventHandler<Guid> callback)
         {
             Error error = new Error();
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 if (ChatMessage != null)
                 {
@@ -703,7 +743,7 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                m_job.Submit(() => { Thread.Sleep(Lag); return null; },
+                m_job.Submit(() => { Thread.Sleep(m_lag); return null; },
                     result =>
                     {
                         if (ChatMessage != null)

@@ -609,8 +609,7 @@ namespace Battlehub.VoxelCombat
             {
                 OnStateChanged(cmd);
             }
-            else if (cmd.Code == CmdCode.MoveSearch || 
-                     cmd.Code == CmdCode.Move)
+            else if (cmd.Code == CmdCode.Move)
             {
                 OnMove(cmd);
             }
@@ -774,7 +773,6 @@ namespace Battlehub.VoxelCombat
                 Collapse(m_currentTick, 0);
                 EatAndExpand(m_currentTick, 0);
             }
-
         }
 
         protected virtual void OnSplit4()

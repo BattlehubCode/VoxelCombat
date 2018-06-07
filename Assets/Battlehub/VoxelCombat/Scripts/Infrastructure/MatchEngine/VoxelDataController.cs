@@ -168,6 +168,8 @@ namespace Battlehub.VoxelCombat
         void SetHealth(int health, Action<VoxelData> dieCallback = null);
 
         IVoxelDataController Clone();
+
+        
     }
 
     public class VoxelDataController : IVoxelDataController

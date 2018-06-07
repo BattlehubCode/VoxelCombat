@@ -28,6 +28,20 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        public void Run()
+        {
+            if (m_taskInfo.State != TaskState.Active)
+            {
+                throw new InvalidOperationException("taskInfo.State != TaskState.Active");
+            }
+            OnRun();
+        }
+
+        public virtual void OnRun()
+        {
+
+        }
+
         public bool Tick()
         {
             OnTick();
@@ -166,9 +180,20 @@ namespace Battlehub.VoxelCombat
 
     public class ExecuteCmdTaskWithExpression : TaskBase
     {
+        private bool m_running;
         public ExecuteCmdTaskWithExpression(TaskInfo taskInfo, ITaskEngine taskEngine) : base(taskInfo, taskEngine)
+        { 
+        }
+
+        public override void OnRun()
         {
-            taskEngine.MatchEngine.Submit(taskInfo.PlayerIndex, taskInfo.Cmd);
+            if(m_running)
+            {
+                return;
+            }
+
+            m_running = true;
+            m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, m_taskInfo.Cmd);
         }
 
         protected override void OnTick()
@@ -188,19 +213,35 @@ namespace Battlehub.VoxelCombat
 
     public class ExecuteCmdTask : TaskBase
     {
-        protected readonly IMatchUnitController m_unit;
+        protected IMatchUnitController m_unit;
 
         public ExecuteCmdTask(TaskInfo taskInfo, ITaskEngine taskEngine) : base(taskInfo, taskEngine)
         {
-            m_unit = taskEngine.MatchEngine.GetUnitController(taskInfo.PlayerIndex, taskInfo.Cmd.UnitIndex);
+        }
+
+        public override void OnRun()
+        {
             if(m_unit != null)
             {
-                m_unit.CmdExecuted += OnCmdExecuted;
-                taskEngine.MatchEngine.Submit(taskInfo.PlayerIndex, taskInfo.Cmd);
+                return;
+            }
+         
+            m_unit = m_taskEngine.MatchEngine.GetUnitController(m_taskInfo.PlayerIndex, m_taskInfo.Cmd.UnitIndex);
+            if (m_unit == null)
+            {
+                m_taskInfo.State = TaskState.Failed;
             }
             else
             {
-                taskInfo.State = TaskState.Failed;
+                m_unit.CmdExecuted += OnCmdExecuted;
+                if(m_taskInfo.RequiresClientSidePreprocessing)
+                {
+                    m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, m_taskInfo.PreprocessedCmd);
+                }
+                else
+                {
+                    m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, m_taskInfo.Cmd);
+                }
             }
         }
 

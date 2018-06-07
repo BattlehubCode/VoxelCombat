@@ -4,7 +4,7 @@ namespace Battlehub.VoxelCombat
 {
     public interface IMatchView
     {
-        event Action<int, Cmd> OnSubmitted;
+        //event Action<int, Cmd> OnSubmitted;
 
         int PlayersCount
         {
@@ -21,6 +21,7 @@ namespace Battlehub.VoxelCombat
 
         bool IsSuitableCmdFor(Guid playerId, long unitIndex, int cmdCode);
         void Submit(int playerId, Cmd cmd);
+        void SubmitResponse(ClientRequest response);
     }
 
     public delegate void MatchPlayerEventHandler<T>(T arg);
@@ -105,6 +106,7 @@ namespace Battlehub.VoxelCombat
     }
 
 
+    /*
     public class BotController : IBotController
     {
         private IMatchView m_matchView;
@@ -154,18 +156,18 @@ namespace Battlehub.VoxelCombat
 
         public void Update(float time)
         {
-            if (m_timeToThink <= time)
-            {
-                CompositeCmd cmd = m_strategy.Think();
+            //if (m_timeToThink <= time)
+            //{
+            //    CompositeCmd cmd = m_strategy.Think();
 
-                if (cmd != null && cmd.Commands != null && cmd.Commands.Length > 0)
-                {
-                //    m_matchView.Submit(m_player., cmd);
-                }
-                m_timeToThink = time + m_thinkInterval;
-            }
+            //    if (cmd != null && cmd.Commands != null && cmd.Commands.Length > 0)
+            //    {
+            //    //    m_matchView.Submit(m_player., cmd);
+            //    }
+            //    m_timeToThink = time + m_thinkInterval;
+            //}
         }
     }
-  
+    */
 }
 

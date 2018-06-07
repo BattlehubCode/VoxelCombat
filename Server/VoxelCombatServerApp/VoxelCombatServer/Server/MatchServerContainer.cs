@@ -237,6 +237,12 @@ namespace Battlehub.VoxelCombat
                         Return(sender, request, error, RemoteArg.Create(returnedCommand));
                     });
                     break;
+                case RemoteCall.Proc.SubmitResponse:
+                    m_matchServer.SubmitResponse(rpc.ClientId, rpc.Get<ClientRequest>(0), (error, response) =>
+                    {
+                        Return(sender, request, error, RemoteArg.Create(response));
+                    });
+                    break;
                 case RemoteCall.Proc.Pong:
                     m_matchServer.Pong(rpc.ClientId, error =>
                     {

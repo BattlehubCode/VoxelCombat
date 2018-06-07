@@ -9,6 +9,7 @@ namespace Battlehub.VoxelCombat
     public delegate void MatchEngineCliEvent<T, V>(Error error, T payload, V extra1);
     public delegate void MatchEngineCliEvent<T, V, W>(Error error, T payload, V extra1, W extra2);
     public delegate void MatchEngineCliEvent<T, V, W, Y>(Error error, T payload, V extra1, W extra2, Y extra3);
+    public delegate void MatchEngineCliEvent<T, V, W, Y, Z>(Error error, T payload, V extra1, W extra2, Y extra3, Z extra4);
 
     public interface IMatchEngineCli
     {
@@ -65,9 +66,6 @@ namespace Battlehub.VoxelCombat
         public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], Room> Started;
         public event MatchEngineCliEvent<RTTInfo> Ping;
 
-        /// <summary>
-        /// Possible Error -> StatusCode.HighPing, should be handled without animation
-        /// </summary>
         public event MatchEngineCliEvent<long, CommandsBundle> ExecuteCommands;
         public event MatchEngineCliEvent Error;
         public event MatchEngineCliEvent Stopped;
@@ -113,7 +111,7 @@ namespace Battlehub.VoxelCombat
         {
             enabled = false;
 
-            if (Dependencies.RemoteGameServer.IsConnectionStateChanging)
+            if (Dependencies.RemoteGameServer != null && Dependencies.RemoteGameServer.IsConnectionStateChanging)
             {
                 Dependencies.RemoteGameServer.ConnectionStateChanged += OnRemoteGameServerConnectionStateChanged;
             }
@@ -147,8 +145,11 @@ namespace Battlehub.VoxelCombat
 
         private void OnDestroy()
         {
-            Dependencies.RemoteGameServer.ConnectionStateChanged -= OnRemoteGameServerConnectionStateChanged;
-
+            if(Dependencies.RemoteGameServer != null)
+            {
+                Dependencies.RemoteGameServer.ConnectionStateChanged -= OnRemoteGameServerConnectionStateChanged;
+            }
+            
             if (m_matchServer != null)
             {
                 m_matchServer.Tick -= OnTick;
@@ -184,6 +185,7 @@ namespace Battlehub.VoxelCombat
             m_botTaskRunner.Update();
         }
 
+
         private void FixedUpdate()
         {
             while ((Time.realtimeSinceStartup - m_prevTickTime) >= GameConstants.MatchEngineTick)
@@ -198,6 +200,7 @@ namespace Battlehub.VoxelCombat
                 {
                     Error error = new Error(StatusCode.OK);
                     CommandsBundle commands = m_commands.Peek();
+                 
                     if (commands.Tick == m_tick)
                     {
                         m_commands.Dequeue();
@@ -205,6 +208,11 @@ namespace Battlehub.VoxelCombat
                         if (ExecuteCommands != null)
                         {
                             ExecuteCommands(error, m_tick, commands);
+                        }
+
+                        if (commands.ClientRequests != null && commands.ClientRequests.Count > 0)
+                        {
+                            HandleClientRequests(commands.ClientRequests);
                         }
                     }
                     else if(m_tick < (commands.Tick - 8)) //This means the diff between server time and client time > 400ms, so we try to make adjustment
@@ -225,7 +233,12 @@ namespace Battlehub.VoxelCombat
                                 ExecuteCommands(error, m_tick, commands);
                             }
 
-                            if(m_commands.Count > 0)
+                            if (commands.ClientRequests != null && commands.ClientRequests.Count > 0)
+                            {
+                                HandleClientRequests(commands.ClientRequests);
+                            }
+
+                            if (m_commands.Count > 0)
                             {
                                 commands = m_commands.Peek();
                             }
@@ -245,12 +258,64 @@ namespace Battlehub.VoxelCombat
                             {
                                 ExecuteCommands(error, m_tick, commands);
                             }
+
+                            if (commands.ClientRequests != null && commands.ClientRequests.Count > 0)
+                            {
+                                HandleClientRequests(commands.ClientRequests);
+                            }
                         }
                     }
                 }
                 m_tick++;
                 m_prevTickTime += GameConstants.MatchEngineTick;
             }
+        }
+
+        private void HandleClientRequests(List<ClientRequest> clientRequests)
+        {
+            for(int i = 0; i < clientRequests.Count; ++i)
+            {
+                ClientRequest request = clientRequests[i];
+                Cmd cmd = request.Cmd;
+
+                if(cmd != null)
+                {
+                    IVoxelDataController dc = m_game.GetVoxelDataController(request.PlayerIndex, cmd.UnitIndex);
+                    if(cmd.Code != CmdCode.Move || dc == null)
+                    {
+                        request.Cmd.ErrorCode = CmdErrorCode.Failed;
+                        SubmitResponse(request);
+                    }
+                    else
+                    {
+                        CoordinateCmd coordinateCmd = (CoordinateCmd)cmd;
+                        Debug.Assert(coordinateCmd.Coordinates.Length > 1);
+                        IPathFinder pathFinder = m_game.IsLocalPlayer(request.PlayerIndex) ? m_pathFinder : m_botPathFinder;
+                        #warning PathFinder should igore dataController.ControlledVoxelData
+                        pathFinder.Find(cmd.UnitIndex, -1, dc.Clone(), coordinateCmd.Coordinates, (unitIndex, path) =>
+                        {
+                            coordinateCmd.Coordinates = path;
+                            request.Cmd = coordinateCmd;
+                            SubmitResponse(request);
+                        }, null);
+                    }
+                    
+                }
+            }
+        }
+
+        private void SubmitResponse(ClientRequest request)
+        {
+            m_matchServer.SubmitResponse(m_gSettings.ClientId, request, (error, response) =>
+            {
+                if (m_matchServer.HasError(error))
+                {
+                    if (Error != null)
+                    {
+                        Error(error);
+                    }
+                }
+            });
         }
 
         public bool HasError(Error error)
@@ -323,7 +388,6 @@ namespace Battlehub.VoxelCombat
                 m_matchServer.Disconnect();
                 return;
             }
-
             m_commands.Enqueue(payload);
         }
 
@@ -335,8 +399,7 @@ namespace Battlehub.VoxelCombat
                 m_matchServer.Disconnect();
                 return;
             }
-
-            enabled = true; //update method will be called
+      
             m_prevTickTime = Time.realtimeSinceStartup;
             if(m_rttInfo.RTT < GameConstants.MatchEngineTick)
             {
@@ -346,16 +409,18 @@ namespace Battlehub.VoxelCombat
 
             m_isInitialized = true;
 
+            m_pathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map, players.Length);
+            m_taskRunner = MatchFactoryCli.CreateTaskRunner(players.Length);
+
+            m_botPathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map, players.Length);
+            m_botTaskRunner = MatchFactoryCli.CreateTaskRunner(players.Length);
+
             if (Started != null)
             {
                 Started(new Error(StatusCode.OK), players, localPlayers, payload, room);
             }
 
-            m_pathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map, m_game.PlayersCount);
-            m_taskRunner = MatchFactoryCli.CreateTaskRunner(m_game.PlayersCount);
-
-            m_botPathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map, m_game.PlayersCount);
-            m_botTaskRunner = MatchFactoryCli.CreateTaskRunner(m_game.PlayersCount);
+            enabled = true; //update method will be called
         }
 
         private void OnPing(Error error, RTTInfo payload)
@@ -409,7 +474,10 @@ namespace Battlehub.VoxelCombat
                 }
                 else
                 {
-                    ReadyToStart(error);
+                    if(ReadyToStart != null)
+                    {
+                        ReadyToStart(error);
+                    }
                 }
             }
             else

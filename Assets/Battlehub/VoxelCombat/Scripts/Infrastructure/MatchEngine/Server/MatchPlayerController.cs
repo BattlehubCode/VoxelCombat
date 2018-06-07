@@ -107,6 +107,7 @@ namespace Battlehub.VoxelCombat
 
         private IMatchUnitController[] m_units;
         private CommandsArray m_commandBuffer;
+  
         private long m_identity;
 
         private bool m_isPlayerLeftRoom = false;
@@ -198,8 +199,11 @@ namespace Battlehub.VoxelCombat
             m_voxelDataToId.Add(data, m_identity);
             m_idToAsset.Add(m_identity, asset);
 
-            m_identity++;
-
+            unchecked
+            {
+                m_identity++;
+            }
+           
             if (AssetCreated != null)
             {
                 AssetCreated(asset);
@@ -241,8 +245,11 @@ namespace Battlehub.VoxelCombat
                 m_controllableUnitsCount++;
             }
 
-            m_identity++;
-
+            unchecked
+            {
+                m_identity++;
+            }
+            
             if (UnitCreated != null)
             {
                 UnitCreated(unit);
@@ -335,7 +342,8 @@ namespace Battlehub.VoxelCombat
             {
                 IMatchUnitController unitController = m_units[i];
 
-                Cmd cmd = unitController.Tick();
+                Cmd cmd;
+                unitController.Tick(out cmd);
 
                 IList<VoxelDataCellPair> createdVoxels = unitController.CreatedVoxels;
                 if (createdVoxels.Count != 0)
@@ -357,7 +365,6 @@ namespace Battlehub.VoxelCombat
                     }
                 }
 
-
                 m_commandBuffer.Commands[i] = cmd;
 
                 if (cmd != null)
@@ -377,6 +384,7 @@ namespace Battlehub.VoxelCombat
                         unitsChanged = PostprocessCmd(unitsChanged, unitController, cmd);
                     }
                 }
+              
 
                 if (!unitController.IsAlive)
                 {
@@ -384,16 +392,17 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
+
             if (unitsChanged)
             {
                 m_units = m_idToUnit.Values.ToArray();
             }
 
             commands = m_commandBuffer;
+                        
             return isChanged;
         }
 
-     
 
         private bool PostprocessCmd(bool unitsChanged, IMatchUnitController unitController, Cmd cmd)
         {

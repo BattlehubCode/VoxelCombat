@@ -312,7 +312,10 @@ namespace Battlehub.VoxelCombat
             INavigation navigation = Dependencies.Navigation;
             if (string.IsNullOrEmpty(navigation.PrevSceneName))
             {
-                m_remoteGameServer.ConnectionStateChanged += OnConnectionStateChanged;
+                if(m_remoteGameServer != null)
+                {
+                    m_remoteGameServer.ConnectionStateChanged += OnConnectionStateChanged;
+                }
             }
             else
             {
@@ -321,11 +324,18 @@ namespace Battlehub.VoxelCombat
 
             m_progress.IsVisible = true;
         }
-
+  
         private void Start()
         {
             INavigation navigation = Dependencies.Navigation;
-            if (!string.IsNullOrEmpty(navigation.PrevSceneName))
+            if (string.IsNullOrEmpty(navigation.PrevSceneName))
+            {
+                if (m_remoteGameServer == null)
+                {
+                    OnConnectionStateChanged(new Error(), new ValueChangedArgs<bool>(false, false));
+                }
+            }
+            else
             {
                 Dependencies.MatchServer.Activate();
             }
@@ -355,6 +365,8 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+
+
         private void OnConnectionStateChanged(Error error, ValueChangedArgs<bool> payload)
         {
             m_gameServer = Dependencies.GameServer;
@@ -364,11 +376,16 @@ namespace Battlehub.VoxelCombat
             {
                 gameInitArgs = new TestGameInitArgs();
             }
-
             Dependencies.State.SetValue("Battlehub.VoxelGame.TestGameInitArgs", null);
 
-            m_remoteGameServer.ConnectionStateChanged -= OnConnectionStateChanged;
-            TestGameInit.Init(gameInitArgs.MapName, gameInitArgs.PlayersCount, gameInitArgs.BotsCount, Dependencies.RemoteGameServer.IsConnected, () => { }, initError => m_notification.ShowError(initError));
+            bool isConnected = false;
+            if(m_remoteGameServer != null)
+            {
+                m_remoteGameServer.ConnectionStateChanged -= OnConnectionStateChanged;
+                isConnected = m_remoteGameServer.IsConnected;
+            }
+
+            TestGameInit.Init(gameInitArgs.MapName, gameInitArgs.PlayersCount, gameInitArgs.BotsCount, isConnected, () => { }, initError => m_notification.ShowError(initError));
         }
 
         private void OnConsoleCommand(IConsole console, string cmd, params string[] args)
@@ -584,7 +601,7 @@ namespace Battlehub.VoxelCombat
             IsPaused = isPaused;
         }
 
-        private void OnEngineCommands(Error error, long tick, CommandsBundle commandsBundle)
+        private void OnEngineCommands(Error error, long clientTick, CommandsBundle commandBundle)
         {
             if(m_engine.HasError(error))
             {
@@ -595,11 +612,14 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
+            long serverTick = commandBundle.Tick;
+            CommandsArray[] playersCommands = commandBundle.Commands;
+            //List<TaskStateInfo> taskStateInfo = commandBundle.TasksStateInfo;
+            bool isGameCompleted = commandBundle.IsGameCompleted;
 
             m_minimap.BeginUpdate();
 
             List<IMatchPlayerControllerCli> defeatedPlayers = null;
-            CommandsArray[] playersCommands = commandsBundle.Commands;
             for(int p = 0; p < playersCommands.Length; ++p)
             {
                 CommandsArray commands = playersCommands[p];
@@ -610,14 +630,14 @@ namespace Battlehub.VoxelCombat
 
                 if (error.Code == StatusCode.HighPing)
                 {
-                    Debug.LogWarning("Executing cmd with high ping " + commandsBundle.Tick);
+                    Debug.LogWarning("Executing cmd with high ping " + serverTick);
                 }
 
                 IMatchPlayerControllerCli playerController = m_playerControllers[p];
-                long lagTicks = tick - commandsBundle.Tick;
+                long lagTicks = clientTick - serverTick;
                 Debug.Assert(lagTicks >= 0);
 
-                playerController.Execute(commands.Commands, tick, lagTicks);
+                playerController.Execute(commands.Commands, clientTick, lagTicks);
 
                 PlayerStats stats = m_playerStats[p];
                 if (stats.IsInRoom && !playerController.IsInRoom)
@@ -661,7 +681,7 @@ namespace Battlehub.VoxelCombat
 
             m_minimap.EndUpdate();
 
-            IsCompleted = commandsBundle.IsGameCompleted;
+            IsCompleted = isGameCompleted;
         }
 
         public IMatchPlayerControllerCli GetMatchPlayerController(int playerIndex)

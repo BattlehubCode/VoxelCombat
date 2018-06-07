@@ -18,7 +18,7 @@ namespace Battlehub.VoxelCombat
 
         public static IBotController CreateBotController(Player player, IMatchView matchView, IPathFinder pathFinder, ITaskRunner taskRunner)
         {
-            return new BotController(player, matchView, pathFinder, taskRunner);
+            return null;// new BotController(player, matchView, pathFinder, taskRunner);
         }
 
         public static IReplaySystem CreateReplayRecorder()

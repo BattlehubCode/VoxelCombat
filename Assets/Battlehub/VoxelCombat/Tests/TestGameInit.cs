@@ -76,11 +76,11 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                if (remoteGameServer.IsConnectionStateChanging)
+                if (remoteGameServer != null && remoteGameServer.IsConnectionStateChanging)
                 {
                     InitGameOnConnectionStateChanged(preferRemote, mapName, playersCount, botsCount, callback, error, notification, remoteGameServer);
                 }
-                else if (remoteGameServer.IsConnected)
+                else if (remoteGameServer != null && remoteGameServer.IsConnected)
                 {
                     InitGameOnConnectionStateChanged(preferRemote, mapName, playersCount, botsCount, callback, error, notification, remoteGameServer);
                     remoteGameServer.Disconnect();
@@ -281,7 +281,8 @@ namespace Battlehub.VoxelCombat
 
                     IMatchServer remoteMatchServer = Dependencies.RemoteMatchServer;
                     IMatchServer localMatchServer = Dependencies.LocalMatchServer;
-                    if (Dependencies.RemoteGameServer.IsConnected)
+
+                    if (remoteMatchServer != null && remoteMatchServer.IsConnected)
                     {
                         remoteMatchServer.Activate();
                     }
@@ -290,8 +291,12 @@ namespace Battlehub.VoxelCombat
                         localMatchServer.Activate();
                     }
 
-                    Dependencies.InputManager.ActivateAll();
-
+                    IVoxelInputManager inputManager = Dependencies.InputManager;
+                    if(inputManager != null)
+                    {
+                        inputManager.ActivateAll();
+                    }
+                    
                     if(mapName != "Default")
                     {
                         PlayerPrefs.SetString("lastmap", mapName);

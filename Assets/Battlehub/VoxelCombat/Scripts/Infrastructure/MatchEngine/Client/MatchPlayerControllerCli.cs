@@ -36,19 +36,14 @@ namespace Battlehub.VoxelCombat
         }
 
         void Init(int playerIndex, Dictionary<int, VoxelAbilities>[] allAbilities);
-
         void Execute(Cmd[] commands, long tick, long lagTicks);
 
         IVoxelDataController GetVoxelDataController(long unitIndex);
-
         MatchAssetCli GetAsset(long assetIndex);
 
         long GetAssetIndex(VoxelData data);
-
         bool ContainsUnit(long unitIndex);
-
         bool ContainsAsset(long asetIndex);
-
         void ConnectWith(IMatchPlayerControllerCli[] playerControllers);
 
         void CreateAssets(IList<VoxelDataCellPair> data);
@@ -202,7 +197,6 @@ namespace Battlehub.VoxelCombat
         private IUnitSelection m_selection;
         private IUnitSelection m_targetSelection;
         private IVoxelMinimapRenderer m_minimap;
-
         private IVoxelGame m_gameState;
 
         private int m_playerIndex = -1;
@@ -315,15 +309,17 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-
             voxelData.UnitOrAssetIndex = m_identity;
             MatchAssetCli asset = new MatchAssetCli(voxelData, abilities, cell);
 
             m_voxelDataToId.Add(voxelData, m_identity);
             m_idToAsset.Add(m_identity, asset);
 
-            m_identity++;
-
+            unchecked
+            {
+                m_identity++;
+            }
+           
             if (voxelData.Weight >= GameConstants.MinVoxelActorWeight)
             {
                 Coordinate coordinate = new Coordinate(cell, voxelData);
@@ -366,7 +362,6 @@ namespace Battlehub.VoxelCombat
                 asset.Destroy();
                 m_idToAsset.Remove(id);
             }
-           
         }
 
         private void CreateUnitController(VoxelData voxelData, Coordinate coordinate)
@@ -390,7 +385,10 @@ namespace Battlehub.VoxelCombat
 
             m_minimap.Spawn(voxelData, coordinate);
 
-            m_identity++;
+            unchecked
+            {
+                m_identity++;
+            }
         }
 
         private void RemoveUnitController(long unitId)
@@ -409,12 +407,12 @@ namespace Battlehub.VoxelCombat
             });
 
             m_minimap.Die(unitController.DataController.ControlledData, unitController.DataController.Coordinate);
-
             m_idToUnit.Remove(unitId);
 
             //Does not needed because all nessesary actions and event unsubscription performed in OnVoxelRefReset event handler
-//            MatchFactoryCli.DestroyUnitController(unitController);
+            //MatchFactoryCli.DestroyUnitController(unitController);
         }
+
 
 
         public void Execute(Cmd[] commands, long tick, long lagTicks)

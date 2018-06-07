@@ -209,6 +209,7 @@ namespace Battlehub.VoxelCombat
     [ProtoInclude(30, typeof(RemoteArg<ReplayData>))]
     [ProtoInclude(31, typeof(RemoteArg<CommandsBundle>))]
     [ProtoInclude(32, typeof(RemoteArg<ChatMessage>))]
+    [ProtoInclude(33, typeof(RemoteArg<ClientRequest>))]
     public class RemoteArg
     {
         public virtual object Value
@@ -289,6 +290,7 @@ namespace Battlehub.VoxelCombat
             GetReplay,
             ReadyToPlay,
             Submit,
+            SubmitResponse,
             Pong,
             Pause,
             IsAliveCheck,
@@ -1034,22 +1036,26 @@ namespace Battlehub.VoxelCombat
     }
 
 
+
     [ProtoContract]
     public class CommandsBundle
     {
         [ProtoMember(1)]
         public long Tick;
 
-        [ProtoMember(2)]
-        public Guid[] Players;
+        //[ProtoMember(2)]
+        //public Guid[] Players;
 
         [ProtoMember(3)]
         public CommandsArray[] Commands;
 
         [ProtoMember(4)]
+        public List<ClientRequest> ClientRequests; //Заполнять как и TasksStateInfo
+
+        [ProtoMember(5)]
         public List<TaskStateInfo> TasksStateInfo;
         
-        [ProtoMember(5)]
+        [ProtoMember(6)]
         public bool IsGameCompleted;
     }
 
@@ -1228,6 +1234,8 @@ namespace Battlehub.VoxelCombat
         /// Return error if called before Launched event
         /// </summary>
         void Submit(Guid clientId, int playerIndex, Cmd cmd, ServerEventHandler<Cmd> callback);
+
+        void SubmitResponse(Guid clientId, ClientRequest response, ServerEventHandler<ClientRequest> callback);
 
         void Pong(Guid clientId, ServerEventHandler callback);
 

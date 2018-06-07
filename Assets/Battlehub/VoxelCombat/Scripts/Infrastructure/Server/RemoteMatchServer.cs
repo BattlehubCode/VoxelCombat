@@ -133,6 +133,7 @@ namespace Battlehub.VoxelCombat
 
         private RemoteArg<int> m_playerIdArg = new RemoteArg<int>();
         private RemoteArg<Cmd> m_cmdArg = new RemoteArg<Cmd>();
+        
         public void Submit(Guid clientId, int playerIndex, Cmd cmd, ServerEventHandler<Cmd> callback)
         {
             m_playerIdArg.Value = playerIndex;
@@ -146,6 +147,20 @@ namespace Battlehub.VoxelCombat
 
             Call(rpc, (error, result) => callback(error, result.Get<Cmd>(0)));
         }
+
+        private RemoteArg<ClientRequest> m_responseArg = new RemoteArg<ClientRequest>();
+        public void SubmitResponse(Guid clientId, ClientRequest response, ServerEventHandler<ClientRequest> callback)
+        {
+            m_responseArg.Value = response;
+
+            RemoteCall rpc = new RemoteCall(
+                RemoteCall.Proc.SubmitResponse,
+                    clientId,
+                    m_responseArg);
+
+            Call(rpc, (error, result) => callback(error, result.Get<ClientRequest>(0)));
+        }
+
     }
 }
 

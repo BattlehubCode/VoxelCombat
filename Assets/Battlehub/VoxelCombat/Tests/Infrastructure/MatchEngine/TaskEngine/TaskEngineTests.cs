@@ -18,7 +18,6 @@ namespace Battlehub.VoxelCombat.Tests
         private float m_prevTickTime;
         private long m_tick;
 
-
         protected const int MAX_TICKS = 1000;
         //4 Players, Depth 6, Flat square, Size 4x4, Cell weight 4 (Map name test_env_0 4 players)
         protected readonly string TestEnv0 = "021ef2f8-789c-44ff-b59b-0f43064c581b.data";
@@ -112,7 +111,7 @@ namespace Battlehub.VoxelCombat.Tests
             VoxelData unit = m_map.Get(coords[0]);
             Coordinate targetCoordinate = coords[0].Add(offsetX, offsetY);
 
-            cmd = new MovementCmd(CmdCode.MoveSearch, unit.UnitOrAssetIndex, 0)
+            cmd = new MovementCmd(CmdCode.Move, unit.UnitOrAssetIndex, 0)
             {
                 Coordinates = new[] { targetCoordinate },
             };
@@ -307,7 +306,7 @@ namespace Battlehub.VoxelCombat.Tests
         }
         
 
-        private void ExecuteGenericTaskTest(int cmdCode, TaskEngineEvent taskStateChangeEventHandler, bool begin = true, int playerId = 1)
+        private void ExecuteGenericTaskTest(int cmdCode, TaskEngineEvent<TaskInfo> taskStateChangeEventHandler, bool begin = true, int playerId = 1)
         {
             ExecuteTaskTest(() =>
             {
@@ -315,7 +314,7 @@ namespace Battlehub.VoxelCombat.Tests
             }, taskStateChangeEventHandler, begin, playerId);
         }
 
-        private void ExecuteTaskTest(Func<Cmd> runTestCallback,  TaskEngineEvent taskStateChangeEventHandler, bool begin = true, int playerId = 1)
+        private void ExecuteTaskTest(Func<Cmd> runTestCallback,  TaskEngineEvent<TaskInfo> taskStateChangeEventHandler, bool begin = true, int playerId = 1)
         {
             if(begin)
             {
@@ -472,11 +471,11 @@ namespace Battlehub.VoxelCombat.Tests
             Assert.Pass();
         }
 
-        protected void FinializeTest(int playerIndex, TaskInfo task, TaskEngineEvent callback)
+        protected void FinializeTest(int playerIndex, TaskInfo task, TaskEngineEvent<TaskInfo> callback)
         {
             m_engine.Submit(playerIndex, new TaskCmd(task));
 
-            TaskEngineEvent taskStateChangedEventHandler = null;
+            TaskEngineEvent<TaskInfo> taskStateChangedEventHandler = null;
             taskStateChangedEventHandler = taskInfo =>
             {
                 m_engine.TaskEngine.TaskStateChanged -= taskStateChangedEventHandler;

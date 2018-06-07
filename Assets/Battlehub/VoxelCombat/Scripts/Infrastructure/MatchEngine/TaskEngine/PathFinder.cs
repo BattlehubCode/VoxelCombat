@@ -5,6 +5,8 @@ using UnityEngine;
 
 namespace Battlehub.VoxelCombat
 {
+
+#warning PathFinder should accept area size as argument 
     public interface IPathFinder
     {
         bool IsRunning(long unitId, int playerIndex);
@@ -341,7 +343,7 @@ namespace Battlehub.VoxelCombat
                 m_activeTasks.Remove(task);
             }
 
-            task = new PathFinderTask(dataController.PlayerIndex, unitId, targetId, dataController.Map, dataController.MapSize, dataController.ControlledData, dataController.Coordinate, dataController.Abilities, waypoints, m_matrixPools, callback, terminateCallback);
+            task = new PathFinderTask(dataController.PlayerIndex, unitId, targetId, dataController.Map, dataController.MapSize, dataController.ControlledData, waypoints[0] /*dataController.Coordinate*/, dataController.Abilities, waypoints, m_matrixPools, callback, terminateCallback);
             m_idToActiveTask[dataController.PlayerIndex][unitId] = task;
             m_activeTasks.Add(task);
         }

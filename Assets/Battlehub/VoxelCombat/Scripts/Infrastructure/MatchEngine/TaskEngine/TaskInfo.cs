@@ -1,6 +1,7 @@
 ﻿using ProtoBuf;
 using System.Runtime.Serialization;
 using System;
+using System.Collections.Generic;
 
 namespace Battlehub.VoxelCombat
 {
@@ -258,14 +259,18 @@ namespace Battlehub.VoxelCombat
         [ProtoMember(2)]
         public TaskState State;
 
+        [ProtoMember(3)]
+        public int PlayerId;
+
         public TaskStateInfo()
         {
 
         }
 
-        public TaskStateInfo(int taskId, TaskState state)
+        public TaskStateInfo(int taskId, int playerId, TaskState state)
         {
             TaskId = taskId;
+            PlayerId = playerId;
             State = state;
         }
     }
@@ -285,6 +290,9 @@ namespace Battlehub.VoxelCombat
         private TaskInfo[] m_children;
         [ProtoMember(7)]
         private ExpressionInfo m_expression;
+        [ProtoMember(8)]
+        private bool m_requiresClientSidePreprocessing;
+        public Cmd m_preprocessedCmd;
         
         private Guid m_playerId;
         private int m_playerIndex;
@@ -332,8 +340,7 @@ namespace Battlehub.VoxelCombat
         public TaskInfo()
         {
         }
-
-
+    
         public int TaskId
         {
             get { return m_taskId; }
@@ -382,6 +389,18 @@ namespace Battlehub.VoxelCombat
             set { m_playerIndex = value; }
         }
 
+        public bool RequiresClientSidePreprocessing
+        {
+            get { return m_requiresClientSidePreprocessing; }
+            set { m_requiresClientSidePreprocessing = value; }
+        }
+
+        public Cmd PreprocessedCmd
+        {
+            get { return m_preprocessedCmd; }
+            set { m_preprocessedCmd = value; }
+        }
+
         [OnDeserialized]
         public void OnDeserializedMethod(StreamingContext context)
         {
@@ -393,6 +412,5 @@ namespace Battlehub.VoxelCombat
                 }
             }
         }
-
     }
 }

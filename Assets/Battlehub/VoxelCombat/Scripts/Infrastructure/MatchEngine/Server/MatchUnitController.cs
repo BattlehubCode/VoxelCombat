@@ -27,7 +27,7 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-        Cmd Tick();
+        void Tick(out Cmd cmd);
 
         void Destroy();
     }
@@ -106,8 +106,15 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            GoToIdleState();
-
+            if(cmd.Code != CmdCode.Cancel && State != VoxelDataState.Idle)
+            {
+                RaiseCmdFailed(null);
+            }
+            else
+            {
+                GoToIdleState();
+            }
+           
             if (cmd.Code != CmdCode.Cancel && cmd.Code != CmdCode.LeaveRoom)
             {
                 if (State == VoxelDataState.Busy)
@@ -118,7 +125,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public Cmd Tick()
+        public void Tick(out Cmd cmd)
         {
             if(m_createdVoxels.Count != 0)
             {
@@ -140,28 +147,29 @@ namespace Battlehub.VoxelCombat
                 {
                     GoToIdleState();
                 }
-                return null;
+                cmd = null;
+                return;
             }
 
             if (m_ticksBeforeNextCommand == 0)
             {
-                Cmd result = OnTick();
+                cmd = OnTick();
 
                 if (State != m_prevState)
                 {
-                    if (result != null)
+                    if (cmd != null)
                     {
-                        result = new CompositeCmd
+                        cmd = new CompositeCmd
                         {
-                            UnitIndex = result.UnitIndex,
-                            Duration = result.Duration,
+                            UnitIndex = cmd.UnitIndex,
+                            Duration = cmd.Duration,
                             Commands = new[]
                             {
-                                result,
+                                cmd,
                                 new ChangeParamsCmd(CmdCode.StateChanged)
                                 {
-                                    UnitIndex = result.UnitIndex,
-                                    Duration = result.Duration,
+                                    UnitIndex = cmd.UnitIndex,
+                                    Duration = cmd.Duration,
                                     IntParams = new[]
                                     {
                                         (int)m_prevState,
@@ -173,7 +181,7 @@ namespace Battlehub.VoxelCombat
                     }
                     else
                     {
-                        result = new ChangeParamsCmd(CmdCode.StateChanged)
+                        cmd = new ChangeParamsCmd(CmdCode.StateChanged)
                         {
                             UnitIndex = Id,
                             IntParams = new[]
@@ -189,14 +197,15 @@ namespace Battlehub.VoxelCombat
                     m_prevState = State;
                 }
 
-                return result;
+                return;
             }
             else
             {
                 m_ticksBeforeNextCommand--;
             }
 
-            return null;
+            cmd = null;
+            return;
         }
 
         protected void GoToIdleState()
@@ -268,9 +277,6 @@ namespace Battlehub.VoxelCombat
         {
             switch (cmd.Code)
             {
-                case CmdCode.MoveSearch:
-                    OnMoveWithSearchCmd(cmd);
-                    break;
                 case CmdCode.Move:
                     OnMoveCmd(cmd);
                     break;
@@ -309,7 +315,7 @@ namespace Battlehub.VoxelCombat
             Coordinate[] path = coordinateCmd.Coordinates;
             if (!ValidatePath(path))
             {
-                RaiseCmdFailed(cmd);
+                OnMoveSearchPath(cmd);
                 return;
             }
 
@@ -342,22 +348,30 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        protected void OnMoveWithSearchCmd(Cmd cmd)
+        protected void OnMoveSearchPath(Cmd cmd)
         {
             //m_ticksBeforeNextCommand = 0;// <-- this will enable immediate commands
 
             MovementCmd coordinateCmd = (MovementCmd)cmd;
             Coordinate[] cmdCoordinates = coordinateCmd.Coordinates;
 
+            if (cmdCoordinates.Length != 1)
+            {
+                RaiseCmdFailed(cmd);
+                return;
+            }
+
+            cmdCoordinates = ToWaypoints(cmdCoordinates);
+
             State = VoxelDataState.SearchingPath;
-            m_pathFinder.Find(Id, -1, m_dataController.Clone(), ToWaypoints(cmdCoordinates), (unitIndex, path) =>
+            m_pathFinder.Find(Id, -1, m_dataController.Clone(), cmdCoordinates, (unitIndex, path) =>
             {
                 State = VoxelDataState.Moving;
-                PopulateCommandsQueue(unitIndex, path, false, CmdCode.MoveSearch);
+                PopulateCommandsQueue(unitIndex, path, false, CmdCode.Move);
             }, null);
         }
 
-    
+   
         protected override Cmd OnTick() //Tick should be able return several commands
         {
             if (State == VoxelDataState.Moving)
@@ -371,7 +385,6 @@ namespace Battlehub.VoxelCombat
                     switch(cmd.Code)
                     {
                         case CmdCode.Move:
-                        case CmdCode.MoveSearch:
                         {
                             cmd = HandleNextMoveCmd(cmd);
                             if (cmd == null)

@@ -74,7 +74,12 @@ namespace Battlehub.VoxelCombat
         }
 
         [SerializeField]
-        private int Lag = 5;
+        private int m_lag = 0;
+        public int Lag
+        {
+            get { return m_lag; }
+            set { m_lag = value; }
+        }
 
         private string m_persistentDataPath;
 
@@ -179,13 +184,13 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, playerId, new byte[0]);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, playerId, new byte[0]));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, playerId, new byte[0]));
             }
         }
 
@@ -197,25 +202,25 @@ namespace Battlehub.VoxelCombat
             {
                 error.Code = StatusCode.AlreadyExists;
 
-                if (Lag == 0)
+                if (m_lag == 0)
                 {
                     callback(error, player.Id, new byte[0]);
                 }
                 else
                 {
-                    Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, player.Id, new byte[0]));
+                    Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, player.Id, new byte[0]));
                 }
             }
             else if (m_loggedInPlayers.Count == GameConstants.MaxLocalPlayers)
             {
                 error.Code = StatusCode.TooMuchLocalPlayers;
-                if (Lag == 0)
+                if (m_lag == 0)
                 {
                     callback(error, Guid.Empty, new byte[0]);
                 }
                 else
                 {
-                    Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, Guid.Empty, new byte[0]));
+                    Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, Guid.Empty, new byte[0]));
                 }
             }
             else
@@ -250,13 +255,13 @@ namespace Battlehub.VoxelCombat
                 },
                 result =>
                 {
-                    if (Lag == 0)
+                    if (m_lag == 0)
                     {
                         callback(error, playerId, new byte[0]);
                     }
                     else
                     {
-                        Job.Submit(() => { Thread.Sleep(Lag); return null; }, result2 => callback(error, playerId, new byte[0]));
+                        Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result2 => callback(error, playerId, new byte[0]));
                     }
                 });
             }
@@ -276,13 +281,13 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, playerId);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, playerId));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, playerId));
             }
         }
 
@@ -305,13 +310,13 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, loggedOffPlayers.ToArray());
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, loggedOffPlayers.ToArray()));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, loggedOffPlayers.ToArray()));
             }
         }
 
@@ -328,13 +333,13 @@ namespace Battlehub.VoxelCombat
                 error.Code = StatusCode.OK;
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, player);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, player));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, player));
             }
         }
 
@@ -359,13 +364,13 @@ namespace Battlehub.VoxelCombat
                 error.Message = string.Format("Room {0} not found", roomId);
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, players);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, players));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, players));
             }
         }
 
@@ -380,13 +385,13 @@ namespace Battlehub.VoxelCombat
                 players.Add(m_players[playerId]);
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, players.ToArray());
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, players.ToArray()));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, players.ToArray()));
             }
         }
 
@@ -395,13 +400,13 @@ namespace Battlehub.VoxelCombat
             Error error = new Error();
             error.Code = StatusCode.OK;
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, m_stats);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, m_stats));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, m_stats));
             }
         }
 
@@ -436,13 +441,13 @@ namespace Battlehub.VoxelCombat
                 error.Message = e.Message;
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, mapsInfo);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, mapsInfo));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, mapsInfo));
             }
         }
 
@@ -482,13 +487,13 @@ namespace Battlehub.VoxelCombat
                 File.WriteAllBytes(dataPath + mapData.Id + ".data", mapDataBytes);
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error));
             }
         }
 
@@ -518,13 +523,13 @@ namespace Battlehub.VoxelCombat
             {
                 error.Code = StatusCode.NotFound;
 
-                if (Lag == 0)
+                if (m_lag == 0)
                 {
                     callback(error, mapData);
                 }
                 else
                 {
-                    Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, mapData));
+                    Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, mapData));
                 }
             }
             else
@@ -605,13 +610,13 @@ namespace Battlehub.VoxelCombat
                 Room = room;
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, Room);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, Room));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, Room));
             }
         }
 
@@ -636,13 +641,13 @@ namespace Battlehub.VoxelCombat
 
             Room = null;
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, roomId);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, roomId));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, roomId));
             }
         }
 
@@ -662,13 +667,13 @@ namespace Battlehub.VoxelCombat
                 room = null;
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, room);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, room));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, room));
             }
         }
 
@@ -688,13 +693,13 @@ namespace Battlehub.VoxelCombat
                 room = null;
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, room);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, room));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, room));
             }
         }
 
@@ -713,13 +718,13 @@ namespace Battlehub.VoxelCombat
                 rooms = new Room[0];
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, rooms);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, rooms));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, rooms));
             }
         }
 
@@ -761,13 +766,13 @@ namespace Battlehub.VoxelCombat
             }
 
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, room);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, room));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, room));
             }
         }
 
@@ -786,13 +791,13 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error));
             }
         }
 
@@ -842,13 +847,13 @@ namespace Battlehub.VoxelCombat
                 error.Message = "Room  was not found";
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, botId, room);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, botId, room));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, botId, room));
             }
 
         }
@@ -902,13 +907,13 @@ namespace Battlehub.VoxelCombat
                 error.Message = "Room  was not found";
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, botIds, room);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, botIds, room));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, botIds, room));
             }
 
         }
@@ -932,13 +937,13 @@ namespace Battlehub.VoxelCombat
                 error.Message = "Room was not found";
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, botId, room);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, botId, room));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, botId, room));
             }
         }
 
@@ -983,13 +988,13 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, Room);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result =>
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result =>
                 {
                     callback(error, Room);
                 });
@@ -1008,13 +1013,13 @@ namespace Battlehub.VoxelCombat
                 error.Code = StatusCode.OK;
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, string.Empty);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, string.Empty));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, string.Empty));
             }
         }
 
@@ -1025,13 +1030,13 @@ namespace Battlehub.VoxelCombat
             Error error = new Error();
             error.Code = StatusCode.OK;
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error));
             }
         }
 
@@ -1093,13 +1098,13 @@ namespace Battlehub.VoxelCombat
                 error.Message = e.Message;
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error, replaysInfo);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error, replaysInfo));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error, replaysInfo));
             }
         }
 
@@ -1130,13 +1135,13 @@ namespace Battlehub.VoxelCombat
                 GState.SetValue("LocalGameServer.m_replay", replay);
             }
 
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error));
             }
         }
 
@@ -1173,13 +1178,13 @@ namespace Battlehub.VoxelCombat
 
                 File.WriteAllBytes(dataPath + replayData.Id + ".data", replayDataBytes);
 
-                if (Lag == 0)
+                if (m_lag == 0)
                 {
                     callback(error);
                 }
                 else
                 {
-                    Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error));
+                    Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error));
                 }
             });
         }
@@ -1188,13 +1193,13 @@ namespace Battlehub.VoxelCombat
         public void RegisterClient(Guid clientId, ServerEventHandler callback)
         {
             Error error = new Error();
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 callback(error);
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, result => callback(error));
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, result => callback(error));
             }
         }
 
@@ -1211,7 +1216,7 @@ namespace Battlehub.VoxelCombat
         public void SendMessage(Guid clientId, ChatMessage message, ServerEventHandler<Guid> callback)
         {
             Error error = new Error();
-            if (Lag == 0)
+            if (m_lag == 0)
             {
                 if(ChatMessage != null)
                 {
@@ -1222,7 +1227,7 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                Job.Submit(() => { Thread.Sleep(Lag); return null; }, 
+                Job.Submit(() => { Thread.Sleep(m_lag); return null; }, 
                     result =>
                     {
                         if (ChatMessage != null)

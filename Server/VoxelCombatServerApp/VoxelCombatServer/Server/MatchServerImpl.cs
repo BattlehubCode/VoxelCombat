@@ -510,6 +510,35 @@ namespace Battlehub.VoxelCombat
             callback(error, cmd);
         }
 
+        public void SubmitResponse(Guid clientId, ClientRequest response, ServerEventHandler<ClientRequest> callback)
+        {
+            Error error = new Error(StatusCode.OK);
+            if (!m_clientIdToPlayers.ContainsKey(clientId))
+            {
+                error.Code = StatusCode.NotRegistered;
+                callback(error, response);
+                return;
+            }
+
+            if (!m_initialized)
+            {
+                error.Code = StatusCode.NotAllowed;
+                error.Message = "Match is not initialized";
+            }
+            else if (!enabled)
+            {
+                error.Code = StatusCode.Paused;
+                error.Message = "Match is paused";
+            }
+            else
+            {
+                m_engine.SubmitResponse(response); 
+            }
+
+            callback(error, response);
+        }
+
+
         private void OnEngineCommandSubmitted(int playerIndex, Cmd cmd)
         {
             m_replay.Record(playerIndex, cmd, m_tick);

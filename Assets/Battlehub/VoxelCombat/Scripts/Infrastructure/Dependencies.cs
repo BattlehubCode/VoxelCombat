@@ -1,37 +1,82 @@
-﻿using UnityEngine;
+﻿using Battlehub.VoxelCombat.Tests;
+using UnityEngine;
 
 namespace Battlehub.VoxelCombat
 {
     public class Dependencies : MonoBehaviour
     {
+        [SerializeField]
+        private bool InstantiateRemoteServer = true;
+        [SerializeField]
+        private bool InstantiateLocalServer = true;
+        [SerializeField]
+        private bool TestMode = false;
+
         private void Awake()
         {
             m_gState = new GlobalState();
 
-            m_inputManager = FindObjectOfType<InControlAdapter>();
-            m_console = FindObjectOfType<VoxelConsole>();
-            m_game = FindObjectOfType<VoxelGame>();
-            m_voxelFactory = FindObjectOfType<VoxelFactory>();
-            m_effectFactory = FindObjectOfType<ParticleEffectFactory>();
-            m_map = FindObjectOfType<VoxelMap>();
-            m_minimap = FindObjectOfType<VoxelMinimapRenderer>();
-            m_progress = FindObjectOfType<ProgressIndicator>();
+            if(TestMode)
+            {
+                m_console = FindObjectOfType<ConsoleMock>();
+                m_game = FindObjectOfType<VoxelGame>();
+                m_map = FindObjectOfType<VoxelMapMock>();
+                m_minimap = FindObjectOfType<MinmapRendererMock>();
+                m_progress = FindObjectOfType<ProgressMock>();
+                m_notification = FindObjectOfType<NotificationMock>();
+                m_navigation = FindObjectOfType<NavigationMock>();
+                m_gameView = FindObjectOfType<GameViewMock>();
+
+                UnitSelectionMock[] selection = FindObjectsOfType<UnitSelectionMock>();
+                if (selection.Length > 0)
+                {
+                    m_unitSelection = selection[0];
+                }
+
+                if (selection.Length > 1)
+                {
+                    m_targetSelection = selection[1];
+                }
+            }
+            else
+            {
+                m_inputManager = FindObjectOfType<InControlAdapter>();
+                m_console = FindObjectOfType<VoxelConsole>();
+                m_game = FindObjectOfType<VoxelGame>();
+                m_voxelFactory = FindObjectOfType<VoxelFactory>();
+                m_effectFactory = FindObjectOfType<ParticleEffectFactory>();
+                m_map = FindObjectOfType<VoxelMap>();
+                m_minimap = FindObjectOfType<VoxelMinimapRenderer>();
+                m_progress = FindObjectOfType<ProgressIndicator>();
+                m_materialsCache = FindObjectOfType<MaterialsCache>();
+                m_gameView = FindObjectOfType<GameView>();
+                m_navigation = FindObjectOfType<Navigation>();
+                m_eventSystemManager = FindObjectOfType<EventSystemManager>();
+                m_notification = FindObjectOfType<Notification>();
+
+                UnitSelection[] selection = FindObjectsOfType<UnitSelection>();
+                if (selection.Length > 0)
+                {
+                    m_unitSelection = selection[0];
+                }
+
+                if (selection.Length > 1)
+                {
+                    m_targetSelection = selection[1];
+                }
+            }
+
             m_job = FindObjectOfType<Job>();
-            m_materialsCache = FindObjectOfType<MaterialsCache>();
-            m_gameView = FindObjectOfType<GameView>();
             m_settings = FindObjectOfType<GlobalSettings>();
             m_matchEngine = FindObjectOfType<MatchEngineCli>();
             m_remoteMatchServer = FindObjectOfType<RemoteMatchServer>();
             m_localMatchServer = FindObjectOfType<LocalMatchServer>();
-            m_navigation = FindObjectOfType<Navigation>();
-            m_eventSystemManager = FindObjectOfType<EventSystemManager>();
-            m_notification = FindObjectOfType<Notification>();
 
             GameObject serverGO = null;
             if (!m_remoteGameServer)
             {
                 m_remoteGameServer = FindObjectOfType<RemoteGameServer>();
-                if(!m_remoteGameServer)
+                if(!m_remoteGameServer && InstantiateRemoteServer)
                 {
                     if(serverGO == null)
                     {
@@ -43,10 +88,10 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            if(!m_localGameServer)
+            if(!m_localGameServer )
             {
                 m_localGameServer = FindObjectOfType<LocalGameServer>();
-                if (!m_localGameServer)
+                if (!m_localGameServer && InstantiateLocalServer)
                 {
                     if (serverGO == null)
                     {
@@ -58,16 +103,7 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            UnitSelection[] selection = FindObjectsOfType<UnitSelection>();
-            if(selection.Length > 0)
-            {
-                m_unitSelection = selection[0];
-            }
-
-            if(selection.Length > 1)
-            {
-                m_targetSelection = selection[1];
-            }
+          
         }
 
         private void OnDestroy()
@@ -156,7 +192,7 @@ namespace Battlehub.VoxelCombat
         {
             get
             {
-                if(m_remoteGameServer.IsConnected || m_remoteGameServer.IsConnectionStateChanging)
+                if(m_remoteGameServer != null && (m_remoteGameServer.IsConnected || m_remoteGameServer.IsConnectionStateChanging))
                 {
                     return m_remoteGameServer;
                 }
@@ -183,7 +219,7 @@ namespace Battlehub.VoxelCombat
         {
             get
             {
-                if (m_remoteGameServer.IsConnected || m_remoteGameServer.IsConnectionStateChanging) //This is not mistake
+                if (m_remoteGameServer != null && (m_remoteGameServer.IsConnected || m_remoteGameServer.IsConnectionStateChanging)) //This is not mistake
                 {
                     return m_remoteMatchServer;
                 }

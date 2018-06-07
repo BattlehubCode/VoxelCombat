@@ -11,7 +11,7 @@ namespace Battlehub.VoxelCombat
         public const int Spawn = 1;
         
         public const int Move = 2;
-        public const int MoveSearch = 3;
+        //public const int MoveFindPath = 3;
         public const int RotateLeft = 4;
         public const int RotateRight = 5;
         public const int ExecuteTask = 8;
@@ -32,7 +32,10 @@ namespace Battlehub.VoxelCombat
 
         //Debug command
         public const int SetHealth = 200;
-        public const int Kill = 201;      
+        public const int Kill = 201;
+
+        //Commands requested by server
+ 
     }
 
     public static class CmdErrorCode
@@ -416,10 +419,36 @@ namespace Battlehub.VoxelCombat
         {
             Code = CmdCode.ExecuteTask;
             Task = task;
+        }  
+    }
+
+    [ProtoContract]
+    public class ClientRequest 
+    {
+        [ProtoMember(1)]
+        public long TaskId;
+
+        [ProtoMember(2)]
+        public int PlayerIndex;
+
+        [ProtoMember(3)]
+        public Cmd Cmd;
+
+        public ClientRequest()
+        {
+
+        }
+
+        public ClientRequest(long taskId, int playerIndex, Cmd cmd)
+        {
+            PlayerIndex = playerIndex;
+            TaskId = taskId;
+            Cmd = cmd;
         }
     }
 
 
+  
     /// <summary>
     /// Command that has one or more coordinates (for example move from coord 0 to coord 1, or attack from coord 0 coord 1, or spawn at coord 0, etc.
     /// </summary>
@@ -551,7 +580,8 @@ namespace Battlehub.VoxelCombat
 
     public interface IMatchEngine : IMatchView
     {
-
+        event Action<int, Cmd> OnSubmitted;
+       
         IPathFinder PathFinder
         {
             get;
@@ -591,13 +621,20 @@ namespace Battlehub.VoxelCombat
 
     public class MatchEngine : IMatchEngine
     {
-        //private const bool EnableLog = true;
         public event Action<int, Cmd> OnSubmitted;
+
+        private bool m_hasNewCommands;
+        //private const bool EnableLog = true;
+        //public event Action<int, Cmd> OnSubmitted;
         private readonly Dictionary<Guid, IMatchPlayerController> m_idToPlayers = new Dictionary<Guid, IMatchPlayerController>();
         private readonly IMatchPlayerController[] m_players;
-        private readonly Guid[] m_playerGuids;
+        //private readonly Guid[] m_playerGuids;
         //private readonly List<float> m_rtt = new List<float>();
-        private readonly CommandsBundle m_serverCommands = new CommandsBundle() { TasksStateInfo = new List<TaskStateInfo>() };
+        private readonly CommandsBundle m_serverCommands = new CommandsBundle()
+        {
+            ClientRequests = new List<ClientRequest>(),
+            TasksStateInfo = new List<TaskStateInfo>()
+        };
 
         private MapRoot m_map;
 
@@ -649,7 +686,7 @@ namespace Battlehub.VoxelCombat
             m_map = map;
 
             m_players = new IMatchPlayerController[playersCount];
-            m_playerGuids = new Guid[playersCount];
+            //m_playerGuids = new Guid[playersCount];
 
             m_pathFinder = MatchFactory.CreatePathFinder(m_map, playersCount);
             m_taskRunner = MatchFactory.CreateTaskRunner(playersCount);
@@ -661,6 +698,7 @@ namespace Battlehub.VoxelCombat
 
             m_taskEngine = MatchFactory.CreateTaskEngine(this, m_taskRunner);
             m_taskEngine.TaskStateChanged += OnTaskStateChanged;
+            m_taskEngine.ClientRequest += OnClientRequest;
         }
 
         public void Destroy()
@@ -672,6 +710,7 @@ namespace Battlehub.VoxelCombat
             MatchFactory.DestroyTaskRunner(m_botTaskRunner);
 
             m_taskEngine.TaskStateChanged -= OnTaskStateChanged;
+            m_taskEngine.ClientRequest -= OnClientRequest;
             MatchFactory.DestroyTaskEngine(m_taskEngine);
         }
 
@@ -691,16 +730,13 @@ namespace Battlehub.VoxelCombat
 
             m_idToPlayers.Add(playerId, player);
             m_players[playerIndex] = player;
-            m_playerGuids[playerIndex] = playerId;
 
-            if (m_serverCommands.Players == null)
+            if (m_serverCommands.Commands == null)
             {
-                m_serverCommands.Players = new Guid[1];
                 m_serverCommands.Commands = new CommandsArray[1];
             }
             else
             {
-                Array.Resize(ref m_serverCommands.Players, m_serverCommands.Players.Length + 1);
                 Array.Resize(ref m_serverCommands.Commands, m_serverCommands.Commands.Length + 1);
             }
         }
@@ -735,7 +771,7 @@ namespace Battlehub.VoxelCombat
                         return unitController.DataController.CanSplit4() == true;
                     case CmdCode.Split:
                         return unitController.DataController.CanSplit() == true;
-                    case CmdCode.MoveSearch:
+                    case CmdCode.Move:
                         return !unitController.DataController.IsCollapsedOrBlocked;
                     case CmdCode.Explode:
                         return unitController.Data.Type == (int)KnownVoxelTypes.Bomb;
@@ -748,39 +784,46 @@ namespace Battlehub.VoxelCombat
         {
             if(cmd.Code == CmdCode.ExecuteTask)
             {
-                TaskCmd execCmd = (TaskCmd)cmd;
-                execCmd.Task.PlayerIndex = playerIndex;
-                m_taskEngine.Submit(execCmd.Task);
-                if (OnSubmitted != null)
-                {
-                    OnSubmitted(playerIndex, cmd);
-                }
+                TaskCmd executeTaskCmd = (TaskCmd)cmd;
+                TaskInfo task = executeTaskCmd.Task;
+                task.PlayerIndex = playerIndex;
+                m_taskEngine.SubmitTask(task);
             }
             else
             {
                 if (playerIndex >= 0 && playerIndex < m_players.Length)
                 {
                     IMatchPlayerController player = m_players[playerIndex];
-                    if(player != null)
+                    if (player != null)
                     {
                         player.Submit(cmd);
-
-                        if (OnSubmitted != null)
-                        {
-                            OnSubmitted(playerIndex, cmd);
-                        }
                     }
                 }
-            }       
+            }
+
+            if(OnSubmitted != null)
+            {
+                OnSubmitted(playerIndex, cmd);
+            }
+        }
+
+        public void SubmitResponse(ClientRequest response)
+        {
+            m_taskEngine.SubmitResponse(response);
         }
 
         private void OnTaskStateChanged(TaskInfo taskInfo)
         {
-            m_serverCommands.TasksStateInfo.Add(new TaskStateInfo(taskInfo.TaskId, taskInfo.State));
+            m_serverCommands.TasksStateInfo.Add(new TaskStateInfo(taskInfo.TaskId, taskInfo.PlayerIndex, taskInfo.State));
             m_hasNewCommands = true;
         }
 
-        private bool m_hasNewCommands;
+        private void OnClientRequest(ClientRequest request)
+        {
+            m_serverCommands.ClientRequests.Add(request);
+            m_hasNewCommands = true;
+        }
+
         public bool Tick(out CommandsBundle commands)
         {
             m_pathFinder.Tick();
@@ -792,12 +835,11 @@ namespace Battlehub.VoxelCombat
             for (int i = 0; i < m_players.Length; ++i)
             {
                 IMatchPlayerController playerController = m_players[i];
-                m_serverCommands.Players[i] = m_playerGuids[i];
-
+            
                 bool wasInRoom = playerController.IsPlayerInRoom;
 
                 CommandsArray playerCommands;
-
+        
                 if(playerController.Tick(out playerCommands))
                 {
                     m_hasNewCommands = true;
@@ -854,6 +896,10 @@ namespace Battlehub.VoxelCombat
                 if (m_serverCommands.TasksStateInfo.Count > 0)
                 {
                     m_serverCommands.TasksStateInfo.Clear();
+                }
+                if(m_serverCommands.ClientRequests.Count > 0)
+                {
+                    m_serverCommands.ClientRequests.Clear();
                 }
                 m_hasNewCommands = false;
                 return true;
