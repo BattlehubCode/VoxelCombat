@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using NUnit.Framework;
 using System;
+using System.Linq;
 
 namespace Battlehub.VoxelCombat.Tests
 {
@@ -11,7 +12,6 @@ namespace Battlehub.VoxelCombat.Tests
         protected const int MAX_TICKS = 1000;
 
      
-
         protected void BeginTest(string mapName, int playersCount, int botsCount, Action callback, int lag = 0)
         {
             Assert.DoesNotThrow(() =>
@@ -65,6 +65,7 @@ namespace Battlehub.VoxelCombat.Tests
         //4 Players, Depth 6, Flat square, Size 4x4, Cell weight 4 (Map name  test_env_0 4 players)
         // protected readonly string TestEnv0 = "021ef2f8-789c-44ff-b59b-0f43064c581b.data";
         protected readonly string TestEnv0 = "test_env_0";
+        protected readonly string TestEnv1 = "test_env_1";
 
         [UnityTest]
         public IEnumerator InitTestLag()
@@ -94,9 +95,56 @@ namespace Battlehub.VoxelCombat.Tests
             }   
         }
 
-   
         [UnityTest]
-        public IEnumerator FindPathClientSideTest()
+        public IEnumerator FindPathClientSideTaskTest()
+        {
+            BeginTest(TestEnv1, 2, 0, () =>
+            {
+                MapRoot map = Dependencies.Map.Map;
+                IMatchEngineCli matchEngineCli = Dependencies.MatchEngine;
+
+                const int playerId = 1;
+                Coordinate[] coords = map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
+                VoxelData data = map.Get(coords[0]);
+                Coordinate targetCoordinate = coords[0].Add(1, -1);
+                MovementCmd moveCmd = new MovementCmd(CmdCode.Move, data.UnitOrAssetIndex, 0);
+                moveCmd.Coordinates = new[] { coords[0], targetCoordinate };
+
+                ITaskEngine taskEngine = matchEngineCli.GetClientTaskEngine(playerId);
+                TaskEngineEvent<TaskInfo> taskStateChanged = null;
+                taskStateChanged = taskStateInfo =>
+                {
+                    if (taskStateInfo.State == TaskState.Completed)
+                    {
+                        taskEngine.TaskStateChanged -= taskStateChanged;
+
+                      
+                        Coordinate[] newCoords = map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
+                        Assert.AreEqual(targetCoordinate, newCoords[0]);
+
+                        EndTest();
+                    }
+                    else
+                    {
+                        Assert.AreEqual(TaskState.Active, taskStateInfo.State);
+                    }  
+                };
+                taskEngine.TaskStateChanged += taskStateChanged;
+
+                TaskInfo taskInfo = new TaskInfo(moveCmd, playerId);
+                taskInfo.RequiresClientSidePreprocessing = true;
+
+                taskEngine.SubmitTask(taskInfo);
+            });
+            while (true)
+            {
+                yield return null;
+            }
+        }
+
+
+        [UnityTest]
+        public IEnumerator FindPathClientSidePreprocessingTest()
         {
             BeginTest(TestEnv0, 4, 0, () => {
 
@@ -106,7 +154,6 @@ namespace Battlehub.VoxelCombat.Tests
                 const int playerId = 3;
                 Coordinate[] coords = map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
                 VoxelData data = map.Get(coords[0]);
-
                 Coordinate targetCoordinate = coords[0].Add(-1, -1);
                 MovementCmd moveCmd = new MovementCmd(CmdCode.Move, data.UnitOrAssetIndex, 0);
                 moveCmd.Coordinates = new[] { coords[0],  targetCoordinate };
@@ -138,6 +185,7 @@ namespace Battlehub.VoxelCombat.Tests
 
                 TaskInfo taskInfo = new TaskInfo(moveCmd);
                 taskInfo.RequiresClientSidePreprocessing = true;
+                matchEngineCli.GetClientTaskEngine(playerId).GenerateIdentitifers(taskInfo);
                 matchEngineCli.Submit(playerId, new TaskCmd(taskInfo));
             });
 

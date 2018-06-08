@@ -263,8 +263,11 @@ namespace Battlehub.VoxelCombat
         {
             if(button == 0)
             {
-                return m_input.GetButton(InputAction.LMB, LocalPlayerIndex, false, false) ||
-                    m_input.GetButton(InputAction.LB, LocalPlayerIndex, false, false);
+                if(m_isKeyboardAndMouse)
+                {
+                    return m_input.GetButton(InputAction.LMB, LocalPlayerIndex, false, false);
+                }
+                return m_input.GetButton(InputAction.LB, LocalPlayerIndex, false, false);
             }
             return false;
         }
@@ -273,8 +276,11 @@ namespace Battlehub.VoxelCombat
         {
             if (button == 0)
             {
-                return m_input.GetButtonUp(InputAction.LMB, LocalPlayerIndex, false, false) ||
-                    m_input.GetButtonUp(InputAction.LB, LocalPlayerIndex, false, false);
+                if(m_isKeyboardAndMouse)
+                {
+                    return m_input.GetButtonUp(InputAction.LMB, LocalPlayerIndex, false, false);
+                }
+                return m_input.GetButtonUp(InputAction.LB, LocalPlayerIndex, false, false);
             }
             return false;
         }
@@ -283,8 +289,11 @@ namespace Battlehub.VoxelCombat
         {
             if (button == 0)
             {
-                return m_input.GetButtonDown(InputAction.LMB, LocalPlayerIndex, false, false) ||
-                    m_input.GetButtonDown(InputAction.LB, LocalPlayerIndex, false, false);
+                if(m_isKeyboardAndMouse)
+                {
+                    return m_input.GetButtonDown(InputAction.LMB, LocalPlayerIndex, false, false);
+                }
+                return  m_input.GetButtonDown(InputAction.LB, LocalPlayerIndex, false, false);
             }
             return false;
         }

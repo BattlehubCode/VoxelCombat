@@ -601,11 +601,9 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-        ITaskEngine TaskEngine
-        {
-            get;
-        }
 
+        ITaskEngine GetTaskEngine(int playerIndex);
+        
         IMatchUnitController GetUnitController(int playerIndex, long unitIndex);
 
         IMatchUnitAssetView GetAsset(int playerIndex, long unitIndex);
@@ -615,6 +613,8 @@ namespace Battlehub.VoxelCombat
         void CompletePlayerRegistration();
 
         bool Tick(out CommandsBundle commands);
+
+        void SubmitResponse(ClientRequest response);
 
         void Destroy();
     }
@@ -675,12 +675,8 @@ namespace Battlehub.VoxelCombat
             get { return m_players.Length; }
         }
 
-        private ITaskEngine m_taskEngine;
-        public ITaskEngine TaskEngine
-        {
-            get { return m_taskEngine; }
-        }
-
+        private ITaskEngine[] m_taskEngines;
+    
         public MatchEngine(MapRoot map, int playersCount)
         {
             m_map = map;
@@ -696,9 +692,14 @@ namespace Battlehub.VoxelCombat
 
             m_map.SetPlayerCount(playersCount);
 
-            m_taskEngine = MatchFactory.CreateTaskEngine(this, m_taskRunner);
-            m_taskEngine.TaskStateChanged += OnTaskStateChanged;
-            m_taskEngine.ClientRequest += OnClientRequest;
+            m_taskEngines = new ITaskEngine[playersCount];
+            for(int i = 0; i < m_taskEngines.Length; ++i)
+            {
+                ITaskEngine taskEngine = MatchFactory.CreateTaskEngine(this, m_taskRunner);
+                taskEngine.TaskStateChanged += OnTaskStateChanged;
+                taskEngine.ClientRequest += OnClientRequest;
+                m_taskEngines[i] = taskEngine;
+            }
         }
 
         public void Destroy()
@@ -709,9 +710,18 @@ namespace Battlehub.VoxelCombat
             MatchFactory.DestroyPathFinder(m_botPathFinder);
             MatchFactory.DestroyTaskRunner(m_botTaskRunner);
 
-            m_taskEngine.TaskStateChanged -= OnTaskStateChanged;
-            m_taskEngine.ClientRequest -= OnClientRequest;
-            MatchFactory.DestroyTaskEngine(m_taskEngine);
+            for (int i = 0; i < m_taskEngines.Length; ++i)
+            {
+                ITaskEngine taskEngine = m_taskEngines[i];
+                taskEngine.TaskStateChanged -= OnTaskStateChanged;
+                taskEngine.ClientRequest -= OnClientRequest;
+                MatchFactory.DestroyTaskEngine(taskEngine);
+            }   
+        }
+
+        public ITaskEngine GetTaskEngine(int playerIndex)
+        {
+            return m_taskEngines[playerIndex];
         }
 
         public IMatchUnitController GetUnitController(int playerIndex, long unitIndex)
@@ -787,7 +797,7 @@ namespace Battlehub.VoxelCombat
                 TaskCmd executeTaskCmd = (TaskCmd)cmd;
                 TaskInfo task = executeTaskCmd.Task;
                 task.PlayerIndex = playerIndex;
-                m_taskEngine.SubmitTask(task);
+                m_taskEngines[playerIndex].SubmitTask(task);
             }
             else
             {
@@ -809,7 +819,7 @@ namespace Battlehub.VoxelCombat
 
         public void SubmitResponse(ClientRequest response)
         {
-            m_taskEngine.SubmitResponse(response);
+            m_taskEngines[response.PlayerIndex].SubmitResponse(response);
         }
 
         private void OnTaskStateChanged(TaskInfo taskInfo)
@@ -890,7 +900,7 @@ namespace Battlehub.VoxelCombat
                 m_hasNewCommands = true;
             }
 
-            if(m_hasNewCommands)
+            if (m_hasNewCommands)
             {
                 commands = ProtobufSerializer.DeepClone(m_serverCommands);
                 if (m_serverCommands.TasksStateInfo.Count > 0)
@@ -902,13 +912,19 @@ namespace Battlehub.VoxelCombat
                     m_serverCommands.ClientRequests.Clear();
                 }
                 m_hasNewCommands = false;
+                for(int i = 0; i < m_taskEngines.Length; ++i)
+                {
+                    m_taskEngines[i].Tick();
+                }
+                
                 return true;
             }
             
             commands = null;
-
-            m_taskEngine.Tick();
-
+            for (int i = 0; i < m_taskEngines.Length; ++i)
+            {
+                m_taskEngines[i].Tick();
+            }
             return false;
         }
 

@@ -5,6 +5,16 @@ namespace Battlehub.VoxelCombat
 {
     public static class MatchFactoryCli 
     {
+        public static ITaskEngine CreateTaskEngine(IMatchView matchEngine, ITaskRunner taskRunner)
+        {
+            return new TaskEngine(matchEngine, taskRunner, true);
+        }
+
+        public static void DestroyTaskEngine(ITaskEngine taskEngine)
+        {
+            taskEngine.Destroy();
+        }
+
         public static IVoxelDataController CreateVoxelDataController(MapRoot map, Coordinate coordinate, int type,  int playerIndex, Dictionary<int, VoxelAbilities>[] allAbilities)
         {
             IVoxelDataController dataController = new VoxelDataController(map, coordinate, type, playerIndex, allAbilities);

@@ -1,36 +1,14 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 namespace Battlehub.VoxelCombat
 {
-    public interface IMatchPlayerControllerCli
+    public interface IMatchPlayerControllerCli : IMatchPlayerView
     {
-        int ControllableUnitsCount
-        {
-            get;
-        }
-        int UnitsCount
-        {
-            get;
-        }
-        IEnumerable<long> Units
-        {
-            get;
-        }
-
-        IEnumerable<long> Assets
-        {
-            get;
-        }
-
         bool IsInRoom
-        {
-            get;
-        }
-
-        int PlayerIndex
         {
             get;
         }
@@ -39,7 +17,8 @@ namespace Battlehub.VoxelCombat
         void Execute(Cmd[] commands, long tick, long lagTicks);
 
         IVoxelDataController GetVoxelDataController(long unitIndex);
-        MatchAssetCli GetAsset(long assetIndex);
+
+        new MatchAssetCli GetAsset(long id);
 
         long GetAssetIndex(VoxelData data);
         bool ContainsUnit(long unitIndex);
@@ -49,19 +28,25 @@ namespace Battlehub.VoxelCombat
         void CreateAssets(IList<VoxelDataCellPair> data);
         void RemoveAssets(IList<VoxelData> data);
 
-        void DestroyAllUnitsAndAssets();
-        
+        void DestroyAllUnitsAndAssets(); 
     }
 
-    public class MatchAssetCli
+    public class MatchAssetCli : IMatchUnitAssetView
     {
         private VoxelData m_voxelData;
         private VoxelAbilities m_abilities;
         private MapCell m_cell;
+        private MapPos m_pos;
         
         private Voxel m_voxel;
         private ulong m_targetSelection;
         private ulong m_selection;
+
+        public event Action<int> CmdExecuted;
+        private void NeverUsed()
+        {
+            CmdExecuted(-1);
+        }
 
         public VoxelData VoxelData
         {
@@ -78,11 +63,37 @@ namespace Battlehub.VoxelCombat
             get { return m_cell; }
         }
 
+        public long Id
+        {
+            get { return m_voxelData.UnitOrAssetIndex; }
+        }
+
+        public bool IsAlive
+        {
+            get { return m_voxelData.IsAlive; }
+        }
+
+        public MapPos Position
+        {
+            get { return m_pos; }
+        }
+
+        public VoxelData Data
+        {
+            get { return m_voxelData; }
+        }
+
+        public IVoxelDataController DataController
+        {
+            get { return null; }
+        }
+
         public MatchAssetCli(VoxelData data, VoxelAbilities abilities, MapCell cell)
         {
             m_voxelData = data;
             m_abilities = abilities;
             m_cell = cell;
+            m_pos = cell.GetPosition();
 
             if(m_voxelData.VoxelRef != null)
             {
@@ -209,30 +220,52 @@ namespace Battlehub.VoxelCombat
         {
             get { return m_controllableUnitsCount; }
         }
+
         public int UnitsCount
         {
             get { return m_idToUnit.Count; }
         }
 
-        public IEnumerable<long> Units
+        public int AssetsCount
         {
-            get { return m_idToUnit.Keys; }
+            get { return m_idToAsset.Count; }
         }
 
-        public IEnumerable<long> Assets
-        {
-            get { return m_idToAsset.Keys; }
-        }
+        //public IEnumerable<long> Units
+        //{
+        //    get { return m_idToUnit.Keys; }
+        //}
+
+        //public IEnumerable<long> Assets
+        //{
+        //    get { return m_idToAsset.Keys; }
+        //}
 
         private bool m_isInRoom = true;
+
+        public event MatchPlayerEventHandler<IMatchUnitAssetView> UnitCreated;
+        public event MatchPlayerEventHandler<IMatchUnitAssetView> UnitRemoved;
+        public event MatchPlayerEventHandler<IMatchUnitAssetView> AssetCreated;
+        public event MatchPlayerEventHandler<IMatchUnitAssetView> AssetRemoved;
+
         public bool IsInRoom
         {
             get { return m_isInRoom; }
         }
 
-        public int PlayerIndex
+        public int Index
         {
             get { return m_playerIndex; }
+        }
+
+        IEnumerable IMatchPlayerView.Units
+        {
+            get { return m_idToUnit.Values; }
+        }
+
+        IEnumerable IMatchPlayerView.Assets
+        {
+            get { return m_idToAsset.Values; }
         }
 
         private void Awake()
@@ -331,6 +364,11 @@ namespace Battlehub.VoxelCombat
 
                 m_minimap.Spawn(voxelData, new Coordinate(cell, voxelData));
             }
+
+            if(AssetCreated != null)
+            {
+                AssetCreated(asset);
+            }
         }
 
         private void RemoveAsset(VoxelData voxelData)
@@ -358,9 +396,13 @@ namespace Battlehub.VoxelCombat
 
                     m_minimap.Die(voxelData, new Coordinate(asset.Cell, voxelData));
                 }
-                
-                asset.Destroy();
+
                 m_idToAsset.Remove(id);
+                if (AssetRemoved != null)
+                {
+                    AssetRemoved(asset);
+                }
+                asset.Destroy();
             }
         }
 
@@ -389,6 +431,11 @@ namespace Battlehub.VoxelCombat
             {
                 m_identity++;
             }
+
+            if(UnitCreated != null)
+            {
+                UnitCreated(unit);
+            }
         }
 
         private void RemoveUnitController(long unitId)
@@ -411,9 +458,12 @@ namespace Battlehub.VoxelCombat
 
             //Does not needed because all nessesary actions and event unsubscription performed in OnVoxelRefReset event handler
             //MatchFactoryCli.DestroyUnitController(unitController);
+
+            if(UnitRemoved != null)
+            {
+                UnitRemoved(unitController);
+            }
         }
-
-
 
         public void Execute(Cmd[] commands, long tick, long lagTicks)
         {
@@ -805,7 +855,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-
         public IVoxelDataController GetVoxelDataController(long unitIndex)
         {
             IMatchUnitControllerCli unitController;
@@ -835,7 +884,6 @@ namespace Battlehub.VoxelCombat
             }
             return assetIndex;
         }
-
 
         public bool ContainsUnit(long unitIndex)
         {
@@ -917,6 +965,41 @@ namespace Battlehub.VoxelCombat
                 
                 RemoveAsset(asset.VoxelData);
             }
+        }
+
+        public IMatchUnitAssetView GetUnit(long id)
+        {
+            IMatchUnitControllerCli unit;
+            if(m_idToUnit.TryGetValue(id, out unit))
+            {
+                return unit;
+            }
+            return null;
+        }
+
+        IMatchUnitAssetView IMatchPlayerView.GetAsset(long id)
+        {
+            MatchAssetCli asset;
+            if(m_idToAsset.TryGetValue(id, out asset))
+            {
+                return asset;
+            }
+            return null;
+        }
+
+        public IMatchUnitAssetView GetUnitOrAsset(long id)
+        {
+            IMatchUnitControllerCli unit;
+            if (m_idToUnit.TryGetValue(id, out unit))
+            {
+                return unit;
+            }
+            MatchAssetCli asset;
+            if (m_idToAsset.TryGetValue(id, out asset))
+            {
+                return asset;
+            }
+            return null;
         }
     }
 

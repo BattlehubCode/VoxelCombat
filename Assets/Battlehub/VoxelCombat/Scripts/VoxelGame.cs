@@ -10,7 +10,7 @@ namespace Battlehub.VoxelCombat
 
     public delegate void VoxelGameStateChangedHandler<T>(T arg);
 
-    public interface IVoxelGame
+    public interface IVoxelGame : IMatchView
     {
         event VoxelGameStateChangedHandler Started;
         event VoxelGameStateChangedHandler Completed;
@@ -257,15 +257,17 @@ namespace Battlehub.VoxelCombat
 
         public string MapName
         {
-            get
-            {
-                return m_room != null ? m_room.MapInfo.Name : null;
-            }
+            get { return m_room != null ? m_room.MapInfo.Name : null; }
         }
 
         public int BotsCount
         {
             get { return m_players.Count(p => p.IsBot); }
+        }
+
+        public MapRoot Map
+        {
+            get { return m_voxelMap.Map; }
         }
 
         private IMatchEngineCli m_engine;
@@ -314,7 +316,14 @@ namespace Battlehub.VoxelCombat
             {
                 if(m_remoteGameServer != null)
                 {
-                    m_remoteGameServer.ConnectionStateChanged += OnConnectionStateChanged;
+                    if(m_remoteGameServer.IsConnectionStateChanging)
+                    {
+                        m_remoteGameServer.ConnectionStateChanged += OnConnectionStateChanged;
+                    }
+                    else
+                    {
+                        OnConnectionStateChanged(new Error(), new ValueChangedArgs<bool>(false, m_remoteGameServer.IsConnected));
+                    }    
                 }
             }
             else
@@ -674,7 +683,7 @@ namespace Battlehub.VoxelCombat
 
                     if(PlayerDefeated != null)
                     {
-                        PlayerDefeated(defeatedPlayer.PlayerIndex);
+                        PlayerDefeated(defeatedPlayer.Index);
                     }
                 }
             }
@@ -715,13 +724,13 @@ namespace Battlehub.VoxelCombat
         public IEnumerable<long> GetUnits(int playerIndex)
         {
             IMatchPlayerControllerCli playerController = m_playerControllers[playerIndex];
-            return playerController.Units;
+            return playerController.Units.OfType<IMatchUnitAssetView>().Select(uav => uav.Id);
         }
 
         public IEnumerable<long> GetAssets(int playerIndex)
         {
             IMatchPlayerControllerCli playerController = m_playerControllers[playerIndex];
-            return playerController.Assets;
+            return playerController.Assets.OfType<IMatchUnitAssetView>().Select(uav => uav.Id);
         }
 
 
@@ -756,7 +765,7 @@ namespace Battlehub.VoxelCombat
         {
             PlayerStats stats = m_playerStats[index];
 
-            long[] units = m_playerControllers[index].Units.ToArray();
+            long[] units = m_playerControllers[index].Units.OfType<IMatchUnitAssetView>().Select(uav => uav.Id).ToArray();
 
             int count = 0;
 
@@ -817,6 +826,26 @@ namespace Battlehub.VoxelCombat
                     return;
                 }
             });
+        }
+
+        public IMatchPlayerView GetPlayerView(int index)
+        {
+            return m_playerControllers[index];
+        }
+
+        public IMatchPlayerView GetPlayerView(Guid guid)
+        {
+            return m_playerControllers[GetPlayerIndex(guid)];
+        }
+
+        public bool IsSuitableCmdFor(Guid playerId, long unitIndex, int cmdCode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Submit(int playerId, Cmd cmd)
+        {
+            m_engine.Submit(playerId, cmd);
         }
     }
 

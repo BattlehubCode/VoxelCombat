@@ -6,9 +6,9 @@ namespace Battlehub.VoxelCombat
 {
     public static class MatchFactory 
     {
-        public static ITaskEngine CreateTaskEngine(IMatchEngine matchEngine, ITaskRunner taskRunner)
+        public static ITaskEngine CreateTaskEngine(IMatchView matchEngine, ITaskRunner taskRunner)
         {
-            return new TaskEngine(matchEngine, taskRunner);
+            return new TaskEngine(matchEngine, taskRunner, false);
         }
 
         public static void DestroyTaskEngine(ITaskEngine taskEngine)

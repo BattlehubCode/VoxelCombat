@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Battlehub.VoxelCombat
@@ -48,6 +49,8 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
+        ITaskEngine GetClientTaskEngine(int playerIndex);
+
         bool HasError(Error error);
 
         void  DownloadMapData(MatchEngineCliEvent<MapData> callback);
@@ -86,6 +89,7 @@ namespace Battlehub.VoxelCombat
         private ITaskRunner m_taskRunner;
         private IPathFinder m_botPathFinder;
         private ITaskRunner m_botTaskRunner;
+        private ITaskEngine[] m_taskEngines;
 
         public IPathFinder PathFinder
         {
@@ -105,6 +109,11 @@ namespace Battlehub.VoxelCombat
         public ITaskRunner BotTaskRunner
         {
             get { return m_botTaskRunner; }
+        }
+
+        public ITaskEngine GetClientTaskEngine(int playerIndex)
+        {
+            return m_taskEngines[playerIndex];
         }
 
         private void Awake()
@@ -139,6 +148,13 @@ namespace Battlehub.VoxelCombat
             m_matchServer.Ping += OnPing;
             m_matchServer.Paused += OnPaused;
             m_matchServer.ConnectionStateChanged += OnConnectionStateChanged;
+            if(!m_matchServer.IsConnectionStateChanging)
+            {
+                if(m_matchServer.IsConnected)
+                {
+                    OnConnectionStateChanged(new Error(), new ValueChangedArgs<bool>(false, true));
+                }
+            }
 
             enabled = false;
         }
@@ -157,6 +173,17 @@ namespace Battlehub.VoxelCombat
                 m_matchServer.Ping -= OnPing;
                 m_matchServer.Paused -= OnPaused;
                 m_matchServer.ConnectionStateChanged -= OnConnectionStateChanged;
+            }
+
+
+            for (int i = 0; i < m_taskEngines.Length; ++i)
+            {
+                ITaskEngine taskEngine = m_taskEngines[i];
+                if(taskEngine != null)
+                {
+                    taskEngine.ClientRequest -= ProcessClientRequest;
+                    MatchFactoryCli.DestroyTaskEngine(taskEngine);
+                }   
             }
 
             if(m_pathFinder != null)
@@ -185,7 +212,6 @@ namespace Battlehub.VoxelCombat
             m_botTaskRunner.Update();
         }
 
-
         private void FixedUpdate()
         {
             while ((Time.realtimeSinceStartup - m_prevTickTime) >= GameConstants.MatchEngineTick)
@@ -210,9 +236,14 @@ namespace Battlehub.VoxelCombat
                             ExecuteCommands(error, m_tick, commands);
                         }
 
+                        if (commands.TasksStateInfo != null && commands.TasksStateInfo.Count > 0)
+                        {
+                            HandleTaskStateChanged(commands.TasksStateInfo);
+                        }
+
                         if (commands.ClientRequests != null && commands.ClientRequests.Count > 0)
                         {
-                            HandleClientRequests(commands.ClientRequests);
+                            ProcessRequest(commands.ClientRequests);
                         }
                     }
                     else if(m_tick < (commands.Tick - 8)) //This means the diff between server time and client time > 400ms, so we try to make adjustment
@@ -233,9 +264,14 @@ namespace Battlehub.VoxelCombat
                                 ExecuteCommands(error, m_tick, commands);
                             }
 
+                            if (commands.TasksStateInfo != null && commands.TasksStateInfo.Count > 0)
+                            {
+                                HandleTaskStateChanged(commands.TasksStateInfo);
+                            }
+
                             if (commands.ClientRequests != null && commands.ClientRequests.Count > 0)
                             {
-                                HandleClientRequests(commands.ClientRequests);
+                                ProcessRequest(commands.ClientRequests);
                             }
 
                             if (m_commands.Count > 0)
@@ -248,7 +284,6 @@ namespace Battlehub.VoxelCombat
                             }
                         }
 
-
                         if(commands != null && commands.Tick == m_tick)
                         {
                             m_commands.Dequeue();
@@ -259,11 +294,25 @@ namespace Battlehub.VoxelCombat
                                 ExecuteCommands(error, m_tick, commands);
                             }
 
+                            if (commands.TasksStateInfo != null && commands.TasksStateInfo.Count > 0)
+                            {
+                                HandleTaskStateChanged(commands.TasksStateInfo);
+                            }
+
                             if (commands.ClientRequests != null && commands.ClientRequests.Count > 0)
                             {
-                                HandleClientRequests(commands.ClientRequests);
+                                ProcessRequest(commands.ClientRequests);
                             }
                         }
+                    }
+                }
+
+                for(int i = 0; i < m_taskEngines.Length; ++i)
+                {
+                    ITaskEngine taskEngine = m_taskEngines[i];
+                    if(taskEngine != null)
+                    {
+                        taskEngine.Tick();
                     }
                 }
                 m_tick++;
@@ -271,38 +320,64 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void HandleClientRequests(List<ClientRequest> clientRequests)
+        private void HandleTaskStateChanged(List<TaskStateInfo> taskStateInfo)
+        {
+            for(int i = 0; i < taskStateInfo.Count; ++i)
+            {
+                TaskStateInfo tsi = taskStateInfo[i];
+                ITaskEngine taskEngine = m_taskEngines[tsi.PlayerId];
+                if (taskEngine != null)
+                {
+                    taskEngine.SetTaskState(tsi.TaskId, tsi.State);
+                }
+            }
+        }
+
+        private void ProcessRequest(List<ClientRequest> clientRequests)
         {
             for(int i = 0; i < clientRequests.Count; ++i)
             {
                 ClientRequest request = clientRequests[i];
-                Cmd cmd = request.Cmd;
+                ProcessRequest(request, SubmitResponse);
+            }
+        }
 
-                if(cmd != null)
+        private void ProcessClientRequest(ClientRequest request)
+        {
+            ProcessRequest(request, processedRequest =>
+            {
+                m_taskEngines[processedRequest.PlayerIndex].SubmitResponse(processedRequest);
+            });
+        }
+
+        private void ProcessRequest(ClientRequest request, Action<ClientRequest> callback)
+        {
+            Cmd cmd = request.Cmd;
+
+            if (cmd != null)
+            {
+                IVoxelDataController dc = m_game.GetVoxelDataController(request.PlayerIndex, cmd.UnitIndex);
+                if (cmd.Code != CmdCode.Move || dc == null)
                 {
-                    IVoxelDataController dc = m_game.GetVoxelDataController(request.PlayerIndex, cmd.UnitIndex);
-                    if(cmd.Code != CmdCode.Move || dc == null)
+                    request.Cmd.ErrorCode = CmdErrorCode.Failed;
+                    SubmitResponse(request);
+                }
+                else
+                {
+                    CoordinateCmd coordinateCmd = (CoordinateCmd)cmd;
+                    Debug.Assert(coordinateCmd.Coordinates.Length > 1);
+                    IPathFinder pathFinder = m_game.IsLocalPlayer(request.PlayerIndex) ? m_pathFinder : m_botPathFinder;
+#warning PathFinder should igore dataController.ControlledVoxelData
+                    pathFinder.Find(cmd.UnitIndex, -1, dc.Clone(), coordinateCmd.Coordinates, (unitIndex, path) =>
                     {
-                        request.Cmd.ErrorCode = CmdErrorCode.Failed;
-                        SubmitResponse(request);
-                    }
-                    else
-                    {
-                        CoordinateCmd coordinateCmd = (CoordinateCmd)cmd;
-                        Debug.Assert(coordinateCmd.Coordinates.Length > 1);
-                        IPathFinder pathFinder = m_game.IsLocalPlayer(request.PlayerIndex) ? m_pathFinder : m_botPathFinder;
-                        #warning PathFinder should igore dataController.ControlledVoxelData
-                        pathFinder.Find(cmd.UnitIndex, -1, dc.Clone(), coordinateCmd.Coordinates, (unitIndex, path) =>
-                        {
-                            coordinateCmd.Coordinates = path;
-                            request.Cmd = coordinateCmd;
-                            SubmitResponse(request);
-                        }, null);
-                    }
-                    
+                        coordinateCmd.Coordinates = path;
+                        request.Cmd = coordinateCmd;
+                        callback(request);
+                    }, null);
                 }
             }
         }
+
 
         private void SubmitResponse(ClientRequest request)
         {
@@ -409,6 +484,17 @@ namespace Battlehub.VoxelCombat
 
             m_isInitialized = true;
 
+            m_taskEngines = new ITaskEngine[players.Length];
+            for(int i = 0; i < m_taskEngines.Length; ++i)
+            {
+                if(players[i].IsBot || localPlayers.Contains(players[i].Id))
+                {
+                    ITaskEngine taskEngine = MatchFactoryCli.CreateTaskEngine(m_game, m_taskRunner);
+                    taskEngine.ClientRequest += ProcessClientRequest;
+                    m_taskEngines[i] = taskEngine;
+                }
+            }
+
             m_pathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map, players.Length);
             m_taskRunner = MatchFactoryCli.CreateTaskRunner(players.Length);
 
@@ -423,6 +509,7 @@ namespace Battlehub.VoxelCombat
             enabled = true; //update method will be called
         }
 
+  
         private void OnPing(Error error, RTTInfo payload)
         {
             m_rttInfo = payload;

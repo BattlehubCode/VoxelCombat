@@ -478,10 +478,10 @@ namespace Battlehub.VoxelCombat.Tests
             TaskEngineEvent<TaskInfo> taskStateChangedEventHandler = null;
             taskStateChangedEventHandler = taskInfo =>
             {
-                m_engine.TaskEngine.TaskStateChanged -= taskStateChangedEventHandler;
+                m_engine.GetTaskEngine(playerIndex).TaskStateChanged -= taskStateChangedEventHandler;
                 callback(task);
             };
-            m_engine.TaskEngine.TaskStateChanged += taskStateChangedEventHandler;
+            m_engine.GetTaskEngine(playerIndex).TaskStateChanged += taskStateChangedEventHandler;
 
             RunEngine();
             Assert.Fail();

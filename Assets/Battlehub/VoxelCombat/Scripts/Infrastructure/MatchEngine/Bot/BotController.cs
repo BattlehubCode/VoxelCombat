@@ -21,7 +21,6 @@ namespace Battlehub.VoxelCombat
 
         bool IsSuitableCmdFor(Guid playerId, long unitIndex, int cmdCode);
         void Submit(int playerId, Cmd cmd);
-        void SubmitResponse(ClientRequest response);
     }
 
     public delegate void MatchPlayerEventHandler<T>(T arg);
@@ -33,7 +32,7 @@ namespace Battlehub.VoxelCombat
         event MatchPlayerEventHandler<IMatchUnitAssetView> AssetCreated;
         event MatchPlayerEventHandler<IMatchUnitAssetView> AssetRemoved;
 
-        int Index
+          int Index
         {
             get;
         }
@@ -53,7 +52,7 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-        IMatchUnitAssetView[] Units
+        System.Collections.IEnumerable Units
         {
             get;
         }
@@ -71,6 +70,8 @@ namespace Battlehub.VoxelCombat
 
     public interface IMatchUnitAssetView 
     {
+        event Action<int> CmdExecuted;
+
         long Id
         {
             get;
@@ -95,8 +96,6 @@ namespace Battlehub.VoxelCombat
         {
             get;
         }
-
-        
     }
 
 

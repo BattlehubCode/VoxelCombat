@@ -12,7 +12,12 @@ namespace Battlehub.VoxelCombat
         event TaskEngineEvent<TaskInfo> TaskStateChanged;
         event TaskEngineEvent<ClientRequest> ClientRequest;
 
-        IMatchEngine MatchEngine
+        bool IsClient
+        {
+            get;
+        }
+
+        IMatchView MatchEngine
         {
             get;
         }
@@ -24,6 +29,8 @@ namespace Battlehub.VoxelCombat
 
         IExpression GetExpression(int expressionCode);
 
+        void GenerateIdentitifers(TaskInfo taskInfo);
+
         /// <summary>
         /// Submit task to task engine. Side effect generates and assignes taskid
         /// </summary>
@@ -33,7 +40,8 @@ namespace Battlehub.VoxelCombat
 
         void SubmitResponse(ClientRequest request);
 
-        void TerminateTask(int taskId);
+        void SetTaskState(long taskId, TaskState state);
+
 
         void Tick();
 
@@ -45,12 +53,17 @@ namespace Battlehub.VoxelCombat
         public event TaskEngineEvent<TaskInfo> TaskStateChanged;
         public event TaskEngineEvent<ClientRequest> ClientRequest;
 
-        private IMatchEngine m_match;
+        private bool m_isClient;
+        public bool IsClient
+        {
+            get { return m_isClient; }
+        }
+
+        private IMatchView m_match;
         private ITaskRunner m_taskRunner;
         private int m_taskIdentity;
         private List<TaskBase> m_activeTasks;
         private Dictionary<long, TaskBase> m_idToActiveTask;
-
 
         private class PendingClientRequest
         {
@@ -72,7 +85,7 @@ namespace Battlehub.VoxelCombat
 
         private readonly Dictionary<int, IExpression> m_expressions;
 
-        public IMatchEngine MatchEngine
+        public IMatchView MatchEngine
         {
             get { return m_match; }
         }
@@ -82,14 +95,14 @@ namespace Battlehub.VoxelCombat
             get { return m_taskRunner; }
         }
 
-
         public IExpression GetExpression(int expressionCode)
         {
             return m_expressions[expressionCode];
         }
 
-        public TaskEngine(IMatchEngine match, ITaskRunner taskRunner)
+        public TaskEngine(IMatchView match, ITaskRunner taskRunner, bool isClient)
         {
+            m_isClient = isClient;
             m_match = match;
             m_taskRunner = taskRunner;
             m_activeTasks = new List<TaskBase>();
@@ -114,15 +127,20 @@ namespace Battlehub.VoxelCombat
 
         public void SubmitTask(TaskInfo taskInfo)
         {
-            if(taskInfo.TaskId != 0)
+            if(IsClient)
             {
-                return;
+                GenerateIdentitifers(taskInfo);
             }
-
-            GenerateIdentitifers(taskInfo);
-
+            else
+            {
+                if(!ValidateIdentifiers(taskInfo))
+                {
+                    taskInfo.State = TaskState.Failed;
+                    RaiseTaskStateChanged(taskInfo);
+                }
+            }
+            
             taskInfo.State = TaskState.Active;
-
             TaskBase task = InstantiateTask(taskInfo);
             task.ChildTaskActivated += OnChildTaskActivated;
             m_activeTasks.Add(task);
@@ -139,21 +157,13 @@ namespace Battlehub.VoxelCombat
             RaiseTaskStateChanged(taskInfo);
         }
 
-
-        public void TerminateTask(int taskId)
+        public void SetTaskState(long taskId, TaskState state)
         {
-            for (int i = m_activeTasks.Count; i >= 0; --i)
+            TaskBase task;
+            if(m_idToActiveTask.TryGetValue(taskId, out task))
             {
-                TaskBase activeTask = m_activeTasks[i];
-                if (activeTask.TaskInfo.TaskId == taskId)
-                {
-                    activeTask.TaskInfo.State = TaskState.Terminated;
-                    m_activeTasks.RemoveAt(i);
-                    break;
-                }
+                task.TaskInfo.State = state;
             }
-
-            m_idToActiveTask.Remove(taskId);
         }
 
         public void SubmitResponse(ClientRequest cliResponse)
@@ -281,7 +291,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void GenerateIdentitifers(TaskInfo taskInfo)
+        public void GenerateIdentitifers(TaskInfo taskInfo)
         {
             unchecked
             {
@@ -296,6 +306,25 @@ namespace Battlehub.VoxelCombat
                     GenerateIdentitifers(taskInfo.Children[i]);
                 }
             }
+        }
+
+        private bool ValidateIdentifiers(TaskInfo taskInfo)
+        {
+            if(taskInfo.TaskId == 0)
+            {
+                return false;
+            }
+            if (taskInfo.Children != null)
+            {
+                for (int i = 0; i < taskInfo.Children.Length; ++i)
+                {
+                    if(!ValidateIdentifiers(taskInfo.Children[i]))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         public TaskBase InstantiateTask(TaskInfo taskInfo)

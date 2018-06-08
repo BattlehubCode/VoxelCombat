@@ -64,6 +64,25 @@ namespace Battlehub.VoxelCombat
                 ChildTaskActivated(taskInfo);
             }
         }
+
+        protected void SubmitCommand()
+        {
+            if (m_taskEngine.IsClient)
+            {
+                m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, new TaskCmd(m_taskInfo));
+            }
+            else
+            {
+                if (m_taskInfo.RequiresClientSidePreprocessing)
+                {
+                    m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, m_taskInfo.PreprocessedCmd);
+                }
+                else
+                {
+                    m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, m_taskInfo.Cmd);
+                }
+            }
+        }
     }
 
     public class SequentialTask : TaskBase
@@ -213,7 +232,7 @@ namespace Battlehub.VoxelCombat
 
     public class ExecuteCmdTask : TaskBase
     {
-        protected IMatchUnitController m_unit;
+        protected IMatchUnitAssetView m_unit;
 
         public ExecuteCmdTask(TaskInfo taskInfo, ITaskEngine taskEngine) : base(taskInfo, taskEngine)
         {
@@ -225,23 +244,26 @@ namespace Battlehub.VoxelCombat
             {
                 return;
             }
-         
-            m_unit = m_taskEngine.MatchEngine.GetUnitController(m_taskInfo.PlayerIndex, m_taskInfo.Cmd.UnitIndex);
+
+            IMatchPlayerView playerView = m_taskEngine.MatchEngine.GetPlayerView(m_taskInfo.PlayerIndex);
+            if(playerView == null)
+            {
+                m_taskInfo.State = TaskState.Failed;
+            }
+
+            m_unit = playerView.GetUnit(m_taskInfo.Cmd.UnitIndex);
             if (m_unit == null)
             {
                 m_taskInfo.State = TaskState.Failed;
             }
             else
             {
-                m_unit.CmdExecuted += OnCmdExecuted;
-                if(m_taskInfo.RequiresClientSidePreprocessing)
+                if(!m_taskEngine.IsClient)
                 {
-                    m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, m_taskInfo.PreprocessedCmd);
+                    m_unit.CmdExecuted += OnCmdExecuted;
                 }
-                else
-                {
-                    m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, m_taskInfo.Cmd);
-                }
+                
+                SubmitCommand();               
             }
         }
 

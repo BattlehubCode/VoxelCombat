@@ -445,24 +445,24 @@ namespace Battlehub.VoxelCombat
                 min.Row = max.Row;
             }
 
-            int centerCol = min.Col + (max.Col - min.Col) / 2;
-            int centerRow = min.Row + (max.Row - min.Row) / 2;
+            int centerCol = min.Col + (max.Col - min.Col) / 2 + 1;
+            int centerRow = min.Row + (max.Row - min.Row) / 2 + 1;
 
             int minCol = Mathf.Max(0, centerCol - m_minMapBoundsSize / 2);
             int minRow = Mathf.Max(0, centerRow - m_minMapBoundsSize / 2);
 
-            int maxCol = minCol + m_minMapBoundsSize;
-            int maxRow = minRow + m_minMapBoundsSize;
+            int maxCol = minCol + (m_minMapBoundsSize - 1);
+            int maxRow = minRow + (m_minMapBoundsSize - 1);
             if(maxCol >= size)
             {
                 maxCol = size - 1;
-                minCol = maxCol - m_minMapBoundsSize;
+                minCol = maxCol - (m_minMapBoundsSize - 1);
             }
 
             if(maxRow >= size)
             {
                 maxRow = size - 1;
-                minRow = maxRow - m_minMapBoundsSize;
+                minRow = maxRow - (m_minMapBoundsSize - 1);
             }
 
             if(minCol < min.Col)

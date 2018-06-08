@@ -293,9 +293,8 @@ namespace Battlehub.VoxelCombat
         [ProtoMember(8)]
         private bool m_requiresClientSidePreprocessing;
         public Cmd m_preprocessedCmd;
-        
-        private Guid m_playerId;
-        private int m_playerIndex;
+
+        private int m_playerIndex = -1;
         private TaskInfo m_parent;
 
         public TaskInfo(TaskType taskType, Cmd cmd, TaskState state, ExpressionInfo expression, TaskInfo parent)
@@ -325,6 +324,12 @@ namespace Battlehub.VoxelCombat
         public TaskInfo(Cmd cmd)
         : this(cmd, null)
         {
+        }
+
+        public TaskInfo(Cmd cmd, int playerIndex)
+            : this(cmd, null)
+        {
+            m_playerIndex = playerIndex;
         }
 
         public TaskInfo(TaskType type)

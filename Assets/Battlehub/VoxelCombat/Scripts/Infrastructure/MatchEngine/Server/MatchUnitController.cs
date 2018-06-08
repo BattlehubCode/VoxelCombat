@@ -6,8 +6,6 @@ namespace Battlehub.VoxelCombat
 {
     public interface IMatchUnitController : IMatchUnitAssetView
     {
-        event Action<int> CmdExecuted;
-
         int Type
         {
             get;

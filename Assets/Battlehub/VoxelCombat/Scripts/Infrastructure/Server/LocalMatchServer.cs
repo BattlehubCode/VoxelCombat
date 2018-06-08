@@ -393,6 +393,8 @@ namespace Battlehub.VoxelCombat
 
         public void Submit(Guid clientId, int playerIndex, Cmd cmd, ServerEventHandler<Cmd> callback)
         {
+            cmd = ProtobufSerializer.DeepClone(cmd);
+
             Error error = new Error();
             error.Code = StatusCode.OK;
            

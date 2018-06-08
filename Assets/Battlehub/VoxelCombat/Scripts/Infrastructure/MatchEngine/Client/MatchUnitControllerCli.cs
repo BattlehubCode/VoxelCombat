@@ -5,19 +5,12 @@ using UnityEngine;
 
 namespace Battlehub.VoxelCombat
 {
-    public interface IMatchUnitControllerCli
+    public interface IMatchUnitControllerCli : IMatchUnitAssetView
     {
-        IVoxelDataController DataController
-        {
-            get;
-        }
-
         int Type
         {
             get;
         }
-
-
 
         //Execute Command side effect
         IList<VoxelDataCellPair> CreatedVoxels
@@ -37,12 +30,9 @@ namespace Battlehub.VoxelCombat
         void Unselect(int playerIndex);
 
         void SelectAsTarget(int playerIndex);
-
         void UnselectAsTarget(int playerIndex);
         
         void Destroy();
-
-
     }
 
     public abstract class MatchUnitControllerBaseCli : IMatchUnitControllerCli
@@ -71,6 +61,13 @@ namespace Battlehub.VoxelCombat
 
         private static readonly VoxelData[] m_emptyData = new VoxelData[0];
         private static readonly VoxelDataCellPair[] m_emptyPairs = new VoxelDataCellPair[0];
+
+        public event Action<int> CmdExecuted
+        {
+            add { }
+            remove { }
+        }
+
         public virtual IList<VoxelDataCellPair> CreatedVoxels
         {
             get { return m_emptyPairs; }
@@ -80,7 +77,27 @@ namespace Battlehub.VoxelCombat
         {
             get { return m_emptyData; }
         }
-      
+
+        public long Id
+        {
+            get { return m_dataController.ControlledData.UnitOrAssetIndex; }
+        }
+
+        public bool IsAlive
+        {
+            get { return m_dataController.IsAlive; }
+        }
+
+        public MapPos Position
+        {
+            get { return m_dataController.Coordinate.MapPos; }
+        }
+
+        public VoxelData Data
+        {
+            get { return m_dataController.ControlledData; }
+        }
+
         public MatchUnitControllerBaseCli(IVoxelDataController dataController)
         {
             m_dataController = dataController;
@@ -98,17 +115,6 @@ namespace Battlehub.VoxelCombat
 
         public void Destroy()
         {
-            //if (m_controlledVoxel != null)
-            //{
-            //    OnUnsubscribe();
-
-            //    for (int i = 1; i <= GameConstants.MaxLocalPlayers; ++i)
-            //    {
-            //        m_controlledVoxel.Unselect(i);
-            //        m_controlledVoxel.UnselectAsTarget(i);
-            //    }
-            //}
-
             if(m_controlledVoxel != null)
             {
                 m_controlledVoxel.Kill();
@@ -196,7 +202,6 @@ namespace Battlehub.VoxelCombat
             m_currentTick = tick;
 
             OnExecuteCommand(cmd);
-
         }
         protected abstract void OnExecuteCommand(Cmd cmd);
 

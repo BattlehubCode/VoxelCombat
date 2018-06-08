@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -34,6 +36,12 @@ namespace Battlehub.VoxelCombat
 
     public class MatchAsset : IMatchUnitAssetView
     {
+        public event Action<int> CmdExecuted;
+        private void NeverUsed()
+        {
+            CmdExecuted(-1);
+        }
+        
         private VoxelData m_voxelData;
         private MapCell m_cell;
         private MapPos m_pos;
@@ -143,12 +151,12 @@ namespace Battlehub.VoxelCombat
             get { return m_idToAsset.Count; }
         }
 
-        IMatchUnitAssetView[] IMatchPlayerView.Units
+        IEnumerable IMatchPlayerView.Units
         {
             get { return m_units; }
         }
 
-        System.Collections.IEnumerable IMatchPlayerView.Assets
+        IEnumerable IMatchPlayerView.Assets
         {
             get { return m_idToAsset.Values; }
         }
