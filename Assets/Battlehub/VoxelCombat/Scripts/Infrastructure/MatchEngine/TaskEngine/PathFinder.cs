@@ -9,13 +9,13 @@ namespace Battlehub.VoxelCombat
 #warning PathFinder should accept area size as argument 
     public interface IPathFinder
     {
-        bool IsRunning(long unitId, int playerIndex);
+        bool IsRunning(long unitId);
 
         void Find(long unitId, long targetId, IVoxelDataController dataController, Coordinate[] waypoints, Action<long, Coordinate[]> callback, Action<long> terminateCallback);
 
         void FindEmptySpace(long unitId, IVoxelDataController dataController, int radius, Action<long, Coordinate[]> callback, Action<long> terminateCallback);
 
-        void Terminate(long unitId, int playerIndex);
+        void Terminate(long unitId);
 
         void Tick();
 
@@ -256,21 +256,16 @@ namespace Battlehub.VoxelCombat
 
     public class PathFinder2 : IPathFinder
     {
-        private Dictionary<long, PathFinderTask>[] m_idToActiveTask;
+        private Dictionary<long, PathFinderTask> m_idToActiveTask;
         private readonly List<PathFinderTask> m_activeTasks = new List<PathFinderTask>();
 
         private readonly PathMatrixPool[] m_matrixPools;
 
         private System.Random m_rand;
 
-        public PathFinder2(MapRoot map, int playersCount)
+        public PathFinder2(MapRoot map)
         {
-            m_idToActiveTask = new Dictionary<long, PathFinderTask>[playersCount];
-            for (int i = 0; i < playersCount; ++i)
-            {
-                m_idToActiveTask[i] = new Dictionary<long, PathFinderTask>();
-            }
-
+            m_idToActiveTask = new Dictionary<long, PathFinderTask>();
             m_rand = new System.Random(Guid.NewGuid().GetHashCode());
             m_matrixPools = new PathMatrixPool[3];
             for (int i = 0; i < m_matrixPools.Length; ++i)
@@ -290,9 +285,9 @@ namespace Battlehub.VoxelCombat
             m_activeTasks.Clear();
         }
 
-        public bool IsRunning(long unitId, int playerIndex)
+        public bool IsRunning(long unitId)
         {
-            return m_idToActiveTask[playerIndex].ContainsKey(unitId);
+            return m_idToActiveTask.ContainsKey(unitId);
         }
 
 
@@ -337,25 +332,25 @@ namespace Battlehub.VoxelCombat
                 throw new System.ArgumentNullException("waypoints");
             }
             PathFinderTask task;
-            if (m_idToActiveTask[dataController.PlayerIndex].TryGetValue(unitId, out task))
+            if (m_idToActiveTask.TryGetValue(unitId, out task))
             {
                 task.Terminate();
                 m_activeTasks.Remove(task);
             }
 
             task = new PathFinderTask(dataController.PlayerIndex, unitId, targetId, dataController.Map, dataController.MapSize, dataController.ControlledData, waypoints[0] /*dataController.Coordinate*/, dataController.Abilities, waypoints, m_matrixPools, callback, terminateCallback);
-            m_idToActiveTask[dataController.PlayerIndex][unitId] = task;
+            m_idToActiveTask[unitId] = task;
             m_activeTasks.Add(task);
         }
 
-        public void Terminate(long unitId, int playerIndex)
+        public void Terminate(long unitId)
         {
             PathFinderTask task;
-            if (m_idToActiveTask[playerIndex].TryGetValue(unitId, out task))
+            if (m_idToActiveTask.TryGetValue(unitId, out task))
             {
                 task.Terminate();
                 m_activeTasks.Remove(task);
-                m_idToActiveTask[playerIndex].Remove(unitId);
+                m_idToActiveTask.Remove(unitId);
             }
         }
 
@@ -370,7 +365,7 @@ namespace Battlehub.VoxelCombat
                     if (!task.IsTerminated && m_activeTasks[i] == task)
                     {
                         m_activeTasks.RemoveAt(i);
-                        m_idToActiveTask[task.PlayerIndex].Remove(task.UnitId);
+                        m_idToActiveTask.Remove(task.UnitId);
                     }
                 }
             }

@@ -426,7 +426,7 @@ namespace Battlehub.VoxelCombat
     public class ClientRequest 
     {
         [ProtoMember(1)]
-        public long TaskId;
+        public int TaskId;
 
         [ProtoMember(2)]
         public int PlayerIndex;
@@ -439,7 +439,7 @@ namespace Battlehub.VoxelCombat
 
         }
 
-        public ClientRequest(long taskId, int playerIndex, Cmd cmd)
+        public ClientRequest(int taskId, int playerIndex, Cmd cmd)
         {
             PlayerIndex = playerIndex;
             TaskId = taskId;
@@ -581,29 +581,13 @@ namespace Battlehub.VoxelCombat
     public interface IMatchEngine : IMatchView
     {
         event Action<int, Cmd> OnSubmitted;
-       
-        IPathFinder PathFinder
-        {
-            get;
-        }
-        ITaskRunner TaskRunner
-        {
-            get;
-        }
-
-        IPathFinder BotPathFinder
-        {
-            get;
-        }
-
-        ITaskRunner BotTaskRunner
-        {
-            get;
-        }
-
 
         ITaskEngine GetTaskEngine(int playerIndex);
-        
+
+        IPathFinder GetPathFinder(int playerIndex);
+
+        ITaskRunner GetTaskRunner(int playerIndex);
+
         IMatchUnitController GetUnitController(int playerIndex, long unitIndex);
 
         IMatchUnitAssetView GetAsset(int playerIndex, long unitIndex);
@@ -611,6 +595,8 @@ namespace Battlehub.VoxelCombat
         void RegisterPlayer(Guid playerId, int playerIndex, Dictionary<int, VoxelAbilities>[] allAbilities);
 
         void CompletePlayerRegistration();
+
+        void Update();
 
         bool Tick(out CommandsBundle commands);
 
@@ -643,39 +629,14 @@ namespace Battlehub.VoxelCombat
             get { return m_map; }
         }
 
-        private IPathFinder m_pathFinder;
-        public IPathFinder PathFinder
-        {
-            get { return m_pathFinder; }
-        }
-
-        private ITaskRunner m_taskRunner;
-
-        public ITaskRunner TaskRunner
-        {
-            get { return m_taskRunner; }
-        }
-
-        private IPathFinder m_botPathFinder;
-
-        public IPathFinder BotPathFinder
-        {
-            get { return m_botPathFinder; }
-        }
-
-        private ITaskRunner m_botTaskRunner;
-
-        public ITaskRunner BotTaskRunner
-        {
-            get { return m_botTaskRunner; }
-        }
-
         int IMatchView.PlayersCount
         {
             get { return m_players.Length; }
         }
 
         private ITaskEngine[] m_taskEngines;
+        private ITaskRunner[] m_taskRunners;
+        private IPathFinder[] m_pathFinders;
     
         public MatchEngine(MapRoot map, int playersCount)
         {
@@ -684,18 +645,19 @@ namespace Battlehub.VoxelCombat
             m_players = new IMatchPlayerController[playersCount];
             //m_playerGuids = new Guid[playersCount];
 
-            m_pathFinder = MatchFactory.CreatePathFinder(m_map, playersCount);
-            m_taskRunner = MatchFactory.CreateTaskRunner(playersCount);
-
-            m_botPathFinder = MatchFactory.CreatePathFinder(m_map, playersCount);
-            m_botTaskRunner = MatchFactory.CreateTaskRunner(playersCount);
-
             m_map.SetPlayerCount(playersCount);
 
             m_taskEngines = new ITaskEngine[playersCount];
-            for(int i = 0; i < m_taskEngines.Length; ++i)
+            m_pathFinders = new IPathFinder[playersCount];
+            m_taskRunners = new ITaskRunner[playersCount];
+            for(int i = 0; i < playersCount; ++i)
             {
-                ITaskEngine taskEngine = MatchFactory.CreateTaskEngine(this, m_taskRunner);
+                IPathFinder pathFinder = MatchFactory.CreatePathFinder(m_map);
+                ITaskRunner taskRunner = MatchFactory.CreateTaskRunner();
+                m_pathFinders[i] = pathFinder;
+                m_taskRunners[i] = taskRunner;
+
+                ITaskEngine taskEngine = MatchFactory.CreateTaskEngine(this, taskRunner, pathFinder);
                 taskEngine.TaskStateChanged += OnTaskStateChanged;
                 taskEngine.ClientRequest += OnClientRequest;
                 m_taskEngines[i] = taskEngine;
@@ -704,24 +666,31 @@ namespace Battlehub.VoxelCombat
 
         public void Destroy()
         {
-            MatchFactory.DestroyPathFinder(m_pathFinder);
-            MatchFactory.DestroyTaskRunner(m_taskRunner);
-
-            MatchFactory.DestroyPathFinder(m_botPathFinder);
-            MatchFactory.DestroyTaskRunner(m_botTaskRunner);
-
-            for (int i = 0; i < m_taskEngines.Length; ++i)
+            for (int i = 0; i < m_players.Length; ++i)
             {
                 ITaskEngine taskEngine = m_taskEngines[i];
                 taskEngine.TaskStateChanged -= OnTaskStateChanged;
                 taskEngine.ClientRequest -= OnClientRequest;
+
                 MatchFactory.DestroyTaskEngine(taskEngine);
+                MatchFactory.DestroyPathFinder(m_pathFinders[i]);
+                MatchFactory.DestroyTaskRunner(m_taskRunners[i]);
             }   
         }
 
         public ITaskEngine GetTaskEngine(int playerIndex)
         {
             return m_taskEngines[playerIndex];
+        }
+
+        public IPathFinder GetPathFinder(int playerIndex)
+        {
+            return m_pathFinders[playerIndex];
+        }
+
+        public ITaskRunner GetTaskRunner(int playerIndex)
+        {
+            return m_taskRunners[playerIndex];
         }
 
         public IMatchUnitController GetUnitController(int playerIndex, long unitIndex)
@@ -834,13 +803,23 @@ namespace Battlehub.VoxelCombat
             m_hasNewCommands = true;
         }
 
+        public void Update()
+        {
+            for (int i = 0; i < m_players.Length; ++i)
+            {
+                m_pathFinders[i].Update();
+                m_taskRunners[i].Update();
+            }
+        }
+
         public bool Tick(out CommandsBundle commands)
         {
-            m_pathFinder.Tick();
-            m_taskRunner.Tick();
-            m_botPathFinder.Tick();
-            m_botTaskRunner.Tick();
-            
+            for(int i = 0; i < m_players.Length; ++i)
+            {
+                m_pathFinders[i].Tick();
+                m_taskRunners[i].Tick();
+            }
+          
             List<IMatchPlayerController> defeatedPlayers = null;
             for (int i = 0; i < m_players.Length; ++i)
             {

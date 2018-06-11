@@ -509,7 +509,7 @@ namespace Battlehub.VoxelCombat
 
                             if (player.IsBot && player.BotType != BotType.Replay)
                             {
-                                bots.Add(MatchFactory.CreateBotController(player, m_engine, m_engine.BotPathFinder, m_engine.BotTaskRunner));
+                                //bots.Add(MatchFactory.CreateBotController(player, m_engine, m_engine.BotPathFinder, m_engine.BotTaskRunner));
                             }
                         }
 
@@ -687,11 +687,8 @@ namespace Battlehub.VoxelCombat
 
         private void Update()
         {
-            m_engine.PathFinder.Update();
-            m_engine.TaskRunner.Update();
-            m_engine.BotPathFinder.Update();
-            m_engine.BotTaskRunner.Update();
-         
+            m_engine.Update();
+
             //for (int i = 0; i < m_bots.Length; ++i)
             //{
             //    m_bots[i].Update(Time.realtimeSinceStartup);

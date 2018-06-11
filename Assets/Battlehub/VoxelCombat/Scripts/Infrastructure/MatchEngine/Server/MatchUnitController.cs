@@ -268,7 +268,7 @@ namespace Battlehub.VoxelCombat
             : base(dataController)
         {
             m_engine = engine;
-            m_pathFinder = m_engine.PathFinder;
+            m_pathFinder = m_engine.GetPathFinder(dataController.PlayerIndex);
         }
 
         protected override void OnSetCommand(Cmd cmd)
@@ -303,7 +303,7 @@ namespace Battlehub.VoxelCombat
         {
             if(State == VoxelDataState.SearchingPath)
             {
-                m_pathFinder.Terminate(Id, m_dataController.PlayerIndex);
+                m_pathFinder.Terminate(Id);
             } 
         }
   

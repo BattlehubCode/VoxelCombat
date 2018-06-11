@@ -29,36 +29,15 @@ namespace Battlehub.VoxelCombat
         event MatchEngineCliEvent Stopped;
         event MatchEngineCliEvent<bool> Paused;
 
-        IPathFinder PathFinder
-        {
-            get;
-        }
-
-        ITaskRunner TaskRunner
-        {
-            get;
-        }
-
-        IPathFinder BotPathFinder
-        {
-            get;
-        }
-
-        ITaskRunner BotTaskRunner
-        {
-            get;
-        }
-
         ITaskEngine GetClientTaskEngine(int playerIndex);
+        ITaskRunner GetTaskRunner(int playerIndex);
+        IPathFinder GetPathFinder(int playerIndex);
 
         bool HasError(Error error);
 
-        void  DownloadMapData(MatchEngineCliEvent<MapData> callback);
-        
+        void DownloadMapData(MatchEngineCliEvent<MapData> callback);
         void ReadyToPlay(MatchEngineCliEvent callback);
-
         void Pause(bool pause, MatchEngineCliEvent callback);
-
         void Submit(int playerIndex, Cmd command);
     }
 
@@ -85,30 +64,18 @@ namespace Battlehub.VoxelCombat
         private readonly Queue<CommandsBundle> m_commands = new Queue<CommandsBundle>();
         private bool m_isInitialized;
 
-        private IPathFinder m_pathFinder;
-        private ITaskRunner m_taskRunner;
-        private IPathFinder m_botPathFinder;
-        private ITaskRunner m_botTaskRunner;
+        private IPathFinder[] m_pathFinders;
+        private ITaskRunner[] m_taskRunners;
         private ITaskEngine[] m_taskEngines;
 
-        public IPathFinder PathFinder
+        public IPathFinder GetPathFinder(int playerIndex)
         {
-            get { return m_pathFinder; }
+            return m_pathFinders[playerIndex];
         }
 
-        public ITaskRunner TaskRunner
+        public ITaskRunner GetTaskRunner(int playerIndex)
         {
-            get { return m_taskRunner; }
-        }
-
-        public IPathFinder BotPathFinder
-        {
-            get { return m_botPathFinder; }
-        }
-
-        public ITaskRunner BotTaskRunner
-        {
-            get { return m_botTaskRunner; }
+            return m_taskRunners[playerIndex];
         }
 
         public ITaskEngine GetClientTaskEngine(int playerIndex)
@@ -175,7 +142,6 @@ namespace Battlehub.VoxelCombat
                 m_matchServer.ConnectionStateChanged -= OnConnectionStateChanged;
             }
 
-
             for (int i = 0; i < m_taskEngines.Length; ++i)
             {
                 ITaskEngine taskEngine = m_taskEngines[i];
@@ -186,40 +152,68 @@ namespace Battlehub.VoxelCombat
                 }   
             }
 
-            if(m_pathFinder != null)
+            for (int i = 0; i < m_taskRunners.Length; ++i)
             {
-                MatchFactoryCli.DestroyPathFinder(m_pathFinder);
+                ITaskRunner taskRunner = m_taskRunners[i];
+                if (taskRunner != null)
+                {
+                    MatchFactoryCli.DestroyTaskRunner(taskRunner);
+                }
             }
-            if(m_taskRunner != null)
+
+            for (int i = 0; i < m_pathFinders.Length; ++i)
             {
-                MatchFactoryCli.DestroyTaskRunner(m_taskRunner);
-            }
-            if(m_botPathFinder != null)
-            {
-                MatchFactoryCli.DestroyPathFinder(m_botPathFinder);
-            }
-            if(m_botTaskRunner != null)
-            {
-                MatchFactoryCli.DestroyTaskRunner(m_botTaskRunner);
+                IPathFinder pathFinder = m_pathFinders[i];
+                if (pathFinder != null)
+                {
+                    MatchFactoryCli.DestroyPathFinder(pathFinder);
+                }
             }
         }
 
         private void Update()
         {
-            m_pathFinder.Update();
-            m_taskRunner.Update();
-            m_botPathFinder.Update();
-            m_botTaskRunner.Update();
+            for (int i = 0; i < m_taskRunners.Length; ++i)
+            {
+                ITaskRunner taskRunner = m_taskRunners[i];
+                if (taskRunner != null)
+                {
+                    taskRunner.Update();
+                }
+            }
+
+            for (int i = 0; i < m_pathFinders.Length; ++i)
+            {
+                IPathFinder pathFinder = m_pathFinders[i];
+                if (pathFinder != null)
+                {
+                    pathFinder.Update();
+                }
+            }
         }
 
         private void FixedUpdate()
         {
             while ((Time.realtimeSinceStartup - m_prevTickTime) >= GameConstants.MatchEngineTick)
             {
-                m_pathFinder.Tick();
-                m_taskRunner.Tick();
-                m_botPathFinder.Tick();
-                m_botTaskRunner.Tick();
+                for (int i = 0; i < m_taskRunners.Length; ++i)
+                {
+                    ITaskRunner taskRunner = m_taskRunners[i];
+                    if (taskRunner != null)
+                    {
+                        taskRunner.Tick();
+                    }
+                }
+
+                for (int i = 0; i < m_pathFinders.Length; ++i)
+                {
+                    IPathFinder pathFinder = m_pathFinders[i];
+                    if (pathFinder != null)
+                    {
+                        pathFinder.Tick();
+                    }
+                }
+
 
                 //Exec commands from current tick
                 if (m_commands.Count != 0)
@@ -366,7 +360,7 @@ namespace Battlehub.VoxelCombat
                 {
                     CoordinateCmd coordinateCmd = (CoordinateCmd)cmd;
                     Debug.Assert(coordinateCmd.Coordinates.Length > 1);
-                    IPathFinder pathFinder = m_game.IsLocalPlayer(request.PlayerIndex) ? m_pathFinder : m_botPathFinder;
+                    IPathFinder pathFinder = m_pathFinders[request.PlayerIndex];
 #warning PathFinder should igore dataController.ControlledVoxelData
                     pathFinder.Find(cmd.UnitIndex, -1, dc.Clone(), coordinateCmd.Coordinates, (unitIndex, path) =>
                     {
@@ -436,12 +430,12 @@ namespace Battlehub.VoxelCombat
                 for(int i = 0; i < composite.Commands.Length; ++i)
                 {
                     long unitId = composite.Commands[i].UnitIndex;
-                    m_pathFinder.Terminate(unitId, playerIndex);
+                    m_pathFinders[playerIndex].Terminate(unitId);
                 }
             }
             else
             {
-                m_pathFinder.Terminate(command.UnitIndex, playerIndex);
+                m_pathFinders[playerIndex].Terminate(command.UnitIndex);
             }
             
             m_matchServer.Submit(m_gSettings.ClientId, playerIndex, command, (error, returnedCommand) =>
@@ -485,21 +479,23 @@ namespace Battlehub.VoxelCombat
             m_isInitialized = true;
 
             m_taskEngines = new ITaskEngine[players.Length];
-            for(int i = 0; i < m_taskEngines.Length; ++i)
+            m_pathFinders = new IPathFinder[players.Length];
+            m_taskRunners = new ITaskRunner[players.Length];
+
+            for (int i = 0; i < players.Length; ++i)
             {
                 if(players[i].IsBot || localPlayers.Contains(players[i].Id))
                 {
-                    ITaskEngine taskEngine = MatchFactoryCli.CreateTaskEngine(m_game, m_taskRunner);
+                    ITaskRunner taskRunner = MatchFactoryCli.CreateTaskRunner();
+                    m_taskRunners[i] = taskRunner;
+                    IPathFinder pathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map);
+                    m_pathFinders[i] = pathFinder;
+
+                    ITaskEngine taskEngine = MatchFactoryCli.CreateTaskEngine(m_game, taskRunner, pathFinder);
                     taskEngine.ClientRequest += ProcessClientRequest;
                     m_taskEngines[i] = taskEngine;
                 }
             }
-
-            m_pathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map, players.Length);
-            m_taskRunner = MatchFactoryCli.CreateTaskRunner(players.Length);
-
-            m_botPathFinder = MatchFactoryCli.CreatePathFinder(m_map.Map, players.Length);
-            m_botTaskRunner = MatchFactoryCli.CreateTaskRunner(players.Length);
 
             if (Started != null)
             {

@@ -6,11 +6,11 @@ namespace Battlehub.VoxelCombat
 {
     public interface ITaskRunner
     {
-        bool IsRunning(long unitId, int playerIndex);
+        bool IsRunning(long unitId);
 
         void Run(long unitId, int playerIndex, object taskData, Func<long, object, object> updateCallback, Action<long, object, object> completeCallback, Action<long, object> terminateCallback);
 
-        void Terminate(long unitId, int playerIndex);
+        void Terminate(long unitId);
 
         void Tick();
 
@@ -21,16 +21,12 @@ namespace Battlehub.VoxelCombat
 
     public class TaskRunner : ITaskRunner
     {
-        private Dictionary<long, Task>[] m_idToActiveTask;
+        private Dictionary<long, Task> m_idToActiveTask;
         private readonly List<Task> m_activeTasks = new List<Task>();
 
-        public TaskRunner(int playersCount)
+        public TaskRunner()
         {
-            m_idToActiveTask = new Dictionary<long, Task>[playersCount];
-            for(int i = 0; i < playersCount; ++i)
-            {
-                m_idToActiveTask[i] = new Dictionary<long, Task>();
-            }
+            m_idToActiveTask = new Dictionary<long, Task>();
         }
 
         public void Destroy()
@@ -45,36 +41,35 @@ namespace Battlehub.VoxelCombat
         }
 
 
-        public bool IsRunning(long unitId, int playerIndex)
+        public bool IsRunning(long unitId)
         {
-            return m_idToActiveTask[playerIndex].ContainsKey(unitId);
+            return m_idToActiveTask.ContainsKey(unitId);
         }
 
         public void Run(long unitId, int playerIndex, object taskContext, Func<long, object, object> updateCallback, Action<long, object, object> completeCallback, Action<long, object> terminateCallback)
         {
             Task task;
-            if (m_idToActiveTask[playerIndex].TryGetValue(unitId, out task))
+            if (m_idToActiveTask.TryGetValue(unitId, out task))
             {
                 task.Terminate();
                 m_activeTasks.Remove(task);
             }
 
             task = new Task(playerIndex, unitId, taskContext, updateCallback, completeCallback, terminateCallback);
-            m_idToActiveTask[playerIndex][unitId] = task;
+            m_idToActiveTask[unitId] = task;
             m_activeTasks.Add(task);
         }
 
-        public void Terminate(long unitId, int playerIndex)
+        public void Terminate(long unitId)
         {
             Task task;
-            if (m_idToActiveTask[playerIndex].TryGetValue(unitId, out task))
+            if (m_idToActiveTask.TryGetValue(unitId, out task))
             {
                 task.Terminate();
                 m_activeTasks.Remove(task);
-                m_idToActiveTask[playerIndex].Remove(unitId);
+                m_idToActiveTask.Remove(unitId);
             }
         }
-
 
         public void Tick() //This method should be called by MatchEngine
         {
@@ -87,7 +82,7 @@ namespace Battlehub.VoxelCombat
                     if(m_activeTasks[i] == task)
                     {
                         m_activeTasks.RemoveAt(i);
-                        m_idToActiveTask[task.PlayerIndex].Remove(task.UnitId);
+                        m_idToActiveTask.Remove(task.UnitId);
                     }
                 }
             }

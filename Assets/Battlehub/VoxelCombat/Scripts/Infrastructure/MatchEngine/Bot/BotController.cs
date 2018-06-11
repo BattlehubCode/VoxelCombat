@@ -102,8 +102,66 @@ namespace Battlehub.VoxelCombat
     public interface IBotController
     {
         void Update(float time);
+        void Destroy();
     }
 
+    public class BotController : IBotController
+    {
+        private readonly ITaskEngine m_taskEngine;
+        private readonly Player m_player;
+        private readonly IMatchPlayerView m_playerView;
+
+        public BotController(Player player, ITaskEngine taskEngine)
+        {
+            m_player = player;
+            m_taskEngine = taskEngine;
+            m_taskEngine.TaskStateChanged += OnTaskStateChanged;
+
+            m_playerView = m_taskEngine.MatchEngine.GetPlayerView(player.Id);
+            m_playerView.UnitCreated += OnUnitCreated;
+            m_playerView.UnitRemoved += OnUnitRemoved;
+            m_playerView.AssetCreated += OnAssetCreated;
+            m_playerView.AssetRemoved += OnAssetRemoved;
+        }
+
+        public void Destroy()
+        {
+            m_taskEngine.TaskStateChanged -= OnTaskStateChanged;
+            m_playerView.UnitCreated -= OnUnitCreated;
+            m_playerView.UnitRemoved -= OnUnitRemoved;
+            m_playerView.AssetCreated -= OnAssetCreated;
+            m_playerView.AssetRemoved -= OnAssetRemoved;
+        }
+
+       
+        private void OnAssetCreated(IMatchUnitAssetView asset)
+        {  
+        }
+
+        private void OnAssetRemoved(IMatchUnitAssetView asset)
+        {
+        }
+
+        private void OnUnitRemoved(IMatchUnitAssetView unit)
+        {
+        }
+
+        private void OnUnitCreated(IMatchUnitAssetView unit)
+        { 
+        }
+
+        private void OnTaskStateChanged(TaskInfo arg)
+        {
+            //arg.
+        }
+
+        public void Update(float time)
+        {
+
+        }
+    }
+
+ 
 
     /*
     public class BotController : IBotController

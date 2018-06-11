@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace Battlehub.VoxelCombat
 {
+
     public delegate void TaskEvent(TaskInfo taskInfo);
     public abstract class TaskBase
     {
@@ -15,6 +17,11 @@ namespace Battlehub.VoxelCombat
         public TaskInfo TaskInfo
         {
             get { return m_taskInfo; }
+        }
+
+        protected int InputsCount
+        {
+            get { return m_taskInfo.Inputs != null ? m_taskInfo.Inputs.Length : 0; }
         }
 
         public TaskBase(TaskInfo taskInfo, ITaskEngine taskEngine)
@@ -34,10 +41,15 @@ namespace Battlehub.VoxelCombat
             {
                 throw new InvalidOperationException("taskInfo.State != TaskState.Active");
             }
-            OnRun();
+            if(m_taskInfo.OutputsCount > 0 && m_taskInfo.Parent != null)
+            {
+                int scopeId = m_taskInfo.Parent.TaskId;
+                m_taskEngine.Memory.CreateOutputs(scopeId, m_taskInfo.TaskId, m_taskInfo.OutputsCount);
+            }
+            OnRun(); 
         }
 
-        public virtual void OnRun()
+        protected virtual void OnRun()
         {
 
         }
@@ -46,6 +58,10 @@ namespace Battlehub.VoxelCombat
         {
             OnTick();
             bool isStateChanged = m_prevState != m_taskInfo.State;
+            if(isStateChanged && m_prevState == TaskState.Active)
+            {
+                m_taskEngine.Memory.DestroyScope(m_taskInfo.TaskId);
+            }
             m_prevState = m_taskInfo.State;
             return isStateChanged;
         }
@@ -55,7 +71,7 @@ namespace Battlehub.VoxelCombat
 
         }
 
-        protected abstract void OnTick();
+        protected virtual void OnTick() { }
 
         protected void RaiseChildTaskActivated(TaskInfo taskInfo)
         {
@@ -140,10 +156,18 @@ namespace Battlehub.VoxelCombat
                 {
                     m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, value =>
                     {
-                        m_evalExpression = false;
                         m_childTask = m_taskInfo.Children[(bool)value ? 0 : 1];
-                        m_childTask.State = TaskState.Active;
-                        RaiseChildTaskActivated(m_childTask);
+                        if(m_childTask == null)
+                        {
+                            //empty else or if block 
+                            m_taskInfo.State = TaskState.Completed;
+                        }
+                        else
+                        {
+                            m_evalExpression = false;
+                            m_childTask.State = TaskState.Active;
+                            RaiseChildTaskActivated(m_childTask);
+                        }       
                     });
                 }
             }
@@ -204,7 +228,7 @@ namespace Battlehub.VoxelCombat
         { 
         }
 
-        public override void OnRun()
+        protected override void OnRun()
         {
             if(m_running)
             {
@@ -238,7 +262,7 @@ namespace Battlehub.VoxelCombat
         {
         }
 
-        public override void OnRun()
+        protected override void OnRun()
         {
             if(m_unit != null)
             {
@@ -295,16 +319,74 @@ namespace Battlehub.VoxelCombat
             base.Destroy();
             m_unit.CmdExecuted -= OnCmdExecuted;
         }
+    }
 
-        protected override void OnTick()
+    public class EvaluateExpressionTask : TaskBase
+    {
+        public EvaluateExpressionTask(TaskInfo taskInfo, ITaskEngine taskEngine) : base(taskInfo, taskEngine)
         {
+            if(taskInfo.Parent == null)
+            {
+                throw new ArgumentException("tasInfo.Parent == null", "taskInfo");
+            }
+            if(taskInfo.OutputsCount != 1)
+            {
+                throw new ArgumentException("taskInfo.OutputsCount != 1", "taskInfo");
+            }
+        }
+
+        protected override void OnRun()
+        {
+            base.OnRun();
+            m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, value =>
+            {
+                m_taskEngine.Memory.WriteOutput(m_taskInfo.Parent.PlayerIndex, m_taskInfo.TaskId, 0, value);
+                m_taskInfo.State = TaskState.Completed;
+            });
+        }
+            
+    }
+
+    public class FindPathTask : TaskBase
+    {
+        public FindPathTask(TaskInfo taskInfo, ITaskEngine taskEngine) : base(taskInfo, taskEngine)
+        {
+            if (taskInfo.OutputsCount != 1)
+            {
+                throw new ArgumentException("taskInfo.OutputsCount != 1", "taskInfo");
+            }
+        }
+
+        protected override void OnRun()
+        {
+            //m_taskEngine.
         }
     }
 
-    public class ExecuteMoveSearchCmdTask : ExecuteCmdTask
+    public class ExecuteMoveTask : ExecuteCmdTask
     {
-        public ExecuteMoveSearchCmdTask(TaskInfo taskInfo, ITaskEngine taskEngine) : base(taskInfo, taskEngine)
+        public ExecuteMoveTask(TaskInfo taskInfo, ITaskEngine taskEngine) : base(taskInfo, taskEngine)
         {
+        }
+
+        protected override void OnRun()
+        {
+            if(InputsCount > 1)
+            {
+                TaskInputInfo i0 = m_taskInfo.Inputs[0];
+                long unitIndex = (long)m_taskEngine.Memory.ReadOutput(i0.ScopeId, i0.ConnectedTaskId, i0.OuputIndex);
+
+                TaskInputInfo i1 = m_taskInfo.Inputs[1];
+                Coordinate[] path = (Coordinate[])m_taskEngine.Memory.ReadOutput(i1.ScopeId, i1.ConnectedTaskId, i1.OuputIndex);
+
+                m_taskInfo.Cmd = new MovementCmd(CmdCode.Move)
+                {
+                    UnitIndex = unitIndex,
+                    Coordinates = path,
+                };
+            }
+
+            base.OnRun();
         }
 
         protected override void OnCompleted()
@@ -320,4 +402,6 @@ namespace Battlehub.VoxelCombat
             }
         }
     }
+
+
 }

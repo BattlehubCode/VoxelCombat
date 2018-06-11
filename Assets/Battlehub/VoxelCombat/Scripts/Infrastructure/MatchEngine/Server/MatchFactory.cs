@@ -6,9 +6,9 @@ namespace Battlehub.VoxelCombat
 {
     public static class MatchFactory 
     {
-        public static ITaskEngine CreateTaskEngine(IMatchView matchEngine, ITaskRunner taskRunner)
+        public static ITaskEngine CreateTaskEngine(IMatchView matchEngine, ITaskRunner taskRunner, IPathFinder pathFinder)
         {
-            return new TaskEngine(matchEngine, taskRunner, false);
+            return new TaskEngine(matchEngine, taskRunner, pathFinder, false);
         }
 
         public static void DestroyTaskEngine(ITaskEngine taskEngine)
@@ -41,9 +41,9 @@ namespace Battlehub.VoxelCombat
             engine.Destroy();
         }
 
-        public static ITaskRunner CreateTaskRunner(int playersCount)
+        public static ITaskRunner CreateTaskRunner()
         {
-            return new TaskRunner(playersCount);
+            return new TaskRunner();
         }
 
         public static void DestroyTaskRunner(ITaskRunner taskRunner)
@@ -51,9 +51,9 @@ namespace Battlehub.VoxelCombat
             taskRunner.Destroy();
         }
 
-        public static IPathFinder CreatePathFinder(MapRoot map, int playersCount)
+        public static IPathFinder CreatePathFinder(MapRoot map)
         {
-            return new PathFinder2(map, playersCount);
+            return new PathFinder2(map);
         }
 
         public static void DestroyPathFinder(IPathFinder pathFinder)

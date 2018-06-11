@@ -276,6 +276,19 @@ namespace Battlehub.VoxelCombat
     }
 
     [ProtoContract]
+    public struct TaskInputInfo
+    {
+        [ProtoMember(1)]
+        public int ScopeId;
+
+        [ProtoMember(2)]
+        public int ConnectedTaskId;
+
+        [ProtoMember(3)]
+        public int OuputIndex;
+    }
+
+    [ProtoContract]
     public class TaskInfo
     {
         [ProtoMember(1)]
@@ -292,10 +305,13 @@ namespace Battlehub.VoxelCombat
         private ExpressionInfo m_expression;
         [ProtoMember(8)]
         private bool m_requiresClientSidePreprocessing;
-        public Cmd m_preprocessedCmd;
+        [ProtoMember(9)]
+        private TaskInputInfo[] m_inputs;
+        [ProtoMember(10)]
+        private int m_outputsCount;
 
+        public Cmd m_preprocessedCmd;
         private int m_playerIndex = -1;
-        private TaskInfo m_parent;
 
         public TaskInfo(TaskType taskType, Cmd cmd, TaskState state, ExpressionInfo expression, TaskInfo parent)
         {
@@ -303,7 +319,7 @@ namespace Battlehub.VoxelCombat
             m_cmd = cmd;
             m_state = state;
             m_expression = expression;
-            m_parent = parent;
+            Parent = parent;
         }
 
         public TaskInfo(Cmd cmd, TaskState state, ExpressionInfo expression, TaskInfo parent)
@@ -370,11 +386,7 @@ namespace Battlehub.VoxelCombat
             set { m_state = value; }
         }
 
-        public TaskInfo Parent
-        {
-            get { return m_parent; }
-            set { m_parent = value; }
-        }
+        public TaskInfo Parent { get; set; }
 
         public TaskInfo[] Children
         {
@@ -392,6 +404,18 @@ namespace Battlehub.VoxelCombat
         {
             get { return m_playerIndex; }
             set { m_playerIndex = value; }
+        }
+
+        public TaskInputInfo[] Inputs
+        {
+            get { return m_inputs; }
+            set { m_inputs = value; }
+        }
+
+        public int OutputsCount
+        {
+            get { return m_outputsCount; }
+            set { m_outputsCount = value; }
         }
 
         public bool RequiresClientSidePreprocessing

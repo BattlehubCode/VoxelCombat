@@ -423,7 +423,7 @@ namespace Battlehub.VoxelCombat
                         else
                         {
                             Coordinate targetCoordinate = new Coordinate(mapPos, weight, altitude);
-                            m_engine.PathFinder.Find(unitIndex, -1, dataController.Clone(), new[] { dataController.Coordinate, targetCoordinate },
+                            m_engine.GetPathFinder(m_gameState.LocalToPlayerIndex(LocalPlayerIndex)).Find(unitIndex, -1, dataController.Clone(), new[] { dataController.Coordinate, targetCoordinate },
                                  (unitId, path) =>
                                  {
                                      MovementCmd movementCmd = new MovementCmd();

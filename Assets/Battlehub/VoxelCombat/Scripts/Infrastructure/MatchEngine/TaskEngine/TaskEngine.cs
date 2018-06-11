@@ -27,6 +27,16 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
+        //IPathFinder PathFinder
+        //{
+        //    get;
+        //}
+
+        ITaskMemory Memory
+        {
+            get;
+        }
+
         IExpression GetExpression(int expressionCode);
 
         void GenerateIdentitifers(TaskInfo taskInfo);
@@ -37,33 +47,90 @@ namespace Battlehub.VoxelCombat
         /// <param name="taskInfo"></param>
         /// <returns>unique task id</returns>
         void SubmitTask(TaskInfo taskInfo);
-
         void SubmitResponse(ClientRequest request);
-
-        void SetTaskState(long taskId, TaskState state);
-
+        void SetTaskState(int taskId, TaskState state);
 
         void Tick();
 
         void Destroy();
     }
 
+
+    public interface ITaskMemory
+    {
+        void CreateOutputs(int scopeId, int taskId, int count);
+        void WriteOutput(int scopeId, int taskId, int index, object value);
+        object ReadOutput(int scopeId, int taskId, int index);
+        void DestroyScope(int scopeId);
+    }
+    public class TaskMemory : ITaskMemory
+    {
+        private readonly Dictionary<int, Dictionary<int, object[]>> m_memory = new Dictionary<int, Dictionary<int, object[]>>();
+
+        private Dictionary<int, object[]> CreateScope(int scopeId)
+        {
+            Dictionary<int, object[]> scope;
+            if (!m_memory.TryGetValue(scopeId, out scope))
+            {
+                scope = new Dictionary<int, object[]>();
+                m_memory.Add(scopeId, scope);
+            }
+            return scope;
+        }
+
+        private Dictionary<int, object[]> GetScope(int scopeId, int taskId)
+        {
+            Dictionary<int, object[]> scope;
+            if (!m_memory.TryGetValue(scopeId, out scope))
+            {
+                Debug.LogWarningFormat("Trying to read out of scope input. Scope: {0}, TaskId: {1}", scopeId, taskId);
+            }
+
+            return scope;
+        }
+
+        public void CreateOutputs(int scopeId, int taskId, int count)
+        {
+            Dictionary<int, object[]> scope = CreateScope(scopeId);
+            scope[taskId] = new object[count];
+        }
+
+        public object ReadOutput(int scopeId, int taskId, int index)
+        {
+            Dictionary<int, object[]> scope = GetScope(scopeId, taskId);
+            return scope[taskId][index];
+        }
+
+        public void WriteOutput(int scopeId, int taskId, int index, object value)
+        {
+            Dictionary<int, object[]> scope = GetScope(scopeId, taskId);
+            scope[taskId][index] = value;
+        }
+
+        public void DestroyScope(int scopeId)
+        {
+            m_memory.Remove(scopeId);
+        }
+    }
+
     public class TaskEngine : ITaskEngine
     {
         public event TaskEngineEvent<TaskInfo> TaskStateChanged;
         public event TaskEngineEvent<ClientRequest> ClientRequest;
-
-        private bool m_isClient;
+        
+        private readonly bool m_isClient;
         public bool IsClient
         {
             get { return m_isClient; }
         }
 
-        private IMatchView m_match;
-        private ITaskRunner m_taskRunner;
+        private readonly IMatchView m_match;
+        private readonly ITaskRunner m_taskRunner;
+        private readonly IPathFinder m_pathFinder;
         private int m_taskIdentity;
-        private List<TaskBase> m_activeTasks;
-        private Dictionary<long, TaskBase> m_idToActiveTask;
+        private readonly List<TaskBase> m_activeTasks;
+        private readonly Dictionary<int, TaskBase> m_idToActiveTask;
+        private readonly TaskMemory m_mem;
 
         private class PendingClientRequest
         {
@@ -77,8 +144,8 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private List<PendingClientRequest> m_timeoutRequests;
-        private Dictionary<long, PendingClientRequest> m_requests;
+        private readonly List<PendingClientRequest> m_timeoutRequests;
+        private readonly Dictionary<long, PendingClientRequest> m_requests;
         private const long m_timeoutTicks = 1200; //rougly equal to 1 minute;
         private long m_tick;
         private long m_nextTimeoutCheck = m_timeoutTicks / 4;
@@ -95,20 +162,32 @@ namespace Battlehub.VoxelCombat
             get { return m_taskRunner; }
         }
 
+        public IPathFinder PathFinder
+        {
+            get { return m_pathFinder; }
+        }
+
         public IExpression GetExpression(int expressionCode)
         {
             return m_expressions[expressionCode];
         }
 
-        public TaskEngine(IMatchView match, ITaskRunner taskRunner, bool isClient)
+        public ITaskMemory Memory
+        {
+            get { return m_mem; }
+        }
+
+        public TaskEngine(IMatchView match, ITaskRunner taskRunner, IPathFinder pathFinder, bool isClient)
         {
             m_isClient = isClient;
             m_match = match;
             m_taskRunner = taskRunner;
+            m_pathFinder = pathFinder;
             m_activeTasks = new List<TaskBase>();
-            m_idToActiveTask = new Dictionary<long, TaskBase>();
+            m_idToActiveTask = new Dictionary<int, TaskBase>();
             m_timeoutRequests = new List<PendingClientRequest>();
             m_requests = new Dictionary<long, PendingClientRequest>();
+            m_mem = new TaskMemory();
 
             m_expressions = new Dictionary<int, IExpression>
             {
@@ -157,7 +236,7 @@ namespace Battlehub.VoxelCombat
             RaiseTaskStateChanged(taskInfo);
         }
 
-        public void SetTaskState(long taskId, TaskState state)
+        public void SetTaskState(int taskId, TaskState state)
         {
             TaskBase task;
             if(m_idToActiveTask.TryGetValue(taskId, out task))
@@ -343,7 +422,7 @@ namespace Battlehub.VoxelCombat
                         {
                             if(taskInfo.Cmd.Code == CmdCode.Move)
                             {
-                                return new ExecuteMoveSearchCmdTask(taskInfo, this);
+                                return new ExecuteMoveTask(taskInfo, this);
                             }
                             return new ExecuteCmdTask(taskInfo, this);
                         } 

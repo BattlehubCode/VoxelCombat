@@ -73,10 +73,7 @@ namespace Battlehub.VoxelCombat.Tests
         {
             for (int i = 0; i < ticks; ++i)
             {
-                m_engine.PathFinder.Update();
-                m_engine.TaskRunner.Update();
-                m_engine.BotPathFinder.Update();
-                m_engine.BotTaskRunner.Update();
+                m_engine.Update();
                 
                 m_replay.Tick(m_engine, m_tick);
                 CommandsBundle commands;
