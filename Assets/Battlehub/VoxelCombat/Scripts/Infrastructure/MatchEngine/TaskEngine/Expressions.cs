@@ -26,7 +26,7 @@ namespace Battlehub.VoxelCombat
         protected abstract void OnEvaluating(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback);
     }
 
-    public class VarExpression : IExpression
+    public class ValueExpression : IExpression
     {
         public void Evaluate(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
         {
@@ -35,6 +35,12 @@ namespace Battlehub.VoxelCombat
                 PrimitiveContract primitive = (PrimitiveContract)expression.Value;
                 callback(primitive.ValueBase);
             }
+            else if(expression.Value is TaskInputInfo)
+            {
+                TaskInputInfo input = (TaskInputInfo)expression.Value;
+                object value = taskEngine.Memory.ReadOutput(input.ScopeId, input.ConnectedTaskId, input.OuputIndex);
+                callback(value);
+            }
             else
             {
                 callback(expression.Value);
@@ -42,7 +48,14 @@ namespace Battlehub.VoxelCombat
         }
     }
 
-
+    public class TaskStateExpression : IExpression
+    {
+        public void Evaluate(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
+        {
+            TaskInfo taskInfo = (TaskInfo)expression.Value;
+            callback(taskInfo.State);
+        }
+    }
 
     public class NotExpression : IExpression
     {
@@ -161,36 +174,4 @@ namespace Battlehub.VoxelCombat
             callback(state);   
         }
     }
-
-    public class TaskStatusExpression : ExpressionBase
-    {
-        protected override void OnEvaluating(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
-        {
-            ExpressionInfo completedExpression = expression.Children[0];
-            ExpressionInfo failedExpression = expression.Children[1];
-
-            taskEngine.GetExpression(completedExpression.Code).Evaluate(completedExpression, taskEngine, isCompleted =>
-            {
-                if ((bool)isCompleted)
-                {
-                    callback(TaskState.Completed);
-                }
-                else
-                {
-                    taskEngine.GetExpression(failedExpression.Code).Evaluate(failedExpression, taskEngine, isFailed =>
-                    {
-                        if ((bool)isFailed)
-                        {
-                            callback(TaskState.Failed);
-                        }
-                        else
-                        {
-                            callback(TaskState.Active);
-                        }
-                    });
-                }
-            });
-        }
-    }
-
 }

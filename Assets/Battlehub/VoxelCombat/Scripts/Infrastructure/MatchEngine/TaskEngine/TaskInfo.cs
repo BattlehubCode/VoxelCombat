@@ -26,8 +26,7 @@ namespace Battlehub.VoxelCombat
         public const int UnitExists = 100;
         public const int UnitCoordinate = 101;
         public const int UnitState = 102;
-        public const int TaskStatus = 120;
-
+ 
         //Complex search expressions
         public const int EnemyVisible = 200;
         public const int FoodVisible = 201;
@@ -39,6 +38,10 @@ namespace Battlehub.VoxelCombat
         Sequence = 2,
         Branch = 3,
         Repeat = 4,
+        Break = 5,
+        Continue = 6,
+        TEST_MockImmediate = 7,
+        TEST_Mock = 8,
     }
 
     public enum TaskState
@@ -46,7 +49,7 @@ namespace Battlehub.VoxelCombat
         Idle,
         Active,
         Completed,
-        Failed,
+        //Failed,
         Terminated
     }
 
@@ -198,14 +201,6 @@ namespace Battlehub.VoxelCombat
             };
         }
 
-        public static ExpressionInfo TaskStatus(ExpressionInfo completedCheck, ExpressionInfo failedCheck)
-        {
-            return new ExpressionInfo
-            {
-                Code = ExpressionCode.TaskStatus,
-                Children = new[] { completedCheck, failedCheck }
-            };
-        }
 
         public static ExpressionInfo UnitExists(long unitId, int playerId)
         {
@@ -234,25 +229,13 @@ namespace Battlehub.VoxelCombat
             };
         }
 
-        public static ExpressionInfo MoveTaskExpression(long unitId, int playerId, Coordinate coordinate)
-        {
-            ExpressionInfo completedExpression =
-                And(UnitExists(unitId, playerId),
-                    And(Eq(UnitState(unitId, playerId), PrimitiveVar(VoxelDataState.Idle)),
-                        Eq(UnitCoordinate(unitId, playerId), Var(coordinate))));
-
-            ExpressionInfo failedExpression =
-                 Or(Not(UnitExists(unitId, playerId)),
-                    And(NotEq(UnitState(unitId, playerId), PrimitiveVar(VoxelDataState.Moving)),
-                        NotEq(UnitState(unitId, playerId), PrimitiveVar(VoxelDataState.SearchingPath))));
-
-            return TaskStatus(completedExpression, failedExpression);
-        }
     }
 
     [ProtoContract]
     public class TaskStateInfo
     {
+        
+
         [ProtoMember(1)]
         public int TaskId;
 
@@ -262,16 +245,25 @@ namespace Battlehub.VoxelCombat
         [ProtoMember(3)]
         public int PlayerId;
 
+        [ProtoMember(4)]
+        public int StatusCode;
+
+        public bool IsFailed
+        {
+            get { return StatusCode != TaskInfo.TaskSucceded; }
+        }
+
         public TaskStateInfo()
         {
 
         }
 
-        public TaskStateInfo(int taskId, int playerId, TaskState state)
+        public TaskStateInfo(int taskId, int playerId, TaskState state, int statusCode)
         {
             TaskId = taskId;
             PlayerId = playerId;
             State = state;
+            StatusCode = statusCode;
         }
     }
 
@@ -291,6 +283,9 @@ namespace Battlehub.VoxelCombat
     [ProtoContract]
     public class TaskInfo
     {
+        public const int TaskSucceded = 0;
+        public const int TaskFailed = 1;
+
         [ProtoMember(1)]
         private int m_taskId;
         [ProtoMember(2)]
@@ -309,8 +304,6 @@ namespace Battlehub.VoxelCombat
         private TaskInputInfo[] m_inputs;
         [ProtoMember(10)]
         private int m_outputsCount;
-
-        public Cmd m_preprocessedCmd;
         private int m_playerIndex = -1;
 
         public TaskInfo(TaskType taskType, Cmd cmd, TaskState state, ExpressionInfo expression, TaskInfo parent)
@@ -360,6 +353,13 @@ namespace Battlehub.VoxelCombat
 
         public TaskInfo()
         {
+        }
+
+        public void Reset()
+        {
+            State = TaskState.Idle;
+            StatusCode = TaskSucceded;
+            PreprocessedCmd = null;
         }
     
         public int TaskId
@@ -426,9 +426,22 @@ namespace Battlehub.VoxelCombat
 
         public Cmd PreprocessedCmd
         {
-            get { return m_preprocessedCmd; }
-            set { m_preprocessedCmd = value; }
+            get;
+            set;
         }
+
+        public int StatusCode
+        {
+            get;
+            set;
+        }
+
+        public bool IsFailed
+        {
+            get { return StatusCode != TaskSucceded; }
+        }
+
+    
 
         [OnDeserialized]
         public void OnDeserializedMethod(StreamingContext context)

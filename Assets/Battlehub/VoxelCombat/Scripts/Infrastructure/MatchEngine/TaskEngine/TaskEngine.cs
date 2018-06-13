@@ -27,10 +27,10 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-        //IPathFinder PathFinder
-        //{
-        //    get;
-        //}
+        IPathFinder PathFinder
+        {
+            get;
+        }
 
         ITaskMemory Memory
         {
@@ -113,6 +113,41 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+
+    public interface ITaskPool
+    {
+        TaskBase Acquire();
+
+        void Release(TaskBase task);
+        
+    }
+    public class TaskPool<T> : Pool<T>, ITaskPool where T : TaskBase, new()
+    {
+        public TaskPool(int size)
+        {
+            Initialize(size);
+        }
+
+        protected override T Instantiate(int index)
+        {
+            T task = new T();
+            return task;
+        }
+        protected override void Destroy(T obj)
+        {
+        }
+
+        TaskBase ITaskPool.Acquire()
+        {
+            return base.Acquire();
+        }
+
+        void ITaskPool.Release(TaskBase task)
+        {
+            base.Release((T)task);
+        }
+    }
+
     public class TaskEngine : ITaskEngine
     {
         public event TaskEngineEvent<TaskInfo> TaskStateChanged;
@@ -150,6 +185,8 @@ namespace Battlehub.VoxelCombat
         private long m_tick;
         private long m_nextTimeoutCheck = m_timeoutTicks / 4;
 
+        private const int MAX_ITERATIONS_PER_TICK = 10;
+
         private readonly Dictionary<int, IExpression> m_expressions;
 
         public IMatchView MatchEngine
@@ -177,6 +214,12 @@ namespace Battlehub.VoxelCombat
             get { return m_mem; }
         }
 
+
+        private readonly Dictionary<TaskType, ITaskPool> m_taskPools;
+        private readonly ITaskPool m_cmdExpressionTaskPool;
+        private readonly ITaskPool m_cmdMoveTaskPool;
+        private readonly ITaskPool m_cmdGenericTaskPool;
+
         public TaskEngine(IMatchView match, ITaskRunner taskRunner, IPathFinder pathFinder, bool isClient)
         {
             m_isClient = isClient;
@@ -191,7 +234,7 @@ namespace Battlehub.VoxelCombat
 
             m_expressions = new Dictionary<int, IExpression>
             {
-                { ExpressionCode.Var, new VarExpression() },
+                { ExpressionCode.Var, new ValueExpression() },
                 { ExpressionCode.And, new AndExpression() },
                 { ExpressionCode.Or, new OrExpression() },
                 { ExpressionCode.Not, new NotExpression() },
@@ -200,8 +243,25 @@ namespace Battlehub.VoxelCombat
                 { ExpressionCode.UnitExists, new UnitExistsExpression() },
                 { ExpressionCode.UnitState, new UnitStateExpression() },
                 { ExpressionCode.UnitCoordinate, new UnitCoordinateExpression() },
-                { ExpressionCode.TaskStatus, new TaskStatusExpression() },
             };
+
+            const int taskPoolSize = 10;
+            m_taskPools = new Dictionary<TaskType, ITaskPool>
+            {
+                { TaskType.Sequence, new TaskPool<SequentialTask>(taskPoolSize) },
+                { TaskType.Repeat, new TaskPool<RepeatTask>(taskPoolSize) },
+                { TaskType.Branch, new TaskPool<BranchTask>(taskPoolSize) },
+                { TaskType.Break, new TaskPool<BreakTask>(taskPoolSize) },
+                { TaskType.Continue, new TaskPool<ContinueTask>(taskPoolSize) },
+
+                //For testing purposes
+                { TaskType.TEST_Mock, new TaskPool<MockTask>(1) },
+                { TaskType.TEST_MockImmediate, new TaskPool<MockImmediateTask>(1) }
+            };
+
+            m_cmdExpressionTaskPool = new TaskPool<ExecuteCmdTaskWithExpression>(taskPoolSize);
+            m_cmdMoveTaskPool = new TaskPool<ExecuteMoveTask>(taskPoolSize);
+            m_cmdGenericTaskPool = new TaskPool<ExecuteCmdTask>(taskPoolSize);
         }
 
         public void SubmitTask(TaskInfo taskInfo)
@@ -214,26 +274,14 @@ namespace Battlehub.VoxelCombat
             {
                 if(!ValidateIdentifiers(taskInfo))
                 {
-                    taskInfo.State = TaskState.Failed;
+                    taskInfo.State = TaskState.Completed;
+                    taskInfo.StatusCode = TaskInfo.TaskFailed;
                     RaiseTaskStateChanged(taskInfo);
                 }
             }
             
             taskInfo.State = TaskState.Active;
-            TaskBase task = InstantiateTask(taskInfo);
-            task.ChildTaskActivated += OnChildTaskActivated;
-            m_activeTasks.Add(task);
-            m_idToActiveTask.Add(task.TaskInfo.TaskId, task);
-            if (taskInfo.RequiresClientSidePreprocessing)
-            {
-                RaiseClientRequest(taskInfo);
-            }
-            else
-            {
-                task.Run();
-            }
-
-            RaiseTaskStateChanged(taskInfo);
+            HandleTaskActivation(null, taskInfo);
         }
 
         public void SetTaskState(int taskId, TaskState state)
@@ -255,16 +303,14 @@ namespace Battlehub.VoxelCombat
                 {
                     if (cliResponse.Cmd.IsFailed)
                     {
-                        task.TaskInfo.State = TaskState.Failed;
+                        task.TaskInfo.State = TaskState.Completed;
+                        task.TaskInfo.StatusCode = TaskInfo.TaskFailed;
                     }
                     else
                     {
                         request.TaskInfo.PreprocessedCmd = cliResponse.Cmd;
-
-                        if (task.TaskInfo.State == TaskState.Active)
-                        {
-                            task.Run();
-                        }
+                        task.ChildTaskActivated += OnChildTaskActivated;
+                        task.Construct();
                     }
                 }
                 m_requests.Remove(cliResponse.TaskId);
@@ -273,7 +319,8 @@ namespace Battlehub.VoxelCombat
 
         private void OnClientRequestTimeout(PendingClientRequest request)
         {
-            request.TaskInfo.State = TaskState.Failed;
+            request.TaskInfo.State = TaskState.Completed;
+            request.TaskInfo.StatusCode = TaskInfo.TaskFailed;
         }
 
         private void RaiseClientRequest(TaskInfo taskInfo)
@@ -319,34 +366,62 @@ namespace Battlehub.VoxelCombat
                 m_nextTimeoutCheck = m_tick + m_timeoutTicks / 4;
             }
 
-            for(int i = m_activeTasks.Count - 1; i >= 0; --i)
+            //bool repeat = false;
+            //for (int j = 0; repeat && j < MAX_ITERATIONS_PER_TICK; j++)
             {
-                TaskBase activeTask = m_activeTasks[i];
-                bool stateChanged = activeTask.Tick();
-                if(stateChanged)
+                //repeat = false;
+                for (int i = m_activeTasks.Count - 1; i >= 0; --i)
                 {
-                    Debug.Assert(activeTask.TaskInfo.State != TaskState.Active);
-                    m_activeTasks.RemoveAt(i);
-                    m_idToActiveTask.Remove(activeTask.TaskInfo.TaskId);
-                    RaiseTaskStateChanged(activeTask.TaskInfo);
+                    TaskBase activeTask = m_activeTasks[i];
+                    if(activeTask.TaskInfo.State == TaskState.Active)
+                    {
+                        activeTask.Tick();
+                    }
+                    else
+                    {
+                        Debug.Assert(activeTask.TaskInfo.State != TaskState.Active);
+                        m_activeTasks.RemoveAt(i);
+                        m_idToActiveTask.Remove(activeTask.TaskInfo.TaskId);
+                        m_requests.Remove(activeTask.TaskInfo.TaskId);
+                        RaiseTaskStateChanged(activeTask.TaskInfo);
+                        Release(activeTask);
+                    }
                 }
             }
-
+          
             m_tick++;
         }
 
-        private void OnChildTaskActivated(TaskInfo taskInfo)
+        private void OnChildTaskActivated(TaskBase parent, TaskInfo taskInfo)
         {
-            TaskBase task = InstantiateTask(taskInfo);
-            m_activeTasks.Add(task);
-            m_idToActiveTask.Add(taskInfo.TaskId, task);
+            HandleTaskActivation(parent, taskInfo);
+        }
+
+        private void HandleTaskActivation(TaskBase parent, TaskInfo taskInfo)
+        {
+            TaskBase task = Acquire(parent, taskInfo);
             if (taskInfo.RequiresClientSidePreprocessing)
             {
+                m_activeTasks.Add(task);
+                m_idToActiveTask.Add(taskInfo.TaskId, task);
                 RaiseClientRequest(taskInfo);
+                RaiseTaskStateChanged(taskInfo);
             }
             else
             {
-                task.Run();
+                task.ChildTaskActivated += OnChildTaskActivated;
+                task.Construct();
+                if (task.TaskInfo.State == TaskState.Active)
+                {
+                    m_activeTasks.Add(task);
+                    m_idToActiveTask.Add(task.TaskInfo.TaskId, task);
+                }
+                else
+                {
+                    task.ChildTaskActivated -= OnChildTaskActivated;
+                    Release(task);
+                }
+                RaiseTaskStateChanged(taskInfo);
             }
         }
 
@@ -357,6 +432,7 @@ namespace Battlehub.VoxelCombat
                 TaskBase task = m_activeTasks[i];
                 task.TaskInfo.State = TaskState.Terminated;
                 RaiseTaskStateChanged(task.TaskInfo);
+                Release(task);
             }
             m_activeTasks.Clear();
             m_idToActiveTask.Clear();
@@ -406,37 +482,67 @@ namespace Battlehub.VoxelCombat
             return true;
         }
 
-        public TaskBase InstantiateTask(TaskInfo taskInfo)
+        private TaskBase Acquire(TaskBase parent, TaskInfo taskInfo)
         {
-            switch (taskInfo.TaskType)
+            TaskBase task;
+            if (taskInfo.TaskType == TaskType.Command)
             {
-                case TaskType.Command:
-                    {
-                        Debug.Assert(taskInfo.Cmd != null && taskInfo.Cmd.Code != CmdCode.Nop);
+                Debug.Assert(taskInfo.Cmd != null && taskInfo.Cmd.Code != CmdCode.Nop);
 
-                        if(taskInfo.Expression != null)
-                        {
-                            return new ExecuteCmdTaskWithExpression(taskInfo, this);
-                        }
-                        else
-                        {
-                            if(taskInfo.Cmd.Code == CmdCode.Move)
-                            {
-                                return new ExecuteMoveTask(taskInfo, this);
-                            }
-                            return new ExecuteCmdTask(taskInfo, this);
-                        } 
+                if (taskInfo.Expression != null)
+                {
+                    task = m_cmdExpressionTaskPool.Acquire();
+                }
+                else
+                {
+                    if (taskInfo.Cmd.Code == CmdCode.Move)
+                    {
+                        task = m_cmdMoveTaskPool.Acquire();
                     }
-                    
-                case TaskType.Sequence:
-                    return new SequentialTask(taskInfo, this);
-                case TaskType.Branch:
-                    return new BranchTask(taskInfo, this);
-                case TaskType.Repeat:
-                    return new RepeatTask(taskInfo, this);
+                    else
+                    {
+                        task = m_cmdGenericTaskPool.Acquire();
+                    }   
+                }
+            }
+            else
+            {
+                task = m_taskPools[taskInfo.TaskType].Acquire();
             }
 
-            throw new NotSupportedException();
+            task.TaskEngine = this;
+            task.Parent = parent;
+            task.TaskInfo = taskInfo;
+
+            return task;
         }
+
+        private void Release(TaskBase task)
+        {
+            TaskInfo taskInfo = task.TaskInfo;
+            if (taskInfo.TaskType == TaskType.Command)
+            {
+                if (taskInfo.Expression != null)
+                {
+                    m_cmdExpressionTaskPool.Release(task);
+                }
+                else
+                {
+                    if (taskInfo.Cmd.Code == CmdCode.Move)
+                    {
+                        m_cmdMoveTaskPool.Release(task);
+                    }
+                    else
+                    {
+                        m_cmdGenericTaskPool.Release(task);
+                    }
+                }
+            }
+            else
+            {
+                m_taskPools[taskInfo.TaskType].Release(task);
+            }
+        }
+
     }
 }

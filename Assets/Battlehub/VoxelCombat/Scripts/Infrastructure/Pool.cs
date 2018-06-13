@@ -19,9 +19,9 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public abstract T Instantiate(int index);
+        protected abstract T Instantiate(int index);
 
-        public abstract void Destroy(T obj);
+        protected abstract void Destroy(T obj);
 
         public void SetPoolSize(int size)
         {

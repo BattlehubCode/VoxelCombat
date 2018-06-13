@@ -122,7 +122,7 @@ namespace Battlehub.VoxelCombat
             base.Release(effect);
         }
 
-        public override ParticleEffect Instantiate(int index)
+        protected override ParticleEffect Instantiate(int index)
         {
             GameObject particleEffectGo = Object.Instantiate(m_prefab.gameObject, m_root);
             particleEffectGo.name = m_prefab.name + " " + index;
@@ -130,7 +130,7 @@ namespace Battlehub.VoxelCombat
             return particleEffectGo.GetComponentInChildren<ParticleEffect>();
         }
 
-        public override void Destroy(ParticleEffect obj)
+        protected override void Destroy(ParticleEffect obj)
         {
             if (obj != null)
             {

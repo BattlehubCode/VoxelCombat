@@ -229,11 +229,11 @@ namespace Battlehub.VoxelCombat
             Initialize(size);
         }
 
-        public override void Destroy(int[,] matrix)
+        protected override void Destroy(int[,] matrix)
         {
         }
 
-        public override int[,] Instantiate(int index)
+        protected override int[,] Instantiate(int index)
         {
             return new int[m_matrixSize, m_matrixSize];
         }

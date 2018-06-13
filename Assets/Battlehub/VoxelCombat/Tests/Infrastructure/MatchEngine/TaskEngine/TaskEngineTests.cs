@@ -100,7 +100,7 @@ namespace Battlehub.VoxelCombat.Tests
 
     public class TaskEngineTests : MatchEngineTestsBase
     {
-        private void PrepareTestData1(int playerId, int offsetX, int offsetY, out Cmd cmd, out ExpressionInfo expression)
+        private void PrepareTestData1(int playerId, int offsetX, int offsetY, out Cmd cmd)
         {
             Coordinate[] coords = m_map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
             Assert.AreEqual(coords.Length, 2);
@@ -112,7 +112,6 @@ namespace Battlehub.VoxelCombat.Tests
             {
                 Coordinates = new[] { targetCoordinate },
             };
-            expression = ExpressionInfo.MoveTaskExpression(unit.UnitOrAssetIndex, playerId, targetCoordinate);
         }
 
         private Cmd PrepareTestData2(int playerId, int cmdCode, int param)
@@ -172,22 +171,65 @@ namespace Battlehub.VoxelCombat.Tests
             return cmd;
         }
 
-
         [Test]
-        public void SimpleMoveUsingExpression()
+        public void SequentialTaskTest()
         {
             Assert.DoesNotThrow(() =>
             {
                 BeginTest(TestEnv0, 4);
             });
+          
+            TaskInfo task = new TaskInfo();
+            task.TaskType = TaskType.Sequence;
+            task.Children = new TaskInfo[]
+            {
+                new TaskInfo { TaskType = TaskType.TEST_Mock },
+                new TaskInfo { TaskType = TaskType.TEST_MockImmediate },
+                new TaskInfo { TaskType = TaskType.TEST_MockImmediate },
+                new TaskInfo { TaskType = TaskType.TEST_Mock },
+                new TaskInfo { TaskType = TaskType.TEST_Mock },
+            };
+
             const int playerId = 1;
-            Cmd cmd;
-            ExpressionInfo expression;
-            PrepareTestData1(playerId, -1, 1,
-                out cmd,
-                out expression);
-            TaskInfo task = new TaskInfo(cmd, expression);
-            FinializeTest(playerId, task, TaskMovementCompleted);
+            FinializeTest(playerId, task, result =>
+            {
+                Assert.AreEqual(TaskState.Completed, result.State);
+            });
+        }
+
+        [Test]
+        public void BranchTaskTest()
+        {
+        }
+
+        [Test]
+        public void RepeatTaskTest()
+        {
+        }
+
+        [Test]
+        public void RepeatBreakTaskTest()
+        {
+        }
+
+        [Test]
+        public void RepeatContinueTaskTest()
+        {
+        }
+
+        [Test]
+        public void ForeachTaskTest()
+        {
+        }
+
+        [Test]
+        public void ForeachBreakTaskTest()
+        {
+        }
+
+        [Test]
+        public void ForeachContinueTaskTest()
+        {
         }
 
         [Test]
@@ -199,10 +241,8 @@ namespace Battlehub.VoxelCombat.Tests
             });
             const int playerId = 1;
             Cmd cmd;
-            ExpressionInfo notUsed;
             PrepareTestData1(playerId, -1, 1,
-                out cmd,
-                out notUsed);
+                out cmd);
             TaskInfo task = new TaskInfo(cmd);
             FinializeTest(playerId, task, TaskMovementCompleted);
         }
@@ -216,10 +256,8 @@ namespace Battlehub.VoxelCombat.Tests
             });
             const int playerId = 1;
             Cmd cmd;
-            ExpressionInfo notUsed;
             PrepareTestData1(playerId, 10, 1,
-                out cmd,
-                out notUsed);
+                out cmd);
             TaskInfo task = new TaskInfo(cmd);
             FinializeTest(playerId, task, TaskMovementFailed);
         }
@@ -349,7 +387,7 @@ namespace Battlehub.VoxelCombat.Tests
                 EndTest();
             });
 
-            Assert.AreEqual(TaskState.Failed, taskInfo.State);
+            Assert.IsTrue(taskInfo.IsFailed);
 
             MovementCmd cmd = (MovementCmd)taskInfo.Cmd;
             Coordinate[] coords = m_map.FindDataOfType((int)KnownVoxelTypes.Eater, 1);
@@ -483,8 +521,6 @@ namespace Battlehub.VoxelCombat.Tests
             RunEngine();
             Assert.Fail();
         }
-
-        
     }
 
 }

@@ -3,21 +3,20 @@ using System.Collections;
 using UnityEngine;
 using NUnit.Framework;
 using System;
-using System.Linq;
 
 namespace Battlehub.VoxelCombat.Tests
 {
     public class LocalMatchServerTestBase
     {
         protected const int MAX_TICKS = 1000;
-
+        private GameObject m_testGame;
      
         protected void BeginTest(string mapName, int playersCount, int botsCount, Action callback, int lag = 0)
         {
             Assert.DoesNotThrow(() =>
             {
                 string testGamePath = "TestGame";
-                UnityEngine.Object.Instantiate(Resources.Load<GameObject>(testGamePath));
+                m_testGame = UnityEngine.Object.Instantiate(Resources.Load<GameObject>(testGamePath));
 
                 TestGameInitArgs gameInitArgs = new TestGameInitArgs
                 {
@@ -44,6 +43,14 @@ namespace Battlehub.VoxelCombat.Tests
             });
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            if (m_testGame != null)
+            {
+                UnityEngine.Object.Destroy(m_testGame);
+            }
+        }
 
         protected IEnumerator Run(int MAX_TICKS = 100000)
         {
@@ -194,6 +201,8 @@ namespace Battlehub.VoxelCombat.Tests
                 yield return null;
             }
         }
+
+        
 
        
     }

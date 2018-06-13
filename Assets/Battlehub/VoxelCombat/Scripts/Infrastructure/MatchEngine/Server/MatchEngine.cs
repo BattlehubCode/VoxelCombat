@@ -793,7 +793,7 @@ namespace Battlehub.VoxelCombat
 
         private void OnTaskStateChanged(TaskInfo taskInfo)
         {
-            m_serverCommands.TasksStateInfo.Add(new TaskStateInfo(taskInfo.TaskId, taskInfo.PlayerIndex, taskInfo.State));
+            m_serverCommands.TasksStateInfo.Add(new TaskStateInfo(taskInfo.TaskId, taskInfo.PlayerIndex, taskInfo.State, taskInfo.StatusCode));
             m_hasNewCommands = true;
         }
 

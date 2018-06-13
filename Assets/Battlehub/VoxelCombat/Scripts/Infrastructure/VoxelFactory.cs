@@ -130,7 +130,7 @@ namespace Battlehub.VoxelCombat
             base.Release(voxel);
         }
 
-        public override Voxel Instantiate(int index)
+        protected override Voxel Instantiate(int index)
         {
             GameObject voxelGO = Object.Instantiate(m_prefab.Root.gameObject, m_root);
             voxelGO.name = m_prefab.name + " " + index;
@@ -138,7 +138,7 @@ namespace Battlehub.VoxelCombat
             return voxelGO.GetComponentInChildren<Voxel>();
         }
 
-        public override void Destroy(Voxel obj)
+        protected override void Destroy(Voxel obj)
         {
             if (obj != null)
             {

@@ -8,7 +8,7 @@ namespace Battlehub.VoxelCombat
     {
         bool IsRunning(long unitId);
 
-        void Run(long unitId, int playerIndex, object taskData, Func<long, object, object> updateCallback, Action<long, object, object> completeCallback, Action<long, object> terminateCallback);
+        void Run(long unitId, int playerIndex, object taskContext, Func<long, object, object> updateCallback, Action<long, object, object> completeCallback, Action<long, object> terminateCallback);
 
         void Terminate(long unitId);
 
