@@ -178,7 +178,8 @@ namespace Battlehub.VoxelCombat.Tests
             {
                 BeginTest(TestEnv0, 4);
             });
-          
+
+            
             TaskInfo task = new TaskInfo();
             task.TaskType = TaskType.Sequence;
             task.Children = new TaskInfo[]
@@ -189,17 +190,140 @@ namespace Battlehub.VoxelCombat.Tests
                 new TaskInfo { TaskType = TaskType.TEST_Mock },
                 new TaskInfo { TaskType = TaskType.TEST_Mock },
             };
+           
 
             const int playerId = 1;
+            BeginCleanupCheck(playerId);
             FinializeTest(playerId, task, result =>
             {
                 Assert.AreEqual(TaskState.Completed, result.State);
+                Assert.IsFalse(result.IsFailed);
+                CleanupCheck(playerId);
+                Assert.Pass();
             });
         }
 
         [Test]
-        public void BranchTaskTest()
+        public void BranchTaskTest1()
         {
+            TaskInfo yes = new TaskInfo { TaskType = TaskType.TEST_Mock };
+            TaskInfo no = new TaskInfo { TaskType = TaskType.TEST_Mock };
+            BranchTaskTest(true, 
+                new[]
+                {
+                    yes, no
+                }, 
+                () =>
+                {
+                    Assert.AreEqual(TaskState.Completed, yes.State);
+                    Assert.IsFalse(yes.IsFailed);
+                    Assert.AreEqual(TaskState.Idle, no.State);
+                    Assert.IsFalse(no.IsFailed);
+                });
+        }
+
+        [Test]
+        public void BranchTaskTest2()
+        {
+            TaskInfo yes = new TaskInfo { TaskType = TaskType.TEST_Mock };
+            TaskInfo no = new TaskInfo { TaskType = TaskType.TEST_Mock };
+            BranchTaskTest(false,
+                new[]
+                {
+                    yes, no
+                },
+                () =>
+                {
+                    Assert.AreEqual(TaskState.Completed, no.State);
+                    Assert.IsFalse(no.IsFailed);
+                    Assert.AreEqual(TaskState.Idle, yes.State);
+                    Assert.IsFalse(yes.IsFailed);
+                });
+        }
+
+        [Test]
+        public void BranchTaskTest3()
+        {
+            TaskInfo yes = new TaskInfo { TaskType = TaskType.TEST_MockImmediate };
+            TaskInfo no = new TaskInfo { TaskType = TaskType.TEST_MockImmediate };
+            BranchTaskTest(false,
+                new[]
+                {
+                    yes, no
+                },
+                () =>
+                {
+                    Assert.AreEqual(TaskState.Completed, no.State);
+                    Assert.IsFalse(no.IsFailed);
+                    Assert.AreEqual(TaskState.Idle, yes.State);
+                    Assert.IsFalse(yes.IsFailed);
+                }, 0);
+        }
+
+        [Test]
+        public void BranchTaskTest4()
+        {
+            TaskInfo yes = new TaskInfo { TaskType = TaskType.TEST_Mock };
+            BranchTaskTest(true,
+                new[]
+                {
+                    yes
+                },
+                () =>
+                {
+                    Assert.AreEqual(TaskState.Completed, yes.State);
+                    Assert.IsFalse(yes.IsFailed);
+                });
+        }
+
+
+        [Test]
+        public void BranchTaskTest5()
+        {
+            TaskInfo yes = new TaskInfo { TaskType = TaskType.TEST_Mock };
+            BranchTaskTest(false,
+                new[]
+                {
+                    yes
+                },
+                () =>
+                {
+                    Assert.AreEqual(TaskState.Idle, yes.State);
+                    Assert.IsFalse(yes.IsFailed);
+                }, 0);
+        }
+
+
+        public void BranchTaskTest(bool value, TaskInfo[] children, Action done, int correction = 1)
+        {
+            Assert.DoesNotThrow(() =>
+            {
+                BeginTest(TestEnv0, 4);
+            });
+
+            ExpressionInfo expression = new ExpressionInfo
+            {
+                Code = ExpressionCode.Var,
+                Value = value,
+            };
+
+            TaskInfo task = new TaskInfo();
+            task.TaskType = TaskType.Branch;
+            task.Expression = expression;
+            task.Children = children;
+          
+            const int playerId = 1;
+            BeginCleanupCheck(playerId);
+            m_pooledObjectsCount -= correction;
+            FinializeTest(playerId, task, result =>
+            {
+                Assert.AreEqual(TaskState.Completed, result.State);
+                Assert.IsFalse(result.IsFailed);
+                CleanupCheck(playerId);
+                done();
+                Assert.Pass();
+            });
+
         }
 
         [Test]
@@ -290,6 +414,7 @@ namespace Battlehub.VoxelCombat.Tests
             ExecuteTaskTest(() => PrepareTestData2(playerId, CmdCode.SetHealth, 64), setHealthTaskInfo =>
             {
                 Assert.AreEqual(setHealthTaskInfo.State, TaskState.Completed);
+                Assert.IsFalse(setHealthTaskInfo.IsFailed);
                 ExecuteGenericTaskTest(CmdCode.Grow, GrowTaskCompleted, false);
             });
 
@@ -302,9 +427,11 @@ namespace Battlehub.VoxelCombat.Tests
             ExecuteTaskTest(() => PrepareTestData2(playerId, CmdCode.SetHealth, 64), setHealthTaskInfo =>
             {
                 Assert.AreEqual(TaskState.Completed, setHealthTaskInfo.State);
+                Assert.IsFalse(setHealthTaskInfo.IsFailed);
                 ExecuteGenericTaskTest(CmdCode.Grow, growTaskInfo =>
                 {
                     Assert.AreEqual(TaskState.Completed, growTaskInfo.State);
+                    Assert.IsFalse(growTaskInfo.IsFailed);
                     ExecuteGenericTaskTest(CmdCode.Diminish, DiminishTaskCompleted, false);
                 },
                 false);
@@ -372,6 +499,7 @@ namespace Battlehub.VoxelCombat.Tests
             });
 
             Assert.AreEqual(TaskState.Completed, taskInfo.State);
+            Assert.IsFalse(taskInfo.IsFailed);
 
             MovementCmd cmd = (MovementCmd)taskInfo.Cmd;
             Coordinate[] coords = m_map.FindDataOfType((int)KnownVoxelTypes.Eater, 1);
@@ -404,6 +532,7 @@ namespace Battlehub.VoxelCombat.Tests
             });
 
             Assert.AreEqual(TaskState.Completed, taskInfo.State);
+            Assert.IsFalse(taskInfo.IsFailed);
 
             ChangeParamsCmd cmd = (ChangeParamsCmd)taskInfo.Cmd;
             Coordinate[] coords = m_map.FindDataOfType(cmd.IntParams[0], 1);
@@ -422,7 +551,8 @@ namespace Battlehub.VoxelCombat.Tests
             });
 
             Assert.AreEqual(TaskState.Completed, taskInfo.State);
-           
+            Assert.IsFalse(taskInfo.IsFailed);
+
             IMatchUnitController controller = m_engine.GetUnitController(1, taskInfo.Cmd.UnitIndex); 
             Assert.IsNotNull(controller);
             Assert.AreEqual(controller.Data.Weight, 3);
@@ -438,6 +568,7 @@ namespace Battlehub.VoxelCombat.Tests
             });
 
             Assert.AreEqual(TaskState.Completed, taskInfo.State);
+            Assert.IsFalse(taskInfo.IsFailed);
 
             IMatchUnitController controller = m_engine.GetUnitController(1, taskInfo.Cmd.UnitIndex);
             Assert.IsNotNull(controller);
@@ -454,6 +585,7 @@ namespace Battlehub.VoxelCombat.Tests
             });
 
             Assert.AreEqual(TaskState.Completed, taskInfo.State);
+            Assert.IsFalse(taskInfo.IsFailed);
 
             const int playerId = 3;
             IMatchUnitController controller = m_engine.GetUnitController(playerId, taskInfo.Cmd.UnitIndex);
@@ -486,6 +618,7 @@ namespace Battlehub.VoxelCombat.Tests
             });
 
             Assert.AreEqual(TaskState.Completed, taskInfo.State);
+            Assert.IsFalse(taskInfo.IsFailed);
 
             const int playerId = 3;
             IMatchUnitController controller = m_engine.GetUnitController(playerId, taskInfo.Cmd.UnitIndex);
@@ -508,18 +641,45 @@ namespace Battlehub.VoxelCombat.Tests
 
         protected void FinializeTest(int playerIndex, TaskInfo task, TaskEngineEvent<TaskInfo> callback)
         {
-            m_engine.Submit(playerIndex, new TaskCmd(task));
+            int identity = 0;
+            TaskEngine.GenerateIdentitifers(task, ref identity);
 
             TaskEngineEvent<TaskInfo> taskStateChangedEventHandler = null;
             taskStateChangedEventHandler = taskInfo =>
             {
-                m_engine.GetTaskEngine(playerIndex).TaskStateChanged -= taskStateChangedEventHandler;
-                callback(task);
+                if(taskInfo.State != TaskState.Active && taskInfo.TaskId == task.TaskId)
+                {
+                    m_engine.GetTaskEngine(playerIndex).TaskStateChanged -= taskStateChangedEventHandler;
+                    callback(taskInfo);
+                }
             };
             m_engine.GetTaskEngine(playerIndex).TaskStateChanged += taskStateChangedEventHandler;
+            m_engine.Submit(playerIndex, new TaskCmd(task));
 
             RunEngine();
             Assert.Fail();
+        }
+
+        private int m_pooledObjectsCount;
+
+        private void BeginCleanupCheck(int playerIndex)
+        {
+            ITaskEngineTestView engine = m_engine.GetTaskEngine(playerIndex) as ITaskEngineTestView;
+            m_pooledObjectsCount = engine.PoolObjectsCount;
+        }
+
+        private void CleanupCheck(int playerIndex)
+        {
+            ITaskEngineTestView engine = m_engine.GetTaskEngine(playerIndex) as ITaskEngineTestView;
+            Assert.AreEqual(0, engine.ActiveTasks.Count);
+            Assert.AreEqual(0, engine.IdToActiveTask.Count);
+            Assert.AreEqual(0, engine.PendingRequestsCount);
+            Assert.AreEqual(0, engine.TimedoutRequestsCount);
+            Assert.AreEqual(0, engine.TaskMemory.Memory.Count);
+
+            //for certain objects objects are released after callback event. Correction needed in this cases
+            Assert.AreEqual(m_pooledObjectsCount, engine.PoolObjectsCount);
+
         }
     }
 

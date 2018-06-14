@@ -54,6 +54,7 @@ namespace Battlehub.VoxelCombat
             {
                 throw new InvalidOperationException("taskInfo.State != TaskState.Active");
             }
+          
             if(m_taskInfo.OutputsCount > 0 && m_taskInfo.Parent != null)
             {
                 int scopeId = m_taskInfo.Parent.TaskId;
@@ -183,7 +184,7 @@ namespace Battlehub.VoxelCombat
             m_taskInfo.State = TaskState.Active;
             if(m_taskInfo.Children != null)
             {
-                for (int i = 0; i <= m_taskInfo.Children.Length; ++i)
+                for (int i = 0; i < m_taskInfo.Children.Length; ++i)
                 {
                     if(m_taskInfo.Children[i].State != TaskState.Idle)
                     {
@@ -282,7 +283,8 @@ namespace Battlehub.VoxelCombat
 
             m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, value =>
             {
-                m_childTask = m_taskInfo.Children[(bool)value ? 0 : 1];
+                int index = (bool)value ? 0 : 1;
+                m_childTask = m_taskInfo.Children.Length > index ? m_taskInfo.Children[index] : null;
                 if (m_childTask == null)
                 {
                     //empty else or if block 

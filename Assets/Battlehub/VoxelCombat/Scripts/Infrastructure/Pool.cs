@@ -1,11 +1,24 @@
 ﻿using System.Collections.Generic;
 namespace Battlehub.VoxelCombat
 {
-    public abstract class Pool<T>
+    public interface IPoolTestView
+    {
+        int ObjectsCount
+        {
+            get;
+        }
+    }
+
+    public abstract class Pool<T> : IPoolTestView
     {
         private Queue<T> m_objects;
 
         private int m_poolSize;
+
+        int IPoolTestView.ObjectsCount
+        {
+            get { return m_objects.Count; }
+        }
 
         public void Initialize(int size)
         {

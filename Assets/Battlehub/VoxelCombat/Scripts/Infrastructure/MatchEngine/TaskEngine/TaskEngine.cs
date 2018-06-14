@@ -56,6 +56,14 @@ namespace Battlehub.VoxelCombat
     }
 
 
+    public interface ITaskMemoryTestView
+    {
+        Dictionary<int, Dictionary<int, object[]>> Memory
+        {
+            get;
+        }
+    }
+
     public interface ITaskMemory
     {
         void CreateOutputs(int scopeId, int taskId, int count);
@@ -63,9 +71,14 @@ namespace Battlehub.VoxelCombat
         object ReadOutput(int scopeId, int taskId, int index);
         void DestroyScope(int scopeId);
     }
-    public class TaskMemory : ITaskMemory
+    public class TaskMemory : ITaskMemory, ITaskMemoryTestView
     {
         private readonly Dictionary<int, Dictionary<int, object[]>> m_memory = new Dictionary<int, Dictionary<int, object[]>>();
+
+        Dictionary<int, Dictionary<int, object[]>> ITaskMemoryTestView.Memory
+        {
+            get { return m_memory;}
+        }
 
         private Dictionary<int, object[]> CreateScope(int scopeId)
         {
@@ -148,7 +161,40 @@ namespace Battlehub.VoxelCombat
         }
     }
 
-    public class TaskEngine : ITaskEngine
+    public interface ITaskEngineTestView
+    {
+        List<TaskBase> ActiveTasks
+        {
+            get;
+        }
+
+        Dictionary<int, TaskBase> IdToActiveTask
+        {
+            get;
+        }
+
+        int TimedoutRequestsCount
+        {
+            get;
+        }
+
+        int PendingRequestsCount
+        {
+            get;
+        }
+
+        int PoolObjectsCount
+        {
+            get;
+        }
+
+        ITaskMemoryTestView TaskMemory
+        {
+            get;
+        }
+    }
+
+    public class TaskEngine : ITaskEngine, ITaskEngineTestView
     {
         public event TaskEngineEvent<TaskInfo> TaskStateChanged;
         public event TaskEngineEvent<ClientRequest> ClientRequest;
@@ -214,6 +260,42 @@ namespace Battlehub.VoxelCombat
             get { return m_mem; }
         }
 
+        List<TaskBase> ITaskEngineTestView.ActiveTasks
+        {
+            get { return m_activeTasks;}
+        }
+
+        Dictionary<int, TaskBase> ITaskEngineTestView.IdToActiveTask
+        {
+            get { return m_idToActiveTask; }
+        }
+
+        int ITaskEngineTestView.TimedoutRequestsCount
+        {
+            get { return m_timeoutRequests.Count; }
+        }
+
+        int ITaskEngineTestView.PendingRequestsCount
+        {
+            get { return m_requests.Count; }
+        }
+
+        int ITaskEngineTestView.PoolObjectsCount
+        {
+            get
+            {
+                return
+                  ((IPoolTestView)m_cmdExpressionTaskPool).ObjectsCount +
+                  ((IPoolTestView)m_cmdMoveTaskPool).ObjectsCount +
+                  ((IPoolTestView)m_cmdGenericTaskPool).ObjectsCount +
+                  m_taskPools.Values.Sum(v => ((IPoolTestView)v).ObjectsCount);
+            }
+        }
+
+        ITaskMemoryTestView ITaskEngineTestView.TaskMemory
+        {
+            get { return m_mem; }
+        }
 
         private readonly Dictionary<TaskType, ITaskPool> m_taskPools;
         private readonly ITaskPool m_cmdExpressionTaskPool;
@@ -280,7 +362,6 @@ namespace Battlehub.VoxelCombat
                 }
             }
             
-            taskInfo.State = TaskState.Active;
             HandleTaskActivation(null, taskInfo);
         }
 
@@ -399,6 +480,8 @@ namespace Battlehub.VoxelCombat
 
         private void HandleTaskActivation(TaskBase parent, TaskInfo taskInfo)
         {
+            taskInfo.State = TaskState.Active;
+
             TaskBase task = Acquire(parent, taskInfo);
             if (taskInfo.RequiresClientSidePreprocessing)
             {
@@ -446,21 +529,28 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void GenerateIdentitifers(TaskInfo taskInfo)
+        
+
+        public static void GenerateIdentitifers(TaskInfo taskInfo, ref int taskIdentitiy)
         {
             unchecked
             {
-                m_taskIdentity++;
+                taskIdentitiy++;
             }
             
-            taskInfo.TaskId = m_taskIdentity;
+            taskInfo.TaskId = taskIdentitiy;
             if(taskInfo.Children != null)
             {
                 for(int i = 0; i < taskInfo.Children.Length; ++i)
                 {
-                    GenerateIdentitifers(taskInfo.Children[i]);
+                    GenerateIdentitifers(taskInfo.Children[i], ref taskIdentitiy);
                 }
             }
+        }
+
+        public void GenerateIdentitifers(TaskInfo taskInfo)
+        {
+            GenerateIdentitifers(taskInfo, ref m_taskIdentity);
         }
 
         private bool ValidateIdentifiers(TaskInfo taskInfo)
