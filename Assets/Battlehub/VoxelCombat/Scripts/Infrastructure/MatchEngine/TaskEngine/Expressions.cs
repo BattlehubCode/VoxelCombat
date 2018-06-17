@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Battlehub.VoxelCombat
 {
@@ -38,7 +40,7 @@ namespace Battlehub.VoxelCombat
             else if(expression.Value is TaskInputInfo)
             {
                 TaskInputInfo input = (TaskInputInfo)expression.Value;
-                object value = taskEngine.Memory.ReadOutput(input.ScopeId, input.ConnectedTaskId, input.OuputIndex);
+                object value = taskEngine.Memory.ReadOutput(input.Scope.TaskId, input.ConnectedTask.TaskId, input.OuputIndex);
                 callback(value);
             }
             else
@@ -86,6 +88,33 @@ namespace Battlehub.VoxelCombat
         }
         protected abstract void OnEvaluating(object lvalue, object rvalue, Action<object> callback);
     }
+
+    public class AddExpression : BinaryExpression
+    {
+        private Func<object, object, object> m_add;
+
+        protected override void OnEvaluating(object lvalue, object rvalue, Action<object> callback)
+        {
+            if(lvalue is int)
+            {
+                callback((int)lvalue + (int)rvalue);
+                return;
+            }
+            throw new NotSupportedException();
+        }
+    }
+
+    public class SubExpression : BinaryExpression
+    {
+        protected override void OnEvaluating(object lvalue, object rvalue, Action<object> callback)
+        {
+            Type type = lvalue.GetType();
+            var mi = type.GetMethod("op_Subtraction", BindingFlags.Static | BindingFlags.Public);
+            object result = mi.Invoke(null, new[] { lvalue, rvalue });
+            callback(result);
+        }
+    }
+
 
     public class AndExpression : BinaryExpression
     {

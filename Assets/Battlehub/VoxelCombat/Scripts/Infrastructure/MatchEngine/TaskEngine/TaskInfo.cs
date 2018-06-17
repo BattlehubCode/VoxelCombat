@@ -7,7 +7,7 @@ namespace Battlehub.VoxelCombat
 {
     public class ExpressionCode
     {
-        public const int Var = 1;
+        public const int Value = 1;
 
         //Binary expressions
         public const int And = 2;
@@ -21,6 +21,10 @@ namespace Battlehub.VoxelCombat
         public const int Lte = 13;
         public const int Gt = 14;
         public const int Gte = 15;
+
+        //Arithmetic
+        public const int Add = 20;
+        public const int Sub = 21;
 
         //Complex expressions
         public const int UnitExists = 100;
@@ -40,8 +44,9 @@ namespace Battlehub.VoxelCombat
         Repeat = 4,
         Break = 5,
         Continue = 6,
-        TEST_MockImmediate = 7,
-        TEST_Mock = 8,
+        EvalExpression = 50,
+        TEST_MockImmediate = 1000,
+        TEST_Mock = 1001,
     }
 
     public enum TaskState
@@ -53,7 +58,7 @@ namespace Battlehub.VoxelCombat
         Terminated
     }
 
-    [ProtoContract]
+    [ProtoContract(AsReferenceDefault = true)]
     public class ExpressionInfo
     {
         [ProtoMember(1)]
@@ -105,20 +110,37 @@ namespace Battlehub.VoxelCombat
         {
             return new ExpressionInfo
             {
-                Code = ExpressionCode.Var,
+                Code = ExpressionCode.Value,
                 Value = PrimitiveContract.Create(val)
             };
         }
 
-        public static ExpressionInfo Var(object val)
+        public static ExpressionInfo Val(object val)
         {
             return new ExpressionInfo
             {
-                Code = ExpressionCode.Var,
+                Code = ExpressionCode.Value,
                 Value = val
             };
         }
-        
+
+        public static ExpressionInfo Add(ExpressionInfo left, ExpressionInfo right)
+        {
+            return new ExpressionInfo
+            {
+                Code = ExpressionCode.Add,
+                Children = new[] { left, right }
+            };
+        }
+
+        public static ExpressionInfo Sub(ExpressionInfo left, ExpressionInfo right)
+        {
+            return new ExpressionInfo
+            {
+                Code = ExpressionCode.Sub,
+                Children = new[] { left, right }
+            };
+        }
 
         public static ExpressionInfo And(ExpressionInfo left, ExpressionInfo right)
         {
@@ -234,8 +256,6 @@ namespace Battlehub.VoxelCombat
     [ProtoContract]
     public class TaskStateInfo
     {
-        
-
         [ProtoMember(1)]
         public int TaskId;
 
@@ -267,20 +287,20 @@ namespace Battlehub.VoxelCombat
         }
     }
 
-    [ProtoContract]
-    public struct TaskInputInfo
+    [ProtoContract(AsReferenceDefault = true)]
+    public class TaskInputInfo
     {
         [ProtoMember(1)]
-        public int ScopeId;
+        public TaskInfo Scope;
 
         [ProtoMember(2)]
-        public int ConnectedTaskId;
+        public TaskInfo ConnectedTask;
 
         [ProtoMember(3)]
         public int OuputIndex;
     }
 
-    [ProtoContract]
+    [ProtoContract(AsReferenceDefault = true)]
     public class TaskInfo
     {
         public const int TaskSucceded = 0;

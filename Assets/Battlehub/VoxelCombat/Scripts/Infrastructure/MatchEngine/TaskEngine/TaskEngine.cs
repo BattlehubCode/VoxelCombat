@@ -316,12 +316,14 @@ namespace Battlehub.VoxelCombat
 
             m_expressions = new Dictionary<int, IExpression>
             {
-                { ExpressionCode.Var, new ValueExpression() },
+                { ExpressionCode.Value, new ValueExpression() },
                 { ExpressionCode.And, new AndExpression() },
                 { ExpressionCode.Or, new OrExpression() },
                 { ExpressionCode.Not, new NotExpression() },
                 { ExpressionCode.Eq, new EqExpression() },
                 { ExpressionCode.NotEq, new NotEqExpression() },
+                { ExpressionCode.Add, new AddExpression() },
+                { ExpressionCode.Sub, new SubExpression() },
                 { ExpressionCode.UnitExists, new UnitExistsExpression() },
                 { ExpressionCode.UnitState, new UnitStateExpression() },
                 { ExpressionCode.UnitCoordinate, new UnitCoordinateExpression() },
@@ -335,7 +337,7 @@ namespace Battlehub.VoxelCombat
                 { TaskType.Branch, new TaskPool<BranchTask>(taskPoolSize) },
                 { TaskType.Break, new TaskPool<BreakTask>(taskPoolSize) },
                 { TaskType.Continue, new TaskPool<ContinueTask>(taskPoolSize) },
-
+                { TaskType.EvalExpression, new TaskPool<EvaluateExpressionTask>(taskPoolSize) },
                 //For testing purposes
                 { TaskType.TEST_Mock, new TaskPool<MockTask>(1) },
                 { TaskType.TEST_MockImmediate, new TaskPool<MockImmediateTask>(1) }
@@ -610,6 +612,11 @@ namespace Battlehub.VoxelCombat
         private void Release(TaskBase task)
         {
             TaskInfo taskInfo = task.TaskInfo;
+            if(taskInfo.State != TaskState.Active)
+            {
+                 Memory.DestroyScope(taskInfo.TaskId);
+            }
+
             if (taskInfo.TaskType == TaskType.Command)
             {
                 if (taskInfo.Expression != null)

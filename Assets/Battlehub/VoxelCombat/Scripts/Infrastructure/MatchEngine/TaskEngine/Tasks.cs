@@ -130,17 +130,17 @@ namespace Battlehub.VoxelCombat
 
         protected void WriteOutput(int index, object value)
         {
-            m_taskEngine.Memory.WriteOutput(m_taskInfo.Parent.PlayerIndex, m_taskInfo.TaskId, index, value);
+            m_taskEngine.Memory.WriteOutput(m_taskInfo.Parent.TaskId, m_taskInfo.TaskId, index, value);
         }
 
         protected T ReadInput<T>(TaskInputInfo i)
         {
-           return (T)m_taskEngine.Memory.ReadOutput(i.ScopeId, i.ConnectedTaskId, i.OuputIndex);
+           return (T)m_taskEngine.Memory.ReadOutput(i.Scope.TaskId, i.ConnectedTask.TaskId, i.OuputIndex);
         }
 
         protected T ReadInput<T>(TaskInputInfo i, T defaultValue)
         {
-            object value = m_taskEngine.Memory.ReadOutput(i.ScopeId, i.ConnectedTaskId, i.OuputIndex);
+            object value = m_taskEngine.Memory.ReadOutput(i.Scope.TaskId, i.ConnectedTask.TaskId, i.OuputIndex);
             if(value == null)
             {
                 return defaultValue;
@@ -582,7 +582,7 @@ namespace Battlehub.VoxelCombat
         {
             if(m_taskInfo.Parent == null)
             {
-                throw new ArgumentException("tasInfo.Parent == null", "taskInfo");
+                throw new ArgumentException("taskInfo.Parent == null", "taskInfo");
             }
             if(m_taskInfo.OutputsCount != 1)
             {
@@ -595,7 +595,7 @@ namespace Battlehub.VoxelCombat
             base.OnConstruct();
             m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, value =>
             {
-                m_taskEngine.Memory.WriteOutput(m_taskInfo.Parent.PlayerIndex, m_taskInfo.TaskId, 0, value);
+                m_taskEngine.Memory.WriteOutput(m_taskInfo.Parent.TaskId, m_taskInfo.TaskId, 0, value);
                 m_taskInfo.State = TaskState.Completed;
             });
         }

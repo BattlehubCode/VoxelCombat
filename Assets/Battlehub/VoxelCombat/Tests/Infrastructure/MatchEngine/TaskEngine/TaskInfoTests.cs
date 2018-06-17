@@ -20,19 +20,19 @@ namespace Battlehub.VoxelCombat.Tests
                     {
                         new ExpressionInfo
                         {
-                            Code = ExpressionCode.Var,
+                            Code = ExpressionCode.Value,
                             Value = new Coordinate(1, 1, 1, 1)
                         },
                         new ExpressionInfo
                         {
-                            Code = ExpressionCode.Var,
+                            Code = ExpressionCode.Value,
                             Value = new Coordinate(1, 1, 1, 1)
                         },
                     }
                 },
                 new ExpressionInfo
                 {
-                    Code = ExpressionCode.Var,
+                    Code = ExpressionCode.Value,
                     Value = PrimitiveContract.Create(true),
                 }
             };

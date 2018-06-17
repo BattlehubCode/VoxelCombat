@@ -303,7 +303,7 @@ namespace Battlehub.VoxelCombat.Tests
 
             ExpressionInfo expression = new ExpressionInfo
             {
-                Code = ExpressionCode.Var,
+                Code = ExpressionCode.Value,
                 Value = value,
             };
 
@@ -327,8 +327,106 @@ namespace Battlehub.VoxelCombat.Tests
         }
 
         [Test]
+        public void IncrementTaskTest()
+        {
+            Assert.DoesNotThrow(() =>
+            {
+                BeginTest(TestEnv0, 4);
+            });
+
+            TaskInputInfo input = new TaskInputInfo
+            {
+                OuputIndex = 0
+            };
+
+            ExpressionInfo setToZero = ExpressionInfo.Val(0);
+            ExpressionInfo increment = ExpressionInfo.Add(
+                ExpressionInfo.Val(input),
+                ExpressionInfo.Val(1));
+
+            TaskInfo setToZeroTask = new TaskInfo
+            {
+                TaskType = TaskType.EvalExpression,
+                OutputsCount = 1,
+                Expression = setToZero,
+            };
+
+            TaskInfo incrementTask = new TaskInfo
+            {
+                TaskType = TaskType.EvalExpression,
+                Expression = increment,
+                OutputsCount = 1,
+                Inputs = new[] { input },
+            };
+
+            TaskInfo task = new TaskInfo
+            {
+                TaskType = TaskType.Sequence,
+                Children = new[]
+                {
+                    setToZeroTask,
+                    incrementTask
+                }
+            };
+
+            setToZeroTask.Parent = task;
+            incrementTask.Parent = task;
+            input.Scope = task;
+            input.ConnectedTask = setToZeroTask;
+
+        
+            bool isIncremented = false;
+            const int playerId = 1;
+            BeginCleanupCheck(playerId);
+            FinializeTest(playerId, task, result =>
+            {
+                Assert.IsTrue(isIncremented);
+                Assert.AreEqual(TaskState.Completed, result.State);
+                Assert.IsFalse(result.IsFailed);
+                CleanupCheck(playerId);
+                Assert.Pass();
+            }, 
+            childTask =>
+            {
+                if(childTask.TaskId == incrementTask.TaskId && childTask.State == TaskState.Completed)
+                {
+                    ITaskMemory memory = m_engine.GetTaskEngine(playerId).Memory;
+                    Assert.AreEqual(1, memory.ReadOutput(incrementTask.Parent.TaskId, incrementTask.TaskId, 0));
+                    isIncremented = true;
+                }
+            });
+        }
+
+        [Test]
         public void RepeatTaskTest()
         {
+            //Assert.DoesNotThrow(() =>
+            //{
+            //    BeginTest(TestEnv0, 4);
+            //});
+
+            //ExpressionInfo expression = new ExpressionInfo
+            //{
+            //    Code = ExpressionCode.Value,
+            //    Value = value,
+            //};
+
+            //TaskInfo task = new TaskInfo();
+            //task.TaskType = TaskType.Branch;
+            //task.Expression = expression;
+            //task.Children = children;
+
+            //const int playerId = 1;
+            //BeginCleanupCheck(playerId);
+            //m_pooledObjectsCount -= correction;
+            //FinializeTest(playerId, task, result =>
+            //{
+            //    Assert.AreEqual(TaskState.Completed, result.State);
+            //    Assert.IsFalse(result.IsFailed);
+            //    CleanupCheck(playerId);
+            //    done();
+            //    Assert.Pass();
+            //});
         }
 
         [Test]
@@ -639,7 +737,7 @@ namespace Battlehub.VoxelCombat.Tests
             Assert.Pass();
         }
 
-        protected void FinializeTest(int playerIndex, TaskInfo task, TaskEngineEvent<TaskInfo> callback)
+        protected void FinializeTest(int playerIndex, TaskInfo task, TaskEngineEvent<TaskInfo> callback, TaskEngineEvent<TaskInfo> childTaskCallback = null)
         {
             int identity = 0;
             TaskEngine.GenerateIdentitifers(task, ref identity);
@@ -647,10 +745,20 @@ namespace Battlehub.VoxelCombat.Tests
             TaskEngineEvent<TaskInfo> taskStateChangedEventHandler = null;
             taskStateChangedEventHandler = taskInfo =>
             {
-                if(taskInfo.State != TaskState.Active && taskInfo.TaskId == task.TaskId)
+                if (taskInfo.TaskId == task.TaskId)
                 {
-                    m_engine.GetTaskEngine(playerIndex).TaskStateChanged -= taskStateChangedEventHandler;
-                    callback(taskInfo);
+                    if (taskInfo.State != TaskState.Active)
+                    {
+                        m_engine.GetTaskEngine(playerIndex).TaskStateChanged -= taskStateChangedEventHandler;
+                        callback(taskInfo);
+                    }
+                }
+                else;
+                {
+                    if (childTaskCallback != null)
+                    {
+                        childTaskCallback(taskInfo);
+                    }
                 }
             };
             m_engine.GetTaskEngine(playerIndex).TaskStateChanged += taskStateChangedEventHandler;
