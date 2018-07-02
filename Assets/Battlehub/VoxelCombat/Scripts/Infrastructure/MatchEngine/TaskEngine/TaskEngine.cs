@@ -317,11 +317,16 @@ namespace Battlehub.VoxelCombat
             m_expressions = new Dictionary<int, IExpression>
             {
                 { ExpressionCode.Value, new ValueExpression() },
+                { ExpressionCode.Assign, new AssignmentExpression() },
                 { ExpressionCode.And, new AndExpression() },
                 { ExpressionCode.Or, new OrExpression() },
                 { ExpressionCode.Not, new NotExpression() },
                 { ExpressionCode.Eq, new EqExpression() },
                 { ExpressionCode.NotEq, new NotEqExpression() },
+                { ExpressionCode.Lt, new LtExpression() },
+                { ExpressionCode.Lte, new LteExpression() },
+                { ExpressionCode.Gt, new GtExpression() },
+                { ExpressionCode.Gte, new GteExpression() },
                 { ExpressionCode.Add, new AddExpression() },
                 { ExpressionCode.Sub, new SubExpression() },
                 { ExpressionCode.UnitExists, new UnitExistsExpression() },
@@ -339,8 +344,8 @@ namespace Battlehub.VoxelCombat
                 { TaskType.Continue, new TaskPool<ContinueTask>(taskPoolSize) },
                 { TaskType.EvalExpression, new TaskPool<EvaluateExpressionTask>(taskPoolSize) },
                 //For testing purposes
-                { TaskType.TEST_Mock, new TaskPool<MockTask>(1) },
-                { TaskType.TEST_MockImmediate, new TaskPool<MockImmediateTask>(1) }
+                { TaskType.TEST_Mock, new TaskPool<MockTask>(taskPoolSize) },
+                { TaskType.TEST_MockImmediate, new TaskPool<MockImmediateTask>(taskPoolSize) }
             };
 
             m_cmdExpressionTaskPool = new TaskPool<ExecuteCmdTaskWithExpression>(taskPoolSize);
@@ -449,29 +454,24 @@ namespace Battlehub.VoxelCombat
                 m_nextTimeoutCheck = m_tick + m_timeoutTicks / 4;
             }
 
-            //bool repeat = false;
-            //for (int j = 0; repeat && j < MAX_ITERATIONS_PER_TICK; j++)
+            for (int i = m_activeTasks.Count - 1; i >= 0; --i)
             {
-                //repeat = false;
-                for (int i = m_activeTasks.Count - 1; i >= 0; --i)
+                TaskBase activeTask = m_activeTasks[i];
+                if (activeTask.TaskInfo.State == TaskState.Active)
                 {
-                    TaskBase activeTask = m_activeTasks[i];
-                    if(activeTask.TaskInfo.State == TaskState.Active)
-                    {
-                        activeTask.Tick();
-                    }
-                    else
-                    {
-                        Debug.Assert(activeTask.TaskInfo.State != TaskState.Active);
-                        m_activeTasks.RemoveAt(i);
-                        m_idToActiveTask.Remove(activeTask.TaskInfo.TaskId);
-                        m_requests.Remove(activeTask.TaskInfo.TaskId);
-                        RaiseTaskStateChanged(activeTask.TaskInfo);
-                        Release(activeTask);
-                    }
+                    activeTask.Tick();
+                }
+
+                if (activeTask.TaskInfo.State != TaskState.Active)
+                { 
+                    m_activeTasks.RemoveAt(i);
+                    m_idToActiveTask.Remove(activeTask.TaskInfo.TaskId);
+                    m_requests.Remove(activeTask.TaskInfo.TaskId);
+                    Release(activeTask);
+                    RaiseTaskStateChanged(activeTask.TaskInfo);
                 }
             }
-          
+
             m_tick++;
         }
 
@@ -516,8 +516,8 @@ namespace Battlehub.VoxelCombat
             {
                 TaskBase task = m_activeTasks[i];
                 task.TaskInfo.State = TaskState.Terminated;
-                RaiseTaskStateChanged(task.TaskInfo);
                 Release(task);
+                RaiseTaskStateChanged(task.TaskInfo);
             }
             m_activeTasks.Clear();
             m_idToActiveTask.Clear();
@@ -545,7 +545,10 @@ namespace Battlehub.VoxelCombat
             {
                 for(int i = 0; i < taskInfo.Children.Length; ++i)
                 {
-                    GenerateIdentitifers(taskInfo.Children[i], ref taskIdentitiy);
+                    if(taskInfo.Children[i] != null)
+                    {
+                        GenerateIdentitifers(taskInfo.Children[i], ref taskIdentitiy);
+                    }
                 }
             }
         }
@@ -565,7 +568,7 @@ namespace Battlehub.VoxelCombat
             {
                 for (int i = 0; i < taskInfo.Children.Length; ++i)
                 {
-                    if(!ValidateIdentifiers(taskInfo.Children[i]))
+                    if(taskInfo.Children[i] != null && !ValidateIdentifiers(taskInfo.Children[i]))
                     {
                         return false;
                     }
@@ -605,12 +608,17 @@ namespace Battlehub.VoxelCombat
             task.TaskEngine = this;
             task.Parent = parent;
             task.TaskInfo = taskInfo;
-
+            task.IsAcquired = true;
             return task;
         }
 
         private void Release(TaskBase task)
         {
+            if(!task.IsAcquired)
+            {
+                throw new InvalidOperationException("!IsAcqired");
+            }
+            task.IsAcquired = false;
             TaskInfo taskInfo = task.TaskInfo;
             if(taskInfo.State != TaskState.Active)
             {

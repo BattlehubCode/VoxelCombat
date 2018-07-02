@@ -8,23 +8,24 @@ namespace Battlehub.VoxelCombat
     public class ExpressionCode
     {
         public const int Value = 1;
+        public const int Assign = 2;
 
         //Binary expressions
-        public const int And = 2;
-        public const int Or = 3;
-        public const int Not = 4;
+        public const int And = 10;
+        public const int Or = 11;
+        public const int Not = 12;
 
         //Comparation expression
-        public const int Eq = 10;
-        public const int NotEq = 11;
-        public const int Lt = 12;
-        public const int Lte = 13;
-        public const int Gt = 14;
-        public const int Gte = 15;
+        public const int Eq = 20;
+        public const int NotEq = 21;
+        public const int Lt = 22;
+        public const int Lte = 23;
+        public const int Gt = 24;
+        public const int Gte = 25;
 
         //Arithmetic
-        public const int Add = 20;
-        public const int Sub = 21;
+        public const int Add = 30;
+        public const int Sub = 31;
 
         //Complex expressions
         public const int UnitExists = 100;
@@ -121,6 +122,26 @@ namespace Battlehub.VoxelCombat
             {
                 Code = ExpressionCode.Value,
                 Value = val
+            };
+        }
+
+        public static ExpressionInfo Assign(TaskInfo taskInfo, ExpressionInfo val)
+        {
+            return new ExpressionInfo
+            {
+                Code = ExpressionCode.Assign,
+                Value = taskInfo,
+                Children = new[] { val, null }
+            };
+        }
+
+        public static ExpressionInfo Assign(TaskInfo taskInfo, ExpressionInfo val, ExpressionInfo output)
+        {
+            return new ExpressionInfo
+            {
+                Code = ExpressionCode.Assign,
+                Value = taskInfo,
+                Children = new [] { val, output }
             };
         }
 
@@ -298,6 +319,11 @@ namespace Battlehub.VoxelCombat
 
         [ProtoMember(3)]
         public int OuputIndex;
+
+        public void SetScope()
+        {
+            Scope = ConnectedTask.Parent;
+        }
     }
 
     [ProtoContract(AsReferenceDefault = true)]
@@ -466,11 +492,29 @@ namespace Battlehub.VoxelCombat
         [OnDeserialized]
         public void OnDeserializedMethod(StreamingContext context)
         {
-            if(Children != null)
+            SetParents(this, false);
+        }
+
+
+        public void SetParents()
+        {
+            SetParents(this, true);
+        }
+
+        private static void SetParents(TaskInfo taskInfo, bool recursive)
+        {
+            if (taskInfo.Children != null)
             {
-                for(int i = 0; i < Children.Length; ++i)
+                for (int i = 0; i < taskInfo.Children.Length; ++i)
                 {
-                    Children[i].Parent = this;
+                    if(taskInfo.Children[i] != null)
+                    {
+                        taskInfo.Children[i].Parent = taskInfo;
+                        if (recursive)
+                        {
+                            SetParents(taskInfo.Children[i], recursive);
+                        }
+                    }  
                 }
             }
         }

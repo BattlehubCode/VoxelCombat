@@ -190,7 +190,7 @@ namespace Battlehub.VoxelCombat.Tests
                 new TaskInfo { TaskType = TaskType.TEST_Mock },
                 new TaskInfo { TaskType = TaskType.TEST_Mock },
             };
-           
+            task.SetParents();
 
             const int playerId = 1;
             BeginCleanupCheck(playerId);
@@ -314,7 +314,6 @@ namespace Battlehub.VoxelCombat.Tests
           
             const int playerId = 1;
             BeginCleanupCheck(playerId);
-            m_pooledObjectsCount -= correction;
             FinializeTest(playerId, task, result =>
             {
                 Assert.AreEqual(TaskState.Completed, result.State);
@@ -340,10 +339,10 @@ namespace Battlehub.VoxelCombat.Tests
             };
 
             ExpressionInfo setToZero = ExpressionInfo.Val(0);
-            ExpressionInfo increment = ExpressionInfo.Add(
+            ExpressionInfo add = ExpressionInfo.Add(
                 ExpressionInfo.Val(input),
                 ExpressionInfo.Val(1));
-
+         
             TaskInfo setToZeroTask = new TaskInfo
             {
                 TaskType = TaskType.EvalExpression,
@@ -351,6 +350,7 @@ namespace Battlehub.VoxelCombat.Tests
                 Expression = setToZero,
             };
 
+            ExpressionInfo increment = ExpressionInfo.Assign(setToZeroTask, add);
             TaskInfo incrementTask = new TaskInfo
             {
                 TaskType = TaskType.EvalExpression,
@@ -368,13 +368,11 @@ namespace Battlehub.VoxelCombat.Tests
                     incrementTask
                 }
             };
+            task.SetParents();
 
-            setToZeroTask.Parent = task;
-            incrementTask.Parent = task;
-            input.Scope = task;
             input.ConnectedTask = setToZeroTask;
+            input.SetScope();
 
-        
             bool isIncremented = false;
             const int playerId = 1;
             BeginCleanupCheck(playerId);
@@ -391,8 +389,96 @@ namespace Battlehub.VoxelCombat.Tests
                 if(childTask.TaskId == incrementTask.TaskId && childTask.State == TaskState.Completed)
                 {
                     ITaskMemory memory = m_engine.GetTaskEngine(playerId).Memory;
-                    Assert.AreEqual(1, memory.ReadOutput(incrementTask.Parent.TaskId, incrementTask.TaskId, 0));
+                    Assert.AreEqual(1, memory.ReadOutput(setToZeroTask.Parent.TaskId, setToZeroTask.TaskId, 0));
                     isIncremented = true;
+                }
+            });
+        }
+
+        public void RepeatTaskTest(TaskInfo repeatChildTask, TaskInputInfo input, int iterations, int expectedIterations, TaskEngineEvent<TaskInfo> childTaskCallback = null, Action pass = null)
+        {
+            Assert.DoesNotThrow(() =>
+            {
+                BeginTest(TestEnv0, 4);
+            });
+
+            ExpressionInfo setToZero = ExpressionInfo.Val(0);
+            ExpressionInfo add = ExpressionInfo.Add(
+                ExpressionInfo.Val(input),
+                ExpressionInfo.Val(1));
+            ExpressionInfo lessThanValue = ExpressionInfo.Lt(
+                ExpressionInfo.Val(input),
+                ExpressionInfo.Val(iterations));
+
+            TaskInfo setToZeroTask = new TaskInfo
+            {
+                TaskType = TaskType.EvalExpression,
+                OutputsCount = 1,
+                Expression = setToZero,
+            };
+
+            ExpressionInfo increment = ExpressionInfo.Assign(setToZeroTask, add);
+            TaskInfo incrementTask = new TaskInfo
+            {
+                TaskType = TaskType.EvalExpression,
+                Expression = increment,
+                OutputsCount = 1,
+                Inputs = new[] { input },
+            };
+
+            TaskInfo repeatTask = new TaskInfo();
+            repeatTask.TaskType = TaskType.Repeat;
+            repeatTask.Expression = lessThanValue;
+
+            repeatTask.Children = new[]
+            {
+                 repeatChildTask,
+                 incrementTask
+            };
+
+            TaskInfo task = new TaskInfo
+            {
+                TaskType = TaskType.Sequence,
+                Children = new[]
+                {
+                    setToZeroTask,
+                    repeatTask
+                }
+            };
+            task.SetParents();
+
+            input.ConnectedTask = setToZeroTask;
+            input.SetScope();
+
+            bool isIncremented = false;
+            const int playerId = 1;
+            BeginCleanupCheck(playerId);
+            FinializeTest(playerId, task, result =>
+            {
+                Assert.IsTrue(isIncremented);
+                Assert.AreEqual(TaskState.Completed, result.State);
+                Assert.IsFalse(result.IsFailed);
+                CleanupCheck(playerId);
+                if(pass != null)
+                {
+                    pass();
+                }
+                Assert.Pass();
+            },
+            childTask =>
+            {
+                if (childTask.TaskId == repeatTask.TaskId && childTask.State == TaskState.Completed)
+                {
+                    ITaskMemory memory = m_engine.GetTaskEngine(playerId).Memory;
+                    Assert.AreEqual(expectedIterations, memory.ReadOutput(setToZeroTask.Parent.TaskId, setToZeroTask.TaskId, 0));
+                    isIncremented = true;
+                }
+                else
+                {
+                    if(childTaskCallback != null)
+                    {
+                        childTaskCallback(childTask);
+                    }
                 }
             });
         }
@@ -400,43 +486,79 @@ namespace Battlehub.VoxelCombat.Tests
         [Test]
         public void RepeatTaskTest()
         {
-            //Assert.DoesNotThrow(() =>
-            //{
-            //    BeginTest(TestEnv0, 4);
-            //});
+            TaskInputInfo input = new TaskInputInfo { OuputIndex = 0 };
+            TaskInfo repeatTask = new TaskInfo { TaskType = TaskType.TEST_Mock };
+            RepeatTaskTest(repeatTask, input, 10, 10);
+        }
 
-            //ExpressionInfo expression = new ExpressionInfo
-            //{
-            //    Code = ExpressionCode.Value,
-            //    Value = value,
-            //};
-
-            //TaskInfo task = new TaskInfo();
-            //task.TaskType = TaskType.Branch;
-            //task.Expression = expression;
-            //task.Children = children;
-
-            //const int playerId = 1;
-            //BeginCleanupCheck(playerId);
-            //m_pooledObjectsCount -= correction;
-            //FinializeTest(playerId, task, result =>
-            //{
-            //    Assert.AreEqual(TaskState.Completed, result.State);
-            //    Assert.IsFalse(result.IsFailed);
-            //    CleanupCheck(playerId);
-            //    done();
-            //    Assert.Pass();
-            //});
+        [Test]
+        public void RepeatTaskTestImmediate()
+        {
+            TaskInputInfo input = new TaskInputInfo { OuputIndex = 0 };
+            TaskInfo repeatTask = new TaskInfo { TaskType = TaskType.TEST_MockImmediate };
+            RepeatTaskTest(repeatTask, input, 10, 10);
         }
 
         [Test]
         public void RepeatBreakTaskTest()
         {
+            TaskInputInfo input = new TaskInputInfo { OuputIndex = 0 };
+            ExpressionInfo eqTo5 = ExpressionInfo.Eq(
+                ExpressionInfo.Val(input),
+                ExpressionInfo.Val(5));
+            TaskInfo branchTask = new TaskInfo
+            {
+                TaskType = TaskType.Branch,
+                Expression = eqTo5,
+                Children = new[]
+                {
+                    new TaskInfo
+                    {
+                       TaskType = TaskType.Break,
+                    },
+                    null
+                }
+            };
+            RepeatTaskTest(branchTask, input, 10, 5);
         }
 
         [Test]
         public void RepeatContinueTaskTest()
         {
+            TaskInputInfo input = new TaskInputInfo { OuputIndex = 0 };
+            ExpressionInfo isTrue = ExpressionInfo.Val(true);
+            TaskInfo continueTask = new TaskInfo
+            {
+                TaskType = TaskType.Continue,
+            };
+            TaskInfo branchTask = new TaskInfo
+            {
+                TaskType = TaskType.Branch,
+                Expression = isTrue,
+                Children = new[]
+                {
+                    continueTask,
+                    null
+                }
+            };
+
+            int continueCounter = 0;
+            RepeatTaskTest(branchTask, input, 2, 2, childTask =>
+            {
+                if(continueTask.TaskId == childTask.TaskId)
+                {
+                    continueCounter++;
+                    if(continueCounter == 1)
+                    {
+                        isTrue.Value = false;
+                    }
+                }
+            },
+            () =>
+            {
+                Assert.AreEqual(1, continueCounter);
+            });
+
         }
 
         [Test]

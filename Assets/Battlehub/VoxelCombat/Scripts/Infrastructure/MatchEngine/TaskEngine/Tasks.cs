@@ -7,6 +7,12 @@ namespace Battlehub.VoxelCombat
     public delegate void TaskEvent(TaskBase sender, TaskInfo taskInfo);
     public abstract class TaskBase
     {
+        public bool IsAcquired
+        {
+            get;
+            set;
+        }
+
         public event TaskEvent ChildTaskActivated;
      
         protected IExpression m_expression;
@@ -71,10 +77,10 @@ namespace Battlehub.VoxelCombat
         public void Tick()
         {
             OnTick();            
-            if(m_taskInfo.State != TaskState.Active)
-            {
-                m_taskEngine.Memory.DestroyScope(m_taskInfo.TaskId);
-            }
+            //if(m_taskInfo.State != TaskState.Active)
+            //{
+            //    m_taskEngine.Memory.DestroyScope(m_taskInfo.TaskId);
+            //}
         }
 
         protected virtual void Reset()
@@ -186,7 +192,7 @@ namespace Battlehub.VoxelCombat
             {
                 for (int i = 0; i < m_taskInfo.Children.Length; ++i)
                 {
-                    if(m_taskInfo.Children[i].State != TaskState.Idle)
+                    if(m_taskInfo.Children[i] != null && m_taskInfo.Children[i].State != TaskState.Idle)
                     {
                         m_taskInfo.Children[i].Reset();
                     } 
@@ -211,8 +217,8 @@ namespace Battlehub.VoxelCombat
  
         protected override void OnTick()
         {
-            TaskInfo childTask = m_taskInfo.Children[m_activeChildIndex];
-            if(childTask.State != TaskState.Active)
+            TaskInfo childTask = m_activeChildIndex >= 0 ? m_taskInfo.Children[m_activeChildIndex] : null;
+            if(childTask == null || childTask.State != TaskState.Active)
             {
                 ActivateNextTask();
             }
@@ -240,6 +246,7 @@ namespace Battlehub.VoxelCombat
                 m_activeChildIndex++;
                 if (m_activeChildIndex >= m_taskInfo.Children.Length)
                 {
+                    m_activeChildIndex = -1;
                     m_taskInfo.State = TaskState.Completed;
                     break;
                 }
@@ -255,7 +262,7 @@ namespace Battlehub.VoxelCombat
                     break;
                 }
             }
-            while (true);
+            while (m_taskInfo.State == TaskState.Active);
         }
     }
 
@@ -318,17 +325,27 @@ namespace Battlehub.VoxelCombat
     public class RepeatTask : SequentialTask
     {
         private bool m_break;
+        private bool m_reset;
 
         protected override void OnTick()
         {
             if(!m_taskInfo.Expression.IsEvaluating)
             {
-                base.OnTick();
-                if (m_taskInfo.State == TaskState.Completed)
+                if(m_reset)
                 {
-                    if (!m_break)
+                    m_reset = false;
+                    Reset();
+                }
+                else
+                {
+                    base.OnTick();
+
+                    if (m_taskInfo.State == TaskState.Completed)
                     {
-                        Reset();
+                        if (!m_break)
+                        {
+                            Reset();
+                        }
                     }
                 }
             }
@@ -342,7 +359,8 @@ namespace Battlehub.VoxelCombat
 
         protected override void OnContinue()
         {
-            Reset();
+            m_taskInfo.State = TaskState.Completed;
+            // Reset();
         }
 
         protected virtual void EvaluateExpression(Action<bool> callback)
@@ -366,6 +384,14 @@ namespace Battlehub.VoxelCombat
                 if (value)
                 {
                     base.Reset();
+                    if (m_taskInfo.State == TaskState.Completed)
+                    {
+                        if(!m_break)
+                        {
+                            m_reset = true;
+                            m_taskInfo.State = TaskState.Active;
+                        }  
+                    }
                 }
                 else
                 {

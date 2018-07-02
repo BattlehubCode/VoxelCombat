@@ -50,6 +50,33 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+    public class AssignmentExpression : IExpression
+    {
+        public void Evaluate(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
+        {
+            TaskInfo taskInfo = (TaskInfo)expression.Value;
+            ExpressionInfo valueInfo = expression.Children[0];
+            ExpressionInfo outputInfo = expression.Children[1];
+            if(outputInfo == null)
+            {
+                outputInfo = new ExpressionInfo
+                {
+                    Code = ExpressionCode.Value,
+                    Value = 0
+                };
+            }
+
+            IExpression valueExpression = taskEngine.GetExpression(valueInfo.Code);
+            valueExpression.Evaluate(valueInfo, taskEngine, value =>
+            {
+                int outputIndex = (int)outputInfo.Value;
+                taskEngine.Memory.WriteOutput(taskInfo.Parent.TaskId, taskInfo.TaskId, outputIndex, value);
+                callback(null);
+            });
+        }
+    }
+
+
     public class TaskStateExpression : IExpression
     {
         public void Evaluate(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
@@ -108,10 +135,12 @@ namespace Battlehub.VoxelCombat
     {
         protected override void OnEvaluating(object lvalue, object rvalue, Action<object> callback)
         {
-            Type type = lvalue.GetType();
-            var mi = type.GetMethod("op_Subtraction", BindingFlags.Static | BindingFlags.Public);
-            object result = mi.Invoke(null, new[] { lvalue, rvalue });
-            callback(result);
+            if (lvalue is int)
+            {
+                callback((int)lvalue - (int)rvalue);
+                return;
+            }
+            throw new NotSupportedException();
         }
     }
 
@@ -160,6 +189,59 @@ namespace Battlehub.VoxelCombat
             {
                 callback(!lvalue.Equals(rvalue));
             }
+        }
+    }
+
+
+    public class LtExpression : BinaryExpression
+    {
+        protected override void OnEvaluating(object lvalue, object rvalue, Action<object> callback)
+        {
+            if (lvalue is int)
+            {
+                callback((int)lvalue < (int)rvalue);
+                return;
+            }
+            throw new NotSupportedException();
+        }
+    }
+
+    public class LteExpression : BinaryExpression
+    {
+        protected override void OnEvaluating(object lvalue, object rvalue, Action<object> callback)
+        {
+            if (lvalue is int)
+            {
+                callback((int)lvalue <= (int)rvalue);
+                return;
+            }
+            throw new NotSupportedException();
+        }
+    }
+
+    public class GtExpression : BinaryExpression
+    {
+        protected override void OnEvaluating(object lvalue, object rvalue, Action<object> callback)
+        {
+            if (lvalue is int)
+            {
+                callback((int)lvalue > (int)rvalue);
+                return;
+            }
+            throw new NotSupportedException();
+        }
+    }
+
+    public class GteExpression : BinaryExpression
+    {
+        protected override void OnEvaluating(object lvalue, object rvalue, Action<object> callback)
+        {
+            if (lvalue is int)
+            {
+                callback((int)lvalue >= (int)rvalue);
+                return;
+            }
+            throw new NotSupportedException();
         }
     }
 
