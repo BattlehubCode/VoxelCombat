@@ -318,6 +318,8 @@ namespace Battlehub.VoxelCombat
             {
                 { ExpressionCode.Value, new ValueExpression() },
                 { ExpressionCode.Assign, new AssignmentExpression() },
+                { ExpressionCode.Itertate, new IterateExpression() },
+                { ExpressionCode.Get, new GetExpression() },
                 { ExpressionCode.And, new AndExpression() },
                 { ExpressionCode.Or, new OrExpression() },
                 { ExpressionCode.Not, new NotExpression() },
@@ -332,6 +334,9 @@ namespace Battlehub.VoxelCombat
                 { ExpressionCode.UnitExists, new UnitExistsExpression() },
                 { ExpressionCode.UnitState, new UnitStateExpression() },
                 { ExpressionCode.UnitCoordinate, new UnitCoordinateExpression() },
+                { ExpressionCode.UnitCanGrow, new UnitCanGrowExpression() },
+                { ExpressionCode.UnitCanSplit4, new UnitCanSplit4Expression()},
+                { ExpressionCode.TaskSucceded, new TaskSuccededExpression() },
             };
 
             const int taskPoolSize = 10;
@@ -342,7 +347,11 @@ namespace Battlehub.VoxelCombat
                 { TaskType.Branch, new TaskPool<BranchTask>(taskPoolSize) },
                 { TaskType.Break, new TaskPool<BreakTask>(taskPoolSize) },
                 { TaskType.Continue, new TaskPool<ContinueTask>(taskPoolSize) },
+                { TaskType.Return, new TaskPool<ReturnTask>(taskPoolSize) },
+                { TaskType.Nop, new TaskPool<NopTask>(taskPoolSize) },
                 { TaskType.EvalExpression, new TaskPool<EvaluateExpressionTask>(taskPoolSize) },
+                { TaskType.FindPath, new TaskPool<FindPathTask>(taskPoolSize) },
+                { TaskType.SearchForFood, new TaskPool<SearchAroundForFood>(taskPoolSize) },
                 //For testing purposes
                 { TaskType.TEST_Mock, new TaskPool<MockTask>(taskPoolSize) },
                 { TaskType.TEST_MockImmediate, new TaskPool<MockImmediateTask>(taskPoolSize) }
@@ -463,16 +472,45 @@ namespace Battlehub.VoxelCombat
                 }
 
                 if (activeTask.TaskInfo.State != TaskState.Active)
-                { 
+                {
                     m_activeTasks.RemoveAt(i);
-                    m_idToActiveTask.Remove(activeTask.TaskInfo.TaskId);
-                    m_requests.Remove(activeTask.TaskInfo.TaskId);
-                    Release(activeTask);
-                    RaiseTaskStateChanged(activeTask.TaskInfo);
+                    HandleActiveTaskRemoved(activeTask.TaskInfo);
                 }
             }
 
             m_tick++;
+        }
+
+        private void HandleActiveTaskRemoved(TaskInfo activeTaskInfo)
+        {
+            TaskBase activeTask;
+            if(!m_idToActiveTask.TryGetValue(activeTaskInfo.TaskId, out activeTask))
+            {
+                return;
+            }
+
+            TaskInfo[] children = activeTaskInfo.Children;
+            if (children != null)
+            {
+                for (int i = 0; i < children.Length; ++i)
+                {
+                    TaskInfo child = children[i];
+                    if(child.State != TaskState.Active)
+                    {
+                        HandleActiveTaskRemoved(child);
+                    }
+                }
+            }
+
+            m_idToActiveTask.Remove(activeTaskInfo.TaskId);
+            m_requests.Remove(activeTaskInfo.TaskId);
+            Release(activeTask);
+            RaiseTaskStateChanged(activeTaskInfo);
+        }
+
+        private void RaiseTaskStateChagedRecursive(TaskBase activeTask)
+        {
+         
         }
 
         private void OnChildTaskActivated(TaskBase parent, TaskInfo taskInfo)

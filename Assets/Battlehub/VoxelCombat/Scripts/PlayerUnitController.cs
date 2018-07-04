@@ -215,7 +215,7 @@ namespace Battlehub.VoxelCombat
             SubmitStdCommand(() => new Cmd(CmdCode.Grow), (playerIndex, unitId) =>
             {
                 IVoxelDataController dataController = m_gameState.GetVoxelDataController(playerIndex, unitId);
-                if (dataController.CanGrow() != true)
+                if (dataController.CanGrow() != CanDo.Yes)
                 {
                     Debug.LogWarning("Can't grow unit " + unitId);
                     return false;
@@ -229,7 +229,7 @@ namespace Battlehub.VoxelCombat
             SubmitStdCommand(() => new Cmd(CmdCode.Split4), (playerIndex, unitId) =>
             {
                 IVoxelDataController dataController = m_gameState.GetVoxelDataController(playerIndex, unitId);
-                if (dataController.CanSplit4() != true)
+                if (dataController.CanSplit4() != CanDo.Yes)
                 {
                     Debug.LogWarning("Can't split4 unit " + unitId);
                     return false;

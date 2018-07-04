@@ -1,7 +1,6 @@
 ﻿using ProtoBuf;
 using System.Runtime.Serialization;
-using System;
-using System.Collections.Generic;
+using System.Collections;
 
 namespace Battlehub.VoxelCombat
 {
@@ -9,6 +8,9 @@ namespace Battlehub.VoxelCombat
     {
         public const int Value = 1;
         public const int Assign = 2;
+        public const int Itertate = 3;
+        public const int Get = 4;
+        //public const int Set = 5;
 
         //Binary expressions
         public const int And = 10;
@@ -31,10 +33,16 @@ namespace Battlehub.VoxelCombat
         public const int UnitExists = 100;
         public const int UnitCoordinate = 101;
         public const int UnitState = 102;
+        public const int UnitCanGrow = 103;
+        public const int UnitCanSplit4 = 105;
  
         //Complex search expressions
         public const int EnemyVisible = 200;
         public const int FoodVisible = 201;
+
+        //Task
+        public const int TaskSucceded = 500;
+
     }
 
     public enum TaskType
@@ -45,7 +53,12 @@ namespace Battlehub.VoxelCombat
         Repeat = 4,
         Break = 5,
         Continue = 6,
+        Return = 7,
+        Nop = 8,
+        //Switch = 7,
         EvalExpression = 50,
+        FindPath = 100,
+        SearchForFood = 150,
         TEST_MockImmediate = 1000,
         TEST_Mock = 1001,
     }
@@ -135,6 +148,15 @@ namespace Battlehub.VoxelCombat
             };
         }
 
+        public static ExpressionInfo Iterate(IEnumerable enumerable)
+        {
+            return new ExpressionInfo
+            {
+                Code = ExpressionCode.Itertate,
+                Value = enumerable.GetEnumerator()
+            };
+        }
+
         public static ExpressionInfo Assign(TaskInfo taskInfo, ExpressionInfo val, ExpressionInfo output)
         {
             return new ExpressionInfo
@@ -142,6 +164,15 @@ namespace Battlehub.VoxelCombat
                 Code = ExpressionCode.Assign,
                 Value = taskInfo,
                 Children = new [] { val, output }
+            };
+        }
+
+        public static ExpressionInfo Get(ExpressionInfo obj, ExpressionInfo propertyGetter)
+        {
+            return new ExpressionInfo
+            {
+                Code = ExpressionCode.Get,
+                Children = new[] { obj, propertyGetter }
             };
         }
 
@@ -245,33 +276,50 @@ namespace Battlehub.VoxelCombat
         }
 
 
-        public static ExpressionInfo UnitExists(long unitId, int playerId)
+        public static ExpressionInfo UnitExists(ExpressionInfo unitId, int playerId)
         {
             return new ExpressionInfo
             {
                 Code = ExpressionCode.UnitExists,
-                Children = new[] { PrimitiveVar(unitId), PrimitiveVar(playerId)}
+                Children = new[] { unitId, PrimitiveVar(playerId)}
             };
         }
 
-        public static ExpressionInfo UnitState(long unitId, int playerId)
+        public static ExpressionInfo UnitState(ExpressionInfo unitId, int playerId)
         {
             return new ExpressionInfo
             {
                 Code = ExpressionCode.UnitState,
-                Children = new[] { PrimitiveVar(unitId), PrimitiveVar(playerId) }
+                Children = new[] { unitId, PrimitiveVar(playerId) }
             };
         }
 
-        public static ExpressionInfo UnitCoordinate(long unitId, int playerId)
+        public static ExpressionInfo UnitCoordinate(ExpressionInfo unitId, int playerId)
         {
             return new ExpressionInfo
             {
                 Code = ExpressionCode.UnitCoordinate,
-                Children = new[] { PrimitiveVar(unitId), PrimitiveVar(playerId) }
+                Children = new[] { unitId, PrimitiveVar(playerId) }
             };
         }
 
+        public static ExpressionInfo UnitCanGrow(ExpressionInfo unitId, int playerId)
+        {
+            return new ExpressionInfo
+            {
+                Code = ExpressionCode.UnitCanGrow,
+                Children = new[] { unitId, PrimitiveVar(playerId) }
+            };
+        }
+
+        public static ExpressionInfo TaskSucceded(TaskInfo task)
+        {
+            return new ExpressionInfo
+            {
+                Code = ExpressionCode.TaskSucceded,
+                Value = task,
+            };
+        }
     }
 
     [ProtoContract]
@@ -315,14 +363,14 @@ namespace Battlehub.VoxelCombat
         public TaskInfo Scope;
 
         [ProtoMember(2)]
-        public TaskInfo ConnectedTask;
+        public TaskInfo OutputTask;
 
         [ProtoMember(3)]
         public int OuputIndex;
 
         public void SetScope()
         {
-            Scope = ConnectedTask.Parent;
+            Scope = OutputTask.Parent;
         }
     }
 
@@ -487,20 +535,48 @@ namespace Battlehub.VoxelCombat
             get { return StatusCode != TaskSucceded; }
         }
 
-    
-
         [OnDeserialized]
         public void OnDeserializedMethod(StreamingContext context)
         {
             SetParents(this, false);
         }
 
-
         public void SetParents()
         {
             SetParents(this, true);
         }
 
+        public void Initialize(int playerIndex = -1)
+        {
+            SetInputsScope(this, playerIndex, true);
+        }
+
+
+        private void SetInputsScope(TaskInfo taskInfo, int playerIndex, bool recursive)
+        {
+            if (taskInfo.Inputs != null)
+            {
+                for (int i = 0; i < taskInfo.Inputs.Length; ++i)
+                {
+                    taskInfo.Inputs[i].SetScope();
+                }
+            }
+
+            taskInfo.PlayerIndex = playerIndex;
+            if (taskInfo.Children != null)
+            {
+                for (int i = 0; i < taskInfo.Children.Length; ++i)
+                {
+                    if (taskInfo.Children[i] != null)
+                    {
+                        if (recursive)
+                        {
+                            SetInputsScope(taskInfo.Children[i], playerIndex, recursive);
+                        }
+                    }
+                }
+            }
+        }
         private static void SetParents(TaskInfo taskInfo, bool recursive)
         {
             if (taskInfo.Children != null)
@@ -517,6 +593,80 @@ namespace Battlehub.VoxelCombat
                     }  
                 }
             }
+        }
+
+        public static TaskInfo Repeat(ExpressionInfo expression, params TaskInfo[] sequence)
+        {
+            return new TaskInfo(TaskType.Repeat)
+            {
+                Expression = expression,
+                Children = sequence,
+            };
+        }
+
+        public static TaskInfo Sequence(params TaskInfo[] sequence)
+        {
+            return new TaskInfo(TaskType.Sequence)
+            {
+                Children = sequence,
+            };
+        }
+
+        public static TaskInfo Branch(ExpressionInfo expression, TaskInfo yes, TaskInfo no = null)
+        {
+            return new TaskInfo(TaskType.Branch)
+            {
+                Expression = expression,
+                Children = new[] { yes, no }
+            };
+        }
+
+        public static TaskInfo Return(ExpressionInfo expression = null)
+        {
+            return new TaskInfo(TaskType.Return)
+            {
+                Expression = expression,
+            };
+        }
+
+
+        public static TaskInfo EvalExpression(ExpressionInfo expression)
+        {
+            return new TaskInfo(TaskType.EvalExpression)
+            {
+                Expression = expression,
+                OutputsCount = 1
+            };
+        }
+
+        public static TaskInfo UnitOrAssetIndex(long unitOrAssetIndex)
+        {
+            return EvalExpression(ExpressionInfo.PrimitiveVar(unitOrAssetIndex));
+        }
+
+        public static TaskInfo FindPath(TaskInputInfo unitIndex)
+        {
+            TaskInfo findPath = new TaskInfo(TaskType.FindPath)
+            {
+                OutputsCount = 2
+            };
+            throw new System.NotImplementedException();
+        }
+
+        public static TaskInfo SearchForFood(TaskInputInfo unitIndex)
+        {
+            TaskInfo searchForFoodTask = new TaskInfo(TaskType.SearchForFood)
+            {
+                OutputsCount = 2
+            };
+            TaskInputInfo searchForFoodContext = new TaskInputInfo
+            {
+                OuputIndex = 0,
+                OutputTask = searchForFoodTask,
+            };
+
+            searchForFoodTask.Inputs = new[] { searchForFoodContext, unitIndex };
+            return searchForFoodTask;
         }
     }
 }

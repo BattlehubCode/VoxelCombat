@@ -103,6 +103,203 @@ namespace Battlehub.VoxelCombat.Tests
         }
 
         [UnityTest]
+        public IEnumerator EatGrowSplit()
+        {
+            BeginTest(TestEnv1, 2, 0, () =>
+            {
+                MapRoot map = Dependencies.Map.Map;
+                IMatchEngineCli matchEngineCli = Dependencies.MatchEngine;
+
+                const int playerId = 2;
+                Coordinate[] coords = map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
+                VoxelData voxel = map.Get(coords[0]);
+                TaskInfo unitIndexTask = TaskInfo.UnitOrAssetIndex(voxel.UnitOrAssetIndex);
+                TaskInputInfo unitIndexInput = new TaskInputInfo
+                {
+                    OuputIndex = 0,
+                    OutputTask = unitIndexTask
+                };
+
+                TaskInfo checkCanGrow = TaskInfo.EvalExpression(
+                    ExpressionInfo.UnitCanGrow(ExpressionInfo.Val(unitIndexInput), playerId));
+
+                TaskInputInfo checkCanGrowInput = new TaskInputInfo
+                {
+                    OutputTask = checkCanGrow,
+                    OuputIndex = 0,
+                };
+                
+                ExpressionInfo notSupported = ExpressionInfo.Eq(
+                    ExpressionInfo.Val(CanDo.No_NotSupported),
+                    ExpressionInfo.Val(checkCanGrowInput));
+
+                ExpressionInfo somethingWrong = ExpressionInfo.Eq(
+                    ExpressionInfo.Val(CanDo.No_SomethingWrong),
+                    ExpressionInfo.Val(checkCanGrowInput));
+
+                ExpressionInfo maxWeight = ExpressionInfo.Eq(
+                    ExpressionInfo.Val(CanDo.No_MaxWeight),
+                    ExpressionInfo.Val(checkCanGrowInput));
+
+                ExpressionInfo needMoreFood = ExpressionInfo.Eq(
+                    ExpressionInfo.Val(CanDo.No_NeedMoreFood),
+                    ExpressionInfo.Val(checkCanGrowInput));
+
+                ExpressionInfo collapsedOrBlocked = ExpressionInfo.Eq(
+                    ExpressionInfo.Val(CanDo.No_CollapsedOrBlocked),
+                    ExpressionInfo.Val(checkCanGrowInput));
+
+                ExpressionInfo wrongLocation = ExpressionInfo.Eq(
+                    ExpressionInfo.Val(CanDo.No_WrongLocation),
+                    ExpressionInfo.Val(checkCanGrowInput));
+
+                TaskInfo searchForFoodTask = TaskInfo.SearchForFood(unitIndexInput);
+                ExpressionInfo taskSucceded = ExpressionInfo.TaskSucceded(searchForFoodTask);
+                ExpressionInfo whileTrue = ExpressionInfo.PrimitiveVar(true);
+
+                TaskInputInfo foodCoordinateInput = new TaskInputInfo
+                {
+                    OuputIndex = 1,
+                    OutputTask = searchForFoodTask
+                };
+
+                TaskInfo elseIfNeedMoreFood = TaskInfo.Branch(needMoreFood,
+                    TaskInfo.Repeat(whileTrue,
+                        searchForFoodTask,
+                        TaskInfo.Branch(taskSucceded, 
+                            TaskInfo.FindPath(null),//find path move to food
+                            null//move to random location
+                        ) 
+                    ),
+                    null
+                );
+
+                TaskInfo elseIfMaximumWeight = TaskInfo.Branch(maxWeight,
+                    TaskInfo.Return(),
+                    elseIfNeedMoreFood);
+
+                TaskInfo ifNotSupportedOrSomethingWrong = TaskInfo.Branch(
+                    ExpressionInfo.Or(notSupported, somethingWrong),
+                    TaskInfo.Return(ExpressionInfo.PrimitiveVar(TaskInfo.TaskFailed)),
+                    elseIfMaximumWeight);
+
+                TaskInfo rootTask = new TaskInfo(TaskType.Sequence)
+                {
+                    Children = new[]
+                    {
+                        unitIndexTask,
+                        checkCanGrow,
+                        TaskInfo.SearchForFood(unitIndexInput),
+                    }
+                };
+
+                rootTask.SetParents();
+                rootTask.Initialize(playerId);
+
+                ITaskEngine taskEngine = matchEngineCli.GetClientTaskEngine(playerId);
+                TaskEngineEvent<TaskInfo> taskStateChanged = null;
+                taskStateChanged = taskInfo =>
+                {
+                    if (taskInfo.State == TaskState.Completed)
+                    {
+                        if(taskInfo.TaskId == rootTask.TaskId)
+                        {
+                            taskEngine.TaskStateChanged -= taskStateChanged;
+                            EndTest();
+                        } 
+                    }
+                    else
+                    {
+                        Assert.AreEqual(TaskState.Active, taskInfo.State);
+                    }
+                };
+                taskEngine.TaskStateChanged += taskStateChanged;
+                taskEngine.SubmitTask(rootTask);
+            });
+
+
+            while (true)
+            {
+                yield return null;
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator SearchForFoodTaskTest()
+        {
+            BeginTest(TestEnv1, 2, 0, () =>
+            {
+                MapRoot map = Dependencies.Map.Map;
+                IMatchEngineCli matchEngineCli = Dependencies.MatchEngine;
+
+                const int playerId = 2;
+                Coordinate[] coords = map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
+                VoxelData voxel = map.Get(coords[0]);
+
+                TaskInfo searchForFoodTask = new TaskInfo(TaskType.SearchForFood)
+                {
+                    OutputsCount = 2
+                };
+                TaskInputInfo searchForFoodContext = new TaskInputInfo
+                {
+                    OuputIndex = 0,
+                    OutputTask = searchForFoodTask,
+                };
+
+                TaskInfo getUnitIndexTask = new TaskInfo(TaskType.EvalExpression)
+                {
+                    Expression = ExpressionInfo.PrimitiveVar(voxel.UnitOrAssetIndex),
+                    OutputsCount = 1
+                };
+                TaskInputInfo unitIndex = new TaskInputInfo
+                {
+                    OuputIndex = 0,
+                    OutputTask = getUnitIndexTask
+                };
+
+                searchForFoodTask.Inputs = new[] { searchForFoodContext, unitIndex };
+                TaskInfo rootTask = new TaskInfo(TaskType.Sequence)
+                {
+                    Children = new[] { getUnitIndexTask, searchForFoodTask }
+                };
+
+                rootTask.SetParents();
+                rootTask.Initialize(playerId);
+
+                ITaskEngine taskEngine = matchEngineCli.GetClientTaskEngine(playerId);
+                TaskEngineEvent<TaskInfo> taskStateChanged = null;
+                taskStateChanged = taskInfo =>
+                {
+                    if (taskInfo.State == TaskState.Completed)
+                    {
+                        if(taskInfo.TaskId == searchForFoodTask.TaskId)
+                        {
+                            taskEngine.TaskStateChanged -= taskStateChanged;
+                            Assert.IsFalse(taskInfo.IsFailed);
+
+                            ITaskMemory memory = taskEngine.Memory;
+                            Coordinate coordinate = (Coordinate)memory.ReadOutput(searchForFoodTask.Parent.TaskId, searchForFoodTask.TaskId, 1);
+                            Assert.AreEqual(1, coordinate.MapPos.SqDistanceTo(coords[0].MapPos));
+
+                            EndTest();
+                        } 
+                    }
+                    else
+                    {
+                        Assert.AreEqual(TaskState.Active, taskInfo.State);
+                    }
+                };
+                taskEngine.TaskStateChanged += taskStateChanged;
+                taskEngine.SubmitTask(rootTask);
+            });
+
+            while (true)
+            {
+                yield return null;
+            }
+        }
+
+        [UnityTest]
         public IEnumerator FindPathClientSideTaskTest()
         {
             BeginTest(TestEnv1, 2, 0, () =>
@@ -125,7 +322,6 @@ namespace Battlehub.VoxelCombat.Tests
                     {
                         taskEngine.TaskStateChanged -= taskStateChanged;
 
-                      
                         Coordinate[] newCoords = map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
                         Assert.AreEqual(targetCoordinate, newCoords[0]);
 

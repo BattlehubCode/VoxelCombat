@@ -68,6 +68,19 @@ namespace Battlehub.VoxelCombat
 {
     public delegate void VoxelDataControllerEvent<T>(T data);
 
+    public enum CanDo
+    {
+        Yes = 0,
+        No = 1,
+        No_NotSupported = (1 << 1) | No,
+        No_CollapsedOrBlocked = (1 << 2) | No,
+        No_NeedMoreFood = (1 << 3) | No,
+        No_WrongLocation = (1 << 4) | No,
+        No_MinWeight = (1 << 5) | No,
+        No_MaxWeight = (1 << 6) | No,
+        No_SomethingWrong = (1 << 7) | No
+
+    }
 
     public interface IVoxelDataController
     {
@@ -145,11 +158,11 @@ namespace Battlehub.VoxelCombat
 
         bool Split(out Coordinate[] coordinates, Action<VoxelData, VoxelData, int, int> eatCallback, Action<VoxelData, int> collapseCallback = null, Action<VoxelData> dieCallback = null);
 
-        bool? CanSplit4();
+        CanDo CanSplit4();
 
         bool Split4(out Coordinate[] coordinates,  Action<VoxelData> expandCallback = null, Action<VoxelData> dieCallback = null);
 
-        bool? CanGrow();
+        CanDo CanGrow();
 
         bool Grow(Action<VoxelData, VoxelData, int, int> eatCallback, Action<VoxelData, int> collapseCallback = null);
 
@@ -997,29 +1010,29 @@ namespace Battlehub.VoxelCombat
             return true;
         }
 
-        public bool? CanSplit4()
+        public CanDo CanSplit4()
         {
             if (ControlledData.Type != (int)KnownVoxelTypes.Eater)
             {
-                return null;
+                return CanDo.No_NotSupported;
             }
             if (IsCollapsedOrBlocked)
             {
                 DebugLog("Can't split 4. not allowed");
-                return false;
+                return CanDo.No_CollapsedOrBlocked;
             }
 
             if(m_controlledData.Weight == m_abilities.MinWeight)
             {
                 DebugLog("Can't split 4. m_controlledData.Weight == m_abilities.MinWeight");
-                return false;
+                return CanDo.No_MinWeight;
             }
 
             MapCell cell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
             if(cell.First == null)
             {
                 Debug.LogError(string.Format("cell.VoxelData == null at {0}. Something wrong. IsAlive? {1} ", m_position, IsAlive));
-                return false;
+                return CanDo.No_SomethingWrong;
             }
 
             VoxelData penultimate = cell.First.GetPenultimate();
@@ -1028,27 +1041,26 @@ namespace Battlehub.VoxelCombat
                 if(penultimate.IsCollapsed)
                 {
                     DebugLog("Can't split 4. penultimate is collapsed");
-                    return false;
+                    return CanDo.No_WrongLocation;
                 }
 
                 if (!penultimate.IsBaseFor(m_controlledData.Type, m_controlledData.Weight - 1))
                 {
                     DebugLog("Can't split 4. penultimate is not base for controlled data");
-                    return false;
+                    return CanDo.No_WrongLocation;
                 }
             }
 
-            return true;
+            return CanDo.Yes;
         }
 
         public bool Split4(out Coordinate[] coordinates, Action<VoxelData> expandCallback = null, Action<VoxelData> dieCallback = null)
         {
             coordinates = new Coordinate[4];
-            if (CanSplit4() != true)
+            if (CanSplit4() != CanDo.Yes)
             {
                 return false;
             }
-               
 
             MapCell parentCell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
             parentCell.RemoveVoxeData(m_controlledData);
@@ -1110,42 +1122,42 @@ namespace Battlehub.VoxelCombat
             return true;
         }
 
-        public bool? CanGrow()
+        public CanDo CanGrow()
         {
             if (ControlledData.Type != (int)KnownVoxelTypes.Eater)
             {
-                return null;
+                return CanDo.No_NotSupported;
             }
             if (m_controlledData.Health != m_abilities.MaxHealth)
             {
                 DebugLog("Can't grow. m_controlledVoxelData.Health != m_abilities.MaxHealth");
-                return false;
+                return CanDo.No_NeedMoreFood;
             }
 
             if (IsCollapsedOrBlocked)
             {
                 DebugLog("Can't grow. not allowed");
-                return false;
+                return CanDo.No_CollapsedOrBlocked;
             }
 
             if (m_controlledData.Weight == m_abilities.MaxWeight)
             {
                 DebugLog("Can't grow. m_controlledVoxelData.Weight == m_abilities.MaxWeight");
-                return false;
+                return CanDo.No_MaxWeight;
             }
 
             MapCell cell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
             if(cell.Parent == null)
             {
                 DebugLog("Can't grow. cell.Parent == null");
-                return false;
+                return CanDo.No_WrongLocation;
             }
 
             cell = cell.Parent;
             if ((m_controlledData.Altitude - cell.GetTotalHeight())  > m_abilities.EvaluateHeight(m_controlledData.Weight + 1))
             {
                 DebugLog("Can't grow. Too high");
-                return false;
+                return CanDo.No_WrongLocation;
             }
 
             VoxelData target;
@@ -1153,7 +1165,7 @@ namespace Battlehub.VoxelCombat
             if(voxelData == null)
             {
                 DebugLog("Can't grow. Unable to find non-destoryable VoxelData");
-                return false;
+                return CanDo.No_WrongLocation;
             }
 
             //if (cell.HasDescendantsWithVoxelData(descendantVoxelData => descendantVoxelData != m_controlledData && descendantVoxelData.Weight >= m_controlledData.Weight + 1))
@@ -1162,12 +1174,12 @@ namespace Battlehub.VoxelCombat
             //    return false;
             //}
 
-            return true;
+            return CanDo.Yes;
         }
 
         public bool Grow(Action<VoxelData, VoxelData, int, int> eatOrDestroyCallback = null, Action<VoxelData, int> collapseCallback = null)
         {
-            if(CanGrow() != true)
+            if(CanGrow() != CanDo.Yes)
             {
                 return false;
             }

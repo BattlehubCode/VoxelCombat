@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -18,6 +19,7 @@ namespace Battlehub.VoxelCombat
                 throw new InvalidOperationException("expression.IsEvaluating == true");
             }
 
+            expression.IsEvaluating = true;
             OnEvaluating(expression, taskEngine, result =>
             {
                 expression.IsEvaluating = false;
@@ -40,7 +42,7 @@ namespace Battlehub.VoxelCombat
             else if(expression.Value is TaskInputInfo)
             {
                 TaskInputInfo input = (TaskInputInfo)expression.Value;
-                object value = taskEngine.Memory.ReadOutput(input.Scope.TaskId, input.ConnectedTask.TaskId, input.OuputIndex);
+                object value = taskEngine.Memory.ReadOutput(input.Scope.TaskId, input.OutputTask.TaskId, input.OuputIndex);
                 callback(value);
             }
             else
@@ -67,8 +69,10 @@ namespace Battlehub.VoxelCombat
             }
 
             IExpression valueExpression = taskEngine.GetExpression(valueInfo.Code);
+            expression.IsEvaluating = true;
             valueExpression.Evaluate(valueInfo, taskEngine, value =>
             {
+                expression.IsEvaluating = false;
                 int outputIndex = (int)outputInfo.Value;
                 taskEngine.Memory.WriteOutput(taskInfo.Parent.TaskId, taskInfo.TaskId, outputIndex, value);
                 callback(null);
@@ -76,6 +80,67 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+    public class GetExpression : BinaryExpression
+    {
+        protected override void OnEvaluating(object lvalue, object rvalue, Action<object> callback)
+        {
+            object obj = lvalue;
+            string propertyName = (string)rvalue;
+            PropertyInfo property = obj.GetType().GetProperty(propertyName);
+            object propertyValue = property.GetValue(obj, null);
+            callback(propertyValue);
+        }
+    }
+
+    public struct IterationResult
+    {
+        public object Object
+        {
+            get;
+            private set;
+        }
+
+        public bool IsLast
+        {
+            get;
+            private set;
+        }
+
+        public IterationResult(object obj, bool isLast)
+        {
+            Object = obj;
+            IsLast = isLast;
+        }
+    }
+
+    public class IterateExpression : IExpression
+    {
+        public void Evaluate(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
+        {
+            IEnumerator enumerator;
+            if (expression.Value is TaskInputInfo)
+            {
+                TaskInputInfo input = (TaskInputInfo)expression.Value;
+                enumerator = (IEnumerator)taskEngine.Memory.ReadOutput(input.Scope.TaskId, input.OutputTask.TaskId, input.OuputIndex);
+            }
+            else
+            {
+                enumerator = (IEnumerator)expression.Value;
+            }
+
+            IterationResult result;
+            if(enumerator.MoveNext())
+            {
+                result = new IterationResult(enumerator.Current, false);
+            }
+            else
+            {
+                enumerator.Reset();
+                result = new IterationResult(null, true);
+            }
+            callback(result);
+        }
+    }
 
     public class TaskStateExpression : IExpression
     {
@@ -91,8 +156,10 @@ namespace Battlehub.VoxelCombat
         public void Evaluate(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
         {
             ExpressionInfo child = expression.Children[0];
+            expression.IsEvaluating = true;
             taskEngine.GetExpression(child.Code).Evaluate(child, taskEngine, value =>
             {
+                expression.IsEvaluating = false;
                 callback(!((bool)value));
             });
        }
@@ -104,7 +171,6 @@ namespace Battlehub.VoxelCombat
         {
             ExpressionInfo left = expression.Children[0];
             ExpressionInfo right = expression.Children[1];
-
             taskEngine.GetExpression(left.Code).Evaluate(left, taskEngine, lvalue =>
             {
                 taskEngine.GetExpression(right.Code).Evaluate(right, taskEngine, rvalue =>
@@ -283,6 +349,33 @@ namespace Battlehub.VoxelCombat
         {
             VoxelDataState state = unit.DataController.GetVoxelDataState();
             callback(state);   
+        }
+    }
+
+    public class UnitCanGrowExpression : UnitExpression
+    {
+        protected override void OnEvaluating(IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
+        {
+            CanDo can = unit.DataController.CanGrow();
+            callback(can);
+        }
+    }
+
+    public class UnitCanSplit4Expression : UnitExpression
+    {
+        protected override void OnEvaluating(IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
+        {
+            CanDo can = unit.DataController.CanSplit4();
+            callback(can);
+        }
+    }
+
+    public class TaskSuccededExpression : IExpression
+    {
+        public void Evaluate(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
+        {
+            TaskInfo taskInfo = (TaskInfo)expression.Value;
+            callback(!taskInfo.IsFailed);
         }
     }
 }

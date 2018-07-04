@@ -370,7 +370,7 @@ namespace Battlehub.VoxelCombat.Tests
             };
             task.SetParents();
 
-            input.ConnectedTask = setToZeroTask;
+            input.OutputTask = setToZeroTask;
             input.SetScope();
 
             bool isIncremented = false;
@@ -447,7 +447,7 @@ namespace Battlehub.VoxelCombat.Tests
             };
             task.SetParents();
 
-            input.ConnectedTask = setToZeroTask;
+            input.OutputTask = setToZeroTask;
             input.SetScope();
 
             bool isIncremented = false;
@@ -562,19 +562,153 @@ namespace Battlehub.VoxelCombat.Tests
         }
 
         [Test]
-        public void ForeachTaskTest()
+        public void IterateTest()
         {
+            Assert.DoesNotThrow(() =>
+            {
+                BeginTest(TestEnv0, 4);
+            });
+
+            List<int> integers = new List<int>()
+            {
+                1, 2, 3, 4, 5
+            };
+            TaskInfo iterateTask = new TaskInfo
+            {
+                TaskType = TaskType.EvalExpression,
+                Expression = ExpressionInfo.Iterate(integers),
+                OutputsCount = 1,
+            };
+
+            TaskInfo sequence = new TaskInfo
+            {
+                TaskType = TaskType.Sequence,
+                Children = new[]
+                {
+                    iterateTask,
+                }
+            };
+
+            sequence.SetParents();
+
+            const int playerId = 1;
+            bool isIterated = false;
+            BeginCleanupCheck(playerId);
+            FinializeTest(playerId, sequence, result =>
+            {
+                Assert.IsTrue(isIterated);
+
+                Assert.AreEqual(TaskState.Completed, result.State);
+                Assert.IsFalse(result.IsFailed);
+                CleanupCheck(playerId);
+      
+                Assert.Pass();
+            },
+            childTask =>
+            {
+                ITaskMemory memory = m_engine.GetTaskEngine(playerId).Memory;
+                IterationResult iterResult = (IterationResult)memory.ReadOutput(iterateTask.Parent.TaskId, iterateTask.TaskId, 0);
+                Assert.IsFalse(iterResult.IsLast);
+                Assert.AreEqual(1, (int)iterResult.Object);
+                isIterated = true;
+            });
         }
 
         [Test]
-        public void ForeachBreakTaskTest()
+        public void IterateRepeatTest()
         {
+            Assert.DoesNotThrow(() =>
+            {
+                BeginTest(TestEnv0, 4);
+            });
+
+            List<int> integers = new List<int>()
+            {
+                1, 2, 3, 4, 5
+            };
+            TaskInfo iterateTask = new TaskInfo
+            {
+                TaskType = TaskType.EvalExpression,
+                Expression = ExpressionInfo.Iterate(integers),
+                OutputsCount = 1,
+            };
+
+            TaskInputInfo input = new TaskInputInfo
+            {
+                OuputIndex = 0,
+                OutputTask = iterateTask,
+            };
+
+            ExpressionInfo isTrue = ExpressionInfo.Eq(
+                ExpressionInfo.Val(true),
+                ExpressionInfo.Get(
+                    ExpressionInfo.Val(input),
+                    ExpressionInfo.PrimitiveVar("IsLast")));
+
+            TaskInfo breakIfCompleted = new TaskInfo
+            {
+                TaskType = TaskType.Branch,
+                Expression = isTrue,
+                Children = new[]
+                {
+                    new TaskInfo
+                    {
+                        TaskType = TaskType.Break,
+                    },
+                    null
+                }
+            };
+
+            TaskInfo repeat = new TaskInfo
+            {
+                TaskType = TaskType.Repeat,
+                Expression = ExpressionInfo.PrimitiveVar(true),
+                Children = new[]
+                {
+                    iterateTask,
+                    breakIfCompleted,
+                }
+            };
+
+            repeat.SetParents();
+            input.SetScope();
+
+            const int playerId = 1;
+            bool isIterated = false;
+            int counter = 0;
+            BeginCleanupCheck(playerId);
+            
+            FinializeTest(playerId, repeat, result =>
+            {
+                Assert.IsTrue(isIterated);
+
+                Assert.AreEqual(TaskState.Completed, result.State);
+                Assert.IsFalse(result.IsFailed);
+                CleanupCheck(playerId);
+
+                Assert.Pass();
+            },
+            childTask =>
+            {
+                if(childTask.TaskId == iterateTask.TaskId)
+                {
+                    counter++;
+                    ITaskMemory memory = m_engine.GetTaskEngine(playerId).Memory;
+                    IterationResult iterResult = (IterationResult)memory.ReadOutput(iterateTask.Parent.TaskId, iterateTask.TaskId, 0);
+                    if (iterResult.IsLast)
+                    {
+                        isIterated = true;
+                        Assert.IsNull(iterResult.Object);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(counter, (int)iterResult.Object);
+                    }
+                }
+            });
         }
 
-        [Test]
-        public void ForeachContinueTaskTest()
-        {
-        }
+     
 
         [Test]
         public void SimpleMoveWithoutExpression()

@@ -369,11 +369,11 @@ namespace Battlehub.VoxelCombat
                         }    
                     }
 
-                    bool? canGrow = dc.CanGrow();
-                    if (canGrow.HasValue)
+                    CanDo canGrow = dc.CanGrow();
+                    if (canGrow != CanDo.No_NotSupported)
                     {
                         m_growButton.gameObject.SetActive(true);
-                        if(canGrow.Value)
+                        if(canGrow == CanDo.Yes)
                         {
                             hcbGrow.IsDisabled = false;
                         }
@@ -399,11 +399,11 @@ namespace Battlehub.VoxelCombat
                         }
                     }
 
-                    bool? canSplit4 = dc.CanSplit4();
-                    if (canSplit4.HasValue)
+                    CanDo canSplit4 = dc.CanSplit4();
+                    if (canSplit4 != CanDo.No_NotSupported)
                     {
                         m_split4Button.gameObject.SetActive(true);
-                        if(canSplit4.Value)
+                        if(canSplit4 == CanDo.Yes)
                         {
                             hcbSplit4.IsDisabled = false;
                         }

@@ -124,6 +124,17 @@ namespace Battlehub.VoxelCombat
            
         }
 
+        protected virtual void ReturnParent()
+        {
+            if(Parent != null)
+            {
+                Parent.TaskInfo.State = TaskInfo.State;
+                Parent.TaskInfo.StatusCode = TaskInfo.StatusCode;
+                Parent.ReturnParent();
+            }
+        }
+
+
         protected virtual void OnTick() { }
 
         protected void RaiseChildTaskActivated(TaskInfo taskInfo)
@@ -141,17 +152,25 @@ namespace Battlehub.VoxelCombat
 
         protected T ReadInput<T>(TaskInputInfo i)
         {
-           return (T)m_taskEngine.Memory.ReadOutput(i.Scope.TaskId, i.ConnectedTask.TaskId, i.OuputIndex);
+           return (T)m_taskEngine.Memory.ReadOutput(i.Scope.TaskId, i.OutputTask.TaskId, i.OuputIndex);
         }
 
         protected T ReadInput<T>(TaskInputInfo i, T defaultValue)
         {
-            object value = m_taskEngine.Memory.ReadOutput(i.Scope.TaskId, i.ConnectedTask.TaskId, i.OuputIndex);
+            object value = m_taskEngine.Memory.ReadOutput(i.Scope.TaskId, i.OutputTask.TaskId, i.OuputIndex);
             if(value == null)
             {
                 return defaultValue;
             }
             return (T)value;
+        }
+    }
+
+    public class NopTask : TaskBase
+    {
+        protected override void OnTick()
+        {
+            m_taskInfo.State = TaskState.Completed;
         }
     }
 
@@ -468,6 +487,29 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+    public class ReturnTask : TaskBase
+    {
+        protected override void OnConstruct()
+        {
+            base.OnConstruct();
+
+            if(m_expression != null)
+            {
+                m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, taskStatus =>
+                {
+                    m_taskInfo.State = TaskState.Completed;
+                    m_taskInfo.StatusCode = (int)taskStatus;
+                    ReturnParent();
+                });
+            }
+            else
+            {
+                m_taskInfo.State = TaskState.Completed;
+                ReturnParent();
+            }
+        }
+    }
+
     public class ExecuteCmdTaskWithExpression : TaskBase
     {
         private bool m_running;
@@ -729,8 +771,6 @@ namespace Battlehub.VoxelCombat
         {
             SearchAroundContext ctx = ReadInput<SearchAroundContext>(m_taskInfo.Inputs[0]);
             long unitIndex = ReadInput<long>(m_taskInfo.Inputs[1]);
-
-            Coordinate[] waypoints = ReadInput<Coordinate[]>(m_taskInfo.Inputs[1]);
 
             m_unit = m_taskEngine.MatchEngine.GetPlayerView(m_taskInfo.PlayerIndex).GetUnit(unitIndex);
             if (m_unit == null)
