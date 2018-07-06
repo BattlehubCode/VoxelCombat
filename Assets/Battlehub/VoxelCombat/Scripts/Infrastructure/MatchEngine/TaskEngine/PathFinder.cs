@@ -607,7 +607,8 @@ namespace Battlehub.VoxelCombat
                 if(targetData != null)
                 {
                     next.Altitude = targetData.Altitude;
-                    if (VoxelDataController.CanMove(task.ControlledData, task.Abilities, task.Map, task.MapSize, from, next, false, false, false, out targetCell))
+                    CmdResultCode canMove = VoxelDataController.CanMove(task.ControlledData, task.Abilities, task.Map, task.MapSize, from, next, false, false, false, out targetCell);
+                    if (canMove == CmdResultCode.Success)
                     {
                         resultData = targetData;
                         result = next;
@@ -624,7 +625,8 @@ namespace Battlehub.VoxelCombat
                 next = task.Waypoints[task.Waypoints.Length - 1];
 
                 //last step is param false -> force CanMove to check next coordinate as is
-                if (VoxelDataController.CanMove(task.ControlledData, task.Abilities, task.Map, task.MapSize, from, next, false, false, false, out targetCell))
+                CmdResultCode canMove = VoxelDataController.CanMove(task.ControlledData, task.Abilities, task.Map, task.MapSize, from, next, false, false, false, out targetCell);
+                if (canMove == CmdResultCode.Success)
                 {
                     result = next;
                     return true;
@@ -653,7 +655,8 @@ namespace Battlehub.VoxelCombat
             next.Altitude = beneath.Altitude + beneath.Height;
 
             //last step param is false -> force CanMove to check next coordinate as is
-            if (!VoxelDataController.CanMove(task.ControlledData, task.Abilities, task.Map, task.MapSize, from, next, false, false, false, out targetCell))
+            CmdResultCode canMoveResult = VoxelDataController.CanMove(task.ControlledData, task.Abilities, task.Map, task.MapSize, from, next, false, false, false, out targetCell);
+            if (canMoveResult != CmdResultCode.Success)
             {
                 result = from;
                 return false;

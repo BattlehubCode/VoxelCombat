@@ -62,7 +62,7 @@ namespace Battlehub.VoxelCombat
         private static readonly VoxelData[] m_emptyData = new VoxelData[0];
         private static readonly VoxelDataCellPair[] m_emptyPairs = new VoxelDataCellPair[0];
 
-        public event Action<int> CmdExecuted
+        public event Action<CmdResultCode> CmdExecuted
         {
             add { }
             remove { }
@@ -312,8 +312,9 @@ namespace Battlehub.VoxelCombat
             if (cmd.Code == CmdCode.Spawn)
             {
                 Coordinate[] coordinates;
-                bool noFail = m_dataController.PerformSpawnAction(out coordinates);
-                Debug.Assert(noFail);
+                CmdResultCode noFail = m_dataController.PerformSpawnAction(out coordinates);
+                if(noFail != CmdResultCode.Success)
+                    throw new InvalidOperationException();
 
                 for (int i = 0; i < coordinates.Length; ++i)
                 {
@@ -391,8 +392,9 @@ namespace Battlehub.VoxelCombat
                 explodeData = asset.VoxelData;
             }
 
-            bool noFail = m_dataController.Explode(to, explodeData, EatOrDestroyCallback, ExpandCallback, ExplodeCallback);
-            Debug.Assert(noFail);
+            CmdResultCode noFail = m_dataController.Explode(to, explodeData, EatOrDestroyCallback, ExpandCallback, ExplodeCallback);
+            if(noFail != CmdResultCode.Success)
+                throw new InvalidOperationException();
             VoxelData voxelData = m_dataController.ControlledData;
             MapPos mapPos = m_dataController.Coordinate.MapPos;
             int weight = m_dataController.Coordinate.Weight;
@@ -602,7 +604,7 @@ namespace Battlehub.VoxelCombat
 
         private void ExecuteCommand(Cmd cmd)
         {
-            if (cmd.ErrorCode != CmdErrorCode.Success)
+            if (cmd.ErrorCode != CmdResultCode.Success)
             {
                 Debug.LogErrorFormat("Cmd {0} failed with error {1}", cmd.Code, cmd.ErrorCode);
                 if (m_controlledVoxel != null)
@@ -683,8 +685,9 @@ namespace Battlehub.VoxelCombat
         protected virtual void OnStateChanged(Cmd cmd)
         {
             ChangeParamsCmd changeParamsCmd = (ChangeParamsCmd)cmd;
-            bool noFail = m_dataController.SetVoxelDataState((VoxelDataState)changeParamsCmd.IntParams[1]);
-            Debug.Assert(noFail);
+            CmdResultCode noFail = m_dataController.SetVoxelDataState((VoxelDataState)changeParamsCmd.IntParams[1]);
+            if(noFail != CmdResultCode.Success)
+                throw new InvalidOperationException();
         }
 
         protected virtual void OnMove(Cmd cmd)
@@ -693,8 +696,9 @@ namespace Battlehub.VoxelCombat
             Coordinate to = coordinateCmd.Coordinates[1];
 
             bool isLastCmd = coordinateCmd.IsLastCmdInSequence;
-            bool noFail = m_dataController.Move(to, isLastCmd,  EatOrDestroyCallback, CollapseCallback, ExpandCallback, ExplodeCallback);
-            Debug.Assert(noFail);
+            CmdResultCode noFail = m_dataController.Move(to, isLastCmd,  EatOrDestroyCallback, CollapseCallback, ExpandCallback, ExplodeCallback);
+            if(noFail != CmdResultCode.Success)
+                throw new InvalidOperationException();
            
             VoxelData voxelData = m_dataController.ControlledData;
             MapPos mapPos = m_dataController.Coordinate.MapPos;
@@ -747,8 +751,9 @@ namespace Battlehub.VoxelCombat
         protected virtual void OnSplit()
         {
             Coordinate[] coordinates;
-            bool noFail = m_dataController.Split(out coordinates, EatOrDestroyCallback, CollapseCallback, DieCallback);
-            Debug.Assert(noFail);
+            CmdResultCode noFail = m_dataController.Split(out coordinates, EatOrDestroyCallback, CollapseCallback, DieCallback);
+            if(noFail != CmdResultCode.Success)
+                throw new InvalidOperationException();
 
             int visibleCount = 0;
             for (int i = 0; i < coordinates.Length; ++i)
@@ -783,8 +788,9 @@ namespace Battlehub.VoxelCombat
         protected virtual void OnSplit4()
         {
             Coordinate[] coordinates;
-            bool noFail = m_dataController.Split4(out coordinates, ExpandCallback, DieCallback);
-            Debug.Assert(noFail);
+            CmdResultCode noFail = m_dataController.Split4(out coordinates, ExpandCallback, DieCallback);
+            if(noFail != CmdResultCode.Success)
+                throw new InvalidOperationException();
 
 
             int visibleCount = 0;
@@ -820,8 +826,9 @@ namespace Battlehub.VoxelCombat
         protected virtual void OnGrow()
         {
             int previousAltitude = m_dataController.ControlledData.Altitude;
-            bool noFail = m_dataController.Grow(EatOrDestroyCallback, CollapseCallback);
-            Debug.Assert(noFail);
+            CmdResultCode noFail = m_dataController.Grow(EatOrDestroyCallback, CollapseCallback);
+            if(noFail != CmdResultCode.Success)
+                throw new InvalidOperationException();
             if (m_controlledVoxel == null)
             {
                 CollapseEatExpandClear(m_currentTick);
@@ -843,8 +850,9 @@ namespace Battlehub.VoxelCombat
         protected virtual void OnDiminish()
         {
             int previousAltitude = m_dataController.ControlledData.Altitude;
-            bool noFail = m_dataController.Diminish(ExpandCallback);
-            Debug.Assert(noFail);
+            CmdResultCode noFail = m_dataController.Diminish(ExpandCallback);
+            if(noFail != CmdResultCode.Success)
+                throw new InvalidOperationException();
             if (m_controlledVoxel == null)
             {
                 CollapseEatExpandClear(m_currentTick);
@@ -885,8 +893,9 @@ namespace Battlehub.VoxelCombat
                 m_controlledVoxel.Kill();
             }
           
-            bool noFail = m_dataController.Convert(type, DieCallback);
-            Debug.Assert(noFail);
+            CmdResultCode noFail = m_dataController.Convert(type, DieCallback);
+            if(noFail != CmdResultCode.Success)
+                throw new InvalidOperationException();
 
             if (isVisible)
             {

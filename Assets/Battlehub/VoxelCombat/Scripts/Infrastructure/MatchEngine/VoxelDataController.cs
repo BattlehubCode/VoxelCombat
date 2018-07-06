@@ -68,18 +68,78 @@ namespace Battlehub.VoxelCombat
 {
     public delegate void VoxelDataControllerEvent<T>(T data);
 
-    public enum CanDo
+    public enum CmdResultCode
     {
-        Yes = 0,
-        No = 1,
-        No_NotSupported = (1 << 1) | No,
-        No_CollapsedOrBlocked = (1 << 2) | No,
-        No_NeedMoreFood = (1 << 3) | No,
-        No_WrongLocation = (1 << 4) | No,
-        No_MinWeight = (1 << 5) | No,
-        No_MaxWeight = (1 << 6) | No,
-        No_SomethingWrong = (1 << 7) | No
+        Success = 0,
+        Fail = 1,
+        HardFail = (1 << 1) | Fail,
 
+        /// <summary>
+        /// Something went wrong
+        /// </summary>
+        Fail_SomethingWentWrong = (1 << 2) | HardFail,
+
+        /*Hard Fail*/
+        /// <summary>
+        /// Operation is not supported by unit
+        /// </summary>
+        Fail_NotSupported = (1 << 3) | HardFail,
+
+        /// <summary>
+        /// Impossible in current state, operation repeat won't fix it
+        /// </summary>
+        Fail_InvalidOperation = (1 << 4) | HardFail,
+
+        /// <summary>
+        /// Wrong operation arguments
+        /// </summary>
+        Fail_InvalidArguments = (1 << 5) | HardFail,
+
+        /// <summary>
+        /// Wrong id, unit not found and possibly dead
+        /// </summary>
+        Fail_NoUnit = (1 << 6) | HardFail,
+
+        /// <summary>
+        /// Min weight reached
+        /// </summary>
+        Fail_MinWeight = (1 << 7) | Fail_InvalidOperation,
+
+        /// <summary>
+        /// Max weight reached
+        /// </summary>
+        Fail_MaxWeight = (1 << 8) | Fail_InvalidOperation,
+
+        /*Soft Fail*/
+        /// <summary>
+        /// Some obstacle on path
+        /// </summary>
+        Fail_UnableToMove = (1 << 9) | Fail,
+
+        /// <summary>
+        /// Can't move because collapsed or blocked
+        /// </summary>
+        Fail_CollapsedOrBlocked = (1 << 10) | Fail_UnableToMove, 
+
+        /// <summary>
+        /// Should move out
+        /// </summary>
+        Fail_InvalidLocation = (1 << 11) | Fail, //Should move out
+
+        /// <summary>
+        /// Should not move in
+        /// </summary>
+        Fail_InvalidTargetLocation = (1 << 12) | Fail,
+
+        /// <summary>
+        /// Insufficient resources to perform operation
+        /// </summary>
+        Fail_NeedMoreResources = (1 << 13) | Fail,
+
+        /// <summary>
+        /// Something was not found, path food, etc.
+        /// </summary>
+        Fail_NotFound = (1 << 15) | Fail,
     }
 
     public interface IVoxelDataController
@@ -129,23 +189,23 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-        bool SetVoxelDataState(VoxelDataState state);
+        CmdResultCode SetVoxelDataState(VoxelDataState state);
 
         VoxelDataState GetVoxelDataState();
 
         bool IsValidAndEmpty(Coordinate coord, bool considerIdleAsValid);
 
-        bool Move(Coordinate to, bool isLastStep,
+        CmdResultCode Move(Coordinate to, bool isLastStep,
             Action<VoxelData, VoxelData, int, int> eatCallback, 
             Action<VoxelData, int> collapseCallback = null,
             Action<VoxelData> expandCallback = null,
             Action<VoxelData, int> explodeCallback = null);
 
-       // MapCell GetCellFor(MapCell cell, VoxelData data, int weight);
+        // MapCell GetCellFor(MapCell cell, VoxelData data, int weight);
 
-        bool CanExplode(Coordinate to, VoxelData voxelData);
+        CmdResultCode CanExplode(Coordinate to, VoxelData voxelData);
 
-        bool Explode(Coordinate to, VoxelData explodeData,
+        CmdResultCode Explode(Coordinate to, VoxelData explodeData,
             Action<VoxelData, VoxelData, int, int> eatCallback,
             Action<VoxelData> expandCallback = null,
             Action<VoxelData, int> explodeCallback = null);
@@ -154,29 +214,39 @@ namespace Battlehub.VoxelCombat
 
         void RotateLeft();
 
-        bool? CanSplit();
+        CmdResultCode CanSplitImmediate();
 
-        bool Split(out Coordinate[] coordinates, Action<VoxelData, VoxelData, int, int> eatCallback, Action<VoxelData, int> collapseCallback = null, Action<VoxelData> dieCallback = null);
+        CmdResultCode CanSplit(int health, int type, Coordinate coordinate);
 
-        CanDo CanSplit4();
+        CmdResultCode Split(out Coordinate[] coordinates, Action<VoxelData, VoxelData, int, int> eatCallback, Action<VoxelData, int> collapseCallback = null, Action<VoxelData> dieCallback = null);
 
-        bool Split4(out Coordinate[] coordinates,  Action<VoxelData> expandCallback = null, Action<VoxelData> dieCallback = null);
+        CmdResultCode CanSplit4Immediate();
 
-        CanDo CanGrow();
+        CmdResultCode CanSplit4(int type, int health, Coordinate coordinate);
 
-        bool Grow(Action<VoxelData, VoxelData, int, int> eatCallback, Action<VoxelData, int> collapseCallback = null);
+        CmdResultCode Split4(out Coordinate[] coordinates,  Action<VoxelData> expandCallback = null, Action<VoxelData> dieCallback = null);
 
-        bool? CanDiminish();
+        CmdResultCode CanGrowImmediate();
 
-        bool Diminish(Action<VoxelData> expandCallback = null);
+        CmdResultCode CanGrow(int type, int health, Coordinate coordinate);
 
-        bool? CanConvert(int type);
+        CmdResultCode Grow(Action<VoxelData, VoxelData, int, int> eatCallback, Action<VoxelData, int> collapseCallback = null);
 
-        bool Convert(int type, Action<VoxelData> dieCallback = null);
+        CmdResultCode CanDiminishImmediate();
 
-        bool? CanPerformSpawnAction();
+        CmdResultCode CanDiminish(int type, int health, Coordinate coordinate);
 
-        bool PerformSpawnAction(out Coordinate[] coordinates);
+        CmdResultCode Diminish(Action<VoxelData> expandCallback = null);
+
+        CmdResultCode CanConvertImmediate(int targetType);
+
+        CmdResultCode CanConvert(int targetType, int type, int health, Coordinate coordinate);
+
+        CmdResultCode Convert(int type, Action<VoxelData> dieCallback = null);
+
+        CmdResultCode CanPerformSpawnAction();
+
+        CmdResultCode PerformSpawnAction(out Coordinate[] coordinates);
 
         void SetHealth(int health, Action<VoxelData> dieCallback = null);
 
@@ -320,10 +390,10 @@ namespace Battlehub.VoxelCombat
             return true;
         }
 
-        public bool SetVoxelDataState(VoxelDataState state)
+        public CmdResultCode SetVoxelDataState(VoxelDataState state)
         {
             ControlledData.Unit.State = state;
-            return true;
+            return CmdResultCode.Success;
         }
 
         public VoxelDataState GetVoxelDataState()
@@ -332,26 +402,26 @@ namespace Battlehub.VoxelCombat
         }
 
 
-        public static bool CanMove(VoxelData controlledData, VoxelAbilities abilities, MapRoot map, float mapSize, Coordinate from, Coordinate to, bool isLastStep, bool willDie, bool verbose, out MapCell targetCell)
+        public static CmdResultCode CanMove(VoxelData controlledData, VoxelAbilities abilities, MapRoot map, float mapSize, Coordinate from, Coordinate to, bool isLastStep, bool willDie, bool verbose, out MapCell targetCell)
         {
             targetCell = null;
            
             if (!abilities.CanMove)
             {
                 DebugLog("!m_abilities.CanMove", verbose);
-                return false;
+                return CmdResultCode.Fail_NotSupported;
             }
 
             if (from.Weight != to.Weight)
             {
                 DebugLog("from.Weight != to.Weight", verbose);
-                return false;
+                return CmdResultCode.Fail_InvalidArguments;
             }
 
             if (to.Row < 0 || to.Row >= mapSize || to.Col < 0 || to.Col >= mapSize)
             {
                 DebugLog("Out of map bounds -> " + to.ToString(), verbose);
-                return false;
+                return CmdResultCode.Fail_InvalidArguments;
             }
 
             int deltaRow = to.Row - from.Row;
@@ -359,7 +429,7 @@ namespace Battlehub.VoxelCombat
             if (deltaRow != 0 && deltaCol != 0)
             {
                 DebugLog("Can't move in diagonal direction", verbose);
-                return false;
+                return CmdResultCode.Fail_InvalidArguments;
             }
 
             if(deltaRow > abilities.MaxMoveDistance || deltaCol > abilities.MaxMoveDistance)
@@ -368,7 +438,7 @@ namespace Battlehub.VoxelCombat
                 UnityEngine.Debug.LogError("Can't move max move distance reached");
 #endif
                 //DebugLog("Can't move max move distance reached", verbose)
-                return false;
+                return CmdResultCode.Fail_NotSupported;
             }
 
             
@@ -386,13 +456,13 @@ namespace Battlehub.VoxelCombat
             if (deltaAlt > allowedJumpHeight)
             {
                 DebugLog("deltaHeight > allowedJumpHeight", verbose);
-                return false;
+                return CmdResultCode.Fail_UnableToMove;
             }
 
             if (deltaAlt < allowedFallHeight)
             {
                 DebugLog("deltaHeight > allowedJumpHeight", verbose);
-                return false;
+                return CmdResultCode.Fail_UnableToMove;
             }
 
             newCoord.Altitude += deltaAlt;
@@ -408,12 +478,12 @@ namespace Battlehub.VoxelCombat
             {
                 if(!IsValidAndEmpty(controlledData, map, to, false))
                 {
-                    return false;
+                    return CmdResultCode.Fail_InvalidLocation;
                 }
             }
 
             targetCell = cell;
-            return true;
+            return CmdResultCode.Success;
         }
 
 
@@ -518,7 +588,7 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
-        public bool Move(Coordinate to, bool isLastStep,
+        public CmdResultCode Move(Coordinate to, bool isLastStep,
             Action<VoxelData, VoxelData, int, int> eatCallback = null,
             Action<VoxelData, int> collapseCallback = null,
             Action<VoxelData> expandCallback = null,
@@ -529,13 +599,13 @@ namespace Battlehub.VoxelCombat
             if (IsCollapsedOrBlocked)
             {
                 DebugLog("Movement is not allowed. height " + m_controlledData.Height + " next " + m_controlledData.Next + " unit index " + m_controlledData.UnitOrAssetIndex);
-                return false;
+                return CmdResultCode.Fail_CollapsedOrBlocked;
             }
 
             if(to.Weight != m_controlledData.Weight)
             {
                 DebugLog("to.Weight != m_controlledVoxelData.Weight");
-                return false;
+                return CmdResultCode.Fail_InvalidArguments;
             }
 
             int type = m_controlledData.Type;
@@ -543,19 +613,24 @@ namespace Battlehub.VoxelCombat
 
             MapCell toCell = m_map.Get(to.Row, to.Col, to.Weight);
 
-            bool canMove = false;
+            CmdResultCode result = CmdResultCode.Fail_UnableToMove;
             if(isLastStep)
             {
-                canMove = CanMove(m_controlledData, m_abilities, m_map, m_mapSize, from, to, isLastStep, false, true, out cell);
+                result = CanMove(m_controlledData, m_abilities, m_map, m_mapSize, from, to, isLastStep, false, true, out cell);
+            }
+
+            if((result & CmdResultCode.HardFail) != 0)
+            {
+                return result;
             }
             
-            if(!canMove)
+            if(result != CmdResultCode.Success)
             {
                 VoxelData target;
                 VoxelData beneath = toCell.GetDefaultTargetFor(type, weight, m_playerIndex, false, out target);
                 if(beneath == null)
                 {
-                    return false;
+                    return CmdResultCode.Fail_InvalidTargetLocation;
                 }
 
                 if(target != null && 
@@ -563,15 +638,15 @@ namespace Battlehub.VoxelCombat
                 {
                     if (!target.IsAttackableBy(m_controlledData) && !target.IsCollapsableBy(m_controlledData.Type, m_controlledData.Weight))
                     {
-                        return false;
+                        return CmdResultCode.Fail_InvalidTargetLocation;
                     }
                 }
                 
                 to.Altitude = beneath.Altitude + beneath.Height;
-                canMove = CanMove(m_controlledData, m_abilities, m_map, m_mapSize, from, to, isLastStep, false, true, out cell);
+                result = CanMove(m_controlledData, m_abilities, m_map, m_mapSize, from, to, isLastStep, false, true, out cell);
             }
 
-            if (canMove)
+            if (result == CmdResultCode.Success)
             {
                 MapCell fromCell = m_map.Get(from.Row, from.Col, from.Weight);
                 fromCell.RemoveVoxeData(m_controlledData);
@@ -585,7 +660,6 @@ namespace Battlehub.VoxelCombat
                     ExpandCell(0, fromCell, expandCallback);
                 }
                 
-
                 bool willExplode = WillExplode(toCell, m_controlledData);
                 if(willExplode)
                 {
@@ -631,10 +705,10 @@ namespace Battlehub.VoxelCombat
                 m_controlledData.Altitude = to.Altitude;
                 m_position = to.MapPos;
 
-                return true;
+                return CmdResultCode.Success;
             }
 
-            return false;
+            return result;
         }
 
         public MapCell GetCellFor(MapCell cell, VoxelData data, int weight)
@@ -655,25 +729,25 @@ namespace Battlehub.VoxelCombat
             
         }
 
-        public bool CanExplode(Coordinate to, VoxelData explodeData)
+        public CmdResultCode CanExplode(Coordinate to, VoxelData explodeData)
         {
             const bool verbose = true;
             if(explodeData == null)
             {
                 DebugLog("Can't explode. explodeData is null", verbose);
-                return false;
+                return CmdResultCode.Fail_InvalidArguments;
             }
 
             if (explodeData.Health == 0)
             {
                 DebugLog("Can't explode. explodeData.Health == 0", verbose);
-                return false;
+                return CmdResultCode.Fail_InvalidTargetLocation;
             }
 
             if (!explodeData.IsExplodableBy(m_controlledData.Type, m_controlledData.Weight))
             {
                 DebugLog("Can't explode. explodeData is not explodable", verbose);
-                return false;
+                return CmdResultCode.Fail_InvalidTargetLocation;
             }
             MapCell cell = m_map.Get(to.Row, to.Col, to.Weight);
 
@@ -682,19 +756,19 @@ namespace Battlehub.VoxelCombat
             if (cell == null)
             {
                 DebugLog("Can't explode. cell == null", verbose);
-                return false;
+                return CmdResultCode.Fail_InvalidTargetLocation;
             }
 
             if (!cell.HasVoxelData(explodeData))
             {
                 DebugLog("Can't explode. !cell.Has(explodeData)", verbose);
-                return false;
+                return CmdResultCode.Fail_InvalidTargetLocation;
             }
 
-            return true;
+            return CmdResultCode.Success;
         }
 
-        public bool Explode(Coordinate to, VoxelData explodeData,
+        public CmdResultCode Explode(Coordinate to, VoxelData explodeData,
             Action<VoxelData, VoxelData, int, int> eatCallback = null,
             Action<VoxelData> expandCallback = null,
             Action<VoxelData, int> explodeCallback = null)
@@ -704,21 +778,22 @@ namespace Battlehub.VoxelCombat
             if (IsCollapsedOrBlocked)
             {
                 DebugLog("Movement is not allowed. height " + m_controlledData.Height + " next " + m_controlledData.Next);
-                return false;
+                return CmdResultCode.Fail_CollapsedOrBlocked;
             }
 
             if (to.Weight != m_controlledData.Weight)
             {
                 DebugLog("to.Weight != m_controlledVoxelData.Weight");
-                return false;
+                return CmdResultCode.Fail_InvalidArguments;
             }
 
-            if(!CanExplode(to, explodeData))
+            CmdResultCode canExplodeResult = CanExplode(to, explodeData);
+            if (canExplodeResult != CmdResultCode.Success)
             {
-                return false;
+                return canExplodeResult;
             }
 
-            if(from == to)
+            if (from == to)
             {
                 MapCell toCell = m_map.Get(to.Row, to.Col, to.Weight);
                 toCell.RemoveVoxeData(m_controlledData);
@@ -728,7 +803,7 @@ namespace Battlehub.VoxelCombat
 
                 m_controlledData.Health = 0;
 
-                if(explodeData.Type == (int)KnownVoxelTypes.Ground)
+                if (explodeData.Type == (int)KnownVoxelTypes.Ground)
                 {
                     explodeData.Health--;
                     Debug.Assert(explodeData.Health >= 0);
@@ -737,9 +812,8 @@ namespace Battlehub.VoxelCombat
                 {
                     explodeData.Health = 0;
                 }
-                
 
-                if(explodeCallback != null)
+                if (explodeCallback != null)
                 {
                     explodeCallback(m_controlledData, health);
                     explodeCallback(explodeData, explodeDataHealth);
@@ -767,81 +841,74 @@ namespace Battlehub.VoxelCombat
                     }
                 }
 
-                return true;
+                return CmdResultCode.Success;
             }
-            else
+
+            to.Altitude = explodeData.Altitude;
+            bool willDie = true;
+            bool dontCare = false;
+            CmdResultCode canMoveResultCode = CanMove(m_controlledData, m_abilities, m_map, m_mapSize, from, to, dontCare, willDie, true, out cell);
+            if (canMoveResultCode == CmdResultCode.Success)
             {
-                to.Altitude = explodeData.Altitude;
-
-                bool willDie = true;
-                bool dontCare = false;
-                if (CanMove(m_controlledData, m_abilities, m_map, m_mapSize, from, to, dontCare, willDie, true, out cell))
+                MapCell fromCell = m_map.Get(from.Row, from.Col, from.Weight);
+                fromCell.RemoveVoxeData(m_controlledData);
+                if (CanExpandDescendants(fromCell))
                 {
-                    MapCell fromCell = m_map.Get(from.Row, from.Col, from.Weight);
-                    fromCell.RemoveVoxeData(m_controlledData);
-                    if (CanExpandDescendants(fromCell))
-                    {
-                        ExpandDescendants(0, fromCell, expandCallback);
-                    }
-                    else
-                    {
-                        ExpandCell(0, fromCell, expandCallback);
-                    }
-
-                    int health = m_controlledData.Health;
-                    int explodeDataHealth = explodeData.Health;
-
-                    m_controlledData.Health = 0;
-
-                    if (explodeData.Type == (int)KnownVoxelTypes.Ground)
-                    {
-                        explodeData.Health--;
-                        Debug.Assert(explodeData.Health >= 0);
-                    }
-                    else
-                    {
-                        explodeData.Health = 0;
-                    }
-
-                    if (explodeCallback != null)
-                    {
-                        explodeCallback(m_controlledData, health);
-                        explodeCallback(explodeData, explodeDataHealth);
-                    }
-
-                    if (!explodeData.IsAlive)
-                    {
-                        VoxelData next = explodeData.Next;
-                        while (next != null)
-                        {
-                            next.Altitude -= explodeData.Height;
-                            next = next.Next;
-                        }
-
-                        MapCell toCell = m_map.Get(to.Row, to.Col, to.Weight);
-                        toCell = GetCellFor(toCell, explodeData, to.Weight);
-                        toCell.RemoveVoxeData(explodeData);
-                        if (CanExpandDescendants(toCell))
-                        {
-                            ExpandDescendants(0, toCell, expandCallback);
-                        }
-                        else
-                        {
-                            ExpandCell(0, toCell, expandCallback);
-                        }
-
-                        EatDestroyCollapseDescendants(m_controlledData, toCell, eatCallback, (v, i) => { });
-                    }
-                    m_controlledData.Altitude = to.Altitude;
-                    m_position = to.MapPos;
-
-                    return true;
+                    ExpandDescendants(0, fromCell, expandCallback);
                 }
+                else
+                {
+                    ExpandCell(0, fromCell, expandCallback);
+                }
+
+                int health = m_controlledData.Health;
+                int explodeDataHealth = explodeData.Health;
+
+                m_controlledData.Health = 0;
+
+                if (explodeData.Type == (int)KnownVoxelTypes.Ground)
+                {
+                    explodeData.Health--;
+                    Debug.Assert(explodeData.Health >= 0);
+                }
+                else
+                {
+                    explodeData.Health = 0;
+                }
+
+                if (explodeCallback != null)
+                {
+                    explodeCallback(m_controlledData, health);
+                    explodeCallback(explodeData, explodeDataHealth);
+                }
+
+                if (!explodeData.IsAlive)
+                {
+                    VoxelData next = explodeData.Next;
+                    while (next != null)
+                    {
+                        next.Altitude -= explodeData.Height;
+                        next = next.Next;
+                    }
+
+                    MapCell toCell = m_map.Get(to.Row, to.Col, to.Weight);
+                    toCell = GetCellFor(toCell, explodeData, to.Weight);
+                    toCell.RemoveVoxeData(explodeData);
+                    if (CanExpandDescendants(toCell))
+                    {
+                        ExpandDescendants(0, toCell, expandCallback);
+                    }
+                    else
+                    {
+                        ExpandCell(0, toCell, expandCallback);
+                    }
+
+                    EatDestroyCollapseDescendants(m_controlledData, toCell, eatCallback, (v, i) => { });
+                }
+                m_controlledData.Altitude = to.Altitude;
+                m_position = to.MapPos;
             }
-
-         
-
-            return false;
+            return canMoveResultCode;
         }
 
 
@@ -855,50 +922,38 @@ namespace Battlehub.VoxelCombat
             m_controlledData.Dir = VoxelData.RotateLeft(m_controlledData.Dir);
         }
 
-        private bool CanSplit(Coordinate coordinate)
+        private CmdResultCode CanSplit(int type, Coordinate position, Coordinate coordinate)
         {
-            if (IsCollapsedOrBlocked)
-            {
-                DebugLog("Can't split. not allowed");
-                return false;
-            }
-            
-            if (m_controlledData.Health != m_abilities.MaxHealth)
-            {
-                DebugLog("Can't split. m_controlledVoxelData.Health != m_abilities.MaxHealth " + coordinate);
-                return false;
-            }
-            
-            if(m_controlledData.Weight != coordinate.Weight)
-            {
-                DebugLog("Can't split. m_coordinate.Weight != targetCoordinate.Weight " + coordinate);
-                return false;
-            }
-
-            float size = m_map.GetMapSizeWith(m_controlledData.Weight);
+            float size = m_map.GetMapSizeWith(position.Weight);
             if(coordinate.Row < 0 || coordinate.Col < 0 || coordinate.Row >= size || coordinate.Col >= size)
             {
-                return false;
+                return CmdResultCode.Fail_InvalidArguments;
             }
 
-            if(m_position.Row == coordinate.Row && m_position.Col == coordinate.Col)
+            if(position.Row == coordinate.Row && position.Col == coordinate.Col)
             {
-                DebugLog("Can't split. m_coordinate == coordinate " + coordinate); 
-                return false;
+                DebugLog("Can't split. position == coordinate " + coordinate);
+                return CmdResultCode.Fail_InvalidArguments;
             }
 
-            if(m_position.Row != coordinate.Row && m_position.Col != coordinate.Col)
+            if(position.Row != coordinate.Row && position.Col != coordinate.Col)
             {
                 DebugLog("Can't split.  m_coordinate.Row != coordinate.Row && m_coordinate.Col != coordinate.Col " + coordinate);
-                return false;
+                return CmdResultCode.Fail_InvalidArguments;
             }
 
-            if(Mathf.Abs(m_position.Row - coordinate.Row) > 1 || Mathf.Abs(m_position.Col - coordinate.Col) > 1)
+            if (Mathf.Abs(position.Row - coordinate.Row) > 1 || Mathf.Abs(position.Col - coordinate.Col) > 1)
             {
                 DebugLog("Can't split. target coordinate is too far away " + coordinate);
-                return false;
+                return CmdResultCode.Fail_InvalidArguments;
             }
-            
+
+            if (position.Weight != coordinate.Weight)
+            {
+                DebugLog("Can't split. m_coordinate.Weight != targetCoordinate.Weight " + coordinate);
+                return CmdResultCode.Fail_InvalidTargetLocation;
+            }
+
 
             MapCell cell = m_map.Get(coordinate.Row, coordinate.Col, coordinate.Weight);
             //if (cell.HasDescendantsWithVoxelData(descendantVoxelData => descendantVoxelData.Weight >= m_controlledData.Weight))
@@ -908,70 +963,94 @@ namespace Battlehub.VoxelCombat
             //}
 
             VoxelData target;
-            VoxelData voxelData = cell.GetDefaultTargetFor(m_controlledData.Type, m_controlledData.Weight, m_playerIndex, false, out target);
+            VoxelData voxelData = cell.GetDefaultTargetFor(type, position.Weight, m_playerIndex, false, out target);
             if(voxelData == null || target != null)
             {
-                return false;
+                return CmdResultCode.Fail_InvalidTargetLocation;
             }
 
-            if(voxelData.IsCollapsableBy(m_controlledData.Type, m_controlledData.Weight))
+            if(voxelData.IsCollapsableBy(type, position.Weight))
             {
                 DebugLog("Can't split. cells with collapsable blocks not allowed" + coordinate);
-                return false;
+                return CmdResultCode.Fail_InvalidTargetLocation;
             }
 
-            if(voxelData.Altitude + voxelData.Height != coordinate.Altitude)
+            if(position.Altitude + voxelData.Height != coordinate.Altitude)
             {
                 //DebugLog("Can't split. Wrong coordinate");
-                return false;
+                return CmdResultCode.Fail_InvalidTargetLocation;
             }
 
-            return true;
+            return CmdResultCode.Success;
         }
 
-        private bool FindSplitCoorinate(out Coordinate result)
+        private CmdResultCode FindSplitCoorinate(int type, Coordinate position, out Coordinate result)
         {
             result = new Coordinate();
+          
+
             for(int r = -1; r <= 1; ++r)
             {
                 for(int c = -1; c <= 1; ++c)
                 {
                     if(c == 0 || r == 0)
                     {
-                        Coordinate coordinate = new Coordinate(m_position, m_controlledData);
+                        Coordinate coordinate = position;// new Coordinate(m_position, m_controlledData);
                         coordinate.Row += r;
                         coordinate.Col += c;
 
-                        if(CanSplit(coordinate))
+                        CmdResultCode canSplit = CanSplit(type, position, coordinate);
+                        if (canSplit == CmdResultCode.Success)
                         {
                             result = coordinate;
-                            return true;
+                            return canSplit;
                         }
                     }
                 }
             }
 
-            return false;
+            return CmdResultCode.Fail_InvalidLocation;
         }
 
-        public bool? CanSplit()
+        public CmdResultCode CanSplitImmediate()
         {
-            if (ControlledData.Type != (int)KnownVoxelTypes.Eater)
+            if (IsCollapsedOrBlocked)
             {
-                return null;
+                DebugLog("Can't split. not allowed");
+                return CmdResultCode.Fail_CollapsedOrBlocked;
+            }
+            return CanSplit(m_controlledData.Type, m_controlledData.Health, new Coordinate(m_position, m_controlledData));
+        }
+
+        public CmdResultCode CanSplit(int type, int health, Coordinate position)
+        {
+            if (type != (int)KnownVoxelTypes.Eater)
+            {
+                return CmdResultCode.Fail_NotSupported;
+            }
+            if (health != m_abilities.MaxHealth)
+            {
+                DebugLog("Can't split. m_controlledVoxelData.Health != m_abilities.MaxHealth " + health);
+                return CmdResultCode.Fail_NeedMoreResources;
             }
             Coordinate coordinate;
-            return FindSplitCoorinate(out coordinate);
+            return FindSplitCoorinate(m_controlledData.Type, position, out coordinate);
         }
 
-        public bool Split(out Coordinate[] coordinates, Action<VoxelData, VoxelData, int, int> eatOrDestroyCallback = null, Action<VoxelData, int> collapseCallback = null, Action<VoxelData> dieCallback = null)
+        public CmdResultCode Split(out Coordinate[] coordinates, Action<VoxelData, VoxelData, int, int> eatOrDestroyCallback = null, Action<VoxelData, int> collapseCallback = null, Action<VoxelData> dieCallback = null)
         {
             coordinates = new Coordinate[2];
+            if (IsCollapsedOrBlocked)
+            {
+                return CmdResultCode.Fail_CollapsedOrBlocked;
+            }
+
             Coordinate coordinate;
-            if (!FindSplitCoorinate(out coordinate))
+            CmdResultCode findSplitCoordinateResult = FindSplitCoorinate(m_controlledData.Type, new Coordinate(m_position, m_controlledData), out coordinate);
+            if (findSplitCoordinateResult != CmdResultCode.Success)
             {
                 coordinates = new Coordinate[0];
-                return false;
+                return findSplitCoordinateResult;
             }
 
             coordinates[0] = Coordinate;
@@ -1007,59 +1086,66 @@ namespace Battlehub.VoxelCombat
             controlledDataCell.AppendVoxelData(cloneData);
             cell.AppendVoxelData(cloneData2);
 
-            return true;
+            return CmdResultCode.Success;
         }
 
-        public CanDo CanSplit4()
+        public CmdResultCode CanSplit4Immediate()
         {
-            if (ControlledData.Type != (int)KnownVoxelTypes.Eater)
-            {
-                return CanDo.No_NotSupported;
-            }
             if (IsCollapsedOrBlocked)
             {
                 DebugLog("Can't split 4. not allowed");
-                return CanDo.No_CollapsedOrBlocked;
+                return CmdResultCode.Fail_CollapsedOrBlocked;
             }
 
-            if(m_controlledData.Weight == m_abilities.MinWeight)
+            return CanSplit4(m_controlledData.Type, m_controlledData.Health, new Coordinate(m_position, m_controlledData));
+        }
+
+        public CmdResultCode CanSplit4(int type, int health, Coordinate position)
+        {
+            if (type != (int)KnownVoxelTypes.Eater)
+            {
+                return CmdResultCode.Fail_NotSupported;
+            }
+ 
+            if (position.Weight == m_abilities.MinWeight)
             {
                 DebugLog("Can't split 4. m_controlledData.Weight == m_abilities.MinWeight");
-                return CanDo.No_MinWeight;
+                return CmdResultCode.Fail_MinWeight;
             }
 
-            MapCell cell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
-            if(cell.First == null)
+            MapCell cell = m_map.Get(position.Row, position.Col, position.Weight);
+            if (cell.First == null)
             {
                 Debug.LogError(string.Format("cell.VoxelData == null at {0}. Something wrong. IsAlive? {1} ", m_position, IsAlive));
-                return CanDo.No_SomethingWrong;
+                return CmdResultCode.Fail_SomethingWentWrong;
             }
 
             VoxelData penultimate = cell.First.GetPenultimate();
-            if(penultimate != null )
+            if (penultimate != null)
             {
-                if(penultimate.IsCollapsed)
+                if (penultimate.IsCollapsed)
                 {
                     DebugLog("Can't split 4. penultimate is collapsed");
-                    return CanDo.No_WrongLocation;
+                    return CmdResultCode.Fail_InvalidLocation;
                 }
 
-                if (!penultimate.IsBaseFor(m_controlledData.Type, m_controlledData.Weight - 1))
+                if (!penultimate.IsBaseFor(type, position.Weight - 1))
                 {
                     DebugLog("Can't split 4. penultimate is not base for controlled data");
-                    return CanDo.No_WrongLocation;
+                    return CmdResultCode.Fail_InvalidLocation;
                 }
             }
 
-            return CanDo.Yes;
+            return CmdResultCode.Success;
         }
 
-        public bool Split4(out Coordinate[] coordinates, Action<VoxelData> expandCallback = null, Action<VoxelData> dieCallback = null)
+        public CmdResultCode Split4(out Coordinate[] coordinates, Action<VoxelData> expandCallback = null, Action<VoxelData> dieCallback = null)
         {
             coordinates = new Coordinate[4];
-            if (CanSplit4() != CanDo.Yes)
+            CmdResultCode canSplit4Result = CanSplit4Immediate();
+            if (canSplit4Result != CmdResultCode.Success)
             {
-                return false;
+                return canSplit4Result;
             }
 
             MapCell parentCell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
@@ -1119,53 +1205,57 @@ namespace Battlehub.VoxelCombat
                 coordinates[i] = new Coordinate(cellPosition, childData);
             }
 
-            return true;
+            return CmdResultCode.Success;
         }
 
-        public CanDo CanGrow()
+        public CmdResultCode CanGrowImmediate()
         {
-            if (ControlledData.Type != (int)KnownVoxelTypes.Eater)
-            {
-                return CanDo.No_NotSupported;
-            }
-            if (m_controlledData.Health != m_abilities.MaxHealth)
-            {
-                DebugLog("Can't grow. m_controlledVoxelData.Health != m_abilities.MaxHealth");
-                return CanDo.No_NeedMoreFood;
-            }
-
             if (IsCollapsedOrBlocked)
             {
                 DebugLog("Can't grow. not allowed");
-                return CanDo.No_CollapsedOrBlocked;
+                return CmdResultCode.Fail_CollapsedOrBlocked;
+            }
+            return CanGrow(m_controlledData.Type, m_controlledData.Health, new Coordinate(m_position, m_controlledData));
+        }
+
+        public CmdResultCode CanGrow(int type, int health, Coordinate position)
+        {
+            if (type != (int)KnownVoxelTypes.Eater)
+            {
+                return CmdResultCode.Fail_NotSupported;
+            }
+            if (health != m_abilities.MaxHealth)
+            {
+                DebugLog("Can't grow. m_controlledVoxelData.Health != m_abilities.MaxHealth");
+                return CmdResultCode.Fail_NeedMoreResources;
             }
 
-            if (m_controlledData.Weight == m_abilities.MaxWeight)
+            if (position.Weight == m_abilities.MaxWeight)
             {
                 DebugLog("Can't grow. m_controlledVoxelData.Weight == m_abilities.MaxWeight");
-                return CanDo.No_MaxWeight;
+                return CmdResultCode.Fail_MaxWeight;
             }
 
-            MapCell cell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
-            if(cell.Parent == null)
+            MapCell cell = m_map.Get(position.Row, position.Col, position.Weight);
+            if (cell.Parent == null)
             {
                 DebugLog("Can't grow. cell.Parent == null");
-                return CanDo.No_WrongLocation;
+                return CmdResultCode.Fail_InvalidLocation;
             }
 
             cell = cell.Parent;
-            if ((m_controlledData.Altitude - cell.GetTotalHeight())  > m_abilities.EvaluateHeight(m_controlledData.Weight + 1))
+            if ((position.Altitude - cell.GetTotalHeight()) > m_abilities.EvaluateHeight(position.Weight + 1))
             {
                 DebugLog("Can't grow. Too high");
-                return CanDo.No_WrongLocation;
+                return CmdResultCode.Fail_InvalidLocation;
             }
 
             VoxelData target;
-            VoxelData voxelData = cell.GetDefaultTargetFor(m_controlledData.Type, m_controlledData.Weight + 1, m_playerIndex, false, out target);
-            if(voxelData == null)
+            VoxelData voxelData = cell.GetDefaultTargetFor(type, position.Weight + 1, m_playerIndex, false, out target);
+            if (voxelData == null)
             {
                 DebugLog("Can't grow. Unable to find non-destoryable VoxelData");
-                return CanDo.No_WrongLocation;
+                return CmdResultCode.Fail_InvalidLocation;
             }
 
             //if (cell.HasDescendantsWithVoxelData(descendantVoxelData => descendantVoxelData != m_controlledData && descendantVoxelData.Weight >= m_controlledData.Weight + 1))
@@ -1174,14 +1264,15 @@ namespace Battlehub.VoxelCombat
             //    return false;
             //}
 
-            return CanDo.Yes;
+            return CmdResultCode.Success;
         }
 
-        public bool Grow(Action<VoxelData, VoxelData, int, int> eatOrDestroyCallback = null, Action<VoxelData, int> collapseCallback = null)
+        public CmdResultCode Grow(Action<VoxelData, VoxelData, int, int> eatOrDestroyCallback = null, Action<VoxelData, int> collapseCallback = null)
         {
-            if(CanGrow() != CanDo.Yes)
+            CmdResultCode result = CanGrowImmediate();
+            if(result != CmdResultCode.Success)
             {
-                return false;
+                return result;
             }
 
             MapCell cell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
@@ -1207,43 +1298,49 @@ namespace Battlehub.VoxelCombat
 
             m_mapSize = m_map.GetMapSizeWith(m_controlledData.Weight);
 
-            return true;
+            return result;
         }
 
-        public bool? CanDiminish()
+        public CmdResultCode CanDiminishImmediate()
         {
-            if (ControlledData.Type != (int)KnownVoxelTypes.Eater)
-            {
-                return null;
-            }
-
             if (IsCollapsedOrBlocked)
             {
                 DebugLog("Can't diminish. not allowed");
-                return false;
+                return CmdResultCode.Fail_CollapsedOrBlocked;
             }
 
-            if (m_controlledData.Weight == m_abilities.MinWeight)
-            {
-                DebugLog("Can't diminish. m_controlledVoxelData.Weight == m_abilities.MinWeight");
-                return false;
-            }
-
-            Coordinate coordinate = new Coordinate(m_position, m_controlledData);
-            coordinate.Weight--;
-            if (!IsValidLocationFor(Map, m_controlledData.Type, m_controlledData, coordinate))
-            {
-                return false;
-            }
-
-            return true;
+            return CanDiminish(m_controlledData.Type, m_controlledData.Health, new Coordinate(m_position, m_controlledData));
         }
 
-        public bool Diminish(Action<VoxelData> expandCallback = null)
+        public CmdResultCode CanDiminish(int type, int health, Coordinate position)
         {
-            if(CanDiminish() != true)
+            if (type != (int)KnownVoxelTypes.Eater)
             {
-                return false;
+                return CmdResultCode.Fail_NotSupported;
+            }
+
+            if (position.Weight == m_abilities.MinWeight)
+            {
+                DebugLog("Can't diminish. m_controlledVoxelData.Weight == m_abilities.MinWeight");
+                return CmdResultCode.Fail_MinWeight;
+            }
+
+            position.Weight--;
+            #warning USE OF m_controlledData
+            if (!IsValidLocationFor(Map, m_controlledData.Type, m_controlledData, position))
+            {
+                return CmdResultCode.Fail_InvalidLocation;
+            }
+
+            return CmdResultCode.Success;
+        }
+
+        public CmdResultCode Diminish(Action<VoxelData> expandCallback = null)
+        {
+            CmdResultCode result = CanDiminishImmediate();
+            if (result != CmdResultCode.Success)
+            {
+                return result;
             }
 
             MapCell parentCell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
@@ -1283,46 +1380,55 @@ namespace Battlehub.VoxelCombat
 
             m_mapSize = m_map.GetMapSizeWith(m_controlledData.Weight);
 
-            return true;
+            return result;
         }
 
 
-        public bool? CanConvert(int type)
+        public CmdResultCode CanConvertImmediate(int targetType)
         {
-            if(ControlledData.Type != (int)KnownVoxelTypes.Eater)
-            {
-                return null;
-            }
-
             if (IsCollapsedOrBlocked)
             {
                 DebugLog("Can't convert. not allowed");
-                return false;
+                return CmdResultCode.Fail_CollapsedOrBlocked;
+            }
+
+            if(targetType < 0)
+            {
+                return CmdResultCode.Success;
             }
 
             Coordinate coordinate = new Coordinate(m_position, m_controlledData);
+            return CanConvert(targetType, m_controlledData.Type, m_controlledData.Health, coordinate);
+        }
 
-            if(!IsValidLocationFor(Map, type, m_controlledData, coordinate))
+        public CmdResultCode CanConvert(int targetType, int type, int health, Coordinate position)
+        {
+            if (type != (int)KnownVoxelTypes.Eater)
             {
-                return false;
+                return CmdResultCode.Fail_NotSupported;
             }
 
-            MapCell cell = Map.Get(coordinate.Row, coordinate.Col, coordinate.Weight);
-            if (type == (int)KnownVoxelTypes.Spawner)
+            if (!IsValidLocationFor(Map, targetType, m_controlledData, position))
             {
-                if(cell.HasDescendantsWithVoxelData())
+                return CmdResultCode.Fail_InvalidLocation;
+            }
+
+            MapCell cell = Map.Get(position.Row, position.Col, position.Weight);
+            if (targetType == (int)KnownVoxelTypes.Spawner)
+            {
+                if (cell.HasDescendantsWithVoxelData())
                 {
-                    return false;
+                    return CmdResultCode.Fail_InvalidLocation;
                 }
             }
 
-            if (type == m_controlledData.Type)
+            if (targetType == type)
             {
                 DebugLog("Can't convert to the same type");
-                return false;
+                return CmdResultCode.Fail_InvalidArguments;
             }
 
-            return true;
+            return CmdResultCode.Success;
         }
 
         private bool IsValidLocationFor(MapRoot map, int type, VoxelData controlledVoxelData, Coordinate coordinate)
@@ -1377,11 +1483,12 @@ namespace Battlehub.VoxelCombat
             return true;
         }
 
-        public bool Convert(int type, Action<VoxelData> dieCallback = null)
+        public CmdResultCode Convert(int type, Action<VoxelData> dieCallback = null)
         {
-            if(CanConvert(type) != true)
+            CmdResultCode result = CanConvertImmediate(type);
+            if(result != CmdResultCode.Success)
             {
-                return false;
+                return result;
             }
 
             VoxelAbilities abilities = m_allAbilities[m_playerIndex][type];
@@ -1413,17 +1520,17 @@ namespace Battlehub.VoxelCombat
                 dieCallback(m_controlledData);
             }
 
-            return true;
+            return result;
         }
 
-        public bool? CanPerformSpawnAction()
+        public CmdResultCode CanPerformSpawnAction()
         {
             if(ControlledData.Type == (int)KnownVoxelTypes.Spawner)
             {
                 if (IsCollapsedOrBlocked) //spawn and eat units
                 {
                     DebugLog("Can't perform spawn action. not allowed");
-                    return false;
+                    return CmdResultCode.Fail_CollapsedOrBlocked;
                 }
 
                 MapCell cell = m_map.Get(m_position.Row, m_position.Col, m_controlledData.Weight);
@@ -1441,22 +1548,23 @@ namespace Battlehub.VoxelCombat
                             MapCell targetCell = childCell.Children[j];
                             if(targetCell.First == null)
                             {
-                                return true;
+                                return CmdResultCode.Success;
                             }
                         }
                     }
                 }
             }
 
-            return null;
+            return CmdResultCode.Fail_NotSupported;
         }
 
-        public bool PerformSpawnAction(out Coordinate[] coordinates)
+        public CmdResultCode PerformSpawnAction(out Coordinate[] coordinates)
         {
             coordinates = new Coordinate[0];
-            if (CanPerformSpawnAction() != true)
+            CmdResultCode result = CanPerformSpawnAction();
+            if (result != CmdResultCode.Success)
             {
-                return false;
+                return result;
             }
 
             if (ControlledData.Type == (int)KnownVoxelTypes.Spawner)
@@ -1504,7 +1612,7 @@ namespace Battlehub.VoxelCombat
                 Array.Resize(ref coordinates, index);
             }
 
-            return true;
+            return result;
         }
 
         public void SetHealth(int health, Action<VoxelData> dieCallback = null)

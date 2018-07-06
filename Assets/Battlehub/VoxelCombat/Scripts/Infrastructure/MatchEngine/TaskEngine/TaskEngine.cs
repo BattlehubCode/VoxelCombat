@@ -334,9 +334,13 @@ namespace Battlehub.VoxelCombat
                 { ExpressionCode.UnitExists, new UnitExistsExpression() },
                 { ExpressionCode.UnitState, new UnitStateExpression() },
                 { ExpressionCode.UnitCoordinate, new UnitCoordinateExpression() },
-                { ExpressionCode.UnitCanGrow, new UnitCanGrowExpression() },
+                { ExpressionCode.UnitCanGrow, new UnitCanGrowImmediateExpression() },
                 { ExpressionCode.UnitCanSplit4, new UnitCanSplit4Expression()},
+                { ExpressionCode.TaskStatusCode, new TaskStatusExpression() },
                 { ExpressionCode.TaskSucceded, new TaskSuccededExpression() },
+                { ExpressionCode.CmdSucceded, new CmdSuccededExpression() },
+                { ExpressionCode.CmdHardFailed, new CmdHardFailedExpression() },
+                { ExpressionCode.CmdResultCode, new CmdResultCodeExpression() },
             };
 
             const int taskPoolSize = 10;
@@ -351,6 +355,7 @@ namespace Battlehub.VoxelCombat
                 { TaskType.Nop, new TaskPool<NopTask>(taskPoolSize) },
                 { TaskType.EvalExpression, new TaskPool<EvaluateExpressionTask>(taskPoolSize) },
                 { TaskType.FindPath, new TaskPool<FindPathTask>(taskPoolSize) },
+                { TaskType.FindPathToRandomLocation, new TaskPool<FindPathToRandLocationPath>(taskPoolSize) },
                 { TaskType.SearchForFood, new TaskPool<SearchAroundForFood>(taskPoolSize) },
                 //For testing purposes
                 { TaskType.TEST_Mock, new TaskPool<MockTask>(taskPoolSize) },

@@ -7,6 +7,7 @@ namespace Battlehub.VoxelCombat
     public delegate void TaskEvent(TaskBase sender, TaskInfo taskInfo);
     public abstract class TaskBase
     {
+        protected static readonly Random m_random = new Random((int)(DateTime.Now.Ticks % short.MaxValue));
         public bool IsAcquired
         {
             get;
@@ -152,12 +153,12 @@ namespace Battlehub.VoxelCombat
 
         protected T ReadInput<T>(TaskInputInfo i)
         {
-           return (T)m_taskEngine.Memory.ReadOutput(i.Scope.TaskId, i.OutputTask.TaskId, i.OuputIndex);
+           return (T)m_taskEngine.Memory.ReadOutput(i.Scope.TaskId, i.OutputTask.TaskId, i.OutputIndex);
         }
 
         protected T ReadInput<T>(TaskInputInfo i, T defaultValue)
         {
-            object value = m_taskEngine.Memory.ReadOutput(i.Scope.TaskId, i.OutputTask.TaskId, i.OuputIndex);
+            object value = m_taskEngine.Memory.ReadOutput(i.Scope.TaskId, i.OutputTask.TaskId, i.OutputIndex);
             if(value == null)
             {
                 return defaultValue;
@@ -574,7 +575,6 @@ namespace Battlehub.VoxelCombat
             {
                 m_taskInfo.StatusCode = TaskInfo.TaskFailed;
                 m_taskInfo.State = TaskState.Completed;
-                
             }
 
             m_unit = playerView.GetUnit(m_taskInfo.Cmd.UnitIndex);
@@ -613,10 +613,10 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void OnCmdExecuted(int cmdErrorCode)
+        private void OnCmdExecuted(CmdResultCode cmdErrorCode)
         {
             m_unit.CmdExecuted -= OnCmdExecuted;
-            if (cmdErrorCode == CmdErrorCode.Success)
+            if (cmdErrorCode == CmdResultCode.Success)
             {
                 OnCompleted();
             }
@@ -666,8 +666,7 @@ namespace Battlehub.VoxelCombat
                 m_taskEngine.Memory.WriteOutput(m_taskInfo.Parent.TaskId, m_taskInfo.TaskId, 0, value);
                 m_taskInfo.State = TaskState.Completed;
             });
-        }
-            
+        }       
     }
 
     public class FindPathTask : TaskBase
@@ -735,6 +734,49 @@ namespace Battlehub.VoxelCombat
                     m_taskEngine.PathFinder.Terminate(m_unit.Id);
                 }
             }
+        }
+    }
+
+    public class FindPathToRandLocationPath : FindPathTask
+    {
+        private IMatchUnitAssetView m_unit;
+
+        protected override void OnInitialized()
+        {
+            if (m_taskInfo.OutputsCount != 1)
+            {
+                throw new ArgumentException("taskInfo.OutputsCount != 1", "taskInfo");
+            }
+
+            if (InputsCount < 2)
+            {
+                throw new ArgumentException("InputsCount < 2", "taskInfo");
+            }
+        }
+
+        protected override void OnConstruct()
+        {
+            long unitIndex = ReadInput<long>(m_taskInfo.Inputs[0]);
+            TaskInputInfo firstInput = m_taskInfo.Inputs[1];
+            int radius = ReadInput(firstInput, 10);
+
+            m_unit = m_taskEngine.MatchEngine.GetPlayerView(m_taskInfo.PlayerIndex).GetUnit(unitIndex);
+            if (m_unit == null)
+            {
+                m_taskInfo.StatusCode = TaskInfo.TaskFailed;
+                m_taskInfo.State = TaskState.Completed;
+                return;
+            }
+
+            Coordinate coordinate = m_unit.DataController.Coordinate;
+            int deltaCol = m_random.Next(1, radius + 1);
+            int deltaRow = m_random.Next(1, radius + 1);
+            coordinate.Col += deltaCol;
+            coordinate.Row += deltaRow;
+
+            m_taskEngine.Memory.WriteOutput(firstInput.Scope.TaskId, firstInput.OutputTask.TaskId, firstInput.OutputIndex, new[] { coordinate });
+
+            base.OnConstruct();
         }
     }
 
@@ -907,7 +949,7 @@ namespace Battlehub.VoxelCombat
             VoxelData eatable = cell.GetDescendantsWithVoxelData(data => IsEatable(data, destroyer));
             if (eatable != null)
             {
-                WriteOutput(1, new Coordinate(row, col, eatable.Altitude, ctx.m_weight));
+                WriteOutput(1, new[] { new Coordinate(row, col, eatable.Altitude, ctx.m_weight) });
                 return true;
             }
 
@@ -981,6 +1023,4 @@ namespace Battlehub.VoxelCombat
             }
         }
     }
-
-
 }

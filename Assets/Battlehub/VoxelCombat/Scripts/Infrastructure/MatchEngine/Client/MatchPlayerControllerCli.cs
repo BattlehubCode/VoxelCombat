@@ -42,10 +42,10 @@ namespace Battlehub.VoxelCombat
         private ulong m_targetSelection;
         private ulong m_selection;
 
-        public event Action<int> CmdExecuted;
+        public event Action<CmdResultCode> CmdExecuted;
         private void NeverUsed()
         {
-            CmdExecuted(-1);
+            CmdExecuted(CmdResultCode.Fail);
         }
 
         public VoxelData VoxelData

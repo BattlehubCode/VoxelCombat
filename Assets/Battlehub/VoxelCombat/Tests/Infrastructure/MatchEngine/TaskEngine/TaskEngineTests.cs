@@ -335,7 +335,7 @@ namespace Battlehub.VoxelCombat.Tests
 
             TaskInputInfo input = new TaskInputInfo
             {
-                OuputIndex = 0
+                OutputIndex = 0
             };
 
             ExpressionInfo setToZero = ExpressionInfo.Val(0);
@@ -486,7 +486,7 @@ namespace Battlehub.VoxelCombat.Tests
         [Test]
         public void RepeatTaskTest()
         {
-            TaskInputInfo input = new TaskInputInfo { OuputIndex = 0 };
+            TaskInputInfo input = new TaskInputInfo { OutputIndex = 0 };
             TaskInfo repeatTask = new TaskInfo { TaskType = TaskType.TEST_Mock };
             RepeatTaskTest(repeatTask, input, 10, 10);
         }
@@ -494,7 +494,7 @@ namespace Battlehub.VoxelCombat.Tests
         [Test]
         public void RepeatTaskTestImmediate()
         {
-            TaskInputInfo input = new TaskInputInfo { OuputIndex = 0 };
+            TaskInputInfo input = new TaskInputInfo { OutputIndex = 0 };
             TaskInfo repeatTask = new TaskInfo { TaskType = TaskType.TEST_MockImmediate };
             RepeatTaskTest(repeatTask, input, 10, 10);
         }
@@ -502,7 +502,7 @@ namespace Battlehub.VoxelCombat.Tests
         [Test]
         public void RepeatBreakTaskTest()
         {
-            TaskInputInfo input = new TaskInputInfo { OuputIndex = 0 };
+            TaskInputInfo input = new TaskInputInfo { OutputIndex = 0 };
             ExpressionInfo eqTo5 = ExpressionInfo.Eq(
                 ExpressionInfo.Val(input),
                 ExpressionInfo.Val(5));
@@ -525,7 +525,7 @@ namespace Battlehub.VoxelCombat.Tests
         [Test]
         public void RepeatContinueTaskTest()
         {
-            TaskInputInfo input = new TaskInputInfo { OuputIndex = 0 };
+            TaskInputInfo input = new TaskInputInfo { OutputIndex = 0 };
             ExpressionInfo isTrue = ExpressionInfo.Val(true);
             TaskInfo continueTask = new TaskInfo
             {
@@ -635,7 +635,7 @@ namespace Battlehub.VoxelCombat.Tests
 
             TaskInputInfo input = new TaskInputInfo
             {
-                OuputIndex = 0,
+                OutputIndex = 0,
                 OutputTask = iterateTask,
             };
 

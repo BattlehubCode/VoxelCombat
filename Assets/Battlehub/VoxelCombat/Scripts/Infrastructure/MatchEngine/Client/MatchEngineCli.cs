@@ -353,7 +353,15 @@ namespace Battlehub.VoxelCombat
                 IVoxelDataController dc = m_game.GetVoxelDataController(request.PlayerIndex, cmd.UnitIndex);
                 if (cmd.Code != CmdCode.Move || dc == null)
                 {
-                    request.Cmd.ErrorCode = CmdErrorCode.Failed;
+                    if (dc == null)
+                    {
+                        request.Cmd.ErrorCode = CmdResultCode.Fail_NoUnit;
+                    }
+                    else
+                    {
+                        request.Cmd.ErrorCode = CmdResultCode.Fail_NotSupported;
+                    }
+                    
                     SubmitResponse(request);
                 }
                 else

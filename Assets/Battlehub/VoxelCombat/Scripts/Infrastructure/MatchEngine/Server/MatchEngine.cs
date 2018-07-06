@@ -38,11 +38,13 @@ namespace Battlehub.VoxelCombat
  
     }
 
-    public static class CmdErrorCode
-    {
-        public const int Success = 0;
-        public const int Failed = 1;
-    }
+    //public static class CmdErrorCode
+    //{
+    //    public const int Success = 0;
+    //    public const int Fail = 1;
+    //    public const int HardFail = (1 << 1) | Fail;
+    //    public const int SoftFail = (1 << 2) | Fail;
+    //}
 
     public struct MapRect
     {
@@ -373,11 +375,16 @@ namespace Battlehub.VoxelCombat
         public int Duration;
 
         [ProtoMember(4)]
-        public int ErrorCode;
+        public CmdResultCode ErrorCode;
 
         public bool IsFailed
         {
-            get { return ErrorCode != 0; }
+            get { return ErrorCode != CmdResultCode.Success; }
+        }
+
+        public bool IsHardFailed
+        {
+            get { return (ErrorCode & CmdResultCode.HardFail) != 0; }
         }
 
         public Cmd()
@@ -743,15 +750,16 @@ namespace Battlehub.VoxelCombat
                     //case CmdCode.Automatic:
                     //    return true;
                     case CmdCode.Convert:
-                        return !unitController.DataController.IsCollapsedOrBlocked;
+                        return unitController.DataController.CanConvertImmediate(-1) == CmdResultCode.Success;
                     case CmdCode.Grow:
-                        return unitController.DataController.CanGrow() == CanDo.Yes;
+                        return unitController.DataController.CanGrowImmediate() == CmdResultCode.Success;
                     case CmdCode.Split4:
-                        return unitController.DataController.CanSplit4() == CanDo.Yes;
+                        return unitController.DataController.CanSplit4Immediate() == CmdResultCode.Success;
                     case CmdCode.Split:
-                        return unitController.DataController.CanSplit() == true;
+                        return unitController.DataController.CanSplitImmediate() == CmdResultCode.Success;
                     case CmdCode.Move:
                         return !unitController.DataController.IsCollapsedOrBlocked;
+                     
                     case CmdCode.Explode:
                         return unitController.Data.Type == (int)KnownVoxelTypes.Bomb;
                 }

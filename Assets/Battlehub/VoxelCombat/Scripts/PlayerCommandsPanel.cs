@@ -339,71 +339,71 @@ namespace Battlehub.VoxelCombat
                 IVoxelDataController dc = m_gameState.GetVoxelDataController(playerIndex, selection[i]);
                 if (dc != null)
                 {
-                    bool? canBomb = dc.CanConvert((int)KnownVoxelTypes.Bomb);
-                    if (canBomb.HasValue)
+                    CmdResultCode canBomb = dc.CanConvertImmediate((int)KnownVoxelTypes.Bomb);
+                    if (canBomb != CmdResultCode.Fail_NotSupported)
                     {
                         m_bombBtn.gameObject.SetActive(true);
-                        if(canBomb.Value)
+                        if(canBomb == CmdResultCode.Success)
                         {
                             hcbBomb.IsDisabled = false;
                         }   
                     }
 
-                    bool? canGround = dc.CanConvert((int)KnownVoxelTypes.Ground);
-                    if (canGround.HasValue)
+                    CmdResultCode canGround = dc.CanConvertImmediate((int)KnownVoxelTypes.Ground);
+                    if (canGround != CmdResultCode.Fail_NotSupported)
                     {
                         m_wallBtn.gameObject.SetActive(true);
-                        if (canGround.Value)
+                        if (canGround == CmdResultCode.Success)
                         {
                             hcbWall.IsDisabled = false;
                         }
                     }
 
-                    bool? canSpawner = dc.CanConvert((int)KnownVoxelTypes.Spawner);
-                    if (canSpawner.HasValue)
+                    CmdResultCode canSpawner = dc.CanConvertImmediate((int)KnownVoxelTypes.Spawner);
+                    if (canSpawner != CmdResultCode.Fail_NotSupported)
                     {
                         m_spawnButton.gameObject.SetActive(true);
-                        if(canSpawner.Value)
+                        if(canSpawner == CmdResultCode.Success)
                         {
                             hcbSpawn.IsDisabled = false;
                         }    
                     }
 
-                    CanDo canGrow = dc.CanGrow();
-                    if (canGrow != CanDo.No_NotSupported)
+                    CmdResultCode canGrow = dc.CanGrowImmediate();
+                    if (canGrow != CmdResultCode.Fail_NotSupported)
                     {
                         m_growButton.gameObject.SetActive(true);
-                        if(canGrow == CanDo.Yes)
+                        if(canGrow == CmdResultCode.Success)
                         {
                             hcbGrow.IsDisabled = false;
                         }
                     }
 
-                    bool? canDiminish = dc.CanDiminish();
-                    if (canDiminish.HasValue)
+                    CmdResultCode canDiminish = dc.CanDiminishImmediate();
+                    if (canDiminish != CmdResultCode.Fail_NotSupported)
                     {
                         m_diminishButton.gameObject.SetActive(true);
-                        if(canDiminish.Value)
+                        if(canDiminish == CmdResultCode.Success)
                         {
                             hcbDiminish.IsDisabled = false;
                         }
                     }
 
-                    bool? canSplit = dc.CanSplit();
-                    if (canSplit.HasValue)
+                    CmdResultCode canSplit = dc.CanSplitImmediate();
+                    if (canSplit != CmdResultCode.Fail_NotSupported)
                     {
                         m_splitButton.gameObject.SetActive(true);
-                        if(canSplit.Value)
+                        if(canSplit == CmdResultCode.Success)
                         {
                             hcbSplit.IsDisabled = false;
                         }
                     }
 
-                    CanDo canSplit4 = dc.CanSplit4();
-                    if (canSplit4 != CanDo.No_NotSupported)
+                    CmdResultCode canSplit4 = dc.CanSplit4Immediate();
+                    if (canSplit4 != CmdResultCode.Fail_NotSupported)
                     {
                         m_split4Button.gameObject.SetActive(true);
-                        if(canSplit4 == CanDo.Yes)
+                        if(canSplit4 == CmdResultCode.Success)
                         {
                             hcbSplit4.IsDisabled = false;
                         }

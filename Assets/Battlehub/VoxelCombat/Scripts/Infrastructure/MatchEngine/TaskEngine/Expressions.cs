@@ -42,7 +42,7 @@ namespace Battlehub.VoxelCombat
             else if(expression.Value is TaskInputInfo)
             {
                 TaskInputInfo input = (TaskInputInfo)expression.Value;
-                object value = taskEngine.Memory.ReadOutput(input.Scope.TaskId, input.OutputTask.TaskId, input.OuputIndex);
+                object value = taskEngine.Memory.ReadOutput(input.Scope.TaskId, input.OutputTask.TaskId, input.OutputIndex);
                 callback(value);
             }
             else
@@ -121,7 +121,7 @@ namespace Battlehub.VoxelCombat
             if (expression.Value is TaskInputInfo)
             {
                 TaskInputInfo input = (TaskInputInfo)expression.Value;
-                enumerator = (IEnumerator)taskEngine.Memory.ReadOutput(input.Scope.TaskId, input.OutputTask.TaskId, input.OuputIndex);
+                enumerator = (IEnumerator)taskEngine.Memory.ReadOutput(input.Scope.TaskId, input.OutputTask.TaskId, input.OutputIndex);
             }
             else
             {
@@ -352,11 +352,11 @@ namespace Battlehub.VoxelCombat
         }
     }
 
-    public class UnitCanGrowExpression : UnitExpression
+    public class UnitCanGrowImmediateExpression : UnitExpression
     {
         protected override void OnEvaluating(IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
         {
-            CanDo can = unit.DataController.CanGrow();
+            CmdResultCode can = unit.DataController.CanGrowImmediate();
             callback(can);
         }
     }
@@ -365,7 +365,7 @@ namespace Battlehub.VoxelCombat
     {
         protected override void OnEvaluating(IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
         {
-            CanDo can = unit.DataController.CanSplit4();
+            CmdResultCode can = unit.DataController.CanSplit4Immediate();
             callback(can);
         }
     }
@@ -376,6 +376,42 @@ namespace Battlehub.VoxelCombat
         {
             TaskInfo taskInfo = (TaskInfo)expression.Value;
             callback(!taskInfo.IsFailed);
+        }
+    }
+
+    public class TaskStatusExpression : IExpression
+    {
+        public void Evaluate(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
+        {
+            TaskInfo taskInfo = (TaskInfo)expression.Value;
+            callback(taskInfo.StatusCode);
+        }
+    }
+
+    public class CmdResultCodeExpression : IExpression
+    {
+        public void Evaluate(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
+        {
+            TaskInfo taskInfo = (TaskInfo)expression.Value;
+            callback(taskInfo.Cmd.ErrorCode);
+        }
+    }
+
+    public class CmdSuccededExpression : IExpression
+    {
+        public void Evaluate(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
+        {
+            TaskInfo taskInfo = (TaskInfo)expression.Value;
+            callback(taskInfo.Cmd.ErrorCode == CmdResultCode.Success);
+        }
+    }
+
+    public class CmdHardFailedExpression : IExpression
+    {
+        public void Evaluate(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
+        {
+            TaskInfo taskInfo = (TaskInfo)expression.Value;
+            callback(taskInfo.Cmd.IsHardFailed);
         }
     }
 }

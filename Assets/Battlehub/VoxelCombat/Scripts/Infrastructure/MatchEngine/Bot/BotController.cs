@@ -70,7 +70,7 @@ namespace Battlehub.VoxelCombat
 
     public interface IMatchUnitAssetView 
     {
-        event Action<int> CmdExecuted;
+        event Action<CmdResultCode> CmdExecuted;
 
         long Id
         {

@@ -36,10 +36,10 @@ namespace Battlehub.VoxelCombat
 
     public class MatchAsset : IMatchUnitAssetView
     {
-        public event Action<int> CmdExecuted;
+        public event Action<CmdResultCode> CmdExecuted;
         private void NeverUsed()
         {
-            CmdExecuted(-1);
+            CmdExecuted(CmdResultCode.Fail);
         }
         
         private VoxelData m_voxelData;

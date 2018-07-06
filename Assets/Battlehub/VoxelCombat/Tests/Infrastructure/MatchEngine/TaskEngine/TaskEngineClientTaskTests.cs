@@ -102,6 +102,8 @@ namespace Battlehub.VoxelCombat.Tests
             }   
         }
 
+        
+
         [UnityTest]
         public IEnumerator EatGrowSplit()
         {
@@ -116,7 +118,7 @@ namespace Battlehub.VoxelCombat.Tests
                 TaskInfo unitIndexTask = TaskInfo.UnitOrAssetIndex(voxel.UnitOrAssetIndex);
                 TaskInputInfo unitIndexInput = new TaskInputInfo
                 {
-                    OuputIndex = 0,
+                    OutputIndex = 0,
                     OutputTask = unitIndexTask
                 };
 
@@ -126,53 +128,56 @@ namespace Battlehub.VoxelCombat.Tests
                 TaskInputInfo checkCanGrowInput = new TaskInputInfo
                 {
                     OutputTask = checkCanGrow,
-                    OuputIndex = 0,
+                    OutputIndex = 0,
                 };
                 
                 ExpressionInfo notSupported = ExpressionInfo.Eq(
-                    ExpressionInfo.Val(CanDo.No_NotSupported),
+                    ExpressionInfo.Val(CmdResultCode.Fail_NotSupported),
                     ExpressionInfo.Val(checkCanGrowInput));
 
                 ExpressionInfo somethingWrong = ExpressionInfo.Eq(
-                    ExpressionInfo.Val(CanDo.No_SomethingWrong),
+                    ExpressionInfo.Val(CmdResultCode.Fail_InvalidOperation),
                     ExpressionInfo.Val(checkCanGrowInput));
 
                 ExpressionInfo maxWeight = ExpressionInfo.Eq(
-                    ExpressionInfo.Val(CanDo.No_MaxWeight),
+                    ExpressionInfo.Val(CmdResultCode.Fail_MaxWeight),
                     ExpressionInfo.Val(checkCanGrowInput));
 
                 ExpressionInfo needMoreFood = ExpressionInfo.Eq(
-                    ExpressionInfo.Val(CanDo.No_NeedMoreFood),
+                    ExpressionInfo.Val(CmdResultCode.Fail_NeedMoreResources),
                     ExpressionInfo.Val(checkCanGrowInput));
 
                 ExpressionInfo collapsedOrBlocked = ExpressionInfo.Eq(
-                    ExpressionInfo.Val(CanDo.No_CollapsedOrBlocked),
+                    ExpressionInfo.Val(CmdResultCode.Fail_CollapsedOrBlocked),
                     ExpressionInfo.Val(checkCanGrowInput));
 
                 ExpressionInfo wrongLocation = ExpressionInfo.Eq(
-                    ExpressionInfo.Val(CanDo.No_WrongLocation),
+                    ExpressionInfo.Val(CmdResultCode.Fail_InvalidLocation),
                     ExpressionInfo.Val(checkCanGrowInput));
 
                 TaskInfo searchForFoodTask = TaskInfo.SearchForFood(unitIndexInput);
-                ExpressionInfo taskSucceded = ExpressionInfo.TaskSucceded(searchForFoodTask);
+                ExpressionInfo searchForFoodSucceded = ExpressionInfo.TaskSucceded(searchForFoodTask);
                 ExpressionInfo whileTrue = ExpressionInfo.PrimitiveVar(true);
+                TaskInputInfo foodCoordinateInput = new TaskInputInfo(searchForFoodTask, 1);
+               
 
-                TaskInputInfo foodCoordinateInput = new TaskInputInfo
-                {
-                    OuputIndex = 1,
-                    OutputTask = searchForFoodTask
-                };
-
-                TaskInfo elseIfNeedMoreFood = TaskInfo.Branch(needMoreFood,
-                    TaskInfo.Repeat(whileTrue,
-                        searchForFoodTask,
-                        TaskInfo.Branch(taskSucceded, 
-                            TaskInfo.FindPath(null),//find path move to food
-                            null//move to random location
-                        ) 
-                    ),
-                    null
-                );
+                TaskInfo findPathToFoodTask = TaskInfo.FindPath(unitIndexInput, foodCoordinateInput);
+                ExpressionInfo findPathSucceded = ExpressionInfo.TaskSucceded(findPathToFoodTask);
+                TaskInfo elseIfNeedMoreFood = null;
+                //TaskInfo elseIfNeedMoreFood = TaskInfo.Branch(needMoreFood,
+                //    TaskInfo.Repeat(whileTrue,
+                //        searchForFoodTask,
+                //        TaskInfo.Branch(searchForFoodSucceded,
+                //            TaskInfo.Sequence(
+                //                findPathToFoodTask,//find path move to food
+                //                TaskInfo.Branch(findPathSucceded,
+                //                    null,
+                //                    TaskInfo.Continue()), 
+                //            null//move to random location
+                //        ) 
+                //    ),
+                //    null
+                //);
 
                 TaskInfo elseIfMaximumWeight = TaskInfo.Branch(maxWeight,
                     TaskInfo.Return(),
@@ -242,7 +247,7 @@ namespace Battlehub.VoxelCombat.Tests
                 };
                 TaskInputInfo searchForFoodContext = new TaskInputInfo
                 {
-                    OuputIndex = 0,
+                    OutputIndex = 0,
                     OutputTask = searchForFoodTask,
                 };
 
@@ -253,7 +258,7 @@ namespace Battlehub.VoxelCombat.Tests
                 };
                 TaskInputInfo unitIndex = new TaskInputInfo
                 {
-                    OuputIndex = 0,
+                    OutputIndex = 0,
                     OutputTask = getUnitIndexTask
                 };
 
