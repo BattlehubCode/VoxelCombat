@@ -349,6 +349,7 @@ namespace Battlehub.VoxelCombat
                 { TaskType.Sequence, new TaskPool<SequentialTask>(taskPoolSize) },
                 { TaskType.Repeat, new TaskPool<RepeatTask>(taskPoolSize) },
                 { TaskType.Branch, new TaskPool<BranchTask>(taskPoolSize) },
+                { TaskType.Procedure, new TaskPool<ProcedureTask>(taskPoolSize) },
                 { TaskType.Break, new TaskPool<BreakTask>(taskPoolSize) },
                 { TaskType.Continue, new TaskPool<ContinueTask>(taskPoolSize) },
                 { TaskType.Return, new TaskPool<ReturnTask>(taskPoolSize) },
@@ -357,6 +358,8 @@ namespace Battlehub.VoxelCombat
                 { TaskType.FindPath, new TaskPool<FindPathTask>(taskPoolSize) },
                 { TaskType.FindPathToRandomLocation, new TaskPool<FindPathToRandLocationPath>(taskPoolSize) },
                 { TaskType.SearchForFood, new TaskPool<SearchAroundForFood>(taskPoolSize) },
+                { TaskType.SearchForGrowLocation, new TaskPool<SearchAroundForGrowLocation>(taskPoolSize) },
+                { TaskType.SearchForSplit4Location, new TaskPool<SearchAroundForSplit4Location>(taskPoolSize) },
                 //For testing purposes
                 { TaskType.TEST_Mock, new TaskPool<MockTask>(taskPoolSize) },
                 { TaskType.TEST_MockImmediate, new TaskPool<MockImmediateTask>(taskPoolSize) }

@@ -338,10 +338,10 @@ namespace Battlehub.VoxelCombat.Tests
                 OutputIndex = 0
             };
 
-            ExpressionInfo setToZero = ExpressionInfo.Val(0);
+            ExpressionInfo setToZero = ExpressionInfo.Val(PrimitiveContract.Create(0));
             ExpressionInfo add = ExpressionInfo.Add(
                 ExpressionInfo.Val(input),
-                ExpressionInfo.Val(1));
+                ExpressionInfo.Val(PrimitiveContract.Create(1)));
          
             TaskInfo setToZeroTask = new TaskInfo
             {
@@ -402,13 +402,13 @@ namespace Battlehub.VoxelCombat.Tests
                 BeginTest(TestEnv0, 4);
             });
 
-            ExpressionInfo setToZero = ExpressionInfo.Val(0);
+            ExpressionInfo setToZero = ExpressionInfo.Val(PrimitiveContract.Create(0));
             ExpressionInfo add = ExpressionInfo.Add(
                 ExpressionInfo.Val(input),
-                ExpressionInfo.Val(1));
+                ExpressionInfo.Val(PrimitiveContract.Create(1)));
             ExpressionInfo lessThanValue = ExpressionInfo.Lt(
                 ExpressionInfo.Val(input),
-                ExpressionInfo.Val(iterations));
+                ExpressionInfo.Val(PrimitiveContract.Create(iterations)));
 
             TaskInfo setToZeroTask = new TaskInfo
             {
@@ -505,7 +505,7 @@ namespace Battlehub.VoxelCombat.Tests
             TaskInputInfo input = new TaskInputInfo { OutputIndex = 0 };
             ExpressionInfo eqTo5 = ExpressionInfo.Eq(
                 ExpressionInfo.Val(input),
-                ExpressionInfo.Val(5));
+                ExpressionInfo.Val(PrimitiveContract.Create(5)));
             TaskInfo branchTask = new TaskInfo
             {
                 TaskType = TaskType.Branch,
@@ -526,7 +526,7 @@ namespace Battlehub.VoxelCombat.Tests
         public void RepeatContinueTaskTest()
         {
             TaskInputInfo input = new TaskInputInfo { OutputIndex = 0 };
-            ExpressionInfo isTrue = ExpressionInfo.Val(true);
+            ExpressionInfo isTrue = ExpressionInfo.Val(PrimitiveContract.Create(true));
             TaskInfo continueTask = new TaskInfo
             {
                 TaskType = TaskType.Continue,
@@ -640,7 +640,7 @@ namespace Battlehub.VoxelCombat.Tests
             };
 
             ExpressionInfo isTrue = ExpressionInfo.Eq(
-                ExpressionInfo.Val(true),
+                ExpressionInfo.Val(PrimitiveContract.Create(true)),
                 ExpressionInfo.Get(
                     ExpressionInfo.Val(input),
                     ExpressionInfo.PrimitiveVar("IsLast")));
@@ -708,7 +708,11 @@ namespace Battlehub.VoxelCombat.Tests
             });
         }
 
-     
+        [Test]
+        public void ProcedureReturnTest()
+        {
+            Assert.Fail();
+        }
 
         [Test]
         public void SimpleMoveWithoutExpression()

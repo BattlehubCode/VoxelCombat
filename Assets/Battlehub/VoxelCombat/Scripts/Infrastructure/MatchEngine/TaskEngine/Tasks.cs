@@ -286,6 +286,14 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+    public class ProcedureTask : SequentialTask
+    {
+        protected override void ReturnParent()
+        {
+            
+        }
+    }
+
     public class BranchTask : BasicFlowTask
     {
         private TaskInfo m_childTask;
@@ -529,7 +537,8 @@ namespace Battlehub.VoxelCombat
         {
             if (m_taskEngine.IsClient)
             {
-                m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, new TaskCmd(m_taskInfo));
+                TaskInfo taskInfo = new TaskInfo(m_taskInfo, true);
+                m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, new TaskCmd(taskInfo));
             }
             else
             {
@@ -565,7 +574,13 @@ namespace Battlehub.VoxelCombat
 
         protected override void OnConstruct()
         {
-            if(m_unit != null)
+            if (InputsCount > 0)
+            {
+                long unitIndex = ReadInput<long>(m_taskInfo.Inputs[0]);
+                m_taskInfo.Cmd.UnitIndex = unitIndex;
+            }
+
+            if (m_unit != null)
             {
                 return;
             }
@@ -598,7 +613,8 @@ namespace Battlehub.VoxelCombat
         {
             if (m_taskEngine.IsClient)
             {
-                m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, new TaskCmd(m_taskInfo));
+                TaskInfo taskInfo = new TaskInfo(m_taskInfo, true);
+                m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, new TaskCmd(taskInfo));
             }
             else
             {
@@ -677,7 +693,7 @@ namespace Battlehub.VoxelCombat
         {
             if (m_taskInfo.OutputsCount != 1)
             {
-                throw new ArgumentException("taskInfo.OutputsCount != 1", "taskInfo");
+                throw new ArgumentException(string.Format("taskInfo.OutputsCount == {0}, Must be equal to 1", m_taskInfo.OutputsCount), "taskInfo");
             }
 
             if(InputsCount < 2)
@@ -790,30 +806,49 @@ namespace Battlehub.VoxelCombat
             public int m_deltaCol;
             public int m_radius;
             public int m_maxRadius;
+            private int m_startRadius;
             
-            public SearchAroundContext(MapPos pos, int weight, int maxRadius)
+            public SearchAroundContext(MapPos pos, int weight, int startRadius, int maxRadius)
             {
                 m_position = pos;
                 m_weight = weight;
+                m_startRadius = startRadius;
                 m_maxRadius = maxRadius;
                 Reset();
             }
 
             public void Reset()
             {
-                m_deltaCol = -1;
-                m_deltaRow = -1;
-                m_radius = 1;
+                if(m_startRadius == 0)
+                {
+                    m_deltaCol = -1;
+                    m_deltaRow = 0;
+                    m_radius = 0;
+                }
+                else
+                {
+                    m_deltaCol = -m_startRadius;
+                    m_deltaRow = -m_startRadius;
+                    m_radius = m_startRadius;
+                }
+
+               
             }
         }
 
+        protected virtual int StartRadius
+        {
+            get { return 1; }
+        }
+
         protected IMatchUnitAssetView m_unit;
+        protected IVoxelDataController m_dataController;
 
         protected override void OnConstruct()
         {
             SearchAroundContext ctx = ReadInput<SearchAroundContext>(m_taskInfo.Inputs[0]);
             long unitIndex = ReadInput<long>(m_taskInfo.Inputs[1]);
-
+            
             m_unit = m_taskEngine.MatchEngine.GetPlayerView(m_taskInfo.PlayerIndex).GetUnit(unitIndex);
             if (m_unit == null)
             {
@@ -822,9 +857,10 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                if(ctx == null)
+                m_dataController = m_unit.DataController.Clone(); 
+                if (ctx == null)
                 {
-                    ctx = new SearchAroundContext(m_unit.Position, m_unit.Data.Weight, GetMaxRadius(m_unit));
+                    ctx = new SearchAroundContext(m_unit.Position, m_unit.Data.Weight, StartRadius, GetMaxRadius(m_unit));
                 }
                 m_taskEngine.TaskRunner.Run(unitIndex, -1, ctx, FindSuitableData, FindSuitableDataCompleted, (id, context) =>
                 {
@@ -923,7 +959,7 @@ namespace Battlehub.VoxelCombat
         }
     }
 
-    public class SearchAroundForFood : SearchAroundTask
+    public class SearchAroundForTask : SearchAroundTask
     {
         protected override void OnInitialized()
         {
@@ -934,25 +970,30 @@ namespace Battlehub.VoxelCombat
 
             if (m_taskInfo.OutputsCount != 2)
             {
-                throw new ArgumentException("taskInfo.OutputsCount != 3", "taskInfo");
+                throw new ArgumentException("taskInfo.OutputsCount != 2", "taskInfo");
             }
         }
 
         protected override bool GetSuitableData(SearchAroundContext ctx)
         {
-            VoxelData destroyer = m_unit.Data;
+            VoxelData unitData = m_unit.Data;
 
             int row = ctx.m_position.Row + ctx.m_deltaRow;
             int col = ctx.m_position.Col + ctx.m_deltaCol;
 
-            MapCell cell = m_taskEngine.MatchEngine.Map.Get(row, col, ctx.m_weight);
-            VoxelData eatable = cell.GetDescendantsWithVoxelData(data => IsEatable(data, destroyer));
-            if (eatable != null)
+            int altitude;
+            if (GetSuitableData(ctx, unitData, row, col, out altitude))
             {
-                WriteOutput(1, new[] { new Coordinate(row, col, eatable.Altitude, ctx.m_weight) });
+                WriteOutput(1, new[] { new Coordinate(row, col, altitude, ctx.m_weight) });
                 return true;
             }
 
+            return false;
+        }
+
+        protected virtual bool GetSuitableData(SearchAroundContext ctx, VoxelData unitData, int row, int col, out int altitude)
+        {
+            altitude = int.MinValue;
             return false;
         }
 
@@ -967,6 +1008,23 @@ namespace Battlehub.VoxelCombat
             base.HandleLastIteration();
             m_taskInfo.StatusCode = TaskInfo.TaskFailed;
             m_taskInfo.State = TaskState.Completed;
+        }
+    }
+
+
+    public class SearchAroundForFood : SearchAroundForTask
+    {
+        protected override bool GetSuitableData(SearchAroundContext ctx, VoxelData unitData, int row, int col, out int altitude)
+        {
+            MapCell cell = m_taskEngine.MatchEngine.Map.Get(row, col, ctx.m_weight);
+            VoxelData eatable = cell.GetDescendantsWithVoxelData(data => IsEatable(data, unitData));
+            if(eatable != null)
+            {
+                altitude = eatable.Altitude;
+                return true;
+            }
+            altitude = int.MinValue;
+            return false;   
         }
 
         private static bool IsEatable(VoxelData data, VoxelData destroyer)
@@ -990,18 +1048,85 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+    public class SearchAroundForGrowLocation : SearchAroundForTask
+    {
+        protected override int StartRadius
+        {
+            get { return 0; }
+        }
+
+        protected override bool GetSuitableData(SearchAroundContext ctx, VoxelData unitData, int row, int col, out int altitude)
+        {
+            altitude = int.MinValue;
+            MapCell cell = m_taskEngine.MatchEngine.Map.Get(row, col, ctx.m_weight);
+            if(cell.Last == null)
+            {
+                return false;
+            }
+
+            if(cell.Last == unitData)
+            {
+                altitude = cell.Last.Prev.Altitude;
+            }
+            else
+            {
+                altitude = cell.Last.Altitude;
+            }
+
+            Coordinate coordinate = new Coordinate(row, col, altitude, ctx.m_weight);
+            CmdResultCode result = m_dataController.CanGrow(
+                m_dataController.ControlledData.Type,
+                m_dataController.ControlledData.Health,
+                coordinate);
+
+            return result == CmdResultCode.Success;
+        } 
+    }
+
+    public class SearchAroundForSplit4Location : SearchAroundForTask
+    {
+        protected override int StartRadius
+        {
+            get { return 0; }
+        }
+
+        protected override bool GetSuitableData(SearchAroundContext ctx, VoxelData unitData, int row, int col, out int altitude)
+        {
+            altitude = int.MinValue;
+            MapCell cell = m_taskEngine.MatchEngine.Map.Get(row, col, ctx.m_weight);
+            if (cell.Last == null)
+            {
+                return false;
+            }
+
+            if (cell.Last == unitData)
+            {
+                altitude = cell.Last.Prev.Altitude;
+            }
+            else
+            {
+                altitude = cell.Last.Altitude;
+            }
+
+            Coordinate coordinate = new Coordinate(row, col, altitude, ctx.m_weight);
+            CmdResultCode result = m_dataController.CanSplit4(
+                m_dataController.ControlledData.Type,
+                m_dataController.ControlledData.Health,
+                coordinate);
+
+            return result == CmdResultCode.Success;
+        }
+    }
+
     public class ExecuteMoveTask : ExecuteCmdTask
     {
         protected override void OnConstruct()
         {
             if(InputsCount > 1)
             {
-                long unitIndex = ReadInput<long>(m_taskInfo.Inputs[0]);
                 Coordinate[] path = ReadInput<Coordinate[]>(m_taskInfo.Inputs[1]);   
-
                 m_taskInfo.Cmd = new MovementCmd(CmdCode.Move)
                 {
-                    UnitIndex = unitIndex,
                     Coordinates = path,
                 };
             }

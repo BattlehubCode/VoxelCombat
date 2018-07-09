@@ -64,7 +64,7 @@ namespace Battlehub.VoxelCombat
                 outputInfo = new ExpressionInfo
                 {
                     Code = ExpressionCode.Value,
-                    Value = 0
+                    Value = PrimitiveContract.Create(0)
                 };
             }
 
@@ -73,7 +73,7 @@ namespace Battlehub.VoxelCombat
             valueExpression.Evaluate(valueInfo, taskEngine, value =>
             {
                 expression.IsEvaluating = false;
-                int outputIndex = (int)outputInfo.Value;
+                int outputIndex = ((PrimitiveContract<int>)outputInfo.Value).Value;
                 taskEngine.Memory.WriteOutput(taskInfo.Parent.TaskId, taskInfo.TaskId, outputIndex, value);
                 callback(null);
             });
@@ -315,13 +315,21 @@ namespace Battlehub.VoxelCombat
     {
         protected override void OnEvaluating(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
         {
-            long unitId = ((PrimitiveContract<long>)expression.Children[0].Value).Value;
-            int playerId = ((PrimitiveContract<int>)expression.Children[1].Value).Value;
+            ExpressionInfo left = expression.Children[0];
+            ExpressionInfo right = expression.Children[1];
+            taskEngine.GetExpression(left.Code).Evaluate(left, taskEngine, first =>
+            {
+                taskEngine.GetExpression(right.Code).Evaluate(right, taskEngine, second =>
+                {
+                    long unitId = (long)first;
+                    int playerId = (int)second;
 
-            IMatchPlayerView player = taskEngine.MatchEngine.GetPlayerView(playerId);
-            IMatchUnitAssetView unit = player.GetUnitOrAsset(unitId);
+                    IMatchPlayerView player = taskEngine.MatchEngine.GetPlayerView(playerId);
+                    IMatchUnitAssetView unit = player.GetUnitOrAsset(unitId);
 
-            OnEvaluating(player, unit, taskEngine, callback);
+                    OnEvaluating(player, unit, taskEngine, callback);
+                });
+            });
         }
 
         protected abstract void OnEvaluating(IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback);

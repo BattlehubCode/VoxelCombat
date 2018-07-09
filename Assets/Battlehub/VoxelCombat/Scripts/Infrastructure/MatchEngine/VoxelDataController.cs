@@ -353,8 +353,6 @@ namespace Battlehub.VoxelCombat
             m_mapSize = dataController.MapSize;
         }
 
-
-
         public bool IsValidAndEmpty( Coordinate coord, bool considerIdleAsValid)
         {
             return IsValidAndEmpty(m_controlledData, m_map, coord, considerIdleAsValid);
@@ -619,7 +617,7 @@ namespace Battlehub.VoxelCombat
                 result = CanMove(m_controlledData, m_abilities, m_map, m_mapSize, from, to, isLastStep, false, true, out cell);
             }
 
-            if((result & CmdResultCode.HardFail) != 0)
+            if((result & CmdResultCode.HardFail) == CmdResultCode.HardFail)
             {
                 return result;
             }
@@ -975,7 +973,7 @@ namespace Battlehub.VoxelCombat
                 return CmdResultCode.Fail_InvalidTargetLocation;
             }
 
-            if(position.Altitude + voxelData.Height != coordinate.Altitude)
+            if(voxelData.Altitude + voxelData.Height != coordinate.Altitude)
             {
                 //DebugLog("Can't split. Wrong coordinate");
                 return CmdResultCode.Fail_InvalidTargetLocation;
