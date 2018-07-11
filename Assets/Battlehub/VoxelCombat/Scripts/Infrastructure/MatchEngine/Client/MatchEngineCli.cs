@@ -142,31 +142,41 @@ namespace Battlehub.VoxelCombat
                 m_matchServer.ConnectionStateChanged -= OnConnectionStateChanged;
             }
 
-            for (int i = 0; i < m_taskEngines.Length; ++i)
+            if(m_taskEngines != null)
             {
-                ITaskEngine taskEngine = m_taskEngines[i];
-                if(taskEngine != null)
+                for (int i = 0; i < m_taskEngines.Length; ++i)
                 {
-                    taskEngine.ClientRequest -= ProcessClientRequest;
-                    MatchFactoryCli.DestroyTaskEngine(taskEngine);
-                }   
+                    ITaskEngine taskEngine = m_taskEngines[i];
+                    if (taskEngine != null)
+                    {
+                        taskEngine.ClientRequest -= ProcessClientRequest;
+                        MatchFactoryCli.DestroyTaskEngine(taskEngine);
+                    }
+                }
+
             }
 
-            for (int i = 0; i < m_taskRunners.Length; ++i)
+            if(m_taskRunners != null)
             {
-                ITaskRunner taskRunner = m_taskRunners[i];
-                if (taskRunner != null)
+                for (int i = 0; i < m_taskRunners.Length; ++i)
                 {
-                    MatchFactoryCli.DestroyTaskRunner(taskRunner);
+                    ITaskRunner taskRunner = m_taskRunners[i];
+                    if (taskRunner != null)
+                    {
+                        MatchFactoryCli.DestroyTaskRunner(taskRunner);
+                    }
                 }
             }
 
-            for (int i = 0; i < m_pathFinders.Length; ++i)
+            if(m_pathFinders != null)
             {
-                IPathFinder pathFinder = m_pathFinders[i];
-                if (pathFinder != null)
+                for (int i = 0; i < m_pathFinders.Length; ++i)
                 {
-                    MatchFactoryCli.DestroyPathFinder(pathFinder);
+                    IPathFinder pathFinder = m_pathFinders[i];
+                    if (pathFinder != null)
+                    {
+                        MatchFactoryCli.DestroyPathFinder(pathFinder);
+                    }
                 }
             }
         }
@@ -322,7 +332,7 @@ namespace Battlehub.VoxelCombat
                 ITaskEngine taskEngine = m_taskEngines[tsi.PlayerId];
                 if (taskEngine != null)
                 {
-                    taskEngine.SetTaskState(tsi.TaskId, tsi.State);
+                    taskEngine.SetTaskState(tsi.TaskId, tsi.State, tsi.StatusCode);
                 }
             }
         }

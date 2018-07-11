@@ -329,7 +329,7 @@ namespace Battlehub.VoxelCombat
         {
             if (waypoints == null)
             {
-                throw new System.ArgumentNullException("waypoints");
+                throw new ArgumentNullException("waypoints");
             }
             PathFinderTask task;
             if (m_idToActiveTask.TryGetValue(unitId, out task))
@@ -617,6 +617,15 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
+            //Change altitude if failed with target coordinate
+            VoxelData target;
+            VoxelData beneath = cell.GetDefaultTargetFor(type, weight, task.PlayerIndex, false, out target);
+            if (beneath == null)
+            {
+                result = from;
+                return false;
+            }
+
             // This will allow bomb movement 
             bool isLastStep = task.Waypoints[task.Waypoints.Length - 1].MapPos == next.MapPos;
             if (isLastStep)
@@ -633,15 +642,6 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            //Change altitude if failed with target coordinate
-            VoxelData target;
-            VoxelData beneath = cell.GetDefaultTargetFor(type, weight, task.PlayerIndex, false, out target);
-            if (beneath == null)
-            {
-                result = from;
-                return false;
-            }
-
             if(target != beneath) //this will allow bombs to move over spawners
             {
                 if (!isLastStep && target != null && !(target.IsCollapsableBy(type, weight) || target.IsAttackableBy(task.ControlledData)))
@@ -651,7 +651,6 @@ namespace Battlehub.VoxelCombat
                 }
             }
             
-
             next.Altitude = beneath.Altitude + beneath.Height;
 
             //last step param is false -> force CanMove to check next coordinate as is

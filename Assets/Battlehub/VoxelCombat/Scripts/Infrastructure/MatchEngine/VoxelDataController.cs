@@ -311,7 +311,6 @@ namespace Battlehub.VoxelCombat
             get { return m_controlledData.Height == 0 || m_controlledData.Next != null; }
         }
 
-       
         public VoxelDataController(MapRoot map, Coordinate coordinate, int type, int playerIndex, Dictionary<int, VoxelAbilities>[] allAbilities)
         {
             m_map = map;
@@ -430,7 +429,7 @@ namespace Battlehub.VoxelCombat
                 return CmdResultCode.Fail_InvalidArguments;
             }
 
-            if(deltaRow > abilities.MaxMoveDistance || deltaCol > abilities.MaxMoveDistance)
+            if(Math.Abs(deltaRow) > abilities.MaxMoveDistance || Math.Abs(deltaCol) > abilities.MaxMoveDistance)
             {
 #if !SERVER
                 UnityEngine.Debug.LogError("Can't move max move distance reached");

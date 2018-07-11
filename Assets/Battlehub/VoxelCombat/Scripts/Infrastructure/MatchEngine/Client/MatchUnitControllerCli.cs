@@ -606,13 +606,13 @@ namespace Battlehub.VoxelCombat
         {
             if (cmd.ErrorCode != CmdResultCode.Success)
             {
-                Debug.LogErrorFormat("Cmd {0} failed with error {1}", cmd.Code, cmd.ErrorCode);
+                Debug.LogWarningFormat("Cmd {0} failed with error {1}", cmd.Code, cmd.ErrorCode);
                 if (m_controlledVoxel != null)
                 {
                     //Last command was failed go to idle state 
                 }
             }
-            if (cmd.Code == CmdCode.StateChanged)
+            else if (cmd.Code == CmdCode.StateChanged)
             {
                 OnStateChanged(cmd);
             }

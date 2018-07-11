@@ -17,42 +17,42 @@ namespace Battlehub.VoxelCombat.Tests
 
         public void AddToSelection(int selectorIndex, int unitOwnerIndex, long[] unitIds)
         {
-            throw new NotImplementedException();
+            
         }
 
         public void ClearSelection(int selectorIndex)
         {
-            throw new NotImplementedException();
+            
         }
 
         public long[] GetSelection(int selectorIndex, int unitOwnerIndex)
         {
-            throw new NotImplementedException();
+            return new long[0];
         }
 
         public bool HasSelected(int selectorIndex)
         {
-            throw new NotImplementedException();
+            return false;
         }
 
         public bool HasSelected(int selectorIndex, int unitOwnerIndex)
         {
-            throw new NotImplementedException();
+            return false;
         }
 
         public bool IsSelected(int selectorIndex, int unitOwnerIndex, long unitId)
         {
-            throw new NotImplementedException();
+            return false;
         }
 
         public void Select(int selectorIndex, int unitOwnerIndex, long[] unitIds)
         {
-            throw new NotImplementedException();
+            
         }
 
         public void Unselect(int selectorIndex, int unitOwnerIndex, long[] unitIds)
         {
-            throw new NotImplementedException();
+            
         }
     }
 }

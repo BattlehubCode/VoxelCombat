@@ -105,7 +105,7 @@ namespace Battlehub.VoxelCombat.Tests
         [UnityTest]
         public IEnumerator EatGrowSplitTest()
         {
-            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.EatGrowSplit4(unitIndexInput, playerId),
+            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.EatGrowSplit4(unitIndexInput, playerId), false,
                 rootTaskInfo =>
                 {
                     MapRoot map = Dependencies.Map.Map;
@@ -118,99 +118,191 @@ namespace Battlehub.VoxelCombat.Tests
                 });
         }
 
+
+        private TaskInfo PathToRandomLocation(TaskInputInfo unitIndexInput, int playerId)
+        {
+            int radius = 3;
+            TaskInfo radiusVar = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVar(radius));
+            TaskInputInfo radiusInput = new TaskInputInfo
+            {
+                OutputIndex = 0,
+                OutputTask = radiusVar
+            };
+
+            TaskInfo pathToRandomLocation = TaskInfo.PathToRandomLocation(unitIndexInput, radiusInput);
+            TaskInputInfo pathInput = new TaskInputInfo
+            {
+                OutputIndex = 0,
+                OutputTask = pathToRandomLocation
+            };
+
+            TaskInfo assert = TaskInfo.Assert((taskBase, taskInfo) =>
+            {
+                Coordinate[] path = taskBase.ReadInput<Coordinate[]>(taskInfo.Inputs[0]);
+                Assert.IsNotNull(path);
+                Assert.IsTrue(path.Length > 1);
+                Coordinate first = path[0];
+                Coordinate last = path[path.Length - 1];
+                Assert.LessOrEqual(Mathf.Abs(first.Row - last.Row), 3);
+                Assert.LessOrEqual(Mathf.Abs(first.Col - last.Col), 3);
+                return TaskState.Completed;
+
+            });
+            assert.Inputs = new[] { pathInput };
+
+            return TaskInfo.Sequence(
+                radiusVar,
+                pathToRandomLocation,
+                TaskInfo.Branch(
+                    ExpressionInfo.TaskSucceded(pathToRandomLocation),
+                    assert,
+                    new TaskInfo(TaskType.TEST_Fail)
+                )
+             );
+        }
+
         [UnityTest]
         public IEnumerator PathToRandomLocationTest()
         {
-            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.PathToRandomLocation(unitIndexInput, null),
+            yield return TaskTest(3, PathToRandomLocation, false,
                 rootTaskInfo =>
                 {
-                
+                    Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
+                    Assert.IsFalse(rootTaskInfo.IsFailed); 
                 });
         }
 
         [UnityTest]
         public IEnumerator MoveToRandomLocationTest()
         {
-#warning MOVE TO RANDOM LOCATION DOES NOT HAVE PLAYER INPUT!!
-            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.MoveToRandomLocation(unitIndexInput, playerId),
+            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.MoveToRandomLocation(unitIndexInput, 3, 100), false,
                 rootTaskInfo =>
                 {
-
+                    Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
+                    Assert.IsFalse(rootTaskInfo.IsFailed);
                 });
+        }
+
+        [UnityTest]
+        public IEnumerator MoveToRandomLocationTestFail()
+        {
+            yield return TaskTest(4, (unitIndexInput, playerId) => TaskInfo.MoveToRandomLocation(unitIndexInput, 3, 2), true,
+                rootTaskInfo =>
+                {
+                    Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
+                    Assert.IsTrue(rootTaskInfo.IsFailed);
+                },
+                null,
+                3);
+        }
+
+        [UnityTest]
+        public IEnumerator MoveToRandomLocationTest2()
+        {
+            yield return TaskTest(4, (unitIndexInput, playerId) => TaskInfo.MoveToRandomLocation(unitIndexInput, 3, 100), false,
+                rootTaskInfo =>
+                {
+                    Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
+                    Assert.IsFalse(rootTaskInfo.IsFailed);
+                }, 
+                null,
+                2);
+        }
+
+        [UnityTest]
+        public IEnumerator MoveToRandomLocationTestFail2()
+        {
+            yield return TaskTest(4, (unitIndexInput, playerId) => TaskInfo.MoveToRandomLocation(unitIndexInput, 3, 100), true,
+                rootTaskInfo =>
+                {
+                    Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
+                    Assert.IsTrue(rootTaskInfo.IsFailed);
+                },
+                null,
+                1);
         }
 
         [UnityTest]
         public IEnumerator SearchMoveOrRandomMoveTest()
         {
-            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.SearchMoveOrRandomMove(TaskType.SearchForFood, unitIndexInput),
+            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.SearchMoveOrRandomMove(TaskType.SearchForFood, unitIndexInput), false,
                 rootTaskInfo =>
                 {
-
+                    Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
+                    Assert.IsFalse(rootTaskInfo.IsFailed);
                 });
         }
 
         [UnityTest]
         public IEnumerator SearchMoveOrRandomMove2Test()
         {
-            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.SearchMoveOrRandomMove(TaskType.SearchForGrowLocation, unitIndexInput),
+            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.SearchMoveOrRandomMove(TaskType.SearchForGrowLocation, unitIndexInput), false,
                 rootTaskInfo =>
                 {
-
+                    Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
+                    Assert.IsFalse(rootTaskInfo.IsFailed);
                 });
         }
 
         [UnityTest]
         public IEnumerator SearchMoveOrRandomMove3Test()
         {
-            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.SearchMoveOrRandomMove(TaskType.SearchForSplit4Location, unitIndexInput),
+            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.SearchMoveOrRandomMove(TaskType.SearchForSplit4Location, unitIndexInput), false,
                 rootTaskInfo =>
                 {
-
+                    Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
+                    Assert.IsFalse(rootTaskInfo.IsFailed);
                 });
         }
 
         [UnityTest]
         public IEnumerator SearchMoveGrowTest()
         {
-            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.SearchMoveGrow(unitIndexInput, playerId),
+            yield return TaskTest(2, (unitIndexInput, playerId) =>
+                TaskInfo.Sequence
+                (
+                    TaskInfo.SetHealth(unitIndexInput, 64),
+                    TaskInfo.SearchMoveGrow(unitIndexInput, playerId)
+                ), 
+                false,
                 rootTaskInfo =>
                 {
-
+                    Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
+                    Assert.IsFalse(rootTaskInfo.IsFailed);
                 });
         }
 
         [UnityTest]
         public IEnumerator SearchMoveSplit4Test()
         {
-            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.SearchMoveSplit4(unitIndexInput, playerId),
+            yield return TaskTest(2, (unitIndexInput, playerId) =>
+             TaskInfo.Sequence
+                (
+                    TaskInfo.SetHealth(unitIndexInput, 64),
+                    TaskInfo.SearchMoveGrow(unitIndexInput, playerId),
+                    TaskInfo.SearchMoveSplit4(unitIndexInput, playerId)
+                )
+                , false,
                 rootTaskInfo =>
                 {
 
                 });
         }
 
-        [UnityTest]
-        public IEnumerator SearchForPathTest()
-        {
-            //TaskInfo.SearchForPath()
-            Assert.Fail();
-
-            yield return null;
-        }
-
-
         public IEnumerator TaskTest(int playerId, 
             Func<TaskInputInfo, int, TaskInfo> GetTestTaskInfo,
+            bool shouldTaskBeFailed,
             Action<TaskInfo> rootTaskCompleted,
-            Action<TaskInfo> childTaskCompleted = null)
+            Action<TaskInfo> childTaskCompleted = null,
+            int unitNumber = 0)
         {
-            BeginTest(TestEnv1, 2, 0, () =>
+            BeginTest(TestEnv1, 4, 0, () =>
             {
                 MapRoot map = Dependencies.Map.Map;
                 IMatchEngineCli matchEngineCli = Dependencies.MatchEngine;
 
                 Coordinate[] coords = map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
-                VoxelData voxel = map.Get(coords[0]);
+                VoxelData voxel = map.Get(coords[unitNumber]);
                 TaskInfo unitIndexTask = TaskInfo.UnitOrAssetIndex(voxel.UnitOrAssetIndex);
                 TaskInputInfo unitIndexInput = new TaskInputInfo
                 {
@@ -234,7 +326,7 @@ namespace Battlehub.VoxelCombat.Tests
                     {
                         if (taskInfo.TaskId == rootTask.TaskId)
                         {
-                            Assert.IsFalse(taskInfo.IsFailed);
+                            Assert.AreEqual(shouldTaskBeFailed, taskInfo.IsFailed);
                             taskEngine.TaskStateChanged -= taskStateChanged;
                             rootTaskCompleted(taskInfo);
                             EndTest();
@@ -263,17 +355,35 @@ namespace Battlehub.VoxelCombat.Tests
             }
         }
 
-
-
         [UnityTest]
         public IEnumerator SearchForFoodTaskTest()
+        {
+            return SearchForFoodTaskTest(2, (taskEngine, taskInfo, searchForFoodTask, coords) =>
+            {
+                Assert.IsFalse(taskInfo.IsFailed);
+
+                ITaskMemory memory = taskEngine.Memory;
+                Coordinate[] coordinate = (Coordinate[])memory.ReadOutput(searchForFoodTask.Parent.TaskId, searchForFoodTask.TaskId, 1);
+                Assert.AreEqual(1, coordinate[1].MapPos.SqDistanceTo(coords[0].MapPos));
+            });
+        }
+
+        [UnityTest]
+        public IEnumerator SearchForFoodTaskTestFail()
+        {
+            return SearchForFoodTaskTest(1, (taskEngine, taskInfo, searchForFoodTask, coords) =>
+            {
+                Assert.IsTrue(taskInfo.IsFailed);
+            });
+        }
+
+        public IEnumerator SearchForFoodTaskTest(int playerId, Action<ITaskEngine, TaskInfo, TaskInfo, Coordinate[]> callback)
         {
             BeginTest(TestEnv1, 2, 0, () =>
             {
                 MapRoot map = Dependencies.Map.Map;
                 IMatchEngineCli matchEngineCli = Dependencies.MatchEngine;
 
-                const int playerId = 2;
                 Coordinate[] coords = map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
                 VoxelData voxel = map.Get(coords[0]);
 
@@ -316,11 +426,8 @@ namespace Battlehub.VoxelCombat.Tests
                         if(taskInfo.TaskId == searchForFoodTask.TaskId)
                         {
                             taskEngine.TaskStateChanged -= taskStateChanged;
-                            Assert.IsFalse(taskInfo.IsFailed);
 
-                            ITaskMemory memory = taskEngine.Memory;
-                            Coordinate[] coordinate = (Coordinate[])memory.ReadOutput(searchForFoodTask.Parent.TaskId, searchForFoodTask.TaskId, 1);
-                            Assert.AreEqual(1, coordinate[0].MapPos.SqDistanceTo(coords[0].MapPos));
+                            callback(taskEngine, taskInfo, searchForFoodTask, coords);
 
                             EndTest();
                         } 

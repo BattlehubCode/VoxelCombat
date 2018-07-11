@@ -2,6 +2,7 @@
 using System.Runtime.Serialization;
 using System.Collections;
 using System;
+using System.Diagnostics;
 
 namespace Battlehub.VoxelCombat
 {
@@ -71,6 +72,9 @@ namespace Battlehub.VoxelCombat
         SearchForSplit4Location = 152,
         TEST_MockImmediate = 1000,
         TEST_Mock = 1001,
+        TEST_Fail = 1002,
+        TEST_Pass = 1003,
+        TEST_Assert = 1004,
     }
 
     public enum TaskState
@@ -453,7 +457,6 @@ namespace Battlehub.VoxelCombat
         public const int TaskSucceded = 0;
         public const int TaskFailed = 1;
 
-
         [ProtoMember(1)]
         public int m_taskId;
         [ProtoMember(2)]
@@ -573,7 +576,24 @@ namespace Battlehub.VoxelCombat
         public TaskState State
         {
             get { return m_state; }
-            set { m_state = value; }
+            set
+            {
+                m_state = value;
+                
+                if(TaskType == TaskType.Command)
+                {
+                    string cmdStr = string.Empty;
+                    if(Cmd != null)
+                    {
+                        cmdStr = " Cmd Code " + Cmd.Code;
+                    }
+                    UnityEngine.Debug.Log("Task State Changed " + TaskId + " " + TaskType + " " + m_state + " " + cmdStr);
+                }
+                else
+                {
+                    UnityEngine.Debug.Log("Task State Changed " + TaskId + " " + TaskType + " " + m_state);
+                }
+            }
         }
 
         public TaskInfo Parent { get; set; }
@@ -650,7 +670,6 @@ namespace Battlehub.VoxelCombat
             SetInputsScope(this, playerIndex, true);
         }
 
-
         private void SetInputScope(ExpressionInfo expression)
         {
             if(expression == null)
@@ -719,6 +738,18 @@ namespace Battlehub.VoxelCombat
                     }  
                 }
             }
+        }
+
+        public static TaskInfo Assert(Func<TaskBase, TaskInfo, TaskState> callback)
+        {
+            return new TaskInfo(TaskType.TEST_Assert)
+            {
+                Expression = new ExpressionInfo
+                {
+                    Code = ExpressionCode.Value,
+                    Value = callback
+                }
+            };
         }
 
         public static TaskInfo Var()
@@ -850,6 +881,18 @@ namespace Battlehub.VoxelCombat
             {
                 Cmd = new Cmd(CmdCode.Move),
                 Inputs = new[] { unitIndexInput, pathInput }
+            };
+        }
+
+        public static TaskInfo SetHealth(TaskInputInfo unitIndexInput, int health)
+        {
+            return new TaskInfo(TaskType.Command)
+            {
+                Cmd = new ChangeParamsCmd(CmdCode.SetHealth)
+                {
+                    IntParams = new[] { health },
+                },
+                Inputs = new [] { unitIndexInput }
             };
         }
 

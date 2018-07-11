@@ -48,7 +48,7 @@ namespace Battlehub.VoxelCombat
         /// <returns>unique task id</returns>
         void SubmitTask(TaskInfo taskInfo);
         void SubmitResponse(ClientRequest request);
-        void SetTaskState(int taskId, TaskState state);
+        void SetTaskState(int taskId, TaskState state, int statusCode);
 
         void Tick();
 
@@ -362,7 +362,10 @@ namespace Battlehub.VoxelCombat
                 { TaskType.SearchForSplit4Location, new TaskPool<SearchAroundForSplit4Location>(taskPoolSize) },
                 //For testing purposes
                 { TaskType.TEST_Mock, new TaskPool<MockTask>(taskPoolSize) },
-                { TaskType.TEST_MockImmediate, new TaskPool<MockImmediateTask>(taskPoolSize) }
+                { TaskType.TEST_MockImmediate, new TaskPool<MockImmediateTask>(taskPoolSize) },
+                { TaskType.TEST_Fail, new TaskPool<TestFailTask>(taskPoolSize) },
+                { TaskType.TEST_Pass, new TaskPool<TestPassTask>(taskPoolSize) },
+                { TaskType.TEST_Assert, new TaskPool<TestAssertTask>(taskPoolSize) }
             };
 
             m_cmdExpressionTaskPool = new TaskPool<ExecuteCmdTaskWithExpression>(taskPoolSize);
@@ -389,12 +392,13 @@ namespace Battlehub.VoxelCombat
             HandleTaskActivation(null, taskInfo);
         }
 
-        public void SetTaskState(int taskId, TaskState state)
+        public void SetTaskState(int taskId, TaskState state, int statusCode)
         {
             TaskBase task;
             if(m_idToActiveTask.TryGetValue(taskId, out task))
             {
                 task.TaskInfo.State = state;
+                task.TaskInfo.StatusCode = statusCode;
             }
         }
 
@@ -503,7 +507,7 @@ namespace Battlehub.VoxelCombat
                 for (int i = 0; i < children.Length; ++i)
                 {
                     TaskInfo child = children[i];
-                    if(child.State != TaskState.Active)
+                    if(child != null && child.State != TaskState.Active)
                     {
                         HandleActiveTaskRemoved(child);
                     }
@@ -529,8 +533,15 @@ namespace Battlehub.VoxelCombat
         private void HandleTaskActivation(TaskBase parent, TaskInfo taskInfo)
         {
             taskInfo.State = TaskState.Active;
+            TaskBase task;
+            if (m_idToActiveTask.TryGetValue(taskInfo.TaskId, out task))
+            {
+                Release(task);
+                m_idToActiveTask.Remove(taskInfo.TaskId);
+                m_activeTasks.Remove(task);
+            }
 
-            TaskBase task = Acquire(parent, taskInfo);
+            task = Acquire(parent, taskInfo);
             if (taskInfo.RequiresClientSidePreprocessing)
             {
                 m_activeTasks.Add(task);
@@ -562,8 +573,12 @@ namespace Battlehub.VoxelCombat
             {
                 TaskBase task = m_activeTasks[i];
                 task.TaskInfo.State = TaskState.Terminated;
-                Release(task);
                 RaiseTaskStateChanged(task.TaskInfo);
+            }
+            for (int i = m_activeTasks.Count - 1; i >= 0; --i)
+            {
+                TaskBase task = m_activeTasks[i];
+                Release(task);
             }
             m_activeTasks.Clear();
             m_idToActiveTask.Clear();
@@ -576,8 +591,6 @@ namespace Battlehub.VoxelCombat
                 TaskStateChanged(task);
             }
         }
-
-        
 
         public static void GenerateIdentitifers(TaskInfo taskInfo, ref int taskIdentitiy)
         {

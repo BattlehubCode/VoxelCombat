@@ -523,6 +523,91 @@ namespace Battlehub.VoxelCombat.Tests
         }
 
         [Test]
+        public void ContinueInSequenceTest()
+        {
+            Assert.DoesNotThrow(() =>
+            {
+                BeginTest(TestEnv0, 4);
+            });
+
+            const int playerId = 2;
+
+            ExpressionInfo expr = ExpressionInfo.PrimitiveVar(true);
+            TaskInfo task = TaskInfo.Repeat
+                (
+                    expr,
+                    new TaskInfo(TaskType.TEST_Mock),
+                    new TaskInfo(TaskType.TEST_Mock),
+                    TaskInfo.Sequence
+                    (
+                        new TaskInfo(TaskType.TEST_MockImmediate),
+                        TaskInfo.Assert((tb, ti) =>
+                        {
+                            expr.Value = PrimitiveContract.Create(false);
+                            return TaskState.Completed;
+                        }),
+                        TaskInfo.Continue(),
+                        new TaskInfo(TaskType.TEST_Fail)
+                    ),
+                    new TaskInfo(TaskType.TEST_MockImmediate),
+                    new TaskInfo(TaskType.TEST_MockImmediate)
+                );
+
+
+            BeginCleanupCheck(playerId);
+            FinializeTest(playerId, task, result =>
+            {
+                Assert.AreEqual(TaskState.Completed, result.State);
+                Assert.IsFalse(result.IsFailed);
+                CleanupCheck(playerId);
+                Assert.Pass();
+            });
+        }
+
+
+        [Test]
+        public void BreakInSequenceTest()
+        {
+            Assert.DoesNotThrow(() =>
+            {
+                BeginTest(TestEnv0, 4);
+            });
+
+            const int playerId = 2;
+
+            ExpressionInfo expr = ExpressionInfo.PrimitiveVar(true);
+            TaskInfo task = TaskInfo.Repeat
+                (
+                    expr,
+                    new TaskInfo(TaskType.TEST_Mock),
+                    new TaskInfo(TaskType.TEST_Mock),
+                    TaskInfo.Sequence
+                    (
+                        new TaskInfo(TaskType.TEST_MockImmediate),
+                        TaskInfo.Assert((tb, ti) =>
+                        {
+                            expr.Value = PrimitiveContract.Create(false);
+                            return TaskState.Completed;
+                        }),
+                        TaskInfo.Break(),
+                        new TaskInfo(TaskType.TEST_Fail)
+                    ),
+                    new TaskInfo(TaskType.TEST_MockImmediate),
+                    new TaskInfo(TaskType.TEST_MockImmediate)
+                );
+
+
+            BeginCleanupCheck(playerId);
+            FinializeTest(playerId, task, result =>
+            {
+                Assert.AreEqual(TaskState.Completed, result.State);
+                Assert.IsFalse(result.IsFailed);
+                CleanupCheck(playerId);
+                Assert.Pass();
+            });
+        }
+
+        [Test]
         public void RepeatContinueTaskTest()
         {
             TaskInputInfo input = new TaskInputInfo { OutputIndex = 0 };
@@ -711,7 +796,98 @@ namespace Battlehub.VoxelCombat.Tests
         [Test]
         public void ProcedureReturnTest()
         {
-            Assert.Fail();
+            Assert.DoesNotThrow(() =>
+            {
+                BeginTest(TestEnv0, 4);
+            });
+
+
+            TaskInfo procedure = TaskInfo.Procedure(
+                new TaskInfo(TaskType.TEST_Mock),
+                new TaskInfo(TaskType.TEST_MockImmediate),
+                new TaskInfo(TaskType.TEST_MockImmediate),
+                TaskInfo.Return(ExpressionInfo.PrimitiveVar(TaskInfo.TaskSucceded)),
+                new TaskInfo(TaskType.TEST_Fail)
+            );
+
+            TaskInfo root = TaskInfo.Sequence
+                (
+                    procedure,
+                    TaskInfo.Branch(
+                        ExpressionInfo.TaskSucceded(procedure),
+                        new TaskInfo(TaskType.Nop),
+                        new TaskInfo(TaskType.TEST_Fail)
+                    )
+                );
+
+            root.SetParents();
+
+            const int playerId = 1;
+            BeginCleanupCheck(playerId);
+
+            FinializeTest(playerId, root, result =>
+            {
+                Assert.AreEqual(root.TaskId, result.TaskId);
+                Assert.AreEqual(TaskState.Completed, result.State);
+                Assert.IsFalse(result.IsFailed);
+                CleanupCheck(playerId);
+
+                Assert.Pass();
+            },
+            childTask =>
+            {
+               
+            });
+        }
+
+        [Test]
+        public void RepeatProcedureReturnTest()
+        {
+            Assert.DoesNotThrow(() =>
+            {
+                BeginTest(TestEnv0, 4);
+            });
+
+
+            TaskInfo procedure = TaskInfo.Procedure(
+                TaskInfo.Repeat(
+                    ExpressionInfo.PrimitiveVar(true),
+                    new TaskInfo(TaskType.TEST_Mock),
+                    new TaskInfo(TaskType.TEST_MockImmediate),
+                    new TaskInfo(TaskType.TEST_MockImmediate),
+                    TaskInfo.Return(ExpressionInfo.PrimitiveVar(TaskInfo.TaskSucceded)),
+                    new TaskInfo(TaskType.TEST_Fail)
+                )
+            );
+
+            TaskInfo root = TaskInfo.Sequence
+                (
+                    procedure,
+                    TaskInfo.Branch(
+                        ExpressionInfo.TaskSucceded(procedure),
+                        new TaskInfo(TaskType.Nop),
+                        new TaskInfo(TaskType.TEST_Fail)
+                    )
+                );
+
+            root.SetParents();
+
+            const int playerId = 1;
+            BeginCleanupCheck(playerId);
+
+            FinializeTest(playerId, root, result =>
+            {
+                Assert.AreEqual(root.TaskId, result.TaskId);
+                Assert.AreEqual(TaskState.Completed, result.State);
+                Assert.IsFalse(result.IsFailed);
+                CleanupCheck(playerId);
+
+                Assert.Pass();
+            },
+            childTask =>
+            {
+
+            });
         }
 
         [Test]

@@ -67,6 +67,8 @@ namespace Battlehub.VoxelCombat
                 int scopeId = m_taskInfo.Parent.TaskId;
                 m_taskEngine.Memory.CreateOutputs(scopeId, m_taskInfo.TaskId, m_taskInfo.OutputsCount);
             }
+
+            UnityEngine.Debug.Log("Constructing " + m_taskInfo.TaskId + " " + m_taskInfo.TaskType);
             OnConstruct(); 
         }
 
@@ -151,12 +153,12 @@ namespace Battlehub.VoxelCombat
             m_taskEngine.Memory.WriteOutput(m_taskInfo.Parent.TaskId, m_taskInfo.TaskId, index, value);
         }
 
-        protected T ReadInput<T>(TaskInputInfo i)
+        public T ReadInput<T>(TaskInputInfo i)
         {
            return (T)m_taskEngine.Memory.ReadOutput(i.Scope.TaskId, i.OutputTask.TaskId, i.OutputIndex);
         }
 
-        protected T ReadInput<T>(TaskInputInfo i, T defaultValue)
+        public T ReadInput<T>(TaskInputInfo i, T defaultValue)
         {
             object value = m_taskEngine.Memory.ReadOutput(i.Scope.TaskId, i.OutputTask.TaskId, i.OutputIndex);
             if(value == null)
@@ -172,6 +174,34 @@ namespace Battlehub.VoxelCombat
         protected override void OnTick()
         {
             m_taskInfo.State = TaskState.Completed;
+        }
+    }
+
+    public class TestFailTask : TaskBase
+    {
+        protected override void OnTick()
+        {
+            base.OnTick();
+            NUnit.Framework.Assert.Fail();
+        }
+    }
+
+    public class TestPassTask : TaskBase
+    {
+        protected override void OnTick()
+        {
+            base.OnTick();
+            NUnit.Framework.Assert.Pass();
+        }
+    }
+
+    public class TestAssertTask : TaskBase
+    {
+        protected override void OnTick()
+        {
+            base.OnTick();
+            Func<TaskBase, TaskInfo, TaskState> callback = (Func<TaskBase, TaskInfo, TaskState>)m_taskInfo.Expression.Value;
+            m_taskInfo.State = callback(this, m_taskInfo);
         }
     }
 
@@ -258,6 +288,18 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        protected override void OnContinue()
+        {
+            m_taskInfo.State = TaskState.Completed;
+            base.OnContinue();
+        }
+
+        protected override void OnBreak()
+        {
+            m_taskInfo.State = TaskState.Completed;
+            base.OnBreak();
+        }
+
         private void ActivateNextTask()
         {
             TaskInfo childTask;
@@ -318,6 +360,7 @@ namespace Battlehub.VoxelCombat
 
             m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, value =>
             {
+                UnityEngine.Debug.Log("Branch " + m_taskInfo.TaskId + " evaluated to " + (bool)value);
                 int index = (bool)value ? 0 : 1;
                 m_childTask = m_taskInfo.Children.Length > index ? m_taskInfo.Children[index] : null;
                 if (m_childTask == null)
@@ -354,6 +397,7 @@ namespace Battlehub.VoxelCombat
     {
         private bool m_break;
         private bool m_reset;
+        private bool m_continue;
 
         protected override void OnTick()
         {
@@ -368,7 +412,12 @@ namespace Battlehub.VoxelCombat
                 {
                     base.OnTick();
 
-                    if (m_taskInfo.State == TaskState.Completed)
+                    if(m_continue)
+                    {
+                        m_continue = false;
+                        Reset();
+                    }
+                    else if (m_taskInfo.State == TaskState.Completed)
                     {
                         if (!m_break)
                         {
@@ -387,8 +436,15 @@ namespace Battlehub.VoxelCombat
 
         protected override void OnContinue()
         {
-            m_taskInfo.State = TaskState.Completed;
+            m_continue = true;
+           // m_taskInfo.State = TaskState.Completed;
             // Reset();
+        }
+
+        protected override void ReturnParent()
+        {
+            m_break = true;
+            base.ReturnParent();
         }
 
         protected virtual void EvaluateExpression(Action<bool> callback)
@@ -785,14 +841,36 @@ namespace Battlehub.VoxelCombat
             }
 
             Coordinate coordinate = m_unit.DataController.Coordinate;
-            int deltaCol = m_random.Next(1, radius + 1);
-            int deltaRow = m_random.Next(1, radius + 1);
-            coordinate.Col += deltaCol;
-            coordinate.Row += deltaRow;
+            int deltaCol;
+            int deltaRow;
+            do
+            {
+                deltaCol = m_random.Next(0, radius + 1);
+                deltaRow = m_random.Next(0, radius + 1);
+            }
+            while (deltaCol == 0 && deltaRow == 0);
 
-            m_taskEngine.Memory.WriteOutput(firstInput.Scope.TaskId, firstInput.OutputTask.TaskId, firstInput.OutputIndex, new[] { coordinate });
+            coordinate.Col = (m_random.Next() % 2 == 0) ?
+                coordinate.Col + deltaCol :
+                coordinate.Col - deltaCol;
+
+            coordinate.Row = (m_random.Next() % 2 == 0) ?
+                coordinate.Row + deltaRow :
+                coordinate.Row - deltaRow;
+
+            m_taskEngine.Memory.WriteOutput(
+                firstInput.Scope.TaskId, 
+                firstInput.OutputTask.TaskId, 
+                firstInput.OutputIndex, 
+                new[] { m_unit.DataController.Coordinate, coordinate });
 
             base.OnConstruct();
+
+            m_taskEngine.Memory.WriteOutput(
+                firstInput.Scope.TaskId, 
+                firstInput.OutputTask.TaskId, 
+                firstInput.OutputIndex,
+                radius);
         }
     }
 
@@ -984,7 +1062,7 @@ namespace Battlehub.VoxelCombat
             int altitude;
             if (GetSuitableData(ctx, unitData, row, col, out altitude))
             {
-                WriteOutput(1, new[] { new Coordinate(row, col, altitude, ctx.m_weight) });
+                WriteOutput(1, new[] { m_unit.DataController.Coordinate, new Coordinate(row, col, altitude, ctx.m_weight) });
                 return true;
             }
 

@@ -659,7 +659,7 @@ namespace Battlehub.VoxelCombat
                     UnitIndex = unitIndex
                 };
 
-                if (i == path.Length - 1)
+                if (i == path.Length - 2)
                 {
                     moveCmd.IsLastCmdInSequence = true && !isAutomatedAction;
                 }
