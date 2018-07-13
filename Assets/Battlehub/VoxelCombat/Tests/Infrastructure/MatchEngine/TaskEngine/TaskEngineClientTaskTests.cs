@@ -112,9 +112,9 @@ namespace Battlehub.VoxelCombat.Tests
                     Coordinate[] coords = map.FindDataOfType((int)KnownVoxelTypes.Eater, rootTaskInfo.PlayerIndex);
                     Assert.AreEqual(4, coords.Length);
                     Assert.AreEqual(1, coords[0].MapPos.SqDistanceTo(coords[1].MapPos));
-                    Assert.AreEqual(1, coords[1].MapPos.SqDistanceTo(coords[2].MapPos));
                     Assert.AreEqual(1, coords[2].MapPos.SqDistanceTo(coords[3].MapPos));
-                    Assert.AreEqual(1, coords[3].MapPos.SqDistanceTo(coords[0].MapPos));
+                    Assert.AreEqual(1, coords[0].MapPos.SqDistanceTo(coords[2].MapPos));
+                    Assert.AreEqual(1, coords[1].MapPos.SqDistanceTo(coords[3].MapPos));
                 });
         }
 
@@ -199,7 +199,7 @@ namespace Battlehub.VoxelCombat.Tests
         [UnityTest]
         public IEnumerator MoveToRandomLocationTest2()
         {
-            yield return TaskTest(4, (unitIndexInput, playerId) => TaskInfo.MoveToRandomLocation(unitIndexInput, 3, 100), false,
+            yield return TaskTest(4, (unitIndexInput, playerId) => TaskInfo.MoveToRandomLocation(unitIndexInput, 3, 1000), false,
                 rootTaskInfo =>
                 {
                     Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
@@ -326,7 +326,7 @@ namespace Battlehub.VoxelCombat.Tests
                     {
                         if (taskInfo.TaskId == rootTask.TaskId)
                         {
-                            Assert.AreEqual(shouldTaskBeFailed, taskInfo.IsFailed);
+                            Assert.AreEqual(shouldTaskBeFailed, taskInfo.IsFailed, taskInfo.ToString());
                             taskEngine.TaskStateChanged -= taskStateChanged;
                             rootTaskCompleted(taskInfo);
                             EndTest();
@@ -339,9 +339,9 @@ namespace Battlehub.VoxelCombat.Tests
                             }
                         }
                     }
-                    else
+                    else if(taskInfo.State != TaskState.Idle)
                     {
-                        Assert.AreEqual(TaskState.Active, taskInfo.State);
+                        Assert.AreEqual(TaskState.Active, taskInfo.State, taskInfo.ToString());
                     }
                 };
                 taskEngine.TaskStateChanged += taskStateChanged;
@@ -376,6 +376,7 @@ namespace Battlehub.VoxelCombat.Tests
                 Assert.IsTrue(taskInfo.IsFailed);
             });
         }
+
 
         public IEnumerator SearchForFoodTaskTest(int playerId, Action<ITaskEngine, TaskInfo, TaskInfo, Coordinate[]> callback)
         {

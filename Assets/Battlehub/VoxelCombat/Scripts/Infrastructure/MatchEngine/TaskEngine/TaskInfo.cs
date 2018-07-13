@@ -477,6 +477,8 @@ namespace Battlehub.VoxelCombat
         public int m_outputsCount;
         private int m_playerIndex = -1;
 
+        public string DebugString;
+
         public TaskInfo(TaskType taskType, Cmd cmd, TaskState state, ExpressionInfo expression, TaskInfo parent)
         {
             m_taskType = taskType;
@@ -579,20 +581,6 @@ namespace Battlehub.VoxelCombat
             set
             {
                 m_state = value;
-                
-                if(TaskType == TaskType.Command)
-                {
-                    string cmdStr = string.Empty;
-                    if(Cmd != null)
-                    {
-                        cmdStr = " Cmd Code " + Cmd.Code;
-                    }
-                    UnityEngine.Debug.Log("Task State Changed " + TaskId + " " + TaskType + " " + m_state + " " + cmdStr);
-                }
-                else
-                {
-                    UnityEngine.Debug.Log("Task State Changed " + TaskId + " " + TaskType + " " + m_state);
-                }
             }
         }
 
@@ -740,6 +728,11 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        public override string ToString()
+        {
+            return TaskType + " " + TaskId + " " + DebugString + " " + State + " " + (IsFailed ? "IsFailed=True" : "IsFailed=False");
+        }
+
         public static TaskInfo Assert(Func<TaskBase, TaskInfo, TaskState> callback)
         {
             return new TaskInfo(TaskType.TEST_Assert)
@@ -817,11 +810,31 @@ namespace Battlehub.VoxelCombat
             };
         }
 
+
+        public static TaskInfo Repeat(string debugString, ExpressionInfo expression, params TaskInfo[] sequence)
+        {
+            return new TaskInfo(TaskType.Repeat)
+            {
+                DebugString = debugString,
+                Expression = expression,
+                Children = sequence,
+            };
+        }
+
         public static TaskInfo Repeat(ExpressionInfo expression, params TaskInfo[] sequence)
         {
             return new TaskInfo(TaskType.Repeat)
             {
                 Expression = expression,
+                Children = sequence,
+            };
+        }
+
+        public static TaskInfo Sequence(string debugString, params TaskInfo[] sequence)
+        {
+            return new TaskInfo(TaskType.Sequence)
+            {
+                DebugString = debugString,
                 Children = sequence,
             };
         }
@@ -833,6 +846,18 @@ namespace Battlehub.VoxelCombat
                 Children = sequence,
             };
         }
+
+
+        public static TaskInfo Branch(string debugString, ExpressionInfo expression, TaskInfo yes, TaskInfo no = null)
+        {
+            return new TaskInfo(TaskType.Branch)
+            {
+                DebugString = debugString,
+                Expression = expression,
+                Children = new[] { yes, no }
+            };
+        }
+
 
         public static TaskInfo Branch(ExpressionInfo expression, TaskInfo yes, TaskInfo no = null)
         {
@@ -970,6 +995,8 @@ namespace Battlehub.VoxelCombat
         public static TaskInfo SearchForPath(TaskType taskType, TaskInfo pathVar, TaskInputInfo unitIndexInput)
         {
             TaskInfo searchForTask = SearchFor(taskType, unitIndexInput);
+            searchForTask.DebugString = "searchForTask";
+
             ExpressionInfo searchForSucceded = ExpressionInfo.TaskSucceded(searchForTask);
 
             TaskInputInfo coordinateInput = new TaskInputInfo(searchForTask, 1);
@@ -991,6 +1018,7 @@ namespace Battlehub.VoxelCombat
                         Branch(
                             searchForSucceded,
                             Sequence(
+                                "find path sequence",
                                 findPathTask,
                                 Branch(
                                     findPathSucceded,
@@ -1017,6 +1045,7 @@ namespace Battlehub.VoxelCombat
 
             TaskInputInfo pathInput = new TaskInputInfo(randomLocationPath, 0);
             TaskInfo moveTask = Move(unitIndexInput, pathInput);
+            moveTask.DebugString = "randomMoveTask";
 
             return Procedure
             (
@@ -1028,6 +1057,7 @@ namespace Battlehub.VoxelCombat
                         randomLocationPathFound,
                         Sequence
                         (
+                            "randomMoveTaskSequence",
                             moveTask,
                             Return(ExpressionInfo.TaskStatus(moveTask))
                         )
@@ -1045,19 +1075,25 @@ namespace Battlehub.VoxelCombat
             ExpressionInfo pathFound = ExpressionInfo.TaskSucceded(searhForPathTask);
             TaskInputInfo pathInput = new TaskInputInfo(pathVar, 0);
             TaskInfo moveTask = Move(unitIndexInput, pathInput);
+            moveTask.DebugString = "moveTask";
+
+            TaskInfo moveToRandomLocation = MoveToRandomLocation(unitIndexInput);
+            moveToRandomLocation.DebugString = "moveToRandomLocation";
             return
                 Procedure
                 (
                     pathVar,
                     searhForPathTask,
                     Branch(
+                        "if path found",
                         pathFound,
                         Sequence
                         (
+                            "moveTaskSequence",
                             moveTask,
                             Return(ExpressionInfo.TaskStatus(moveTask))
                         ),
-                        MoveToRandomLocation(unitIndexInput)
+                        moveToRandomLocation
                     )
                 );
         }
@@ -1140,6 +1176,7 @@ namespace Battlehub.VoxelCombat
         {
             TaskInfo canGrowTask = EvalExpression(
                  ExpressionInfo.UnitCanGrow(ExpressionInfo.Val(unitIndexInput), playerId));
+            canGrowTask.DebugString = "canGrowTask";
 
             TaskInputInfo canGrowInput = new TaskInputInfo
             {
@@ -1154,8 +1191,13 @@ namespace Battlehub.VoxelCombat
             ExpressionInfo whileTrue = ExpressionInfo.PrimitiveVar(true);
 
             TaskInfo eatTask = SearchMoveOrRandomMove(TaskType.SearchForFood, unitIndexInput);
+            eatTask.DebugString = "eatTask";
+
             TaskInfo growTask = SearchMoveGrow(unitIndexInput, playerId);
+            growTask.DebugString = "growTask";
+
             TaskInfo split4Task = SearchMoveSplit4(unitIndexInput, playerId);
+            split4Task.DebugString = "split4Task";
 
             return
                 Procedure(
@@ -1164,20 +1206,25 @@ namespace Battlehub.VoxelCombat
                         whileTrue,
                         canGrowTask,
                         Branch(
+                            "if need more food",
                             needMoreFood,
                             Sequence(
                                 eatTask,
                                 Branch(
+                                    "if eat task succeded",
                                     ExpressionInfo.TaskSucceded(eatTask),
                                     Continue(),
                                     Return(ExpressionInfo.TaskStatus(eatTask))
                                 )
                             ),
                             Sequence(
+                                "grow, split4",
                                 growTask,
                                 Branch(
+                                    "if grow task succeded",
                                     ExpressionInfo.TaskSucceded(growTask),
                                     Sequence(
+                                        "split4 and return status",
                                         split4Task,
                                         Return(ExpressionInfo.TaskStatus(split4Task))
                                     ),

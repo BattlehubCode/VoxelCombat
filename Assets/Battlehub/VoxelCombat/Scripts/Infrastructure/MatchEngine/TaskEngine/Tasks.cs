@@ -7,11 +7,36 @@ namespace Battlehub.VoxelCombat
     public delegate void TaskEvent(TaskBase sender, TaskInfo taskInfo);
     public abstract class TaskBase
     {
-        protected static readonly Random m_random = new Random((int)(DateTime.Now.Ticks % short.MaxValue));
+        protected static readonly Random m_random = new Random((int)(DateTime.Now.AddMinutes(-15).Ticks % short.MaxValue));
+        private bool m_isAcquired;
         public bool IsAcquired
         {
-            get;
-            set;
+            get { return m_isAcquired; }
+            set
+            {
+                if(m_isAcquired != value)
+                {
+                    m_isAcquired = value;
+                    if (m_isAcquired)
+                    {
+                        OnAcquired();
+                    }
+                    else
+                    {
+                        OnReleased();
+                    }
+                }
+            }
+        }
+
+        protected virtual void OnAcquired()
+        {
+
+        }
+
+        protected virtual void OnReleased()
+        {
+
         }
 
         public event TaskEvent ChildTaskActivated;
@@ -29,7 +54,6 @@ namespace Battlehub.VoxelCombat
                 {
                     m_expression = m_taskEngine.GetExpression(m_taskInfo.Expression.Code);
                 }
-                OnInitialized();
             }
         }
 
@@ -50,11 +74,6 @@ namespace Battlehub.VoxelCombat
             get { return m_taskInfo.Inputs != null ? m_taskInfo.Inputs.Length : 0; }
         }
 
-        protected virtual void OnInitialized()
-        {
-
-        }
-
         public void Construct()
         {
             if (m_taskInfo.State != TaskState.Active)
@@ -68,7 +87,7 @@ namespace Battlehub.VoxelCombat
                 m_taskEngine.Memory.CreateOutputs(scopeId, m_taskInfo.TaskId, m_taskInfo.OutputsCount);
             }
 
-            UnityEngine.Debug.Log("Constructing " + m_taskInfo.TaskId + " " + m_taskInfo.TaskType);
+            UnityEngine.Debug.Log("Constructing " + m_taskInfo.DebugString + " " + m_taskInfo.TaskId + " " + m_taskInfo.TaskType);
             OnConstruct(); 
         }
 
@@ -137,7 +156,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-
         protected virtual void OnTick() { }
 
         protected void RaiseChildTaskActivated(TaskInfo taskInfo)
@@ -166,6 +184,11 @@ namespace Battlehub.VoxelCombat
                 return defaultValue;
             }
             return (T)value;
+        }
+
+        public override string ToString()
+        {
+            return m_taskInfo.ToString();
         }
     }
 
@@ -220,364 +243,23 @@ namespace Battlehub.VoxelCombat
 
     public class MockImmediateTask : TaskBase
     {
-        protected override void OnConstruct()
+        protected override void OnTick()
         {
             m_taskInfo.State = TaskState.Completed;
         }
     }
 
-    public class BasicFlowTask : TaskBase
-    {
-        protected override void OnConstruct()
-        {
-            base.OnConstruct();
-            Reset();
-        }
-
-        protected override void Reset()
-        {
-            m_taskInfo.Reset();
-            m_taskInfo.State = TaskState.Active;
-            if(m_taskInfo.Children != null)
-            {
-                for (int i = 0; i < m_taskInfo.Children.Length; ++i)
-                {
-                    if(m_taskInfo.Children[i] != null && m_taskInfo.Children[i].State != TaskState.Idle)
-                    {
-                        m_taskInfo.Children[i].Reset();
-                    } 
-                }
-            }           
-        }
-
-        protected override void OnBreak()
-        {
-            BreakParent();
-        }
-
-        protected override void OnContinue()
-        {
-            ContinueParent();
-        }
-    }
-
-    public class SequentialTask : BasicFlowTask
-    {
-        protected int m_activeChildIndex;
  
-        protected override void OnTick()
-        {
-            TaskInfo childTask = m_activeChildIndex >= 0 ? m_taskInfo.Children[m_activeChildIndex] : null;
-            if(childTask == null || childTask.State != TaskState.Active)
-            {
-                ActivateNextTask();
-            }
-        }
-
-        protected override void Reset()
-        {
-            base.Reset();
-            m_activeChildIndex = -1;
-            if(m_taskInfo.Children == null || m_taskInfo.Children.Length == 0)
-            {
-                m_taskInfo.State = TaskState.Completed;
-            }
-            else
-            {
-                ActivateNextTask();
-            }
-        }
-
-        protected override void OnContinue()
-        {
-            m_taskInfo.State = TaskState.Completed;
-            base.OnContinue();
-        }
-
-        protected override void OnBreak()
-        {
-            m_taskInfo.State = TaskState.Completed;
-            base.OnBreak();
-        }
-
-        private void ActivateNextTask()
-        {
-            TaskInfo childTask;
-            do
-            {
-                m_activeChildIndex++;
-                if (m_activeChildIndex >= m_taskInfo.Children.Length)
-                {
-                    m_activeChildIndex = -1;
-                    m_taskInfo.State = TaskState.Completed;
-                    break;
-                }
-                childTask = m_taskInfo.Children[m_activeChildIndex];
-                RaiseChildTaskActivated(childTask);
-                if(childTask.State == TaskState.Active)
-                {
-                    break;
-                }
-                else if(childTask.State != TaskState.Completed)
-                {
-                    m_taskInfo.State = TaskState.Terminated;
-                    break;
-                }
-            }
-            while (m_taskInfo.State == TaskState.Active);
-        }
-    }
-
-    public class ProcedureTask : SequentialTask
-    {
-        protected override void ReturnParent()
-        {
-            
-        }
-    }
-
-    public class BranchTask : BasicFlowTask
-    {
-        private TaskInfo m_childTask;
-
-        protected override void OnTick()
-        {
-            if (!m_taskInfo.Expression.IsEvaluating)
-            {
-                WaitChildTaskDeactivation();
-            }
-        }
-
-        protected override void Reset()
-        {
-            base.Reset();
-            m_childTask = null;
-            
-            if(m_taskInfo.Expression.IsEvaluating)
-            {
-                throw new InvalidOperationException("Unable to reset while Expression is evaluating");
-            }
-
-            m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, value =>
-            {
-                UnityEngine.Debug.Log("Branch " + m_taskInfo.TaskId + " evaluated to " + (bool)value);
-                int index = (bool)value ? 0 : 1;
-                m_childTask = m_taskInfo.Children.Length > index ? m_taskInfo.Children[index] : null;
-                if (m_childTask == null)
-                {
-                    //empty else or if block 
-                    m_taskInfo.State = TaskState.Completed;
-                }
-                else
-                {
-                    m_childTask.State = TaskState.Active;
-                    RaiseChildTaskActivated(m_childTask);
-                    WaitChildTaskDeactivation();
-                }
-            });
-        }
-
-        private void WaitChildTaskDeactivation()
-        {
-            if (m_childTask.State != TaskState.Active)
-            {
-                if (m_childTask.State == TaskState.Completed)
-                {
-                    m_taskInfo.State = TaskState.Completed;
-                }
-                else
-                {
-                    m_taskInfo.State = TaskState.Terminated;
-                }
-            }
-        }
-    }
-
-    public class RepeatTask : SequentialTask
-    {
-        private bool m_break;
-        private bool m_reset;
-        private bool m_continue;
-
-        protected override void OnTick()
-        {
-            if(!m_taskInfo.Expression.IsEvaluating)
-            {
-                if(m_reset)
-                {
-                    m_reset = false;
-                    Reset();
-                }
-                else
-                {
-                    base.OnTick();
-
-                    if(m_continue)
-                    {
-                        m_continue = false;
-                        Reset();
-                    }
-                    else if (m_taskInfo.State == TaskState.Completed)
-                    {
-                        if (!m_break)
-                        {
-                            Reset();
-                        }
-                    }
-                }
-            }
-        }
-
-        protected override void OnBreak()
-        {
-            m_break = true;
-            m_taskInfo.State = TaskState.Completed;
-        }
-
-        protected override void OnContinue()
-        {
-            m_continue = true;
-           // m_taskInfo.State = TaskState.Completed;
-            // Reset();
-        }
-
-        protected override void ReturnParent()
-        {
-            m_break = true;
-            base.ReturnParent();
-        }
-
-        protected virtual void EvaluateExpression(Action<bool> callback)
-        {
-            m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, value =>
-            {
-                callback((bool)value);
-            });
-        }
-
-        protected override void Reset()
-        {
-            if (m_taskInfo.Expression.IsEvaluating)
-            {
-                throw new InvalidOperationException("Unable to reset while Expression is evaluating");
-            }
-
-            m_break = false;
-            EvaluateExpression(value => 
-            {
-                if (value)
-                {
-                    base.Reset();
-                    if (m_taskInfo.State == TaskState.Completed)
-                    {
-                        if(!m_break)
-                        {
-                            m_reset = true;
-                            m_taskInfo.State = TaskState.Active;
-                        }  
-                    }
-                }
-                else
-                {
-                    m_taskInfo.State = TaskState.Completed;
-                }
-            });
-        }
-    }
-
-    public class ForeachTask : RepeatTask
-    {
-        private int m_index = -1;
-        private IList m_list;
-
-        protected override void OnInitialized()
-        {
-            if (InputsCount != 1)
-            {
-                throw new ArgumentException("InputsCount != 1", "taskInfo");
-            }
-
-            if (m_taskInfo.OutputsCount < 1)
-            {
-                throw new ArgumentException("taskInfo.OutputsCount < 1", "taskInfo");
-            }
-        }
-
-        protected override void OnConstruct()
-        {
-            m_list = ReadInput<IList>(m_taskInfo.Inputs[0]);
-            if (m_list != null && m_list.Count > 0)
-            {
-                base.OnConstruct();
-            }
-            else
-            {
-                m_taskInfo.State = TaskState.Completed;
-            }       
-        }
-
-        protected override void EvaluateExpression(Action<bool> callback)
-        {
-            m_index++;
-            if(m_index < m_list.Count)
-            {
-                WriteOutput(0, m_list[m_index]);
-                WriteOutput(1, m_index);
-                callback(true);
-            }
-            else
-            {
-                callback(false);
-            }
-        }
-    }
-
-    public class BreakTask : TaskBase
-    {
-        protected override void OnConstruct()
-        {
-            base.OnConstruct();
-            m_taskInfo.State = TaskState.Completed;
-            BreakParent();
-        }
-    }
-
-    public class ContinueTask : TaskBase
-    {
-        protected override void OnConstruct()
-        {
-            base.OnConstruct();
-            m_taskInfo.State = TaskState.Completed;
-            ContinueParent();
-        }
-    }
-
-    public class ReturnTask : TaskBase
-    {
-        protected override void OnConstruct()
-        {
-            base.OnConstruct();
-
-            if(m_expression != null)
-            {
-                m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, taskStatus =>
-                {
-                    m_taskInfo.State = TaskState.Completed;
-                    m_taskInfo.StatusCode = (int)taskStatus;
-                    ReturnParent();
-                });
-            }
-            else
-            {
-                m_taskInfo.State = TaskState.Completed;
-                ReturnParent();
-            }
-        }
-    }
-
     public class ExecuteCmdTaskWithExpression : TaskBase
     {
         private bool m_running;
+
+        protected override void OnReleased()
+        {
+            base.OnReleased();
+            m_running = false;
+        }
+
         protected override void OnConstruct()
         {
             if(m_running)
@@ -627,6 +309,11 @@ namespace Battlehub.VoxelCombat
     public class ExecuteCmdTask : TaskBase
     {
         protected IMatchUnitAssetView m_unit;
+        protected override void OnReleased()
+        {
+            base.OnReleased();
+            m_unit = null;
+        }
 
         protected override void OnConstruct()
         {
@@ -644,15 +331,17 @@ namespace Battlehub.VoxelCombat
             IMatchPlayerView playerView = m_taskEngine.MatchEngine.GetPlayerView(m_taskInfo.PlayerIndex);
             if(playerView == null)
             {
-                m_taskInfo.StatusCode = TaskInfo.TaskFailed;
                 m_taskInfo.State = TaskState.Completed;
+                m_taskInfo.StatusCode = TaskInfo.TaskFailed;
+                return;
             }
 
             m_unit = playerView.GetUnit(m_taskInfo.Cmd.UnitIndex);
             if (m_unit == null)
             {
-                m_taskInfo.StatusCode = TaskInfo.TaskFailed;
                 m_taskInfo.State = TaskState.Completed;
+                m_taskInfo.StatusCode = TaskInfo.TaskFailed;
+                return;
             }
             else
             {
@@ -718,8 +407,9 @@ namespace Battlehub.VoxelCombat
 
     public class EvaluateExpressionTask : TaskBase
     {
-        protected override void OnInitialized()
+        protected override void OnAcquired()
         {
+            base.OnAcquired();
             if(m_taskInfo.Parent == null)
             {
                 throw new ArgumentException("taskInfo.Parent == null", "taskInfo");
@@ -745,8 +435,9 @@ namespace Battlehub.VoxelCombat
     {
         private IMatchUnitAssetView m_unit;
 
-        protected override void OnInitialized()
+        protected override void OnAcquired()
         {
+            base.OnAcquired();
             if (m_taskInfo.OutputsCount != 1)
             {
                 throw new ArgumentException(string.Format("taskInfo.OutputsCount == {0}, Must be equal to 1", m_taskInfo.OutputsCount), "taskInfo");
@@ -756,6 +447,12 @@ namespace Battlehub.VoxelCombat
             {
                 throw new ArgumentException("InputsCount < 2", "taskInfo");
             }
+        }
+
+        protected override void OnReleased()
+        {
+            base.OnReleased();
+            m_unit = null;
         }
 
         protected override void OnConstruct()
@@ -776,10 +473,18 @@ namespace Battlehub.VoxelCombat
                     if (path[path.Length - 1] == waypoints[waypoints.Length - 1])
                     {
                         WriteOutput(0, path);
+                        if(m_taskInfo.State != TaskState.Active)
+                        {
+                            throw new InvalidOperationException("m_taskInfo.State shoud be equal to Active but its " + m_taskInfo.State);
+                        }
                         m_taskInfo.State = TaskState.Completed;
                     }
                     else
                     {
+                        if (m_taskInfo.State != TaskState.Active)
+                        {
+                            throw new InvalidOperationException("m_taskInfo.State shoud be equal to Active but its " + m_taskInfo.State);
+                        }
                         m_taskInfo.StatusCode = TaskInfo.TaskFailed;
                         m_taskInfo.State = TaskState.Completed;
                     }
@@ -788,7 +493,8 @@ namespace Battlehub.VoxelCombat
                 {
                     if (m_taskInfo.State == TaskState.Active)
                     {
-                        Debug.Assert(false, "Path finding should not be termiated when task is in active state");
+                        UnityEngine.Debug.LogWarning("Path finding should not be termiated when task is in active state");
+                        //throw new InvalidOperationException();
                         m_taskInfo.StatusCode = TaskInfo.TaskFailed;
                         m_taskInfo.State = TaskState.Completed;
                     }
@@ -813,8 +519,9 @@ namespace Battlehub.VoxelCombat
     {
         private IMatchUnitAssetView m_unit;
 
-        protected override void OnInitialized()
+        protected override void OnAcquired()
         {
+            base.OnAcquired();
             if (m_taskInfo.OutputsCount != 1)
             {
                 throw new ArgumentException("taskInfo.OutputsCount != 1", "taskInfo");
@@ -824,6 +531,12 @@ namespace Battlehub.VoxelCombat
             {
                 throw new ArgumentException("InputsCount < 2", "taskInfo");
             }
+        }
+
+        protected override void OnReleased()
+        {
+            base.OnReleased();
+            m_unit = null;
         }
 
         protected override void OnConstruct()
@@ -909,8 +622,6 @@ namespace Battlehub.VoxelCombat
                     m_deltaRow = -m_startRadius;
                     m_radius = m_startRadius;
                 }
-
-               
             }
         }
 
@@ -921,6 +632,13 @@ namespace Battlehub.VoxelCombat
 
         protected IMatchUnitAssetView m_unit;
         protected IVoxelDataController m_dataController;
+
+        protected override void OnReleased()
+        {
+            base.OnReleased();
+            m_unit = null;
+            m_dataController = null;
+        }
 
         protected override void OnConstruct()
         {
@@ -1039,8 +757,9 @@ namespace Battlehub.VoxelCombat
 
     public class SearchAroundForTask : SearchAroundTask
     {
-        protected override void OnInitialized()
+        protected override void OnAcquired()
         {
+            base.OnAcquired();
             if (InputsCount < 2)
             {
                 throw new ArgumentException("InputsCount < 2", "taskInfo");

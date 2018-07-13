@@ -12,6 +12,11 @@ namespace Battlehub.VoxelCombat
         event TaskEngineEvent<TaskInfo> TaskStateChanged;
         event TaskEngineEvent<ClientRequest> ClientRequest;
 
+        long CurrentTick
+        {
+            get;
+        }
+
         bool IsClient
         {
             get;
@@ -66,6 +71,7 @@ namespace Battlehub.VoxelCombat
 
     public interface ITaskMemory
     {
+        bool HasOutput(int scopeId, int taskId, int index);
         void CreateOutputs(int scopeId, int taskId, int count);
         void WriteOutput(int scopeId, int taskId, int index, object value);
         object ReadOutput(int scopeId, int taskId, int index);
@@ -77,7 +83,7 @@ namespace Battlehub.VoxelCombat
 
         Dictionary<int, Dictionary<int, object[]>> ITaskMemoryTestView.Memory
         {
-            get { return m_memory;}
+            get { return m_memory; }
         }
 
         private Dictionary<int, object[]> CreateScope(int scopeId)
@@ -100,6 +106,28 @@ namespace Battlehub.VoxelCombat
             }
 
             return scope;
+        }
+
+        public bool HasOutput(int scopeId, int taskId, int index)
+        {
+            Dictionary<int, object[]> scope;
+            if (!m_memory.TryGetValue(scopeId, out scope))
+            {
+                return false;
+            }
+
+            object[] values;
+            if(!scope.TryGetValue(taskId, out values))
+            {
+                return false;
+            }
+
+            if(values == null || index < 0 || index >= values.Length)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         public void CreateOutputs(int scopeId, int taskId, int count)
@@ -203,6 +231,11 @@ namespace Battlehub.VoxelCombat
         public bool IsClient
         {
             get { return m_isClient; }
+        }
+
+        public long CurrentTick
+        {
+            get { return m_tick; }
         }
 
         private readonly IMatchView m_match;
@@ -446,9 +479,9 @@ namespace Battlehub.VoxelCombat
 
         public void Tick()
         {
-            if(m_nextTimeoutCheck == m_tick)
+            if (m_nextTimeoutCheck == m_tick)
             {
-                if(m_requests.Count > 0)
+                if (m_requests.Count > 0)
                 {
                     var keys = m_requests.Keys;
                     foreach (var key in keys)
@@ -460,7 +493,7 @@ namespace Battlehub.VoxelCombat
                         }
                     }
 
-                    if(m_timeoutRequests.Count > 0)
+                    if (m_timeoutRequests.Count > 0)
                     {
                         for (int i = 0; i < m_timeoutRequests.Count; ++i)
                         {
@@ -471,9 +504,10 @@ namespace Battlehub.VoxelCombat
                         m_timeoutRequests.Clear();
                     }
                 }
-                
+
                 m_nextTimeoutCheck = m_tick + m_timeoutTicks / 4;
             }
+
 
             for (int i = m_activeTasks.Count - 1; i >= 0; --i)
             {
@@ -482,12 +516,16 @@ namespace Battlehub.VoxelCombat
                 {
                     activeTask.Tick();
                 }
+            }
 
+            for (int i = m_activeTasks.Count - 1; i >= 0; --i)
+            {
+                TaskBase activeTask = m_activeTasks[i];
                 if (activeTask.TaskInfo.State != TaskState.Active)
                 {
                     m_activeTasks.RemoveAt(i);
                     HandleActiveTaskRemoved(activeTask.TaskInfo);
-                }
+                }              
             }
 
             m_tick++;
@@ -501,28 +539,23 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            TaskInfo[] children = activeTaskInfo.Children;
-            if (children != null)
-            {
-                for (int i = 0; i < children.Length; ++i)
-                {
-                    TaskInfo child = children[i];
-                    if(child != null && child.State != TaskState.Active)
-                    {
-                        HandleActiveTaskRemoved(child);
-                    }
-                }
-            }
+            //TaskInfo[] children = activeTaskInfo.Children;
+            //if (children != null)
+            //{
+            //    for (int i = 0; i < children.Length; ++i)
+            //    {
+            //        TaskInfo child = children[i];
+            //        if(child != null && child.State != TaskState.Active)
+            //        {
+            //            HandleActiveTaskRemoved(child);
+            //        }
+            //    }
+            //}
 
             m_idToActiveTask.Remove(activeTaskInfo.TaskId);
             m_requests.Remove(activeTaskInfo.TaskId);
             Release(activeTask);
             RaiseTaskStateChanged(activeTaskInfo);
-        }
-
-        private void RaiseTaskStateChagedRecursive(TaskBase activeTask)
-        {
-         
         }
 
         private void OnChildTaskActivated(TaskBase parent, TaskInfo taskInfo)
@@ -541,29 +574,18 @@ namespace Battlehub.VoxelCombat
                 m_activeTasks.Remove(task);
             }
 
+            RaiseTaskStateChanged(taskInfo);
             task = Acquire(parent, taskInfo);
+            m_activeTasks.Add(task);
+            m_idToActiveTask.Add(task.TaskInfo.TaskId, task);
             if (taskInfo.RequiresClientSidePreprocessing)
             {
-                m_activeTasks.Add(task);
-                m_idToActiveTask.Add(taskInfo.TaskId, task);
                 RaiseClientRequest(taskInfo);
-                RaiseTaskStateChanged(taskInfo);
-            }
+            }  
             else
             {
                 task.ChildTaskActivated += OnChildTaskActivated;
                 task.Construct();
-                if (task.TaskInfo.State == TaskState.Active)
-                {
-                    m_activeTasks.Add(task);
-                    m_idToActiveTask.Add(task.TaskInfo.TaskId, task);
-                }
-                else
-                {
-                    task.ChildTaskActivated -= OnChildTaskActivated;
-                    Release(task);
-                }
-                RaiseTaskStateChanged(taskInfo);
             }
         }
 
@@ -677,6 +699,8 @@ namespace Battlehub.VoxelCombat
             {
                 throw new InvalidOperationException("!IsAcqired");
             }
+
+            task.ChildTaskActivated -= OnChildTaskActivated;
             task.IsAcquired = false;
             TaskInfo taskInfo = task.TaskInfo;
             if(taskInfo.State != TaskState.Active)

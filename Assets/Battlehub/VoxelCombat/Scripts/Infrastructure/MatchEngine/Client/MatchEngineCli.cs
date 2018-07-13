@@ -204,6 +204,11 @@ namespace Battlehub.VoxelCombat
 
         private void FixedUpdate()
         {
+            OnFixedUpdate();
+        }
+
+        private void OnFixedUpdate()
+        {
             while ((Time.realtimeSinceStartup - m_prevTickTime) >= GameConstants.MatchEngineTick)
             {
                 for (int i = 0; i < m_taskRunners.Length; ++i)
@@ -230,7 +235,7 @@ namespace Battlehub.VoxelCombat
                 {
                     Error error = new Error(StatusCode.OK);
                     CommandsBundle commands = m_commands.Peek();
-                 
+
                     if (commands.Tick == m_tick)
                     {
                         m_commands.Dequeue();
@@ -250,16 +255,16 @@ namespace Battlehub.VoxelCombat
                             ProcessRequest(commands.ClientRequests);
                         }
                     }
-                    else if(m_tick < (commands.Tick - 8)) //This means the diff between server time and client time > 400ms, so we try to make adjustment
+                    else if (m_tick < (commands.Tick - 8)) //This means the diff between server time and client time > 400ms, so we try to make adjustment
                     {
-                        #warning DON'T KNOW IF IT'S SAFE TO MAKE SUCH ADJUSTMENT
+#warning DON'T KNOW IF IT'S SAFE TO MAKE SUCH ADJUSTMENT
                         m_tick++;
                         Debug.LogWarning("Diff between server time and client time is too high. Probabliy ping is lower then measured initially");
                     }
                     else if (m_tick > commands.Tick)
                     {
                         error.Code = StatusCode.HighPing;
-                        while(commands != null && m_tick > commands.Tick)
+                        while (commands != null && m_tick > commands.Tick)
                         {
                             m_commands.Dequeue();
 
@@ -288,7 +293,7 @@ namespace Battlehub.VoxelCombat
                             }
                         }
 
-                        if(commands != null && commands.Tick == m_tick)
+                        if (commands != null && commands.Tick == m_tick)
                         {
                             m_commands.Dequeue();
 
@@ -311,10 +316,10 @@ namespace Battlehub.VoxelCombat
                     }
                 }
 
-                for(int i = 0; i < m_taskEngines.Length; ++i)
+                for (int i = 0; i < m_taskEngines.Length; ++i)
                 {
                     ITaskEngine taskEngine = m_taskEngines[i];
-                    if(taskEngine != null)
+                    if (taskEngine != null)
                     {
                         taskEngine.Tick();
                     }

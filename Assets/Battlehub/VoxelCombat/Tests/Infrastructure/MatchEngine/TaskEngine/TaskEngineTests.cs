@@ -416,6 +416,7 @@ namespace Battlehub.VoxelCombat.Tests
                 OutputsCount = 1,
                 Expression = setToZero,
             };
+            input.OutputTask = setToZeroTask;
 
             ExpressionInfo increment = ExpressionInfo.Assign(setToZeroTask, add);
             TaskInfo incrementTask = new TaskInfo
@@ -446,12 +447,14 @@ namespace Battlehub.VoxelCombat.Tests
                 }
             };
             task.SetParents();
+            const int playerId = 1;
+            task.Initialize(playerId);
 
-            input.OutputTask = setToZeroTask;
-            input.SetScope();
+            //
+            //input.SetScope();
 
             bool isIncremented = false;
-            const int playerId = 1;
+            
             BeginCleanupCheck(playerId);
             FinializeTest(playerId, task, result =>
             {
@@ -630,7 +633,7 @@ namespace Battlehub.VoxelCombat.Tests
             int continueCounter = 0;
             RepeatTaskTest(branchTask, input, 2, 2, childTask =>
             {
-                if(continueTask.TaskId == childTask.TaskId)
+                if(continueTask.TaskId == childTask.TaskId && continueTask.State == TaskState.Active)
                 {
                     continueCounter++;
                     if(continueCounter == 1)
@@ -691,11 +694,14 @@ namespace Battlehub.VoxelCombat.Tests
             },
             childTask =>
             {
-                ITaskMemory memory = m_engine.GetTaskEngine(playerId).Memory;
-                IterationResult iterResult = (IterationResult)memory.ReadOutput(iterateTask.Parent.TaskId, iterateTask.TaskId, 0);
-                Assert.IsFalse(iterResult.IsLast);
-                Assert.AreEqual(1, (int)iterResult.Object);
-                isIterated = true;
+                if(childTask.State == TaskState.Completed)
+                {
+                    ITaskMemory memory = m_engine.GetTaskEngine(playerId).Memory;
+                    IterationResult iterResult = (IterationResult)memory.ReadOutput(iterateTask.Parent.TaskId, iterateTask.TaskId, 0);
+                    Assert.IsFalse(iterResult.IsLast);
+                    Assert.AreEqual(1, (int)iterResult.Object);
+                    isIterated = true;
+                } 
             });
         }
 
@@ -775,7 +781,7 @@ namespace Battlehub.VoxelCombat.Tests
             },
             childTask =>
             {
-                if(childTask.TaskId == iterateTask.TaskId)
+                if(childTask.TaskId == iterateTask.TaskId && childTask.State == TaskState.Completed)
                 {
                     counter++;
                     ITaskMemory memory = m_engine.GetTaskEngine(playerId).Memory;
@@ -1189,7 +1195,7 @@ namespace Battlehub.VoxelCombat.Tests
                         callback(taskInfo);
                     }
                 }
-                else;
+                else
                 {
                     if (childTaskCallback != null)
                     {
