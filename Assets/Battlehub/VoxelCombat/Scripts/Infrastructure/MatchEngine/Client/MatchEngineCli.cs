@@ -11,6 +11,8 @@ namespace Battlehub.VoxelCombat
     public delegate void MatchEngineCliEvent<T, V, W>(Error error, T payload, V extra1, W extra2);
     public delegate void MatchEngineCliEvent<T, V, W, Y>(Error error, T payload, V extra1, W extra2, Y extra3);
     public delegate void MatchEngineCliEvent<T, V, W, Y, Z>(Error error, T payload, V extra1, W extra2, Y extra3, Z extra4);
+    public delegate void MatchEngineCliEvent<S, T, V, W, Y, Z>(Error error, S payload, T extra1, V extra2, W extra3, Y extra4, Z extra5);
+
 
     public interface IMatchEngineCli
     {
@@ -18,7 +20,7 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// All Players, Local Players, Abilities, Room
         /// </summary>
-        event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], Room> Started; 
+        event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateInfoArray[], Room> Started;
 
         event MatchEngineCliEvent<RTTInfo> Ping;
         /// <summary>
@@ -45,7 +47,7 @@ namespace Battlehub.VoxelCombat
     {
         private RTTInfo m_rttInfo = new RTTInfo { RTT = 0, RTTMax = 0 };
         public event MatchEngineCliEvent ReadyToStart;
-        public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], Room> Started;
+        public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateInfoArray[], Room> Started;
         public event MatchEngineCliEvent<RTTInfo> Ping;
 
         public event MatchEngineCliEvent<long, CommandsBundle> ExecuteCommands;
@@ -483,7 +485,7 @@ namespace Battlehub.VoxelCombat
             m_commands.Enqueue(payload);
         }
 
-        private void OnReadyToPlayAll(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] payload, Room room)
+        private void OnReadyToPlayAll(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] abilities, TaskInfoArray[] taskTemplates, TaskTemplateInfoArray[] taskTemplateInfo, Room room)
         { 
             if (m_matchServer.HasError(error))
             {
@@ -522,7 +524,7 @@ namespace Battlehub.VoxelCombat
 
             if (Started != null)
             {
-                Started(new Error(StatusCode.OK), players, localPlayers, payload, room);
+                Started(new Error(StatusCode.OK), players, localPlayers, abilities, taskTemplates, taskTemplateInfo, room);
             }
 
             enabled = true; //update method will be called

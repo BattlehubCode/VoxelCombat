@@ -185,7 +185,60 @@ namespace Battlehub.VoxelCombat
             return new VoxelAbilitiesArray(ablilities);
         }
     }
-    
+
+    [ProtoContract]
+    public class TaskInfoArray
+    {
+        [ProtoMember(1)]
+        public TaskInfo[] TaskInfo;
+
+        public TaskInfoArray()
+        {
+        }
+
+        public TaskInfoArray(TaskInfo[] taskInfo)
+        {
+            TaskInfo = taskInfo;
+        }
+
+        public static implicit operator TaskInfo[] (TaskInfoArray taskInfoArray)
+        {
+            return taskInfoArray.TaskInfo;
+        }
+
+        public static implicit operator TaskInfoArray(TaskInfo[] taskInfo)
+        {
+            return new TaskInfoArray(taskInfo);
+        }
+    }
+
+
+    [ProtoContract]
+    public class TaskTemplateInfoArray
+    {
+        [ProtoMember(1)]
+        public TaskTemplateInfo[] Templates;
+
+        public TaskTemplateInfoArray()
+        {
+        }
+
+        public TaskTemplateInfoArray(TaskTemplateInfo[] templates)
+        {
+            Templates = templates;
+        }
+
+        public static implicit operator TaskTemplateInfo[] (TaskTemplateInfoArray templates)
+        {
+            return templates.Templates;
+        }
+
+        public static implicit operator TaskTemplateInfoArray(TaskTemplateInfo[] templates)
+        {
+            return new TaskTemplateInfoArray(templates);
+        }
+    }
+
     [ProtoContract]
     [ProtoInclude(3, typeof(RemoteArg<string>))]
     [ProtoInclude(4, typeof(RemoteArg<string[]>))]
@@ -288,6 +341,8 @@ namespace Battlehub.VoxelCombat
 
             CreateMatch,
             GetReplay,
+            GetTaskTemplates,
+            SaveTaskTemplate,
             ReadyToPlay,
             Submit,
             SubmitResponse,
@@ -595,6 +650,7 @@ namespace Battlehub.VoxelCombat
     public delegate void ServerEventHandler<TSender, TPayload>(Error error, TSender sender, TPayload payload);
     public delegate void ServerEventHandler<TSender, TPayload, TExtra>(Error error, TSender sender, TPayload payload, TExtra extra);
     public delegate void ServerEventHandler<TSender, TPayload, TExtra, TExtra2>(Error error, TSender sender, TPayload payload, TExtra extra, TExtra2 extra2);
+    public delegate void ServerEventHandler<TSender, TPayload, TExtra, TExtra2, TExtra3, TExtra4>(Error error, TSender sender, TPayload payload, TExtra extra, TExtra2 extra2, TExtra3 extra3, TExtra4 extra4);
 
 
     public static class EnumExtensions
@@ -1186,7 +1242,7 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// Raised when match started and all players called ReadyToPlay method 
         /// </summary>
-        event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], Room>> ReadyToPlayAll;
+        event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateInfoArray[], Room>> ReadyToPlayAll;
 
         //event ServerEventHandler<Guid[], Room> LeftRoom;  This event will be raised using Tick command
 
@@ -1196,10 +1252,10 @@ namespace Battlehub.VoxelCombat
 
         event ServerEventHandler<ServerEventArgs<bool>> Paused;
 #else
-             /// <summary>
+        /// <summary>
         /// Raised when match started and all players called ReadyToPlay method 
         /// </summary>
-        event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], Room> ReadyToPlayAll;
+        event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateInfoArray[], Room> ReadyToPlayAll;
 
         //event ServerEventHandler<Guid[], Room> LeftRoom;  This event will be raised using Tick command
 
@@ -1242,6 +1298,10 @@ namespace Battlehub.VoxelCombat
         void Pause(Guid clientId, bool pause, ServerEventHandler callback);
 
         void GetReplay(Guid clientId, ServerEventHandler<ReplayData, Room> callback);
+
+        void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<TaskInfo[], TaskTemplateInfo[]> callback);
+
+        void SaveTaskTemplate(Guid clientId, Guid playerId, TaskInfo taskTemplate, TaskTemplateInfo templateInfo, ServerEventHandler callback);
     }
 
 }

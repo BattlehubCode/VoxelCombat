@@ -40,10 +40,6 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-        int PlayersCount
-        {
-            get;
-        }
 
         int LocalPlayersCount
         {
@@ -104,6 +100,10 @@ namespace Battlehub.VoxelCombat
         Dictionary<int, VoxelAbilities> GetAbilities(int playerIndex);
 
         void SaveReplay(string name);
+
+        TaskInfo[] GetTaskTemplates(int playerIndex);
+
+        TaskTemplateInfo[] GetTaskTemplateInfo(int playerIndex);
     }
 
     public class PlayerStats
@@ -286,6 +286,8 @@ namespace Battlehub.VoxelCombat
         private PlayerStats[] m_playerStats;
         private Dictionary<int, VoxelAbilities>[] m_voxelAbilities;
         private IMatchPlayerControllerCli[] m_playerControllers;
+        private TaskInfo[][] m_taskTemplates;
+        private TaskTemplateInfo[][] m_taskTemplateInfo;
         private Room m_room;
         
         private void Awake()
@@ -475,7 +477,7 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        private void OnEngineStarted(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] voxelAbilities, Room room)
+        private void OnEngineStarted(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] voxelAbilities, TaskInfoArray[] taskTemplates, TaskTemplateInfoArray[] taskTemplatesInfo, Room room)
         {
             m_room = room;
 
@@ -493,9 +495,10 @@ namespace Battlehub.VoxelCombat
             m_voxelMap.IsOn = true;
             m_players = players;
 
-            m_voxelAbilities = voxelAbilities.Select(va => va.Abilities.ToDictionary(a => a.Type)).ToArray();            
-
-            if(IsReplay)
+            m_voxelAbilities = voxelAbilities.Select(va => va.Abilities.ToDictionary(a => a.Type)).ToArray();
+            m_taskTemplates = taskTemplates.Select(t => t.TaskInfo).ToArray();
+            m_taskTemplateInfo = taskTemplatesInfo.Select(t => t.Templates).ToArray();
+            if (IsReplay)
             {
                 m_localPlayers = new[] { Guid.Empty };
                 m_isContextActionInProgress = new bool[m_localPlayers.Length];
@@ -841,6 +844,16 @@ namespace Battlehub.VoxelCombat
         public bool IsSuitableCmdFor(Guid playerId, long unitIndex, int cmdCode)
         {
             throw new NotImplementedException();
+        }
+
+        public TaskInfo[] GetTaskTemplates(int playerIndex)
+        {
+            return m_taskTemplates[playerIndex];
+        }
+
+        public TaskTemplateInfo[] GetTaskTemplateInfo(int playerIndex)
+        {
+            return m_taskTemplateInfo[playerIndex];
         }
 
         public void Submit(int playerId, Cmd cmd)

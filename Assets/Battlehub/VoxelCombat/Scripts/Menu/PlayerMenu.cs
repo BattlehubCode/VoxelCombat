@@ -126,11 +126,7 @@ namespace Battlehub.VoxelCombat
             
             if (m_inputManager.GetButtonDown(InputAction.Back, LocalPlayerIndex, false, false))
             {
-                if(m_gameState.IsContextActionInProgress(LocalPlayerIndex))
-                {
-                    m_gameState.IsContextActionInProgress(LocalPlayerIndex, false);
-                }
-                else
+                if (!m_gameState.IsContextActionInProgress(LocalPlayerIndex))
                 {
                     m_gameState.IsMenuOpened(LocalPlayerIndex, !m_gameState.IsMenuOpened(LocalPlayerIndex));
                     m_menuPanel.IsOpened = !m_menuPanel.IsOpened;

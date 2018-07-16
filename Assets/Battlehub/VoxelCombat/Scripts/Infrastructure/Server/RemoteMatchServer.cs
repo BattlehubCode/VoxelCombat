@@ -6,7 +6,7 @@ namespace Battlehub.VoxelCombat
     {
         public event ServerEventHandler<bool> Paused;
         public event ServerEventHandler<RTTInfo> Ping;
-        public event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], Room> ReadyToPlayAll;
+        public event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateInfoArray[], Room> ReadyToPlayAll;
         public event ServerEventHandler<CommandsBundle> Tick;
 
         protected override string ServerUrl
@@ -60,7 +60,13 @@ namespace Battlehub.VoxelCombat
                 case RemoteEvent.Evt.ReadyToPlayAll:
                     if(ReadyToPlayAll != null)
                     {
-                        ReadyToPlayAll(evt.Error, evt.Get<Player[]>(0), evt.Get<Guid[]>(1), evt.Get<VoxelAbilitiesArray[]>(2), evt.Get<Room>(3));
+                        ReadyToPlayAll(evt.Error, 
+                            evt.Get<Player[]>(0), 
+                            evt.Get<Guid[]>(1), 
+                            evt.Get<VoxelAbilitiesArray[]>(2),
+                            evt.Get<TaskInfoArray[]>(3),
+                            evt.Get<TaskTemplateInfoArray[]>(4),
+                            evt.Get<Room>(5));
                     }
                     break;
                 default:
@@ -101,6 +107,28 @@ namespace Battlehub.VoxelCombat
                 clientId);
 
             Call(rpc, (error, result) => callback(error, result.Get<ReplayData>(0), result.Get<Room>(1)));
+        }
+
+        public void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<TaskInfo[], TaskTemplateInfo[]> callback)
+        {
+            RemoteCall rpc = new RemoteCall(
+                RemoteCall.Proc.GetTaskTemplates,
+                clientId,
+                RemoteArg.Create(playerId));
+
+            Call(rpc, (error, result) => callback(error, result.Get<TaskInfo[]>(0), result.Get<TaskTemplateInfo[]>(1)));
+        }
+
+        public void SaveTaskTemplate(Guid clientId, Guid playerId, TaskInfo taskTemplate, TaskTemplateInfo taskTemplateInfo, ServerEventHandler callback)
+        {
+            RemoteCall rpc = new RemoteCall(
+                RemoteCall.Proc.SaveTaskTemplate,
+                clientId,
+                RemoteArg.Create(playerId),
+                RemoteArg.Create(taskTemplate),
+                RemoteArg.Create(taskTemplateInfo));
+
+            Call(rpc, (error, result) => callback(error));
         }
 
         public void Pause(Guid clientId, bool pause, ServerEventHandler callback)
@@ -161,6 +189,7 @@ namespace Battlehub.VoxelCombat
             Call(rpc, (error, result) => callback(error, result.Get<ClientRequest>(0)));
         }
 
+    
     }
 }
 

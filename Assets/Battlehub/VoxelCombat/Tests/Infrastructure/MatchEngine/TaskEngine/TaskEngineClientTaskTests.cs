@@ -105,7 +105,7 @@ namespace Battlehub.VoxelCombat.Tests
         [UnityTest]
         public IEnumerator EatGrowSplitTest()
         {
-            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.EatGrowSplit4(unitIndexInput, playerId), false,
+            yield return TaskTest(2, (unitIndexInput, playerIndexInput) => TaskInfo.EatGrowSplit4(unitIndexInput, playerIndexInput), false,
                 rootTaskInfo =>
                 {
                     MapRoot map = Dependencies.Map.Map;
@@ -119,7 +119,7 @@ namespace Battlehub.VoxelCombat.Tests
         }
 
 
-        private TaskInfo PathToRandomLocation(TaskInputInfo unitIndexInput, int playerId)
+        private TaskInfo PathToRandomLocation(TaskInputInfo unitIndexInput, TaskInputInfo playerInput)
         {
             int radius = 3;
             TaskInfo radiusVar = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVar(radius));
@@ -290,7 +290,7 @@ namespace Battlehub.VoxelCombat.Tests
         }
 
         public IEnumerator TaskTest(int playerId, 
-            Func<TaskInputInfo, int, TaskInfo> GetTestTaskInfo,
+            Func<TaskInputInfo, TaskInputInfo, TaskInfo> GetTestTaskInfo,
             bool shouldTaskBeFailed,
             Action<TaskInfo> rootTaskCompleted,
             Action<TaskInfo> childTaskCompleted = null,
@@ -304,14 +304,22 @@ namespace Battlehub.VoxelCombat.Tests
                 Coordinate[] coords = map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
                 VoxelData voxel = map.Get(coords[unitNumber]);
                 TaskInfo unitIndexTask = TaskInfo.UnitOrAssetIndex(voxel.UnitOrAssetIndex);
+                TaskInfo playerIndexTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVar(playerId));
                 TaskInputInfo unitIndexInput = new TaskInputInfo
                 {
                     OutputIndex = 0,
                     OutputTask = unitIndexTask
                 };
+                TaskInputInfo playerIndexInput = new TaskInputInfo
+                {
+                    OutputIndex = 0,
+                    OutputTask = playerIndexTask
+                };
 
-                TaskInfo testTaskInfo = GetTestTaskInfo(unitIndexInput, playerId);
+
+                TaskInfo testTaskInfo = GetTestTaskInfo(unitIndexInput, playerIndexInput);
                 TaskInfo rootTask = TaskInfo.Sequence(
+                    playerIndexTask,
                     unitIndexTask,
                     testTaskInfo,
                     TaskInfo.Return(ExpressionInfo.TaskStatus(testTaskInfo)));

@@ -290,48 +290,48 @@ namespace Battlehub.VoxelCombat
         }
 
 
-        public static ExpressionInfo UnitExists(ExpressionInfo unitId, int playerId)
+        public static ExpressionInfo UnitExists(ExpressionInfo unitId, ExpressionInfo playerId)
         {
             return new ExpressionInfo
             {
                 Code = ExpressionCode.UnitExists,
-                Children = new[] { unitId, PrimitiveVar(playerId)}
+                Children = new[] { unitId, playerId}
             };
         }
 
-        public static ExpressionInfo UnitState(ExpressionInfo unitId, int playerId)
+        public static ExpressionInfo UnitState(ExpressionInfo unitId, ExpressionInfo playerId)
         {
             return new ExpressionInfo
             {
                 Code = ExpressionCode.UnitState,
-                Children = new[] { unitId, PrimitiveVar(playerId) }
+                Children = new[] { unitId, playerId }
             };
         }
 
-        public static ExpressionInfo UnitCoordinate(ExpressionInfo unitId, int playerId)
+        public static ExpressionInfo UnitCoordinate(ExpressionInfo unitId, ExpressionInfo playerId)
         {
             return new ExpressionInfo
             {
                 Code = ExpressionCode.UnitCoordinate,
-                Children = new[] { unitId, PrimitiveVar(playerId) }
+                Children = new[] { unitId, playerId }
             };
         }
 
-        public static ExpressionInfo UnitCanGrow(ExpressionInfo unitId, int playerId)
+        public static ExpressionInfo UnitCanGrow(ExpressionInfo unitId, ExpressionInfo playerId)
         {
             return new ExpressionInfo
             {
                 Code = ExpressionCode.UnitCanGrow,
-                Children = new[] { unitId, PrimitiveVar(playerId) }
+                Children = new[] { unitId, playerId }
             };
         }
 
-        public static ExpressionInfo UnitCanSplit4(ExpressionInfo unitId, int playerId)
+        public static ExpressionInfo UnitCanSplit4(ExpressionInfo unitId, ExpressionInfo playerId)
         {
             return new ExpressionInfo
             {
                 Code = ExpressionCode.UnitCanSplit4,
-                Children = new[] { unitId, PrimitiveVar(playerId) }
+                Children = new[] { unitId, playerId }
             };
         }
 
@@ -448,6 +448,24 @@ namespace Battlehub.VoxelCombat
             Scope = taskInput.Scope;
             OutputTask = taskInput.OutputTask;
             OutputIndex = taskInput.OutputIndex;
+        }
+    }
+
+    [ProtoContract]
+    public class TaskTemplateInfo
+    {
+        [ProtoMember(1)]
+        public string Name;
+
+        [ProtoMember(2)]
+        public int Row; 
+
+        [ProtoMember(3)]
+        public int Col;
+
+        public int Index
+        {
+            get { return Row * 5 + Col; }
         }
     }
 
@@ -1098,20 +1116,20 @@ namespace Battlehub.VoxelCombat
                 );
         }
 
-        public static TaskInfo SearchMoveGrow(TaskInputInfo unitIndexInput, int playerId)
+        public static TaskInfo SearchMoveGrow(TaskInputInfo unitIndexInput, TaskInputInfo playerIdInput)
         {
             TaskInfo canGrowTask = EvalExpression(
-               ExpressionInfo.UnitCanGrow(ExpressionInfo.Val(unitIndexInput), playerId));
+               ExpressionInfo.UnitCanGrow(ExpressionInfo.Val(unitIndexInput), ExpressionInfo.Val(playerIdInput)));
             TaskInfo searchAndMoveTask = SearchMoveOrRandomMove(TaskType.SearchForGrowLocation, unitIndexInput);
             TaskInfo growTask = Grow(unitIndexInput);
 
             return SearchMoveExecute(canGrowTask, searchAndMoveTask, growTask);
         }
 
-        public static TaskInfo SearchMoveSplit4(TaskInputInfo unitIndexInput, int playerId)
+        public static TaskInfo SearchMoveSplit4(TaskInputInfo unitIndexInput, TaskInputInfo playerIdInput)
         {
             TaskInfo canSplit4Task = EvalExpression(
-                ExpressionInfo.UnitCanSplit4(ExpressionInfo.Val(unitIndexInput), playerId));
+                ExpressionInfo.UnitCanSplit4(ExpressionInfo.Val(unitIndexInput), ExpressionInfo.Val(playerIdInput)));
             TaskInfo searchAndMoveTask = SearchMoveOrRandomMove(TaskType.SearchForSplit4Location, unitIndexInput);
             TaskInfo split4Task = Split4(unitIndexInput);
 
@@ -1172,10 +1190,10 @@ namespace Battlehub.VoxelCombat
                 );
         }
 
-        public static TaskInfo EatGrowSplit4(TaskInputInfo unitIndexInput, int playerId)
+        public static TaskInfo EatGrowSplit4(TaskInputInfo unitIndexInput, TaskInputInfo playerIdInput)
         {
             TaskInfo canGrowTask = EvalExpression(
-                 ExpressionInfo.UnitCanGrow(ExpressionInfo.Val(unitIndexInput), playerId));
+                 ExpressionInfo.UnitCanGrow(ExpressionInfo.Val(unitIndexInput), ExpressionInfo.Val(playerIdInput)));
             canGrowTask.DebugString = "canGrowTask";
 
             TaskInputInfo canGrowInput = new TaskInputInfo
@@ -1193,13 +1211,13 @@ namespace Battlehub.VoxelCombat
             TaskInfo eatTask = SearchMoveOrRandomMove(TaskType.SearchForFood, unitIndexInput);
             eatTask.DebugString = "eatTask";
 
-            TaskInfo growTask = SearchMoveGrow(unitIndexInput, playerId);
+            TaskInfo growTask = SearchMoveGrow(unitIndexInput, playerIdInput);
             growTask.DebugString = "growTask";
 
-            TaskInfo split4Task = SearchMoveSplit4(unitIndexInput, playerId);
+            TaskInfo split4Task = SearchMoveSplit4(unitIndexInput, playerIdInput);
             split4Task.DebugString = "split4Task";
 
-            return
+            TaskInfo eatSplitGrow = 
                 Procedure(
                     Repeat
                     (
@@ -1233,7 +1251,10 @@ namespace Battlehub.VoxelCombat
                             )
                         )
                     )
-                );        
+                );
+
+            eatSplitGrow.Inputs = new[] { unitIndexInput, playerIdInput };
+            return eatSplitGrow;
         }
 
     }

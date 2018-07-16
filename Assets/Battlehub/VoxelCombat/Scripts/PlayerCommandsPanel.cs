@@ -8,6 +8,7 @@ using System.Linq;
 namespace Battlehub.VoxelCombat
 {
     public delegate void PlayerCommandsPanelEventHandler();
+    public delegate void PlayerCommandsPanelEventHandler<T>(T index);
 
 
     public class PlayerCommandsPanel : MonoBehaviour
@@ -15,7 +16,7 @@ namespace Battlehub.VoxelCombat
         public event PlayerCommandsPanelEventHandler Cancel;
         public event PlayerCommandsPanelEventHandler Move;
         public event PlayerCommandsPanelEventHandler Attack;
-        public event PlayerCommandsPanelEventHandler Auto;
+        public event PlayerCommandsPanelEventHandler<int> Auto;
         public event PlayerCommandsPanelEventHandler Wall;
         public event PlayerCommandsPanelEventHandler Bomb;
         public event PlayerCommandsPanelEventHandler Spawner;
@@ -24,6 +25,12 @@ namespace Battlehub.VoxelCombat
         public event PlayerCommandsPanelEventHandler Grow;
         public event PlayerCommandsPanelEventHandler Diminish;
 
+        [SerializeField]
+        private GameObject m_primaryGrid;
+
+        [SerializeField]
+        private PlayerCommandsAutoPanel m_autoCommandsPanel;
+ 
         [SerializeField]
         private GameObject m_commandsRoot;
 
@@ -86,6 +93,8 @@ namespace Battlehub.VoxelCombat
                 if (m_isOpen != newValue)
                 {
                     m_isOpen = newValue;
+                    IsAutoCommandsOpen = !m_isOpen;
+
                     m_commandsRoot.gameObject.SetActive(m_isOpen);
                     m_selection.SelectionChanged -= OnSelectionChanged;
 
@@ -126,6 +135,16 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        private bool IsAutoCommandsOpen
+        {
+            get { return m_autoCommandsPanel.IsOpen; }
+            set
+            {
+                m_autoCommandsPanel.IsOpen = value;
+                m_primaryGrid.SetActive(!value);
+            }
+        }
+
         public int LocalPlayerIndex
         {
             get;
@@ -140,7 +159,8 @@ namespace Battlehub.VoxelCombat
             m_eventSystemMananger = Dependencies.EventSystemManager;
 
             m_gameState.ContextAction += OnContextAction;
-        
+            m_autoCommandsPanel.Action += OnAutoCommandsPanelAction;
+
             m_cancelBtn.onClick.AddListener(OnCancel);
             m_attackBtn.onClick.AddListener(OnAttack);
             m_moveBtn.onClick.AddListener(OnMove);
@@ -187,6 +207,11 @@ namespace Battlehub.VoxelCombat
             if(m_gameState != null)
             {
                 m_gameState.ContextAction -= OnContextAction;
+            }
+
+            if(m_autoCommandsPanel != null)
+            {
+                m_autoCommandsPanel.Action -= OnAutoCommandsPanelAction;
             }
 
             if (m_cancelBtn != null)
@@ -263,9 +288,14 @@ namespace Battlehub.VoxelCombat
 
         private void Update()
         {
-            if (m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex, false, false))
+            if (m_inputManager.GetButtonDown(InputAction.Back, LocalPlayerIndex, false, false) ||
+                m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex, false, false))
             {
-                if (IsOpen)
+                if(IsAutoCommandsOpen)
+                {
+                    IsAutoCommandsOpen = false;
+                }
+                else if (IsOpen)
                 {
                     IsOpen = false;
                 }
@@ -276,7 +306,14 @@ namespace Battlehub.VoxelCombat
         {
             if(!m_gameState.IsContextActionInProgress(playerIndex))
             {
-                IsOpen = false;
+                if (IsAutoCommandsOpen)
+                {
+                    IsAutoCommandsOpen = false;
+                }
+                else if (IsOpen)
+                {
+                    IsOpen = false;
+                }
             }
         }
 
@@ -314,10 +351,6 @@ namespace Battlehub.VoxelCombat
             m_splitButton.gameObject.SetActive(false);
             m_split4Button.gameObject.SetActive(false);
 
-        //    HUDControlBehavior hcbCancel = m_cancelBtn.GetComponent<HUDControlBehavior>();
-         //   HUDControlBehavior hcbAttack = m_attackBtn.GetComponent<HUDControlBehavior>();
-         //   HUDControlBehavior hcbMove = m_moveBtn.GetComponent<HUDControlBehavior>();
-           // HUDControlBehavior hcbAuto = m_autoBtn.GetComponent<HUDControlBehavior>();
             HUDControlBehavior hcbBomb = m_bombBtn.GetComponent<HUDControlBehavior>();
             HUDControlBehavior hcbWall = m_wallBtn.GetComponent<HUDControlBehavior>();
             HUDControlBehavior hcbSpawn = m_spawnButton.GetComponent<HUDControlBehavior>();
@@ -466,10 +499,15 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
+            IsAutoCommandsOpen = true;
+        }
+
+        private void OnAutoCommandsPanelAction(int index)
+        {
             IsOpen = false;
             if (Auto != null)
             {
-                Auto();
+                Auto(index);
             }
         }
 

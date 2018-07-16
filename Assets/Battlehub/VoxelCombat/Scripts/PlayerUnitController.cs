@@ -58,6 +58,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+
         private void Awake()
         {
             m_engine = Dependencies.MatchEngine;
@@ -187,13 +188,59 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        private void OnAuto()
+        private void OnAuto(int action)
         {
-            throw new NotImplementedException();
-            //SubmitStdCommand(() => new Cmd(CmdCode.Automatic), (playerIndex, unitId) =>
-            //{
-            //    return true;
-            //});
+            int playerIndex = m_gameState.LocalToPlayerIndex(m_localPlayerIndex);
+            TaskTemplateInfo[] templatesInfo = m_gameState.GetTaskTemplateInfo(playerIndex);
+            TaskInfo[] taskTemplates = m_gameState.GetTaskTemplates(playerIndex);
+
+            for(int i = 0; i < templatesInfo.Length; ++i)
+            {
+                TaskTemplateInfo templateInfo = templatesInfo[i];
+
+                int index = templatesInfo[i].Index;
+                if(index == action)
+                {
+                    
+
+                    break;
+                }
+            }
+
+           
+           // TaskInfo taskInfo = TaskInfo.EatGrowSplit4()
+
+           // int playerIndex = m_gameState.LocalToPlayerIndex(m_localPlayerIndex);
+
+          // .SubmitTask(taskInfo);
+        }
+
+        private void SubmitTaskToClientTaskEngine(int playerIndex, TaskInfo template)
+        {
+
+            ITaskEngine engine = m_engine.GetClientTaskEngine(playerIndex);
+            
+            long[] selection = m_unitSelection.GetSelection(playerIndex, playerIndex);
+            for (int i = 0; i < selection.Length; ++i)
+            {
+                TaskInputInfo unitIdInput = template.Inputs[0];
+                TaskInputInfo playerIdInput = template.Inputs[1];
+                TaskInfo unitIdTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVar(selection[i]));
+                TaskInfo playerIdTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVar(playerIndex));
+                unitIdInput.OutputTask = unitIdTask;
+                playerIdInput.OutputTask = playerIdTask;
+
+                TaskInfo task = ProtobufSerializer.DeepClone(
+                    TaskInfo.Sequence(
+                        unitIdTask,
+                        playerIdTask,
+                        template
+                    ));
+
+                task.SetParents();
+                task.Initialize(playerIndex);
+                engine.SubmitTask(task);  
+            }
         }
 
         private void OnDiminish()
