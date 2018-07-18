@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections;
+﻿#define DEBUG_OUTPUT
+using System;
 using System.Diagnostics;
 
 namespace Battlehub.VoxelCombat
@@ -54,6 +54,10 @@ namespace Battlehub.VoxelCombat
                 {
                     m_expression = m_taskEngine.GetExpression(m_taskInfo.Expression.Code);
                 }
+                else
+                {
+                    m_expression = null;
+                }
             }
         }
 
@@ -86,8 +90,9 @@ namespace Battlehub.VoxelCombat
                 int scopeId = m_taskInfo.Parent.TaskId;
                 m_taskEngine.Memory.CreateOutputs(scopeId, m_taskInfo.TaskId, m_taskInfo.OutputsCount);
             }
-
-            UnityEngine.Debug.Log("Constructing " + m_taskInfo.DebugString + " " + m_taskInfo.TaskId + " " + m_taskInfo.TaskType);
+            #if DEBUG_OUTPUT
+            UnityEngine.Debug.Log("Constructing " + m_taskInfo.ToString());
+            #endif
             OnConstruct(); 
         }
 
@@ -99,10 +104,6 @@ namespace Battlehub.VoxelCombat
         public void Tick()
         {
             OnTick();            
-            //if(m_taskInfo.State != TaskState.Active)
-            //{
-            //    m_taskEngine.Memory.DestroyScope(m_taskInfo.TaskId);
-            //}
         }
 
         protected virtual void Reset()
@@ -610,18 +611,9 @@ namespace Battlehub.VoxelCombat
 
             public void Reset()
             {
-                if(m_startRadius == 0)
-                {
-                    m_deltaCol = -1;
-                    m_deltaRow = 0;
-                    m_radius = 0;
-                }
-                else
-                {
-                    m_deltaCol = -m_startRadius;
-                    m_deltaRow = -m_startRadius;
-                    m_radius = m_startRadius;
-                }
+                m_deltaCol = -(m_startRadius + 1);
+                m_deltaRow = -m_startRadius;
+                m_radius = m_startRadius;
             }
         }
 
@@ -690,7 +682,7 @@ namespace Battlehub.VoxelCombat
             if (ctx.m_deltaRow == ctx.m_radius && ctx.m_deltaCol == ctx.m_radius + 1)
             {
                 ctx.m_radius++;
-                if (ctx.m_radius >= ctx.m_maxRadius)
+                if (ctx.m_radius > ctx.m_maxRadius)
                 {
                     return false;
                 }

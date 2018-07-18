@@ -201,23 +201,13 @@ namespace Battlehub.VoxelCombat
                 int index = templatesInfo[i].Index;
                 if(index == action)
                 {
-                    
-
-                    break;
+                    SubmitTaskToClientTaskEngine(playerIndex, taskTemplates[i]);
                 }
             }
-
-           
-           // TaskInfo taskInfo = TaskInfo.EatGrowSplit4()
-
-           // int playerIndex = m_gameState.LocalToPlayerIndex(m_localPlayerIndex);
-
-          // .SubmitTask(taskInfo);
         }
 
         private void SubmitTaskToClientTaskEngine(int playerIndex, TaskInfo template)
         {
-
             ITaskEngine engine = m_engine.GetClientTaskEngine(playerIndex);
             
             long[] selection = m_unitSelection.GetSelection(playerIndex, playerIndex);
@@ -225,8 +215,8 @@ namespace Battlehub.VoxelCombat
             {
                 TaskInputInfo unitIdInput = template.Inputs[0];
                 TaskInputInfo playerIdInput = template.Inputs[1];
-                TaskInfo unitIdTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVar(selection[i]));
-                TaskInfo playerIdTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVar(playerIndex));
+                TaskInfo unitIdTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVal(selection[i]));
+                TaskInfo playerIdTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVal(playerIndex));
                 unitIdInput.OutputTask = unitIdTask;
                 playerIdInput.OutputTask = playerIdTask;
 
@@ -239,7 +229,10 @@ namespace Battlehub.VoxelCombat
 
                 task.SetParents();
                 task.Initialize(playerIndex);
+
+                engine.TerminateAll();
                 engine.SubmitTask(task);  
+                
             }
         }
 
@@ -527,6 +520,9 @@ namespace Battlehub.VoxelCombat
         {
             if (commandsToSubmit.Count == 1)
             {
+                ITaskEngine taskEngine = m_engine.GetClientTaskEngine(playerIndex);
+                taskEngine.TerminateAll();
+
                 m_engine.Submit(playerIndex, commandsToSubmit[0]);
 
                 //Render hit;
@@ -537,6 +533,9 @@ namespace Battlehub.VoxelCombat
                 {
                     Commands = commandsToSubmit.ToArray()
                 };
+
+                ITaskEngine taskEngine = m_engine.GetClientTaskEngine(playerIndex);
+                taskEngine.TerminateAll();
 
                 m_engine.Submit(playerIndex, cmd);
             }

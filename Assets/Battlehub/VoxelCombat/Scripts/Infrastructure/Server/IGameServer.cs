@@ -24,7 +24,11 @@ namespace Battlehub.VoxelCombat
         /// Smallest fraction of time used by MatchEngine measured in milliseconds
         /// </summary>
         public const float MatchEngineTick = 50.0f / 1000.0f; //seconds
-                                                              // public const long PingTimeout = 8; //8 * MatchEngineTick milliseconds
+        // public const long PingTimeout = 8; //8 * MatchEngineTick milliseconds
+        public const int PathFinderBatchSize = 100;
+        public const int TaskRunnerBatchSize = 100;
+        public const int TaskEngineBatchSize = 100;
+        public const int TaskEngineClientTimeout = 1200; //rougly equal to 1 minute;
 
         public const float BotHardThinkInterval = 0.15f;
         public const float BotMedumThinkInterval = 0.15f;// BotHardThinkInterval * 2;

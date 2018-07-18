@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿#define DEBUG_OUTPUT
+using System;
 using UnityEngine;
 
 namespace Battlehub.VoxelCombat
@@ -138,7 +137,9 @@ namespace Battlehub.VoxelCombat
 
             m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, value =>
             {
+                #if DEBUG_OUTPUT
                 Debug.Log("Branch " + m_taskInfo.TaskId + " evaluated to " + (bool)value);
+                #endif
                 int index = (bool)value ? 0 : 1;
                 m_childTask = m_taskInfo.Children.Length > index ? m_taskInfo.Children[index] : null;
                 if (m_childTask == null)

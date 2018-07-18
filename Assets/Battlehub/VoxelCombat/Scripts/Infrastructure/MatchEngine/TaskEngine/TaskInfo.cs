@@ -1,8 +1,8 @@
-﻿using ProtoBuf;
+﻿#define DEBUG_OUTPUT
+using ProtoBuf;
 using System.Runtime.Serialization;
 using System.Collections;
 using System;
-using System.Diagnostics;
 
 namespace Battlehub.VoxelCombat
 {
@@ -92,10 +92,10 @@ namespace Battlehub.VoxelCombat
         [ProtoMember(1)]
         public int m_code;
 
-        [ProtoMember(2, DynamicType = true)]
+        [ProtoMember(2, DynamicType = true, AsReference = true)]
         public object m_value;
 
-        [ProtoMember(3)]
+        [ProtoMember(3, AsReference = true)]
         public ExpressionInfo[] m_children;
 
         public ExpressionInfo()
@@ -134,7 +134,7 @@ namespace Battlehub.VoxelCombat
             set;
         }
 
-        public static ExpressionInfo PrimitiveVar<T>(T val)
+        public static ExpressionInfo PrimitiveVal<T>(T val)
         {
             return new ExpressionInfo
             {
@@ -143,7 +143,7 @@ namespace Battlehub.VoxelCombat
             };
         }
 
-        public static ExpressionInfo Val(object val)
+        public static ExpressionInfo Val<T>(T val) where T : class
         {
             return new ExpressionInfo
             {
@@ -418,10 +418,10 @@ namespace Battlehub.VoxelCombat
     [ProtoContract(AsReferenceDefault = true)]
     public class TaskInputInfo
     {
-        [ProtoMember(1)]
+        [ProtoMember(1, AsReference = true)]
         public TaskInfo Scope;
 
-        [ProtoMember(2)]
+        [ProtoMember(2, AsReference = true)]
         public TaskInfo OutputTask;
 
         [ProtoMember(3)]
@@ -479,23 +479,24 @@ namespace Battlehub.VoxelCombat
         public int m_taskId;
         [ProtoMember(2)]
         public TaskType m_taskType;
-        [ProtoMember(3)]
+        [ProtoMember(3, AsReference = true)]
         public Cmd m_cmd;
         [ProtoMember(4)]
         public TaskState m_state;
-        [ProtoMember(6)]
+        [ProtoMember(6, AsReference = true)]
         public TaskInfo[] m_children;
-        [ProtoMember(7)]
+        [ProtoMember(7, AsReference = true)]
         public ExpressionInfo m_expression;
         [ProtoMember(8)]
         public bool m_requiresClientSidePreprocessing;
-        [ProtoMember(9)]
+        [ProtoMember(9, AsReference = true)]
         public TaskInputInfo[] m_inputs;
         [ProtoMember(10)]
         public int m_outputsCount;
         private int m_playerIndex = -1;
-
+        #if DEBUG_OUTPUT
         public string DebugString;
+        #endif
 
         public TaskInfo(TaskType taskType, Cmd cmd, TaskState state, ExpressionInfo expression, TaskInfo parent)
         {
@@ -748,7 +749,12 @@ namespace Battlehub.VoxelCombat
 
         public override string ToString()
         {
-            return TaskType + " " + TaskId + " " + DebugString + " " + State + " " + (IsFailed ? "IsFailed=True" : "IsFailed=False");
+            return TaskType + " " + TaskId + " "
+                #if DEBUG_OUTPUT
+                + DebugString + " "
+                #endif               
+                + State + " " 
+                + (IsFailed ? "IsFailed=True" : "IsFailed=False");
         }
 
         public static TaskInfo Assert(Func<TaskBase, TaskInfo, TaskState> callback)
@@ -833,7 +839,9 @@ namespace Battlehub.VoxelCombat
         {
             return new TaskInfo(TaskType.Repeat)
             {
+#if DEBUG_OUTPUT
                 DebugString = debugString,
+#endif
                 Expression = expression,
                 Children = sequence,
             };
@@ -852,7 +860,9 @@ namespace Battlehub.VoxelCombat
         {
             return new TaskInfo(TaskType.Sequence)
             {
+                #if DEBUG_OUTPUT
                 DebugString = debugString,
+                #endif
                 Children = sequence,
             };
         }
@@ -870,7 +880,9 @@ namespace Battlehub.VoxelCombat
         {
             return new TaskInfo(TaskType.Branch)
             {
+                #if DEBUG_OUTPUT
                 DebugString = debugString,
+                #endif
                 Expression = expression,
                 Children = new[] { yes, no }
             };
@@ -915,7 +927,7 @@ namespace Battlehub.VoxelCombat
 
         public static TaskInfo UnitOrAssetIndex(long unitOrAssetIndex)
         {
-            return EvalExpression(ExpressionInfo.PrimitiveVar(unitOrAssetIndex));
+            return EvalExpression(ExpressionInfo.PrimitiveVal(unitOrAssetIndex));
         }
 
         public static TaskInfo Move(TaskInputInfo unitIndexInput, TaskInputInfo pathInput)
@@ -1013,7 +1025,9 @@ namespace Battlehub.VoxelCombat
         public static TaskInfo SearchForPath(TaskType taskType, TaskInfo pathVar, TaskInputInfo unitIndexInput)
         {
             TaskInfo searchForTask = SearchFor(taskType, unitIndexInput);
+            #if DEBUG_OUTPUT
             searchForTask.DebugString = "searchForTask";
+            #endif
 
             ExpressionInfo searchForSucceded = ExpressionInfo.TaskSucceded(searchForTask);
 
@@ -1026,7 +1040,7 @@ namespace Battlehub.VoxelCombat
                 pathVar,
                 ExpressionInfo.Val(pathVariableInput));
 
-            ExpressionInfo whileTrue = ExpressionInfo.PrimitiveVar(true);
+            ExpressionInfo whileTrue = ExpressionInfo.PrimitiveVal(true);
 
             return
                 Procedure(
@@ -1036,7 +1050,9 @@ namespace Battlehub.VoxelCombat
                         Branch(
                             searchForSucceded,
                             Sequence(
+                                #if DEBUG_OUTPUT
                                 "find path sequence",
+                                #endif
                                 findPathTask,
                                 Branch(
                                     findPathSucceded,
@@ -1047,7 +1063,7 @@ namespace Battlehub.VoxelCombat
                                     Continue()
                                 )
                             ),
-                            Return(ExpressionInfo.PrimitiveVar(TaskFailed))
+                            Return(ExpressionInfo.PrimitiveVal(TaskFailed))
                         )
                     )
                 );
@@ -1055,7 +1071,7 @@ namespace Battlehub.VoxelCombat
 
         public static TaskInfo MoveToRandomLocation(TaskInputInfo unitIndexInput, int radius = 10, int attemptsCounter = 20)
         {
-            TaskInfo randomRadiusVar = EvalExpression(ExpressionInfo.PrimitiveVar(radius));
+            TaskInfo randomRadiusVar = EvalExpression(ExpressionInfo.PrimitiveVal(radius));
             TaskInputInfo radiusInput = new TaskInputInfo(randomRadiusVar, 0);
 
             TaskInfo randomLocationPath = PathToRandomLocation(unitIndexInput, radiusInput);
@@ -1063,7 +1079,9 @@ namespace Battlehub.VoxelCombat
 
             TaskInputInfo pathInput = new TaskInputInfo(randomLocationPath, 0);
             TaskInfo moveTask = Move(unitIndexInput, pathInput);
+#if DEBUG_OUTPUT
             moveTask.DebugString = "randomMoveTask";
+#endif
 
             return Procedure
             (
@@ -1075,13 +1093,15 @@ namespace Battlehub.VoxelCombat
                         randomLocationPathFound,
                         Sequence
                         (
+#if DEBUG_OUTPUT
                             "randomMoveTaskSequence",
+#endif
                             moveTask,
                             Return(ExpressionInfo.TaskStatus(moveTask))
                         )
                     )
                 ),
-                Return(ExpressionInfo.PrimitiveVar(TaskFailed))
+                Return(ExpressionInfo.PrimitiveVal(TaskFailed))
             );
         }
 
@@ -1093,21 +1113,29 @@ namespace Battlehub.VoxelCombat
             ExpressionInfo pathFound = ExpressionInfo.TaskSucceded(searhForPathTask);
             TaskInputInfo pathInput = new TaskInputInfo(pathVar, 0);
             TaskInfo moveTask = Move(unitIndexInput, pathInput);
+#if DEBUG_OUTPUT
             moveTask.DebugString = "moveTask";
+#endif
 
             TaskInfo moveToRandomLocation = MoveToRandomLocation(unitIndexInput);
+#if DEBUG_OUTPUT
             moveToRandomLocation.DebugString = "moveToRandomLocation";
+#endif
             return
                 Procedure
                 (
                     pathVar,
                     searhForPathTask,
                     Branch(
+#if DEBUG_OUTPUT
                         "if path found",
+#endif
                         pathFound,
                         Sequence
                         (
+#if DEBUG_OUTPUT
                             "moveTaskSequence",
+#endif
                             moveTask,
                             Return(ExpressionInfo.TaskStatus(moveTask))
                         ),
@@ -1148,18 +1176,18 @@ namespace Battlehub.VoxelCombat
             };
 
             ExpressionInfo invalidLocation = ExpressionInfo.Eq(
-                ExpressionInfo.Val(CmdResultCode.Fail_InvalidLocation),
+                ExpressionInfo.PrimitiveVal(CmdResultCode.Fail_InvalidLocation),
                 ExpressionInfo.Val(canRunInput));
 
             ExpressionInfo collapsedOrBlocked = ExpressionInfo.Eq(
-                ExpressionInfo.Val(CmdResultCode.Fail_CollapsedOrBlocked),
+                ExpressionInfo.PrimitiveVal(CmdResultCode.Fail_CollapsedOrBlocked),
                 ExpressionInfo.Val(canRunInput));
 
             ExpressionInfo canRun = ExpressionInfo.Eq(
-                ExpressionInfo.Val(CmdResultCode.Success),
+                ExpressionInfo.PrimitiveVal(CmdResultCode.Success),
                 ExpressionInfo.Val(canRunInput));
 
-            ExpressionInfo whileTrue = ExpressionInfo.PrimitiveVar(true);
+            ExpressionInfo whileTrue = ExpressionInfo.PrimitiveVal(true);
 
             return
                 Procedure(
@@ -1183,7 +1211,7 @@ namespace Battlehub.VoxelCombat
                                         Return(ExpressionInfo.TaskStatus(searchAndMoveTask))
                                     )
                                 ),
-                                Return(ExpressionInfo.PrimitiveVar(TaskFailed))
+                                Return(ExpressionInfo.PrimitiveVal(TaskFailed))
                             )
                         )
                     )
@@ -1194,8 +1222,9 @@ namespace Battlehub.VoxelCombat
         {
             TaskInfo canGrowTask = EvalExpression(
                  ExpressionInfo.UnitCanGrow(ExpressionInfo.Val(unitIndexInput), ExpressionInfo.Val(playerIdInput)));
+#if DEBUG_OUTPUT
             canGrowTask.DebugString = "canGrowTask";
-
+#endif
             TaskInputInfo canGrowInput = new TaskInputInfo
             {
                 OutputTask = canGrowTask,
@@ -1203,19 +1232,23 @@ namespace Battlehub.VoxelCombat
             };
 
             ExpressionInfo needMoreFood = ExpressionInfo.Eq(
-                    ExpressionInfo.Val(CmdResultCode.Fail_NeedMoreResources),
+                    ExpressionInfo.PrimitiveVal(CmdResultCode.Fail_NeedMoreResources),
                     ExpressionInfo.Val(canGrowInput));
 
-            ExpressionInfo whileTrue = ExpressionInfo.PrimitiveVar(true);
+            ExpressionInfo whileTrue = ExpressionInfo.PrimitiveVal(true);
 
             TaskInfo eatTask = SearchMoveOrRandomMove(TaskType.SearchForFood, unitIndexInput);
+#if DEBUG_OUTPUT
             eatTask.DebugString = "eatTask";
-
+#endif
             TaskInfo growTask = SearchMoveGrow(unitIndexInput, playerIdInput);
+#if DEBUG_OUTPUT
             growTask.DebugString = "growTask";
-
+#endif
             TaskInfo split4Task = SearchMoveSplit4(unitIndexInput, playerIdInput);
+#if DEBUG_OUTPUT
             split4Task.DebugString = "split4Task";
+#endif
 
             TaskInfo eatSplitGrow = 
                 Procedure(
@@ -1224,25 +1257,35 @@ namespace Battlehub.VoxelCombat
                         whileTrue,
                         canGrowTask,
                         Branch(
+#if DEBUG_OUTPUT
                             "if need more food",
+#endif
                             needMoreFood,
                             Sequence(
                                 eatTask,
                                 Branch(
+#if DEBUG_OUTPUT
                                     "if eat task succeded",
+#endif
                                     ExpressionInfo.TaskSucceded(eatTask),
                                     Continue(),
                                     Return(ExpressionInfo.TaskStatus(eatTask))
                                 )
                             ),
                             Sequence(
+#if DEBUG_OUTPUT
                                 "grow, split4",
+#endif
                                 growTask,
                                 Branch(
+#if DEBUG_OUTPUT
                                     "if grow task succeded",
+#endif
                                     ExpressionInfo.TaskSucceded(growTask),
                                     Sequence(
+#if DEBUG_OUTPUT
                                         "split4 and return status",
+#endif
                                         split4Task,
                                         Return(ExpressionInfo.TaskStatus(split4Task))
                                     ),

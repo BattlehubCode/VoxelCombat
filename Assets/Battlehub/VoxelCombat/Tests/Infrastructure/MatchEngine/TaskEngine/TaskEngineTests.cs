@@ -535,7 +535,7 @@ namespace Battlehub.VoxelCombat.Tests
 
             const int playerId = 2;
 
-            ExpressionInfo expr = ExpressionInfo.PrimitiveVar(true);
+            ExpressionInfo expr = ExpressionInfo.PrimitiveVal(true);
             TaskInfo task = TaskInfo.Repeat
                 (
                     expr,
@@ -578,7 +578,7 @@ namespace Battlehub.VoxelCombat.Tests
 
             const int playerId = 2;
 
-            ExpressionInfo expr = ExpressionInfo.PrimitiveVar(true);
+            ExpressionInfo expr = ExpressionInfo.PrimitiveVal(true);
             TaskInfo task = TaskInfo.Repeat
                 (
                     expr,
@@ -734,7 +734,7 @@ namespace Battlehub.VoxelCombat.Tests
                 ExpressionInfo.Val(PrimitiveContract.Create(true)),
                 ExpressionInfo.Get(
                     ExpressionInfo.Val(input),
-                    ExpressionInfo.PrimitiveVar("IsLast")));
+                    ExpressionInfo.PrimitiveVal("IsLast")));
 
             TaskInfo breakIfCompleted = new TaskInfo
             {
@@ -753,7 +753,7 @@ namespace Battlehub.VoxelCombat.Tests
             TaskInfo repeat = new TaskInfo
             {
                 TaskType = TaskType.Repeat,
-                Expression = ExpressionInfo.PrimitiveVar(true),
+                Expression = ExpressionInfo.PrimitiveVal(true),
                 Children = new[]
                 {
                     iterateTask,
@@ -812,7 +812,7 @@ namespace Battlehub.VoxelCombat.Tests
                 new TaskInfo(TaskType.TEST_Mock),
                 new TaskInfo(TaskType.TEST_MockImmediate),
                 new TaskInfo(TaskType.TEST_MockImmediate),
-                TaskInfo.Return(ExpressionInfo.PrimitiveVar(TaskInfo.TaskSucceded)),
+                TaskInfo.Return(ExpressionInfo.PrimitiveVal(TaskInfo.TaskSucceded)),
                 new TaskInfo(TaskType.TEST_Fail)
             );
 
@@ -857,11 +857,11 @@ namespace Battlehub.VoxelCombat.Tests
 
             TaskInfo procedure = TaskInfo.Procedure(
                 TaskInfo.Repeat(
-                    ExpressionInfo.PrimitiveVar(true),
+                    ExpressionInfo.PrimitiveVal(true),
                     new TaskInfo(TaskType.TEST_Mock),
                     new TaskInfo(TaskType.TEST_MockImmediate),
                     new TaskInfo(TaskType.TEST_MockImmediate),
-                    TaskInfo.Return(ExpressionInfo.PrimitiveVar(TaskInfo.TaskSucceded)),
+                    TaskInfo.Return(ExpressionInfo.PrimitiveVal(TaskInfo.TaskSucceded)),
                     new TaskInfo(TaskType.TEST_Fail)
                 )
             );

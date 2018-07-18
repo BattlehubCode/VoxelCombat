@@ -58,7 +58,7 @@ namespace Battlehub.VoxelCombat
         {
             TaskInfo taskInfo = (TaskInfo)expression.Value;
             ExpressionInfo valueInfo = expression.Children[0];
-            ExpressionInfo outputInfo = expression.Children[1];
+            ExpressionInfo outputInfo = expression.Children.Length > 1 ? expression.Children[1] : null;
             if(outputInfo == null)
             {
                 outputInfo = new ExpressionInfo

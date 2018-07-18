@@ -54,6 +54,7 @@ namespace Battlehub.VoxelCombat
         void SubmitTask(TaskInfo taskInfo);
         void SubmitResponse(ClientRequest request);
         void SetTaskState(int taskId, TaskState state, int statusCode);
+        void TerminateAll();
 
         void Tick();
 
@@ -260,11 +261,9 @@ namespace Battlehub.VoxelCombat
 
         private readonly List<PendingClientRequest> m_timeoutRequests;
         private readonly Dictionary<long, PendingClientRequest> m_requests;
-        private const long m_timeoutTicks = 1200; //rougly equal to 1 minute;
+        private const long m_timeoutTicks = GameConstants.TaskEngineClientTimeout;
         private long m_tick;
         private long m_nextTimeoutCheck = m_timeoutTicks / 4;
-
-        private const int MAX_ITERATIONS_PER_TICK = 10;
 
         private readonly Dictionary<int, IExpression> m_expressions;
 
@@ -477,6 +476,8 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+
+        private int m_continueIteration = -1;
         public void Tick()
         {
             if (m_nextTimeoutCheck == m_tick)
@@ -507,25 +508,29 @@ namespace Battlehub.VoxelCombat
 
                 m_nextTimeoutCheck = m_tick + m_timeoutTicks / 4;
             }
-
-
-            for (int i = m_activeTasks.Count - 1; i >= 0; --i)
+    
+            int batchSize = GameConstants.TaskEngineBatchSize;
+            while(batchSize > 0 && m_activeTasks.Count > 0)
             {
-                TaskBase activeTask = m_activeTasks[i];
+                if (m_continueIteration < 0)
+                {
+                    m_continueIteration = m_activeTasks.Count - 1;
+                }
+
+                TaskBase activeTask = m_activeTasks[m_continueIteration];
                 if (activeTask.TaskInfo.State == TaskState.Active)
                 {
                     activeTask.Tick();
                 }
-            }
 
-            for (int i = m_activeTasks.Count - 1; i >= 0; --i)
-            {
-                TaskBase activeTask = m_activeTasks[i];
                 if (activeTask.TaskInfo.State != TaskState.Active)
                 {
-                    m_activeTasks.RemoveAt(i);
+                    m_activeTasks.RemoveAt(m_continueIteration);
                     HandleActiveTaskRemoved(activeTask.TaskInfo);
-                }              
+                }
+
+                m_continueIteration--;
+                batchSize--;
             }
 
             m_tick++;
@@ -538,19 +543,6 @@ namespace Battlehub.VoxelCombat
             {
                 return;
             }
-
-            //TaskInfo[] children = activeTaskInfo.Children;
-            //if (children != null)
-            //{
-            //    for (int i = 0; i < children.Length; ++i)
-            //    {
-            //        TaskInfo child = children[i];
-            //        if(child != null && child.State != TaskState.Active)
-            //        {
-            //            HandleActiveTaskRemoved(child);
-            //        }
-            //    }
-            //}
 
             m_idToActiveTask.Remove(activeTaskInfo.TaskId);
             m_requests.Remove(activeTaskInfo.TaskId);
@@ -567,12 +559,12 @@ namespace Battlehub.VoxelCombat
         {
             taskInfo.State = TaskState.Active;
             TaskBase task;
-            if (m_idToActiveTask.TryGetValue(taskInfo.TaskId, out task))
-            {
-                Release(task);
-                m_idToActiveTask.Remove(taskInfo.TaskId);
-                m_activeTasks.Remove(task);
-            }
+            //if (m_idToActiveTask.TryGetValue(taskInfo.TaskId, out task))
+            //{
+            //    Release(task);
+            //    m_idToActiveTask.Remove(taskInfo.TaskId);
+            //    m_activeTasks.Remove(task);
+            //}
 
             RaiseTaskStateChanged(taskInfo);
             task = Acquire(parent, taskInfo);
@@ -589,8 +581,9 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void Destroy()
+        public void TerminateAll()
         {
+            m_continueIteration = -1;
             for (int i = m_activeTasks.Count - 1; i >= 0; --i)
             {
                 TaskBase task = m_activeTasks[i];
@@ -604,6 +597,11 @@ namespace Battlehub.VoxelCombat
             }
             m_activeTasks.Clear();
             m_idToActiveTask.Clear();
+        }
+
+        public void Destroy()
+        {
+            TerminateAll();
         }
 
         private void RaiseTaskStateChanged(TaskInfo task)

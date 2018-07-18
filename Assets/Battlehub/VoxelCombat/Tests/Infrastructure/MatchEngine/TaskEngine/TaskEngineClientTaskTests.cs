@@ -122,7 +122,7 @@ namespace Battlehub.VoxelCombat.Tests
         private TaskInfo PathToRandomLocation(TaskInputInfo unitIndexInput, TaskInputInfo playerInput)
         {
             int radius = 3;
-            TaskInfo radiusVar = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVar(radius));
+            TaskInfo radiusVar = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVal(radius));
             TaskInputInfo radiusInput = new TaskInputInfo
             {
                 OutputIndex = 0,
@@ -304,7 +304,7 @@ namespace Battlehub.VoxelCombat.Tests
                 Coordinate[] coords = map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
                 VoxelData voxel = map.Get(coords[unitNumber]);
                 TaskInfo unitIndexTask = TaskInfo.UnitOrAssetIndex(voxel.UnitOrAssetIndex);
-                TaskInfo playerIndexTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVar(playerId));
+                TaskInfo playerIndexTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVal(playerId));
                 TaskInputInfo unitIndexInput = new TaskInputInfo
                 {
                     OutputIndex = 0,
@@ -408,7 +408,7 @@ namespace Battlehub.VoxelCombat.Tests
 
                 TaskInfo getUnitIndexTask = new TaskInfo(TaskType.EvalExpression)
                 {
-                    Expression = ExpressionInfo.PrimitiveVar(voxel.UnitOrAssetIndex),
+                    Expression = ExpressionInfo.PrimitiveVal(voxel.UnitOrAssetIndex),
                     OutputsCount = 1
                 };
                 TaskInputInfo unitIndex = new TaskInputInfo

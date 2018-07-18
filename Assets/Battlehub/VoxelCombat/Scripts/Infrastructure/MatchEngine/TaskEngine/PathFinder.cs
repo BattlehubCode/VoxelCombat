@@ -373,7 +373,7 @@ namespace Battlehub.VoxelCombat
 
         public void Update()
         {
-            int maxIterationsPerFrame = 100;
+            int batchSize = GameConstants.PathFinderBatchSize;
             
             while(m_activeTasks.Count > 0)
             {
@@ -392,12 +392,12 @@ namespace Battlehub.VoxelCombat
                         continue;
                     }
 
-                    if (maxIterationsPerFrame == 0)
+                    if (batchSize == 0)
                     {
                         return;
                     }
 
-                    maxIterationsPerFrame--;
+                    batchSize--;
 
                     Coordinate goal = task.Waypoints[task.Waypoints.Length - 1];
                     int[,] hopsMatrix = task.HopsMatrix;

@@ -21,12 +21,12 @@ namespace Battlehub.VoxelCombat.Tests
                         new ExpressionInfo
                         {
                             Code = ExpressionCode.Value,
-                            Value = new Coordinate(1, 1, 1, 1)
+                            Value = PrimitiveContract.Create(new Coordinate(1, 1, 1, 1))
                         },
                         new ExpressionInfo
                         {
                             Code = ExpressionCode.Value,
-                            Value = new Coordinate(1, 1, 1, 1)
+                            Value = PrimitiveContract.Create(new Coordinate(1, 1, 1, 1))
                         },
                     }
                 },
@@ -54,6 +54,190 @@ namespace Battlehub.VoxelCombat.Tests
             Assert.AreEqual(expression.Children[0].Children[0].Value, clone.Children[0].Children[0].Value);
             Assert.AreEqual(expression.Children[1].Code, clone.Children[1].Code);
             Assert.AreEqual(expression.Children[1].Value, clone.Children[1].Value);
+        }
+
+        [Test]
+        public void ExpreessionInfoCloneTest2()
+        {
+
+            ExpressionInfo canRun = ExpressionInfo.Eq(
+                ExpressionInfo.PrimitiveVal(CmdResultCode.Success),
+                ExpressionInfo.Val(new TaskInputInfo()));
+
+            Assert.DoesNotThrow(() =>
+            {
+                byte[] b = ProtobufSerializer.Serialize(canRun);
+                ProtobufSerializer.Deserialize<ExpressionInfo>(b);
+            });
+        }
+
+        [Test]
+        public void EatGrowSplitCloneTest()
+        {
+            TaskInfo task = TaskInfo.EatGrowSplit4(new TaskInputInfo(), new TaskInputInfo());
+
+            Assert.DoesNotThrow(() =>
+            {
+                byte[] b = ProtobufSerializer.Serialize(task);
+                ProtobufSerializer.Deserialize<TaskInfo>(b);
+            });
+        }
+
+        [Test]
+        public void SearchMoveOrRandomMoveCloneTest()
+        {
+            TaskInfo task = TaskInfo.SearchMoveOrRandomMove(TaskType.SearchForFood, new TaskInputInfo());
+
+            Assert.DoesNotThrow(() =>
+            {
+                byte[] b = ProtobufSerializer.Serialize(task);
+                ProtobufSerializer.Deserialize<TaskInfo>(b);
+            });
+        }
+
+        [Test]
+        public void SearchForPathCloneTest()
+        {
+            TaskInfo task = TaskInfo.SearchForPath(TaskType.SearchForFood, TaskInfo.Var(), new TaskInputInfo());
+
+            Assert.DoesNotThrow(() =>
+            {
+                ProtobufSerializer.DeepClone(task);
+            });
+        }
+
+ 
+        [Test]
+        public void SearchForPathCloneTest2()
+        {
+            TaskInfo searchForTask = TaskInfo.SearchFor(TaskType.SearchForFood, new TaskInputInfo());
+
+            ExpressionInfo searchForSucceded = ExpressionInfo.TaskSucceded(searchForTask);
+
+            TaskInputInfo coordinateInput = new TaskInputInfo(searchForTask, 1);
+            TaskInfo findPathTask = TaskInfo.FindPath(new TaskInputInfo(), coordinateInput);
+            ExpressionInfo findPathSucceded = ExpressionInfo.TaskSucceded(findPathTask);
+
+            TaskInputInfo pathVariableInput = new TaskInputInfo(findPathTask, 0);
+            ExpressionInfo assignPathVariable = ExpressionInfo.Assign(
+                TaskInfo.Var(),
+                ExpressionInfo.Val(pathVariableInput));
+
+            ExpressionInfo whileTrue = ExpressionInfo.PrimitiveVal(true);
+
+            TaskInfo task =
+                TaskInfo.Procedure(
+                    TaskInfo.Repeat(
+                        whileTrue,
+                        searchForTask,
+                        TaskInfo.Branch(
+                            searchForSucceded,
+                            TaskInfo.Sequence(
+                                findPathTask,
+                                TaskInfo.Branch(
+                                    findPathSucceded,
+                                    TaskInfo.Sequence(
+                                        TaskInfo.EvalExpression(assignPathVariable),
+                                        TaskInfo.Return()
+                                    ),
+                                    TaskInfo.Continue()
+                                )
+                            ),
+
+                      
+                            TaskInfo.Return(ExpressionInfo.PrimitiveVal(TaskInfo.TaskFailed))
+                        )
+                    )
+                );
+
+            Assert.DoesNotThrow(() =>
+            {
+                ProtobufSerializer.DeepClone(task);
+            });
+        }
+
+        [Test]
+        public void AssignPathVariableCloneTest()
+        {
+            TaskInfo findPathTask = TaskInfo.FindPath(new TaskInputInfo(), new TaskInputInfo());
+            TaskInputInfo pathVariableInput =  new TaskInputInfo(findPathTask, 0);
+            ExpressionInfo assignPathVariable = ExpressionInfo.Assign(
+                TaskInfo.Var(),
+                ExpressionInfo.Val(pathVariableInput));
+            TaskInfo task = TaskInfo.Sequence(
+                findPathTask,
+                TaskInfo.EvalExpression(assignPathVariable)
+                );
+
+            Assert.DoesNotThrow(() =>
+            {
+                ProtobufSerializer.DeepClone(task);
+            });
+        }
+
+        [Test]
+        public void ProcedureRepeatBranchSearchCloneTest()
+        {
+            ExpressionInfo whileTrue = ExpressionInfo.PrimitiveVal(true);
+            TaskInfo searchForTask = TaskInfo.SearchFor(TaskType.SearchForFood, new TaskInputInfo());
+            TaskInfo task = 
+                TaskInfo.Procedure(
+                    TaskInfo.Repeat(
+                        whileTrue,
+                        searchForTask,
+                        TaskInfo.Branch(
+                            whileTrue,
+                            new TaskInfo()
+                        )
+                    )
+                );
+            Assert.DoesNotThrow(() =>
+            {
+                ProtobufSerializer.DeepClone(task);
+            });
+        }
+
+        [Test]
+        public void FindPathCloneTest()
+        {
+            TaskInfo task = TaskInfo.FindPath(new TaskInputInfo(), new TaskInputInfo());
+
+            Assert.DoesNotThrow(() =>
+            {
+                ProtobufSerializer.DeepClone(task);
+            });
+        }
+
+        [Test]
+        public void SearchForCloneTest()
+        {
+            TaskInfo task = TaskInfo.SearchFor(TaskType.SearchForFood, new TaskInputInfo());
+
+            Assert.DoesNotThrow(() =>
+            {
+                byte[] b = ProtobufSerializer.Serialize(task);
+                ProtobufSerializer.Deserialize<TaskInfo>(b);
+            });
+        }
+
+        [Test]
+        public void ExpressionInfoCloneTest()
+        {
+            ExpressionInfo expression = ExpressionInfo.TaskSucceded(new TaskInfo());
+            Assert.DoesNotThrow(() =>
+            {
+                ProtobufSerializer.DeepClone(expression);
+            });
+        }
+
+
+        [Test]
+        public void TaskInputInfoCloneTest()
+        {
+            Assert.DoesNotThrow(() =>
+            {
+                ProtobufSerializer.DeepClone(new TaskInputInfo());
+            });
         }
 
         [Test]

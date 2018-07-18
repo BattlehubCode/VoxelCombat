@@ -90,7 +90,7 @@ namespace Battlehub.VoxelCombat
 
         public void Update()
         {
-            int maxIterationsPerFrame = 100;
+            int batchSize = GameConstants.TaskRunnerBatchSize;
 
             while (m_activeTasks.Count > 0)
             {
@@ -109,12 +109,12 @@ namespace Battlehub.VoxelCombat
                         continue;
                     }
 
-                    if (maxIterationsPerFrame == 0)
+                    if (batchSize == 0)
                     {
                         return;
                     }
 
-                    maxIterationsPerFrame--;
+                    batchSize--;
 
                     object result = task.Update();
 
