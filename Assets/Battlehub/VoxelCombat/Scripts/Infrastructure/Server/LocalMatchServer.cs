@@ -118,6 +118,7 @@ namespace Battlehub.VoxelCombat
         private Dictionary<Guid, TaskInfo[]> m_taskTemplates;
         private Dictionary<Guid, TaskTemplateInfo[]> m_taskTemplatesInfo;
 
+        private Guid m_botAuthority;
         private IBotController[] m_bots;
         private Room m_room;
 
@@ -277,6 +278,18 @@ namespace Battlehub.VoxelCombat
                 m_room.Players.Remove(m_neutralPlayer.Id);
             }
 
+            if(m_bots != null)
+            {
+                for (int i = 0; i < m_bots.Length; ++i)
+                {
+                    IBotController bot = m_bots[i];
+                    if (bot != null)
+                    {
+                        MatchFactory.DestroyBotController(bot);
+                    }
+                }
+            }
+
             if (m_engine != null)
             {
                 MatchFactory.DestroyMatchEngine(m_engine);
@@ -304,7 +317,7 @@ namespace Battlehub.VoxelCombat
 
         private TaskTemplateInfo[] CreateDefaultTaskTemplateInfo()
         {
-            return new[] { new TaskTemplateInfo { Name = "Eat Grow Split4", Col = 2, Row = 2 } };
+            return new[] { new TaskTemplateInfo { Name = "Eat Grow Split4", Col = 2, Row = 2, Type = TaskTemplateType.EatGrowSplit4 } };
         }
 
         public bool IsLocal(Guid clientId, Guid playerId)
@@ -468,7 +481,11 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                m_engine.SubmitResponse(response);
+                Cmd cmd = response.Cmd;
+                if(cmd != null && cmd.Code != CmdCode.DenyBotCtrl && cmd.Code != CmdCode.GrantBotCtrl)
+                {
+                    m_engine.SubmitResponse(response);
+                }
             }
 
             if (m_lag == 0)
@@ -531,9 +548,9 @@ namespace Battlehub.VoxelCombat
                             abilities[i] = m_abilities[m_room.Players[i]];
                             taskInfo[i] = m_taskTemplates[m_room.Players[i]];
                             taskTemplateInfo[i] = m_taskTemplatesInfo[m_room.Players[i]];
-                            if (player.IsBot && player.BotType != BotType.Replay)
+                            if (player.IsBot && player.BotType != BotType.Replay && player.BotType != BotType.Neutral)
                             {
-                                //bots.Add(MatchFactory.CreateBotController(player, m_engine, m_engine.BotPathFinder, m_engine.BotTaskRunner));
+                                bots.Add(MatchFactory.CreateBotController(player, m_engine.GetTaskEngine(i)));
                             }
                         }
 
@@ -550,6 +567,7 @@ namespace Battlehub.VoxelCombat
                     }
 
                     RaiseReadyToPlayAll(error, players, abilities, taskInfo, taskTemplateInfo);
+                    m_engine.GrantBotCtrl(0);
                 });
 
                 m_pingTimer.Ping(clientId);

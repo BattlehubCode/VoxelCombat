@@ -34,6 +34,12 @@ namespace Battlehub.VoxelCombat
             set;
         }
 
+        bool DisableFogOfWar
+        {
+            get;
+            set;
+        }
+
         Guid ClientId
         {
             get; 
@@ -64,6 +70,13 @@ namespace Battlehub.VoxelCombat
         {
             get { return Dependencies.State.GetValue<string>("Battlehub.VoxelCombat.MatchServerUrl"); }
             set { Dependencies.State.SetValue("Battlehub.VoxelCombat.MatchServerUrl", value); }
+        }
+
+        private bool m_disableFogOfWar = true;
+        public bool DisableFogOfWar
+        {
+            get { return m_disableFogOfWar; }
+            set { m_disableFogOfWar = value; }
         }
 
         private static Guid m_clientId = Guid.NewGuid();

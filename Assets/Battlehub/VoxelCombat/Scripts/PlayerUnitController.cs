@@ -197,8 +197,7 @@ namespace Battlehub.VoxelCombat
             for(int i = 0; i < templatesInfo.Length; ++i)
             {
                 TaskTemplateInfo templateInfo = templatesInfo[i];
-
-                int index = templatesInfo[i].Index;
+                int index = templateInfo.Index;
                 if(index == action)
                 {
                     SubmitTaskToClientTaskEngine(playerIndex, taskTemplates[i]);

@@ -54,6 +54,7 @@ namespace Battlehub.VoxelCombat
         void SubmitTask(TaskInfo taskInfo);
         void SubmitResponse(ClientRequest request);
         void SetTaskState(int taskId, TaskState state, int statusCode);
+        TaskInfo TerminateTask(int taskId);
         void TerminateAll();
 
         void Tick();
@@ -581,6 +582,32 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        public TaskInfo TerminateTask(int taskId)
+        {
+            TaskBase task;
+            if (m_idToActiveTask.TryGetValue(taskId, out task))
+            {
+                if (task.TaskInfo.State == TaskState.Terminated)
+                {
+                    return task.TaskInfo;
+                }
+                task.TaskInfo.State = TaskState.Terminated;
+                if(task.TaskInfo.Children != null)
+                {
+                    for (int i = 0; i < task.TaskInfo.Children.Length; ++i)
+                    {
+                        TaskInfo child = task.TaskInfo.Children[i];
+                        if(child != null)
+                        {
+                            TerminateTask(child.TaskId);
+                        }
+                    }
+                }
+                return task.TaskInfo;
+            }
+            return null;
+        }
+
         public void TerminateAll()
         {
             m_continueIteration = -1;
@@ -590,6 +617,11 @@ namespace Battlehub.VoxelCombat
                 task.TaskInfo.State = TaskState.Terminated;
                 RaiseTaskStateChanged(task.TaskInfo);
             }
+        }
+
+        public void Destroy()
+        {
+            TerminateAll();
             for (int i = m_activeTasks.Count - 1; i >= 0; --i)
             {
                 TaskBase task = m_activeTasks[i];
@@ -597,11 +629,6 @@ namespace Battlehub.VoxelCombat
             }
             m_activeTasks.Clear();
             m_idToActiveTask.Clear();
-        }
-
-        public void Destroy()
-        {
-            TerminateAll();
         }
 
         private void RaiseTaskStateChanged(TaskInfo task)

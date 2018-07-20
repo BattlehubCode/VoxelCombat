@@ -1,4 +1,4 @@
-﻿#define DEBUG_OUTPUT
+﻿//#define DEBUG_OUTPUT
 using System;
 using System.Diagnostics;
 
@@ -206,7 +206,9 @@ namespace Battlehub.VoxelCombat
         protected override void OnTick()
         {
             base.OnTick();
+#if !SERVER
             NUnit.Framework.Assert.Fail();
+#endif
         }
     }
 
@@ -215,7 +217,9 @@ namespace Battlehub.VoxelCombat
         protected override void OnTick()
         {
             base.OnTick();
+#if !SERVER
             NUnit.Framework.Assert.Pass();
+#endif
         }
     }
 

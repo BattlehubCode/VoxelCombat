@@ -4,95 +4,95 @@ using System.Collections.Generic;
 
 namespace Battlehub.VoxelCombat
 {
-    public interface IBotStrategy
-    {
-        MapPos BaseCampPostion
-        {
-            get;
-        }
+    //public interface IBotStrategy
+    //{
+    //    MapPos BaseCampPostion
+    //    {
+    //        get;
+    //    }
 
-        CompositeCmd Think();
+    //    CompositeCmd Think();
 
-        void Destroy();
-    }
+    //    void Destroy();
+    //}
 
-    [Flags]
-    public enum BotTaskType
-    {
-        None = 0,
-        Eat = 1 << 0,
-        Attack = 1 << 1,
-        ConvertToSpawner = 1 << 2,
-        ConvertToBomb = 1 << 3,
-        Grow = 1 << 4,
-        Split = 1 << 5,
-        Split4 = 1 << 6,
-        All = Eat | Attack | ConvertToSpawner | ConvertToBomb | Grow | Split | Split4
-    }
+    //[Flags]
+    //public enum BotTaskType
+    //{
+    //    None = 0,
+    //    Eat = 1 << 0,
+    //    Attack = 1 << 1,
+    //    ConvertToSpawner = 1 << 2,
+    //    ConvertToBomb = 1 << 3,
+    //    Grow = 1 << 4,
+    //    Split = 1 << 5,
+    //    Split4 = 1 << 6,
+    //    All = Eat | Attack | ConvertToSpawner | ConvertToBomb | Grow | Split | Split4
+    //}
 
-    public class BotTask
-    {
-        public IMatchUnitAssetView Unit;
-        public BotTaskType TaskType;
+    //public class BotTask
+    //{
+    //    public IMatchUnitAssetView Unit;
+    //    public BotTaskType TaskType;
 
-        public Coordinate TargetCoordinate
-        {
-            get;
-            set;
-        }
+    //    public Coordinate TargetCoordinate
+    //    {
+    //        get;
+    //        set;
+    //    }
 
-        public IMatchUnitAssetView TargetUnitOrAsset
-        {
-            get;
-            set;
-        }
+    //    public IMatchUnitAssetView TargetUnitOrAsset
+    //    {
+    //        get;
+    //        set;
+    //    }
 
-        public VoxelData TargetData
-        {
-            get;
-            set;
-        }
+    //    public VoxelData TargetData
+    //    {
+    //        get;
+    //        set;
+    //    }
 
-        private Coordinate[] m_targetCoordinates;
-        public Coordinate[] TargetCoordinates
-        {
-            get { return m_targetCoordinates; }
-            set
-            {
-                m_targetCoordinates = value;
-                TargetCoordinate = m_targetCoordinates[0];
-            }
-        }
+    //    private Coordinate[] m_targetCoordinates;
+    //    public Coordinate[] TargetCoordinates
+    //    {
+    //        get { return m_targetCoordinates; }
+    //        set
+    //        {
+    //            m_targetCoordinates = value;
+    //            TargetCoordinate = m_targetCoordinates[0];
+    //        }
+    //    }
 
-        private VoxelData[] m_targetsDataArray;
-        public VoxelData[] TargetDataArray
-        {
-            get { return m_targetsDataArray; }
-            set
-            {
-                m_targetsDataArray = value;
-                TargetData = m_targetsDataArray[0];
-            }
-        }
+    //    private VoxelData[] m_targetsDataArray;
+    //    public VoxelData[] TargetDataArray
+    //    {
+    //        get { return m_targetsDataArray; }
+    //        set
+    //        {
+    //            m_targetsDataArray = value;
+    //            TargetData = m_targetsDataArray[0];
+    //        }
+    //    }
 
-        public MapPos PrevPos = new MapPos(-1, -1);
-        public int MaxIdleIterations = 10;
-        public int IdleIteration;
-        public int Stage;
-        public int PrevStage;
-        public readonly List<VoxelData> SuitableData = new List<VoxelData>();
-        public MapCell SuitableCell;
+    //    public MapPos PrevPos = new MapPos(-1, -1);
+    //    public int MaxIdleIterations = 10;
+    //    public int IdleIteration;
+    //    public int Stage;
+    //    public int PrevStage;
+    //    public readonly List<VoxelData> SuitableData = new List<VoxelData>();
+    //    public MapCell SuitableCell;
 
 
-        public readonly IBotStrategy Strategy;
+    //    public readonly IBotStrategy Strategy;
 
-        public BotTask(IMatchUnitAssetView unit, BotTaskType taskType, IBotStrategy strategy)
-        {
-            Unit = unit;
-            TaskType = taskType;
-            Strategy = strategy;
-        }
-    }
+    //    public BotTask(IMatchUnitAssetView unit, BotTaskType taskType, IBotStrategy strategy)
+    //    {
+    //        Unit = unit;
+    //        TaskType = taskType;
+    //        Strategy = strategy;
+    //    }
+    //}
 
     /*
     public class DefaultBotStrategy : IBotStrategy

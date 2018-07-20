@@ -14,6 +14,7 @@ namespace Battlehub.VoxelCombat
 
         private void Awake()
         {
+            m_logger = new Logger();
             m_gState = new GlobalState();
 
             if(TestMode)
@@ -102,12 +103,11 @@ namespace Battlehub.VoxelCombat
                     m_localGameServer = serverGO.AddComponent<LocalGameServer>();
                 }
             }
-
-          
         }
 
         private void OnDestroy()
         {
+            m_logger = null;
             m_inputManager = null;
             m_console = null;
             m_game = null;
@@ -132,6 +132,12 @@ namespace Battlehub.VoxelCombat
             m_eventSystemManager = null;
 
             m_gState = null;
+        }
+
+        private static ILogger m_logger;
+        public static ILogger Logger
+        {
+            get { return m_logger; }
         }
 
         private static IEventSystemManager m_eventSystemManager;

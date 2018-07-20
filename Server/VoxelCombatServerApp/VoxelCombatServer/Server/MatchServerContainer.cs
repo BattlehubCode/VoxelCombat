@@ -67,16 +67,18 @@ namespace Battlehub.VoxelCombat
             Broadcast(RemoteEvent.Evt.ChatMessage, error, args, RemoteArg.Create(args.Arg));
         }
 
-        private void OnReadyToPlayAll(Error error, ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], Room> args)
+        private void OnReadyToPlayAll(Error error, ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateInfoArray[], Room> args)
         {
-            Room room = args.Arg4;
+            Room room = args.Arg6;
             if (room.Mode == GameMode.Replay)
             {
                 Send(RemoteEvent.Evt.ReadyToPlayAll, error, room.CreatorClientId,
                         RemoteArg.Create(args.Arg),
                         RemoteArg.Create(new Guid[0]),
                         RemoteArg.Create(args.Arg3),
-                        RemoteArg.Create(args.Arg4));
+                        RemoteArg.Create(args.Arg4),
+                        RemoteArg.Create(args.Arg5),
+                        RemoteArg.Create(args.Arg6));
             }
             else
             {
@@ -90,8 +92,9 @@ namespace Battlehub.VoxelCombat
                         RemoteArg.Create(args.Arg),
                         RemoteArg.Create(players.Keys.ToArray()),
                         RemoteArg.Create(args.Arg3),
-                        RemoteArg.Create(args.Arg4));
-
+                        RemoteArg.Create(args.Arg4),
+                        RemoteArg.Create(args.Arg5),
+                        RemoteArg.Create(args.Arg6));
                 }
             }
         }

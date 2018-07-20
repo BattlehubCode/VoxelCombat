@@ -108,8 +108,18 @@ namespace Battlehub.VoxelCombat
             m_skyColor.a = 1.0f;
             m_groundBaseColor = m_materialCache.GetPrimaryColor(0);
             m_transparentColor = new Color(0, 0, 0, 0);
-            m_fogOfWarColor = new Color(0.05f, 0.05f, 0.05f, 1);
-            m_fogOfWarVisitedColor = new Color(0, 0, 0, 0.3f);
+
+            if(Dependencies.Settings.DisableFogOfWar)
+            {
+                m_fogOfWarColor = m_transparentColor;
+                m_fogOfWarVisitedColor = m_transparentColor;
+            }
+            else
+            {
+                m_fogOfWarColor = new Color(0.05f, 0.05f, 0.05f, 1);
+                m_fogOfWarVisitedColor = new Color(0, 0, 0, 0.3f);
+            }
+
         }
 
         private void OnDestroy()

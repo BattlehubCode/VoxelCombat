@@ -408,17 +408,32 @@ namespace Battlehub.VoxelCombat
                 {
                     gameInitArgs.MapName = args[2];
                 }
+                else
+                {
+                    console.Echo("launch <playersCount> <botsCount> <mapname>");
+                    return;
+                }
 
                 if(args.Length > 0)
                 {
                     int.TryParse(args[0], out gameInitArgs.PlayersCount);
                     gameInitArgs.PlayersCount = Mathf.Clamp(gameInitArgs.PlayersCount, 0, GameConstants.MaxLocalPlayers);
                 }
+                else
+                {
+                    console.Echo("launch <playersCount> <botsCount> <mapname>");
+                    return;
+                }
 
                 if(args.Length > 1)
                 {
                     int.TryParse(args[1], out gameInitArgs.BotsCount);
                     gameInitArgs.BotsCount = Mathf.Clamp(gameInitArgs.BotsCount, 0, GameConstants.MaxPlayers - gameInitArgs.BotsCount);
+                }
+                else
+                {
+                    console.Echo("launch <playersCount> <botsCount> <mapname>");
+                    return;
                 }
 
                 DontDestroyOnLoadManager.DestroyAll();

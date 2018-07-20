@@ -35,6 +35,8 @@ namespace Battlehub.VoxelCombat
         public const int Kill = 201;
 
         //Commands requested by server
+        public const int GrantBotCtrl = 300;
+        public const int DenyBotCtrl = 301;
  
     }
 
@@ -610,6 +612,10 @@ namespace Battlehub.VoxelCombat
         void SubmitResponse(ClientRequest response);
 
         void Destroy();
+
+        void GrantBotCtrl(int playerIndex);
+
+        void DenyBotCtrl(int playerIndex);
     }
 
     public class MatchEngine : IMatchEngine
@@ -644,7 +650,7 @@ namespace Battlehub.VoxelCombat
         private ITaskEngine[] m_taskEngines;
         private ITaskRunner[] m_taskRunners;
         private IPathFinder[] m_pathFinders;
-    
+
         public MatchEngine(MapRoot map, int playersCount)
         {
             m_map = map;
@@ -657,7 +663,7 @@ namespace Battlehub.VoxelCombat
             m_taskEngines = new ITaskEngine[playersCount];
             m_pathFinders = new IPathFinder[playersCount];
             m_taskRunners = new ITaskRunner[playersCount];
-            for(int i = 0; i < playersCount; ++i)
+            for (int i = 0; i < playersCount; ++i)
             {
                 IPathFinder pathFinder = MatchFactory.CreatePathFinder(m_map);
                 ITaskRunner taskRunner = MatchFactory.CreateTaskRunner();
@@ -682,7 +688,7 @@ namespace Battlehub.VoxelCombat
                 MatchFactory.DestroyTaskEngine(taskEngine);
                 MatchFactory.DestroyPathFinder(m_pathFinders[i]);
                 MatchFactory.DestroyTaskRunner(m_taskRunners[i]);
-            }   
+            }
         }
 
         public ITaskEngine GetTaskEngine(int playerIndex)
@@ -741,11 +747,11 @@ namespace Battlehub.VoxelCombat
             if (m_idToPlayers.TryGetValue(playerId, out playerController))
             {
                 IMatchUnitController unitController = playerController.GetUnitController(unitIndex);
-                if(unitController.Data.Type == (int)KnownVoxelTypes.Spawner)
+                if (unitController.Data.Type == (int)KnownVoxelTypes.Spawner)
                 {
                     return false;
                 }
-                switch(cmdCode)
+                switch (cmdCode)
                 {
                     //case CmdCode.Automatic:
                     //    return true;
@@ -759,7 +765,7 @@ namespace Battlehub.VoxelCombat
                         return unitController.DataController.CanSplitImmediate() == CmdResultCode.Success;
                     case CmdCode.Move:
                         return !unitController.DataController.IsCollapsedOrBlocked;
-                     
+
                     case CmdCode.Explode:
                         return unitController.Data.Type == (int)KnownVoxelTypes.Bomb;
                 }
@@ -769,7 +775,7 @@ namespace Battlehub.VoxelCombat
 
         public void Submit(int playerIndex, Cmd cmd)
         {
-            if(cmd.Code == CmdCode.ExecuteTask)
+            if (cmd.Code == CmdCode.ExecuteTask)
             {
                 TaskCmd executeTaskCmd = (TaskCmd)cmd;
                 TaskInfo task = executeTaskCmd.Task;
@@ -788,7 +794,7 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            if(OnSubmitted != null)
+            if (OnSubmitted != null)
             {
                 OnSubmitted(playerIndex, cmd);
             }
@@ -822,22 +828,22 @@ namespace Battlehub.VoxelCombat
 
         public bool Tick(out CommandsBundle commands)
         {
-            for(int i = 0; i < m_players.Length; ++i)
+            for (int i = 0; i < m_players.Length; ++i)
             {
                 m_pathFinders[i].Tick();
                 m_taskRunners[i].Tick();
             }
-          
+
             List<IMatchPlayerController> defeatedPlayers = null;
             for (int i = 0; i < m_players.Length; ++i)
             {
                 IMatchPlayerController playerController = m_players[i];
-            
+
                 bool wasInRoom = playerController.IsPlayerInRoom;
 
                 CommandsArray playerCommands;
-        
-                if(playerController.Tick(out playerCommands))
+
+                if (playerController.Tick(out playerCommands))
                 {
                     m_hasNewCommands = true;
                 }
@@ -870,9 +876,9 @@ namespace Battlehub.VoxelCombat
                 m_serverCommands.Commands[i] = playerCommands;
             }
 
-            if(defeatedPlayers != null)
+            if (defeatedPlayers != null)
             {
-                for(int i = 0; i < defeatedPlayers.Count; ++i)
+                for (int i = 0; i < defeatedPlayers.Count; ++i)
                 {
                     IMatchPlayerController defeatedPlayer = defeatedPlayers[i];
                     defeatedPlayer.DestroyAllUnitsAndAssets();
@@ -882,7 +888,7 @@ namespace Battlehub.VoxelCombat
             bool wasGameCompleted = m_serverCommands.IsGameCompleted;
             m_serverCommands.IsGameCompleted = IsCompleted();
 
-            if(wasGameCompleted != m_serverCommands.IsGameCompleted)
+            if (wasGameCompleted != m_serverCommands.IsGameCompleted)
             {
                 m_hasNewCommands = true;
             }
@@ -894,25 +900,43 @@ namespace Battlehub.VoxelCombat
                 {
                     m_serverCommands.TasksStateInfo.Clear();
                 }
-                if(m_serverCommands.ClientRequests.Count > 0)
+                if (m_serverCommands.ClientRequests.Count > 0)
                 {
                     m_serverCommands.ClientRequests.Clear();
                 }
                 m_hasNewCommands = false;
-                for(int i = 0; i < m_taskEngines.Length; ++i)
+                for (int i = 0; i < m_taskEngines.Length; ++i)
                 {
                     m_taskEngines[i].Tick();
                 }
-                
+
                 return true;
             }
-            
+
             commands = null;
             for (int i = 0; i < m_taskEngines.Length; ++i)
             {
                 m_taskEngines[i].Tick();
             }
             return false;
+        }
+
+        public void GrantBotCtrl(int playerIndex)
+        {
+            OnClientRequest(new ClientRequest
+            {
+                Cmd = new Cmd(CmdCode.GrantBotCtrl),
+                PlayerIndex = playerIndex
+            });
+        }
+
+        public void DenyBotCtrl(int playerIndex)
+        {
+            OnClientRequest(new ClientRequest
+            {
+                Cmd = new Cmd(CmdCode.DenyBotCtrl),
+                PlayerIndex = playerIndex
+            });
         }
 
         public bool IsCompleted()

@@ -1,4 +1,4 @@
-﻿#define DEBUG_OUTPUT
+﻿//#define DEBUG_OUTPUT
 using ProtoBuf;
 using System.Runtime.Serialization;
 using System.Collections;
@@ -451,6 +451,11 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+    public enum TaskTemplateType
+    {
+        EatGrowSplit4,
+    }
+
     [ProtoContract]
     public class TaskTemplateInfo
     {
@@ -462,6 +467,9 @@ namespace Battlehub.VoxelCombat
 
         [ProtoMember(3)]
         public int Col;
+
+        [ProtoMember(4)]
+        public TaskTemplateType Type;
 
         public int Index
         {
@@ -1216,6 +1224,11 @@ namespace Battlehub.VoxelCombat
                         )
                     )
                 );
+        }
+
+        public static TaskInfo EatGrowSplit4()
+        {
+            return EatGrowSplit4(new TaskInputInfo(), new TaskInputInfo());
         }
 
         public static TaskInfo EatGrowSplit4(TaskInputInfo unitIndexInput, TaskInputInfo playerIdInput)

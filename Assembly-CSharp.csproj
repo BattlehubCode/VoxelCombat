@@ -127,6 +127,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\CameraFogOfWar.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Effects\ParticleEffect.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Effects\VoxelDestruction.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\GameConstants.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\BoxSelection.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\CursorHelper.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\DontDestroyOnLoadManager.cs" />
@@ -149,6 +150,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\InControlAdapter.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\InControlKeyboardProfile.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\IVoxelInputManager.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Log.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\AttackTaskProcessor.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\BotController.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\BotStrategy.cs" />

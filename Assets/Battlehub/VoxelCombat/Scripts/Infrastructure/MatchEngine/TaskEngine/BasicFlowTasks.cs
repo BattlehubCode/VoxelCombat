@@ -1,4 +1,4 @@
-﻿#define DEBUG_OUTPUT
+﻿//#define DEBUG_OUTPUT
 using System;
 using UnityEngine;
 

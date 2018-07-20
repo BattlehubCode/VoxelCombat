@@ -8,8 +8,8 @@ namespace Battlehub.VoxelCombat
     public class TestGameInitArgs
     {
         public string MapName;
-        public int PlayersCount = 2;
-        public int BotsCount;
+        public int PlayersCount = GameConstants.DefaultTestInitPlayersCount;
+        public int BotsCount = GameConstants.DefaultTestInitBotsCount;
     }
 
     public static class TestGameInit

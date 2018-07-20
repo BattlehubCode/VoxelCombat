@@ -16,9 +16,14 @@ namespace Battlehub.VoxelCombat
             taskEngine.Destroy();
         }
 
-        public static IBotController CreateBotController(Player player, IMatchView matchView, IPathFinder pathFinder, ITaskRunner taskRunner)
+        public static IBotController CreateBotController(Player player, ITaskEngine taskEngine)
         {
-            return null;// new BotController(player, matchView, pathFinder, taskRunner);
+            return new BotController(player, taskEngine);
+        }
+
+        public static void DestroyBotController(IBotController botController)
+        {
+            botController.Destroy();
         }
 
         public static IReplaySystem CreateReplayRecorder()
