@@ -199,7 +199,7 @@ namespace Battlehub.VoxelCombat
         {
             public readonly Dictionary<TaskTemplateType, TaskInfo> TaskTemplates = new Dictionary<TaskTemplateType, TaskInfo>
             {
-                { TaskTemplateType.EatGrowSplit4, TaskInfo.EatGrowSplit4() }
+                { TaskTemplateType.EatGrowSplit4, TaskInfo.EatGrowSplit4(10, 5) }
             };
 
             public readonly Dictionary<int, RunningTaskInfo> TaskIdToTask = new Dictionary<int, RunningTaskInfo>();

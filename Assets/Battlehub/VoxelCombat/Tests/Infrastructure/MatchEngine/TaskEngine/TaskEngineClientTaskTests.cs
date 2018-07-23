@@ -278,6 +278,33 @@ namespace Battlehub.VoxelCombat.Tests
                 });
         }
 
+
+        [UnityTest]
+        public IEnumerator SearchMoveOrRandomMoveLimitedRandomSearchesFailTest()
+        {
+            yield return TaskTest(1, (unitIndexInput, playerId) =>
+            {
+                const int maxRandLocationPicks = 10;
+                const int maxRandMovements = 0;
+                TaskInfo randomMovementsVar = TaskInfo.Var();
+                TaskInputInfo randomMovementsInput = new TaskInputInfo(randomMovementsVar, 0);
+
+                TaskInfo searchMoveOrRandomMove = TaskInfo.SearchMoveOrRandomMove(TaskType.SearchForFood, unitIndexInput, maxRandLocationPicks, randomMovementsInput, maxRandMovements);
+                return TaskInfo.Procedure(
+                    randomMovementsVar,
+                    TaskInfo.EvalExpression(ExpressionInfo.Assign(randomMovementsVar, ExpressionInfo.PrimitiveVal(0))),
+                    searchMoveOrRandomMove,
+                    TaskInfo.Return(ExpressionInfo.TaskStatus(searchMoveOrRandomMove))
+                    );
+            }
+            , true,
+                rootTaskInfo =>
+                {
+                    Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
+                    Assert.IsTrue(rootTaskInfo.IsFailed);
+                });
+        }
+
         [UnityTest]
         public IEnumerator SearchMoveGrowTest()
         {
@@ -341,7 +368,7 @@ namespace Battlehub.VoxelCombat.Tests
 
 
                 TaskInfo testTaskInfo = GetTestTaskInfo(unitIndexInput, playerIndexInput);
-                TaskInfo rootTask = TaskInfo.Sequence(
+                TaskInfo rootTask = TaskInfo.Procedure(
                     playerIndexTask,
                     unitIndexTask,
                     testTaskInfo,
@@ -457,12 +484,17 @@ namespace Battlehub.VoxelCombat.Tests
                     {
                         if(taskInfo.TaskId == searchForFoodTask.TaskId)
                         {
-                            taskEngine.TaskStateChanged -= taskStateChanged;
-
+                            
                             callback(taskEngine, taskInfo, searchForFoodTask, coords);
 
-                            EndTest();
+                            
                         } 
+                        else if(taskInfo.TaskId == rootTask.TaskId)
+                        {
+                            taskEngine.TaskStateChanged -= taskStateChanged;
+
+                            EndTest();
+                        }
                     }
                     else
                     {
