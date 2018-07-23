@@ -847,6 +847,53 @@ namespace Battlehub.VoxelCombat.Tests
         }
 
         [Test]
+        public void ProcedureReturnFailTest()
+        {
+            Assert.DoesNotThrow(() =>
+            {
+                BeginTest(TestEnv0, 4);
+            });
+
+
+            TaskInfo procedure = TaskInfo.Procedure(
+                new TaskInfo(TaskType.TEST_Mock),
+                new TaskInfo(TaskType.TEST_MockImmediate),
+                new TaskInfo(TaskType.TEST_MockImmediate),
+                TaskInfo.Return(ExpressionInfo.PrimitiveVal(TaskInfo.TaskFailed)),
+                new TaskInfo(TaskType.TEST_Fail)
+            );
+
+            TaskInfo root = TaskInfo.Sequence
+                (
+                    procedure,
+                    TaskInfo.Branch(
+                        ExpressionInfo.TaskSucceded(procedure),
+                        new TaskInfo(TaskType.TEST_Fail),
+                        new TaskInfo(TaskType.Nop)
+                    )
+                );
+
+            root.SetParents();
+
+            const int playerId = 1;
+            BeginCleanupCheck(playerId);
+
+            FinializeTest(playerId, root, result =>
+            {
+                Assert.AreEqual(root.TaskId, result.TaskId);
+                Assert.AreEqual(TaskState.Completed, result.State);
+                Assert.IsFalse(result.IsFailed);
+                CleanupCheck(playerId);
+
+                Assert.Pass();
+            },
+            childTask =>
+            {
+
+            });
+        }
+
+        [Test]
         public void RepeatProcedureReturnTest()
         {
             Assert.DoesNotThrow(() =>

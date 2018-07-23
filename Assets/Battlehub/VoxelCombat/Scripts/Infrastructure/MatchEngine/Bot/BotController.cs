@@ -105,17 +105,19 @@ namespace Battlehub.VoxelCombat
         void OnUnitCreated(IMatchUnitAssetView asset);
         void OnAssetRemoved(IMatchUnitAssetView unit);
         void OnUnitRemoved(IMatchUnitAssetView unit, RunningTaskInfo activeTask, TaskInfo taskInfo);
-        void OnTaskCompleted(IMatchUnitAssetView unit, RunningTaskInfo completedTask, TaskInfo taskInfo, bool isFailed);
+        void OnTaskCompleted(IMatchUnitAssetView unit, RunningTaskInfo completedTask, TaskInfo taskInfo);
         void Think(float time, IBotSubmitTask bot);
     }
 
     public class DefaultStrategy : IBotStartegy
     {
         private BotController.State m_state;
+        private ILogger m_logger;
 
         public DefaultStrategy(BotController.State state)
         {
             m_state = state;
+            m_logger = Dependencies.Logger;
         }
 
         public void OnAssetCreated(IMatchUnitAssetView asset)
@@ -134,9 +136,9 @@ namespace Battlehub.VoxelCombat
         {
         }
 
-        public void OnTaskCompleted(IMatchUnitAssetView unit, RunningTaskInfo completedTask, TaskInfo taskInfo, bool isFailed)
+        public void OnTaskCompleted(IMatchUnitAssetView unit, RunningTaskInfo completedTask, TaskInfo taskInfo)
         {
-
+            m_logger.LogFormat("Unit {0} task {1} {2} with status {3}", unit.Id, completedTask.TaskId, taskInfo.State, taskInfo.IsFailed ? "failed" : "succeded");
         }
 
         public void Think(float time, IBotSubmitTask bot)
@@ -221,9 +223,7 @@ namespace Battlehub.VoxelCombat
             m_strategy = new DefaultStrategy(m_state);
 
             m_taskEngine = taskEngine;
-            m_taskEngine.TaskStateChanged += OnTaskStateChanged;
             m_playerView = m_taskEngine.MatchEngine.GetPlayerView(player.Id);
-            //Init();
         }
 
         public void Init()
@@ -246,6 +246,7 @@ namespace Battlehub.VoxelCombat
             m_playerView.UnitRemoved += OnUnitRemoved;
             m_playerView.AssetCreated += OnAssetCreated;
             m_playerView.AssetRemoved += OnAssetRemoved;
+            m_taskEngine.TaskStateChanged += OnTaskStateChanged;
         }
 
         public void Reset()
@@ -321,10 +322,11 @@ namespace Battlehub.VoxelCombat
             TaskInfo taskInfo = null;
             if(m_state.UnitIdToTask.TryGetValue(unit.Id, out activeTask))
             {
-                int taskId = activeTask.TaskId;
-                taskInfo = m_taskEngine.TerminateTask(taskId);
-                m_state.TaskIdToTask.Remove(activeTask.TaskId);
-                m_state.UnitIdToTask.Remove(unit.Id);
+                //int taskId = activeTask.TaskId;
+                //taskInfo = m_taskEngine.TerminateTask(taskId);
+                //m_state.TaskIdToTask.Remove(activeTask.TaskId);
+                //m_state.UnitIdToTask.Remove(unit.Id);
+                //m_strategy.OnTaskCompleted(unit, activeTask, taskInfo);
             }
 
             m_strategy.OnUnitRemoved(unit, activeTask, taskInfo);
@@ -341,13 +343,16 @@ namespace Battlehub.VoxelCombat
                     Dictionary<long, IMatchUnitAssetView> busyUnits;
                     if (m_state.BusyUnits.TryGetValue((KnownVoxelTypes)unit.Data.Type, out busyUnits))
                     {
-                        busyUnits.Remove(unit.Id);
-                        m_state.FreeUnits[(KnownVoxelTypes)unit.Data.Type].Add(unit.Id, unit);
+                        if(busyUnits.ContainsKey(unit.Id))
+                        {
+                            busyUnits.Remove(unit.Id);
+                            m_state.FreeUnits[(KnownVoxelTypes)unit.Data.Type].Add(unit.Id, unit);
+                        }  
                     }
 
                     m_state.TaskIdToTask.Remove(taskInfo.TaskId);
                     m_state.UnitIdToTask.Remove(unit.Id);
-                    m_strategy.OnTaskCompleted(unit, completedTask, taskInfo, taskInfo.IsFailed);
+                    m_strategy.OnTaskCompleted(unit, completedTask, taskInfo);
                 }
             }  
         }
@@ -366,11 +371,12 @@ namespace Battlehub.VoxelCombat
             taskInfo.Inputs[0].OutputTask = unitIdTask;
             taskInfo.Inputs[1].OutputTask = playerIdTask;
 
-            TaskInfo rootTask = TaskInfo.Sequence
+            TaskInfo rootTask = TaskInfo.Procedure
             (
                 unitIdTask,
                 playerIdTask,
-                taskInfo
+                taskInfo,
+                TaskInfo.Return(ExpressionInfo.TaskStatus(taskInfo))
             );
             rootTask.SetParents();
             rootTask.Initialize(m_playerView.Index);

@@ -45,7 +45,7 @@ namespace Battlehub.VoxelCombat
     {
         protected override void ReturnParent()
         {
-
+            
         }
 
         protected override void OnBreak()

@@ -1,4 +1,4 @@
-﻿//#define DEBUG_OUTPUT
+﻿#define DEBUG_OUTPUT
 using ProtoBuf;
 using System.Runtime.Serialization;
 using System.Collections;
@@ -1077,7 +1077,7 @@ namespace Battlehub.VoxelCombat
                 );
         }
 
-        public static TaskInfo MoveToRandomLocation(TaskInputInfo unitIndexInput, int radius = 10, int attemptsCounter = 20)
+        public static TaskInfo MoveToRandomLocation(TaskInputInfo unitIndexInput, int radius = 10, int randomLocationPickAttempts = 20)
         {
             TaskInfo randomRadiusVar = EvalExpression(ExpressionInfo.PrimitiveVal(radius));
             TaskInputInfo radiusInput = new TaskInputInfo(randomRadiusVar, 0);
@@ -1095,7 +1095,7 @@ namespace Battlehub.VoxelCombat
             (
                 randomRadiusVar,
                 Repeat(
-                    attemptsCounter,
+                    randomLocationPickAttempts,
                     randomLocationPath,
                     Branch(
                         randomLocationPathFound,
@@ -1114,7 +1114,7 @@ namespace Battlehub.VoxelCombat
         }
 
 
-        public static TaskInfo SearchMoveOrRandomMove(TaskType taskType, TaskInputInfo unitIndexInput)
+        public static TaskInfo SearchMoveOrRandomMove(TaskType taskType, TaskInputInfo unitIndexInput, int maxRandLocationPicks = 20, TaskInputInfo randMovementsInput = null, int maxRandMovements = 5)
         {
             TaskInfo pathVar = Var();
             TaskInfo searhForPathTask = SearchForPath(taskType, pathVar, unitIndexInput);
@@ -1125,31 +1125,80 @@ namespace Battlehub.VoxelCombat
             moveTask.DebugString = "moveTask";
 #endif
 
-            TaskInfo moveToRandomLocation = MoveToRandomLocation(unitIndexInput);
+            TaskInfo moveToRandomLocation = MoveToRandomLocation(unitIndexInput, 10, maxRandLocationPicks);
 #if DEBUG_OUTPUT
             moveToRandomLocation.DebugString = "moveToRandomLocation";
 #endif
-            return
-                Procedure
-                (
-                    pathVar,
-                    searhForPathTask,
-                    Branch(
+
+            if (randMovementsInput == null)
+            {
+                return
+                    Procedure
+                    (
+                        pathVar,
+                        searhForPathTask,
+                        Branch(
 #if DEBUG_OUTPUT
-                        "if path found",
+                            "if path found",
 #endif
-                        pathFound,
-                        Sequence
-                        (
+                            pathFound,
+                            Sequence
+                            (
 #if DEBUG_OUTPUT
-                            "moveTaskSequence",
+                                "moveTaskSequence",
 #endif
-                            moveTask,
-                            Return(ExpressionInfo.TaskStatus(moveTask))
-                        ),
-                        moveToRandomLocation
-                    )
-                );
+                                moveTask,
+                                Return(ExpressionInfo.TaskStatus(moveTask))
+                            ),
+                            Sequence
+                            (
+                                moveToRandomLocation,
+                                Return(ExpressionInfo.TaskStatus(moveToRandomLocation))
+                            )
+                        )
+                    );
+            }
+            else
+            {
+                return
+                    Procedure
+                    (
+                        pathVar,
+                        searhForPathTask,
+                        Branch(
+#if DEBUG_OUTPUT
+                            "if path found",
+#endif
+                            pathFound,
+                            Sequence
+                            (
+#if DEBUG_OUTPUT
+                                "moveTaskSequence",
+#endif
+                                EvalExpression(ExpressionInfo.Assign(randMovementsInput.OutputTask, ExpressionInfo.PrimitiveVal(0))),
+                                Return(ExpressionInfo.TaskStatus(moveTask))
+                            ),
+                            Sequence
+                            (
+                                EvalExpression(ExpressionInfo.Assign(randMovementsInput.OutputTask,
+                                    ExpressionInfo.Add(
+                                        ExpressionInfo.Val(randMovementsInput),
+                                        ExpressionInfo.PrimitiveVal(1)))),
+
+                                Branch(
+                                    ExpressionInfo.Gte(ExpressionInfo.Val(randMovementsInput), ExpressionInfo.PrimitiveVal(maxRandMovements)),
+                                    Return(ExpressionInfo.PrimitiveVal(TaskFailed)),
+                                    Sequence
+                                    (
+                                        moveToRandomLocation,
+                                        Return(ExpressionInfo.TaskStatus(moveToRandomLocation))
+                                    )
+                                )
+                            )
+                        )
+                    );
+            }
+          
         }
 
         public static TaskInfo SearchMoveGrow(TaskInputInfo unitIndexInput, TaskInputInfo playerIdInput)
@@ -1231,7 +1280,7 @@ namespace Battlehub.VoxelCombat
             return EatGrowSplit4(new TaskInputInfo(), new TaskInputInfo());
         }
 
-        public static TaskInfo EatGrowSplit4(TaskInputInfo unitIndexInput, TaskInputInfo playerIdInput)
+        public static TaskInfo EatGrowSplit4(TaskInputInfo unitIndexInput, TaskInputInfo playerIdInput, int maxRandMovements = 5)
         {
             TaskInfo canGrowTask = EvalExpression(
                  ExpressionInfo.UnitCanGrow(ExpressionInfo.Val(unitIndexInput), ExpressionInfo.Val(playerIdInput)));
@@ -1250,7 +1299,12 @@ namespace Battlehub.VoxelCombat
 
             ExpressionInfo whileTrue = ExpressionInfo.PrimitiveVal(true);
 
-            TaskInfo eatTask = SearchMoveOrRandomMove(TaskType.SearchForFood, unitIndexInput);
+            const int maxRandLocationPicks = 20;
+
+           // TaskInfo randMovementsCount = Var();
+         //   TaskInputInfo randMovementsInput = new TaskInputInfo(randMovementsCount, 0);
+       
+            TaskInfo eatTask = SearchMoveOrRandomMove(TaskType.SearchForFood, unitIndexInput, maxRandLocationPicks, null);
 #if DEBUG_OUTPUT
             eatTask.DebugString = "eatTask";
 #endif
@@ -1265,6 +1319,7 @@ namespace Battlehub.VoxelCombat
 
             TaskInfo eatSplitGrow = 
                 Procedure(
+                    //randMovementsCount,
                     Repeat
                     (
                         whileTrue,

@@ -184,6 +184,17 @@ namespace Battlehub.VoxelCombat.Tests
         }
 
         [UnityTest]
+        public IEnumerator MoveToRandomLocationZeroAttemptsFail()
+        {
+            yield return TaskTest(2, (unitIndexInput, playerId) => TaskInfo.MoveToRandomLocation(unitIndexInput, 3, 0), true,
+                rootTaskInfo =>
+                {
+                    Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
+                    Assert.IsTrue(rootTaskInfo.IsFailed);
+                });
+        }
+
+        [UnityTest]
         public IEnumerator MoveToRandomLocationTestFail()
         {
             yield return TaskTest(4, (unitIndexInput, playerId) => TaskInfo.MoveToRandomLocation(unitIndexInput, 3, 2), true,
@@ -252,6 +263,18 @@ namespace Battlehub.VoxelCombat.Tests
                 {
                     Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
                     Assert.IsFalse(rootTaskInfo.IsFailed);
+                });
+        }
+
+
+        [UnityTest]
+        public IEnumerator SearchMoveOrRandomMoveZeroRandomAttemptsFailTest()
+        {
+            yield return TaskTest(1, (unitIndexInput, playerId) => TaskInfo.SearchMoveOrRandomMove(TaskType.SearchForFood, unitIndexInput, 0), true,
+                rootTaskInfo =>
+                {
+                    Assert.AreEqual(TaskState.Completed, rootTaskInfo.State);
+                    Assert.IsTrue(rootTaskInfo.IsFailed);
                 });
         }
 
