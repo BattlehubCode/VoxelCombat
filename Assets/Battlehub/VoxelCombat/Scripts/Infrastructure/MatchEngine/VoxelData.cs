@@ -1641,7 +1641,7 @@ namespace Battlehub.VoxelCombat
         }
     }
 
-#if !SERVER
+
     [ProtoContract]
     public class MapCamera
     {
@@ -1655,7 +1655,7 @@ namespace Battlehub.VoxelCombat
         public int m_col;
         [ProtoMember(5)]
         public bool m_isOn;
-
+#if !SERVER
         public bool IsOn
         {
             get { return m_isOn; }
@@ -2060,8 +2060,9 @@ namespace Battlehub.VoxelCombat
                 }
             }
         }
-    }
 #endif
+    }
+
 
     public interface IVoxelMap
     {

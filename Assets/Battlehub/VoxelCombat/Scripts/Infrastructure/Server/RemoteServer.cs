@@ -79,8 +79,7 @@ namespace Battlehub.VoxelCombat
         {
             Disconnect();
         }
-
-       
+  
         protected virtual void OnDestroy()
         {
             if (m_protocol != null)
@@ -91,8 +90,6 @@ namespace Battlehub.VoxelCombat
                 m_protocol.SocketError -= OnSocketError;
                 m_protocol.Message -= OnMessage;
             }
-
-          
         }
 
         protected virtual void Update()

@@ -119,7 +119,7 @@ namespace Battlehub.VoxelCombat
     [ProtoContract]
     public class TaskInfoArray
     {
-        [ProtoMember(1)]
+        [ProtoMember(1, AsReference = true)]
         public TaskInfo[] TaskInfo;
 
         public TaskInfoArray()
@@ -144,28 +144,28 @@ namespace Battlehub.VoxelCombat
 
 
     [ProtoContract]
-    public class TaskTemplateInfoArray
+    public class TaskTemplateDataArray
     {
         [ProtoMember(1)]
-        public TaskTemplateInfo[] Templates;
+        public TaskTemplateData[] Templates;
 
-        public TaskTemplateInfoArray()
+        public TaskTemplateDataArray()
         {
         }
 
-        public TaskTemplateInfoArray(TaskTemplateInfo[] templates)
+        public TaskTemplateDataArray(TaskTemplateData[] templates)
         {
             Templates = templates;
         }
 
-        public static implicit operator TaskTemplateInfo[] (TaskTemplateInfoArray templates)
+        public static implicit operator TaskTemplateData[] (TaskTemplateDataArray templates)
         {
             return templates.Templates;
         }
 
-        public static implicit operator TaskTemplateInfoArray(TaskTemplateInfo[] templates)
+        public static implicit operator TaskTemplateDataArray(TaskTemplateData[] templates)
         {
-            return new TaskTemplateInfoArray(templates);
+            return new TaskTemplateDataArray(templates);
         }
     }
 
@@ -193,6 +193,10 @@ namespace Battlehub.VoxelCombat
     [ProtoInclude(31, typeof(RemoteArg<CommandsBundle>))]
     [ProtoInclude(32, typeof(RemoteArg<ChatMessage>))]
     [ProtoInclude(33, typeof(RemoteArg<ClientRequest>))]
+    [ProtoInclude(34, typeof(RemoteArg<TaskInfoArray[]>))]
+    [ProtoInclude(35, typeof(RemoteArg<TaskTemplateDataArray[]>))]
+    [ProtoInclude(36, typeof(RemoteArg<TaskInfo>))]
+    [ProtoInclude(37, typeof(RemoteArg<TaskTemplateData>))]
     public class RemoteArg
     {
         public virtual object Value
@@ -1197,7 +1201,7 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// Raised when match started and all players called ReadyToPlay method 
         /// </summary>
-        event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateInfoArray[], Room>> ReadyToPlayAll;
+        event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateDataArray[], Room>> ReadyToPlayAll;
 
         //event ServerEventHandler<Guid[], Room> LeftRoom;  This event will be raised using Tick command
 
@@ -1210,7 +1214,7 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// Raised when match started and all players called ReadyToPlay method 
         /// </summary>
-        event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateInfoArray[], Room> ReadyToPlayAll;
+        event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateDataArray[], Room> ReadyToPlayAll;
 
         //event ServerEventHandler<Guid[], Room> LeftRoom;  This event will be raised using Tick command
 
@@ -1254,9 +1258,9 @@ namespace Battlehub.VoxelCombat
 
         void GetReplay(Guid clientId, ServerEventHandler<ReplayData, Room> callback);
 
-        void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<TaskInfo[], TaskTemplateInfo[]> callback);
+        void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<TaskInfo[], TaskTemplateData[]> callback);
 
-        void SaveTaskTemplate(Guid clientId, Guid playerId, TaskInfo taskTemplate, TaskTemplateInfo templateInfo, ServerEventHandler callback);
+        void SaveTaskTemplate(Guid clientId, Guid playerId, TaskInfo taskTemplate, TaskTemplateData templateInfo, ServerEventHandler callback);
     }
 
 }

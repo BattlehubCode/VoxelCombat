@@ -20,7 +20,7 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// All Players, Local Players, Abilities, Room
         /// </summary>
-        event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateInfoArray[], Room> Started;
+        event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateDataArray[], Room> Started;
 
         event MatchEngineCliEvent<RTTInfo> Ping;
         /// <summary>
@@ -47,7 +47,7 @@ namespace Battlehub.VoxelCombat
     {
         private RTTInfo m_rttInfo = new RTTInfo { RTT = 0, RTTMax = 0 };
         public event MatchEngineCliEvent ReadyToStart;
-        public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateInfoArray[], Room> Started;
+        public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateDataArray[], Room> Started;
         public event MatchEngineCliEvent<RTTInfo> Ping;
 
         public event MatchEngineCliEvent<long, CommandsBundle> ExecuteCommands;
@@ -283,6 +283,11 @@ namespace Battlehub.VoxelCombat
                     }
                     else if (m_tick < (commands.Tick - 8)) //This means the diff between server time and client time > 400ms, so we try to make adjustment
                     {
+
+                        //current client time is less then server time more than 400ms (server is in future)
+
+                        
+
 #warning DON'T KNOW IF IT'S SAFE TO MAKE SUCH ADJUSTMENT
                         m_tick++;
                         Debug.LogWarning("Diff between server time and client time is too high. Probabliy ping is lower then measured initially");
@@ -541,7 +546,7 @@ namespace Battlehub.VoxelCombat
             m_commands.Enqueue(payload);
         }
 
-        private void OnReadyToPlayAll(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] abilities, TaskInfoArray[] taskTemplates, TaskTemplateInfoArray[] taskTemplateInfo, Room room)
+        private void OnReadyToPlayAll(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] abilities, TaskInfoArray[] taskTemplates, TaskTemplateDataArray[] TaskTemplateData, Room room)
         { 
             if (m_matchServer.HasError(error))
             {
@@ -583,7 +588,7 @@ namespace Battlehub.VoxelCombat
 
             if (Started != null)
             {
-                Started(new Error(StatusCode.OK), players, localPlayers, abilities, taskTemplates, taskTemplateInfo, room);
+                Started(new Error(StatusCode.OK), players, localPlayers, abilities, taskTemplates, TaskTemplateData, room);
             }
 
             enabled = true; //update method will be called

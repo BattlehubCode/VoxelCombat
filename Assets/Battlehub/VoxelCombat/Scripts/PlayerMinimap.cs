@@ -392,7 +392,7 @@ namespace Battlehub.VoxelCombat
             Ray r2 = camera.ViewportPointToRay(new Vector3(1, 1, 0));
             Ray r3 = camera.ViewportPointToRay(new Vector3(1, 0, 0));
 
-            float distance;
+            float distance = 0;
             Debug.Assert(p.Raycast(r0, out distance));
             Vector3 p0 = r0.GetPoint(distance) - m_cameraController.BoundsCenter;
             Debug.Assert(p.Raycast(r1, out distance));

@@ -191,12 +191,12 @@ namespace Battlehub.VoxelCombat
         private void OnAuto(int action)
         {
             int playerIndex = m_gameState.LocalToPlayerIndex(m_localPlayerIndex);
-            TaskTemplateInfo[] templatesInfo = m_gameState.GetTaskTemplateInfo(playerIndex);
+            TaskTemplateData[] templatesInfo = m_gameState.GetTaskTemplateData(playerIndex);
             TaskInfo[] taskTemplates = m_gameState.GetTaskTemplates(playerIndex);
 
             for(int i = 0; i < templatesInfo.Length; ++i)
             {
-                TaskTemplateInfo templateInfo = templatesInfo[i];
+                TaskTemplateData templateInfo = templatesInfo[i];
                 int index = templateInfo.Index;
                 if(index == action)
                 {

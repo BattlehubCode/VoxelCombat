@@ -737,7 +737,7 @@ namespace Battlehub.VoxelCombat
                 return hit.point;
             }
 
-            float distance;
+            float distance = 0;
             Debug.Assert(m_groundPlane.Raycast(ray, out distance));
             return ray.GetPoint(distance);
         }
@@ -746,7 +746,7 @@ namespace Battlehub.VoxelCombat
         {
             Ray ray = m_camera.ScreenPointToRay(screenPoint);
 
-            float distance;
+            float distance = 0;
             Debug.Assert(m_hitPlane.Raycast(ray, out distance));
             return ray.GetPoint(distance);
         }

@@ -341,6 +341,16 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
+        public static bool CanMergePath(Coordinate[] start, Coordinate[] end)
+        {
+            int index = Array.IndexOf(end, start.Last());
+            if (index < 0)
+            {
+                return false;
+            }
+            return true;
+        }
+
         public static Coordinate[] MergePath(Coordinate[] start, Coordinate[] end)
         {
             int index = Array.IndexOf(end, start.Last());

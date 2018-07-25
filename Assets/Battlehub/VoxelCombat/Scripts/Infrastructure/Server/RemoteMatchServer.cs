@@ -6,7 +6,7 @@ namespace Battlehub.VoxelCombat
     {
         public event ServerEventHandler<bool> Paused;
         public event ServerEventHandler<RTTInfo> Ping;
-        public event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateInfoArray[], Room> ReadyToPlayAll;
+        public event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateDataArray[], Room> ReadyToPlayAll;
         public event ServerEventHandler<CommandsBundle> Tick;
 
         protected override string ServerUrl
@@ -65,7 +65,7 @@ namespace Battlehub.VoxelCombat
                             evt.Get<Guid[]>(1), 
                             evt.Get<VoxelAbilitiesArray[]>(2),
                             evt.Get<TaskInfoArray[]>(3),
-                            evt.Get<TaskTemplateInfoArray[]>(4),
+                            evt.Get<TaskTemplateDataArray[]>(4),
                             evt.Get<Room>(5));
                     }
                     break;
@@ -109,24 +109,24 @@ namespace Battlehub.VoxelCombat
             Call(rpc, (error, result) => callback(error, result.Get<ReplayData>(0), result.Get<Room>(1)));
         }
 
-        public void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<TaskInfo[], TaskTemplateInfo[]> callback)
+        public void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<TaskInfo[], TaskTemplateData[]> callback)
         {
             RemoteCall rpc = new RemoteCall(
                 RemoteCall.Proc.GetTaskTemplates,
                 clientId,
                 RemoteArg.Create(playerId));
 
-            Call(rpc, (error, result) => callback(error, result.Get<TaskInfo[]>(0), result.Get<TaskTemplateInfo[]>(1)));
+            Call(rpc, (error, result) => callback(error, result.Get<TaskInfo[]>(0), result.Get<TaskTemplateData[]>(1)));
         }
 
-        public void SaveTaskTemplate(Guid clientId, Guid playerId, TaskInfo taskTemplate, TaskTemplateInfo taskTemplateInfo, ServerEventHandler callback)
+        public void SaveTaskTemplate(Guid clientId, Guid playerId, TaskInfo taskTemplate, TaskTemplateData TaskTemplateData, ServerEventHandler callback)
         {
             RemoteCall rpc = new RemoteCall(
                 RemoteCall.Proc.SaveTaskTemplate,
                 clientId,
                 RemoteArg.Create(playerId),
                 RemoteArg.Create(taskTemplate),
-                RemoteArg.Create(taskTemplateInfo));
+                RemoteArg.Create(TaskTemplateData));
 
             Call(rpc, (error, result) => callback(error));
         }

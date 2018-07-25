@@ -138,7 +138,7 @@ namespace Battlehub.VoxelCombat
 
         public void OnTaskCompleted(IMatchUnitAssetView unit, RunningTaskInfo completedTask, TaskInfo taskInfo)
         {
-            m_logger.LogFormat("Unit {0} task {1} {2} with status {3}", unit.Id, completedTask.TaskId, taskInfo.State, taskInfo.IsFailed ? "failed" : "succeded");
+            //m_logger.LogFormat("Unit {0} task {1} {2} with status {3}", unit.Id, completedTask.TaskId, taskInfo.State, taskInfo.IsFailed ? "failed" : "succeded");
         }
 
         public void Think(float time, IBotSubmitTask bot)

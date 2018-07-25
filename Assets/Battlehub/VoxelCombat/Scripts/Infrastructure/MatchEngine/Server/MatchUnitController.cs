@@ -338,8 +338,15 @@ namespace Battlehub.VoxelCombat
                 m_pathFinder.Find(Id, -1, m_dataController.Clone(),
                     new[] { m_dataController.Coordinate, closestCoordinate }, (unitIndex, foundPath) =>
                     {
-                        State = VoxelDataState.Moving;
-                        PopulateCommandsQueue(Id, Coordinate.MergePath(foundPath, path), false, CmdCode.Move);
+                        if(Coordinate.CanMergePath(foundPath, path))
+                        {
+                            State = VoxelDataState.Moving;
+                            PopulateCommandsQueue(Id, Coordinate.MergePath(foundPath, path), false, CmdCode.Move);
+                        }
+                        else
+                        {
+                            RaiseCmdFailed(cmd, CmdResultCode.Fail_NotFound);
+                        }
                     },
                     null);
             }

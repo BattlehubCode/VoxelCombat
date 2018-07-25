@@ -457,7 +457,7 @@ namespace Battlehub.VoxelCombat
     }
 
     [ProtoContract]
-    public class TaskTemplateInfo
+    public class TaskTemplateData
     {
         [ProtoMember(1)]
         public string Name;
@@ -475,6 +475,105 @@ namespace Battlehub.VoxelCombat
         {
             get { return Row * 5 + Col; }
         }
+    }
+
+    [ProtoContract]
+    public class SerializedTask
+    {
+        [ProtoMember(1)]
+        public SerializedSubtask[] Tasks;
+
+        [ProtoMember(2)]
+        public SerializedTaskInput[] Inputs;
+
+        [ProtoMember(3)]
+        public SerializedExpression[] Expressions;
+
+        public static TaskInfo ToTaskInfo(SerializedTask rootData)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static SerializedTask FromTaskInfo(TaskInfo taskInfo)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    [ProtoContract]
+    public class SerializedSubtask
+    {
+        [ProtoMember(1)]
+        public int TaskId;
+
+        [ProtoMember(2)]
+        public TaskType TaskType;
+
+        [ProtoMember(3)]
+        public TaskState TaskState;
+
+        [ProtoMember(4)]
+        public Cmd Cmd;
+
+        [ProtoMember(5)]
+        public int[] Children;
+
+        [ProtoMember(6)]
+        public int ExpressionId;
+
+        [ProtoMember(7)]
+        public int[] InputId;
+
+        [ProtoMember(8)]
+        public int OutputsCount;
+
+        [ProtoMember(9)]
+        public bool RequiresClientSideProcessing;
+    }
+
+    [ProtoContract]
+    public class SerializedExpression
+    {
+        public enum ExpressionValueType
+        {
+            Value,
+            Task,
+            TaskInput
+        }
+
+        [ProtoMember(1)]
+        public int ExpressionId;
+
+        [ProtoMember(2)]
+        public int Code;
+
+        [ProtoMember(3)]
+        public int[] Children;
+
+        [ProtoMember(4)]
+        public ExpressionValueType ValueType;
+
+        [ProtoMember(5, DynamicType = true)]
+        public object Value;
+
+        [ProtoMember(6, DynamicType = true)]
+        public int ValueId;
+    }
+
+    [ProtoContract]
+    public class SerializedTaskInput
+    {
+        [ProtoMember(1)]
+        public int InputId;
+
+        [ProtoMember(2)]
+        public int ScopeId;
+
+        [ProtoMember(3)]
+        public int OutputTaskId;
+
+        [ProtoMember(4)]
+        public int OutputIndex;
     }
 
     [ProtoContract(AsReferenceDefault = true)]

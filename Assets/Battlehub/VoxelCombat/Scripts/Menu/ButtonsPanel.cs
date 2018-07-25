@@ -35,24 +35,28 @@ namespace Battlehub.VoxelCombat
         }
 
 
-        public virtual bool IsOpened
+        public bool IsOpened
         {
             get { return gameObject.activeSelf; }
-            set
-            {
-                if(IsOpened != value)
-                {
-                    gameObject.SetActive(value);
+        }
 
+        public virtual void SetIsOpened(bool value, bool raiseEvent = true)
+        {
+            if (IsOpened != value)
+            {
+                gameObject.SetActive(value);
+
+                if(raiseEvent)
+                {
                     if (IsOpenedChanged != null)
                     {
                         IsOpenedChanged(this);
                     }
-
-                    if (IsOpened)
-                    {
-                        SelectDefault();
-                    }
+                }
+               
+                if (IsOpened)
+                {
+                    SelectDefault();
                 }
             }
         }

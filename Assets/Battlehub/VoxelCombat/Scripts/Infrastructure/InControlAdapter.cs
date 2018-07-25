@@ -134,7 +134,12 @@ namespace Battlehub.VoxelCombat
                 IndependentEventSystem eventSystem = m_eventSystemManager.GetEventSystem(i);
                 eventSystem.EventSystemUpdate += OnEventSystemUpdate;
             }
-            m_eventSystemManager.CommonEventSystem.EventSystemUpdate += OnCommonEventSystemUpdate;
+
+            if(m_eventSystemManager.CommonEventSystem != null)
+            {
+                m_eventSystemManager.CommonEventSystem.EventSystemUpdate += OnCommonEventSystemUpdate;
+            }
+            
 
             m_isPointerOverGameObject = new bool[m_eventSystemManager.EventSystemCount];
             m_isInputFieldSelected = new bool[m_eventSystemManager.EventSystemCount];
@@ -197,7 +202,10 @@ namespace Battlehub.VoxelCombat
                     eventSystem.EventSystemUpdate -= OnEventSystemUpdate;
                 }
 
-                m_eventSystemManager.CommonEventSystem.EventSystemUpdate -= OnCommonEventSystemUpdate;
+                if(m_eventSystemManager.CommonEventSystem != null)
+                {
+                    m_eventSystemManager.CommonEventSystem.EventSystemUpdate -= OnCommonEventSystemUpdate;
+                }
             }
        
             InputManager.OnDeviceAttached -= OnDeviceAttached;

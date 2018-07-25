@@ -103,7 +103,7 @@ namespace Battlehub.VoxelCombat
 
         TaskInfo[] GetTaskTemplates(int playerIndex);
 
-        TaskTemplateInfo[] GetTaskTemplateInfo(int playerIndex);
+        TaskTemplateData[] GetTaskTemplateData(int playerIndex);
     }
 
     public class PlayerStats
@@ -287,7 +287,7 @@ namespace Battlehub.VoxelCombat
         private Dictionary<int, VoxelAbilities>[] m_voxelAbilities;
         private IMatchPlayerControllerCli[] m_playerControllers;
         private TaskInfo[][] m_taskTemplates;
-        private TaskTemplateInfo[][] m_taskTemplateInfo;
+        private TaskTemplateData[][] m_TaskTemplateData;
         private Room m_room;
         
         private void Awake()
@@ -492,7 +492,7 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        private void OnEngineStarted(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] voxelAbilities, TaskInfoArray[] taskTemplates, TaskTemplateInfoArray[] taskTemplatesInfo, Room room)
+        private void OnEngineStarted(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] voxelAbilities, TaskInfoArray[] taskTemplates, TaskTemplateDataArray[] taskTemplatesInfo, Room room)
         {
             m_room = room;
 
@@ -512,7 +512,7 @@ namespace Battlehub.VoxelCombat
 
             m_voxelAbilities = voxelAbilities.Select(va => va.Abilities.ToDictionary(a => a.Type)).ToArray();
             m_taskTemplates = taskTemplates.Select(t => t.TaskInfo).ToArray();
-            m_taskTemplateInfo = taskTemplatesInfo.Select(t => t.Templates).ToArray();
+            m_TaskTemplateData = taskTemplatesInfo.Select(t => t.Templates).ToArray();
             if (IsReplay)
             {
                 m_localPlayers = new[] { Guid.Empty };
@@ -866,9 +866,9 @@ namespace Battlehub.VoxelCombat
             return m_taskTemplates[playerIndex];
         }
 
-        public TaskTemplateInfo[] GetTaskTemplateInfo(int playerIndex)
+        public TaskTemplateData[] GetTaskTemplateData(int playerIndex)
         {
-            return m_taskTemplateInfo[playerIndex];
+            return m_TaskTemplateData[playerIndex];
         }
 
         public void Submit(int playerId, Cmd cmd)

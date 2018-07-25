@@ -282,7 +282,7 @@ namespace Battlehub.VoxelCombat
                     IMatchServer remoteMatchServer = Dependencies.RemoteMatchServer;
                     IMatchServer localMatchServer = Dependencies.LocalMatchServer;
 
-                    if (remoteMatchServer != null && remoteMatchServer.IsConnected)
+                    if (Dependencies.RemoteGameServer != null && Dependencies.RemoteGameServer.IsConnected)
                     {
                         remoteMatchServer.Activate();
                     }

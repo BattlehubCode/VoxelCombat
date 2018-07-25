@@ -129,7 +129,7 @@ namespace Battlehub.VoxelCombat
                 if (!m_gameState.IsContextActionInProgress(LocalPlayerIndex))
                 {
                     m_gameState.IsMenuOpened(LocalPlayerIndex, !m_gameState.IsMenuOpened(LocalPlayerIndex));
-                    m_menuPanel.IsOpened = !m_menuPanel.IsOpened;
+                    m_menuPanel.SetIsOpened(!m_menuPanel.IsOpened);
                 }
             }
 
@@ -141,17 +141,17 @@ namespace Battlehub.VoxelCombat
                     {
                         m_gameState.IsMenuOpened(LocalPlayerIndex, false);
                     }
-                    m_menuPanel.IsOpened = false;
-                    m_consolePanel.IsOpened = false;
-                    m_helpPanel.IsOpened = false;
-                    m_resultsPanel.IsOpened = false;
+                    m_menuPanel.SetIsOpened(false);
+                    m_consolePanel.SetIsOpened(false);
+                    m_helpPanel.SetIsOpened(false);
+                    m_resultsPanel.SetIsOpened(false);
                 }
             }  
         }
 
         private void OnGameCompleted()
         {
-            m_resultsPanel.IsOpened = true;
+            m_resultsPanel.SetIsOpened(true);
 
             bool draw = true;
             for (int i = 0; i < m_gameState.PlayersCount; ++i)
@@ -184,7 +184,7 @@ namespace Battlehub.VoxelCombat
 
             if(m_gameState.PlayerToLocalIndex(arg) == LocalPlayerIndex)
             {
-                m_resultsPanel.IsOpened = true;
+                m_resultsPanel.SetIsOpened(true);
                 m_resultsPanel.ResultText = "You Lose. Congratulations!";
             }
         }
@@ -197,9 +197,9 @@ namespace Battlehub.VoxelCombat
         private void OnMenuPanelIsOpenedChanged(ButtonsPanel sender)
         {
             m_notification.Close();
-            m_resultsPanel.IsOpened = false;
-            m_helpPanel.IsOpened = false;
-            m_consolePanel.IsOpened = false;
+            m_resultsPanel.SetIsOpened(false, false);
+            m_helpPanel.SetIsOpened(false, false);
+            m_consolePanel.SetIsOpened(false, false);
             UpdateIsOpenedState();
         }
 
@@ -208,12 +208,12 @@ namespace Battlehub.VoxelCombat
             switch(code)
             {
                 case 0: //console
-                    m_menuPanel.IsOpened = false;
-                    m_consolePanel.IsOpened = true;
+                    m_menuPanel.SetIsOpened(false);
+                    m_consolePanel.SetIsOpened(true);
                   
                     break;
                 case 1: //close menu 
-                    m_menuPanel.IsOpened = false;
+                    m_menuPanel.SetIsOpened(false);
                     
 
                     break;
@@ -223,8 +223,8 @@ namespace Battlehub.VoxelCombat
 
                     break;
                 case 3: //help
-                    m_menuPanel.IsOpened = false;
-                    m_helpPanel.IsOpened = true;
+                    m_menuPanel.SetIsOpened(false);
+                    m_helpPanel.SetIsOpened(true);
                     
                     break;
                 case 4: //back to menu
@@ -263,13 +263,13 @@ namespace Battlehub.VoxelCombat
         {
             if(sender.IsOpened)
             {
-                m_helpPanel.IsOpened = false;
-                m_menuPanel.IsOpened = false;
-                m_consolePanel.IsOpened = false;
+                m_helpPanel.SetIsOpened(false, false);
+                m_menuPanel.SetIsOpened(false, false);
+                m_consolePanel.SetIsOpened(false, false);
             }
             else
             {
-                m_menuPanel.IsOpened = true;
+                m_menuPanel.SetIsOpened(true);
             }
 
             UpdateIsOpenedState();
@@ -279,7 +279,7 @@ namespace Battlehub.VoxelCombat
         {
             if(code == 0)
             {
-                m_resultsPanel.IsOpened = false;
+                m_resultsPanel.SetIsOpened(false);
             }
         }
 
@@ -287,13 +287,13 @@ namespace Battlehub.VoxelCombat
         {
             if (sender.IsOpened)
             {
-                m_resultsPanel.IsOpened = false;
-                m_menuPanel.IsOpened = false;
-                m_helpPanel.IsOpened = false;
+                m_resultsPanel.SetIsOpened(false, false);
+                m_menuPanel.SetIsOpened(false, false);
+                m_helpPanel.SetIsOpened(false, false);
             }
             else
             {
-                m_menuPanel.IsOpened = true;
+                m_menuPanel.SetIsOpened(true);
             }
 
             UpdateIsOpenedState();
@@ -301,20 +301,20 @@ namespace Battlehub.VoxelCombat
 
         private void OnConsoleAction(ButtonsPanel sender, int code)
         {
-            m_consolePanel.IsOpened = false;
+            m_consolePanel.SetIsOpened(false);
         }
 
         private void OnHelpIsOpenedChanged(ButtonsPanel sender)
         {
             if(sender.IsOpened)
             {
-                m_resultsPanel.IsOpened = false;
-                m_menuPanel.IsOpened = false;
-                m_consolePanel.IsOpened = false;
+                m_resultsPanel.SetIsOpened(false, false);
+                m_menuPanel.SetIsOpened(false, false);
+                m_consolePanel.SetIsOpened(false, false);
             }
             else
             {
-                m_menuPanel.IsOpened = true;
+                m_menuPanel.SetIsOpened(true);
             }
 
             UpdateIsOpenedState();
@@ -322,7 +322,7 @@ namespace Battlehub.VoxelCombat
 
         private void OnHelpPanelAction(ButtonsPanel sender, int code)
         {
-            m_helpPanel.IsOpened = false;
+            m_helpPanel.SetIsOpened(false);
         }
 
         private void UpdateIsOpenedState()

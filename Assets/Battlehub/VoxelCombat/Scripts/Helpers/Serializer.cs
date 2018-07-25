@@ -31,7 +31,7 @@ namespace Battlehub.VoxelCombat
                 }
             };
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR || SERVER || UNITY_WSA
             model.CompileInPlace();
 #endif
         }

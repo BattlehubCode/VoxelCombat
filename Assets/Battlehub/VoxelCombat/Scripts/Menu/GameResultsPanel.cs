@@ -25,20 +25,16 @@ namespace Battlehub.VoxelCombat
             set { m_resultTxt.text = value; }
         }
 
-        public override bool IsOpened
+        public override void SetIsOpened(bool value, bool raiseEvent = true)
         {
-            get { return base.IsOpened; }
-            set
-            {
-                base.IsOpened = value;
+            base.SetIsOpened(value, raiseEvent);
 
-                m_gameState = Dependencies.GameState;
-                m_gameServer = Dependencies.GameServer;
-                Sequence[SaveReplayAction].interactable = !m_gameState.IsReplay && m_gameServer.IsConnected;
-                Sequence[SaveReplayAction].gameObject.SetActive(!m_gameState.IsReplay);
+            m_gameState = Dependencies.GameState;
+            m_gameServer = Dependencies.GameServer;
+            Sequence[SaveReplayAction].interactable = !m_gameState.IsReplay && m_gameServer.IsConnected;
+            Sequence[SaveReplayAction].gameObject.SetActive(!m_gameState.IsReplay);
 
-                m_saveReplayPanel.IsOpened = false;
-            }
+            m_saveReplayPanel.SetIsOpened(false, raiseEvent);
         }
 
         protected override void Awake()
@@ -59,7 +55,7 @@ namespace Battlehub.VoxelCombat
 
         private void OnSaveReplayAction(ButtonsPanel sender, int code)
         {
-            m_saveReplayPanel.IsOpened = false;
+            m_saveReplayPanel.SetIsOpened(false);
             gameObject.SetActive(true);
 
             IndependentSelectable.Select(m_sequence[0]);
@@ -70,7 +66,7 @@ namespace Battlehub.VoxelCombat
             if(index == SaveReplayAction)
             {
                 m_saveReplayPanel.LocalPlayerIndex = LocalPlayerIndex;
-                m_saveReplayPanel.IsOpened = true;
+                m_saveReplayPanel.SetIsOpened(true);
                 gameObject.SetActive(false);
             }
             else
