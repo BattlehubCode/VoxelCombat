@@ -281,7 +281,7 @@ namespace Battlehub.VoxelCombat
             if (m_taskEngine.IsClient)
             {
                 TaskInfo taskInfo = new TaskInfo(m_taskInfo, true);
-                m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, new TaskCmd(taskInfo));
+                m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, new TaskCmd(SerializedTask.FromTaskInfo(taskInfo)));
             }
             else
             {
@@ -364,7 +364,7 @@ namespace Battlehub.VoxelCombat
             if (m_taskEngine.IsClient)
             {
                 TaskInfo taskInfo = new TaskInfo(m_taskInfo, true);
-                m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, new TaskCmd(taskInfo));
+                m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, new TaskCmd(SerializedTask.FromTaskInfo(taskInfo)));
             }
             else
             {

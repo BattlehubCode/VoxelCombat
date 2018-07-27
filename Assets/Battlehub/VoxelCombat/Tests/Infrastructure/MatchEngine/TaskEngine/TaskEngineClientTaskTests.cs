@@ -601,7 +601,7 @@ namespace Battlehub.VoxelCombat.Tests
                 TaskInfo taskInfo = new TaskInfo(moveCmd);
                 taskInfo.RequiresClientSidePreprocessing = true;
                 matchEngineCli.GetClientTaskEngine(playerId).GenerateIdentitifers(taskInfo);
-                matchEngineCli.Submit(playerId, new TaskCmd(taskInfo));
+                matchEngineCli.Submit(playerId, new TaskCmd(SerializedTask.FromTaskInfo(taskInfo)));
             });
 
             while (true)

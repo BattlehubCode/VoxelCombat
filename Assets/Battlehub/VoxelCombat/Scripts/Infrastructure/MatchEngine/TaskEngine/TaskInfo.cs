@@ -1,8 +1,10 @@
-﻿#define DEBUG_OUTPUT
+﻿//#define DEBUG_OUTPUT
 using ProtoBuf;
-using System.Runtime.Serialization;
-using System.Collections;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Serialization;
 
 namespace Battlehub.VoxelCombat
 {
@@ -86,17 +88,11 @@ namespace Battlehub.VoxelCombat
         Terminated
     }
 
-    [ProtoContract(AsReferenceDefault = true)]
     public class ExpressionInfo
     {
-        [ProtoMember(1)]
-        public int m_code;
-
-        [ProtoMember(2, DynamicType = true, AsReference = true)]
-        public object m_value;
-
-        [ProtoMember(3, AsReference = true)]
-        public ExpressionInfo[] m_children;
+        public int Code;
+        public object Value;
+        public ExpressionInfo[] Children;
 
         public ExpressionInfo()
         {
@@ -105,29 +101,12 @@ namespace Battlehub.VoxelCombat
 
         public ExpressionInfo(int code, object value, params ExpressionInfo[] children)
         {
-            m_code = code;
-            m_value = value;
-            m_children = children;
+            Code = code;
+            Value = value;
+            Children = children;
         }
 
-        public int Code
-        {
-            get { return m_code; }
-            set { m_code = value; }
-        }
-
-        public object Value
-        {
-            get { return m_value; }
-            set { m_value = value; }
-        }
-
-        public ExpressionInfo[] Children
-        {
-            get { return m_children; }
-            set { m_children = value; }
-        }
-
+     
         public bool IsEvaluating
         {
             get;
@@ -415,16 +394,10 @@ namespace Battlehub.VoxelCombat
         }
     }
 
-    [ProtoContract(AsReferenceDefault = true)]
     public class TaskInputInfo
     {
-        [ProtoMember(1, AsReference = true)]
         public TaskInfo Scope;
-
-        [ProtoMember(2, AsReference = true)]
         public TaskInfo OutputTask;
-
-        [ProtoMember(3)]
         public int OutputIndex;
 
         public void SetScope()
@@ -457,7 +430,7 @@ namespace Battlehub.VoxelCombat
     }
 
     [ProtoContract]
-    public class TaskTemplateData
+    public class SerializedTaskTemplate
     {
         [ProtoMember(1)]
         public string Name;
@@ -480,6 +453,12 @@ namespace Battlehub.VoxelCombat
     [ProtoContract]
     public class SerializedTask
     {
+        private class Pair<T1, T2>
+        {
+            public T1 Serialized;
+            public T2 Info;
+        }
+
         [ProtoMember(1)]
         public SerializedSubtask[] Tasks;
 
@@ -489,14 +468,491 @@ namespace Battlehub.VoxelCombat
         [ProtoMember(3)]
         public SerializedExpression[] Expressions;
 
-        public static TaskInfo ToTaskInfo(SerializedTask rootData)
+
+        public static TaskInfo[] ToTaskInfo(SerializedTask[] serializedTasks)
         {
-            throw new NotImplementedException();
+            if (serializedTasks == null)
+            {
+                return null;
+            }
+            TaskInfo[] result = new TaskInfo[serializedTasks.Length];
+            for (int i = 0; i < serializedTasks.Length; ++i)
+            {
+                SerializedTask t = serializedTasks[i];
+                if (t != null)
+                {
+                    result[i] = ToTaskInfo(t);
+                }
+            }
+            return result;
+        }
+
+
+        public static TaskInfo ToTaskInfo(SerializedTask serializedTask)
+        {
+            if(serializedTask.Tasks == null || serializedTask.Tasks.Length == 0)
+            {
+                return null;
+            }
+
+            if( serializedTask.Tasks.Length == 1 && 
+                (serializedTask.Inputs == null || serializedTask.Inputs.Length == 0) && 
+                (serializedTask.Expressions == null || serializedTask.Expressions.Length == 0))
+            {
+                return CreateTaskInfo(serializedTask.Tasks[0]);
+            }
+            else
+            {
+                Dictionary<int, Pair<SerializedSubtask, TaskInfo>> tasks = serializedTask.Tasks.ToDictionary(s => s.Address, s => new Pair<SerializedSubtask, TaskInfo> { Serialized = s });
+                Dictionary<int, Pair<SerializedTaskInput, TaskInputInfo>> inputs =
+                    serializedTask.Inputs != null ?
+                    serializedTask.Inputs.ToDictionary(s => s.Address, s => new Pair<SerializedTaskInput, TaskInputInfo> { Serialized = s }) :
+                    new Dictionary<int, Pair<SerializedTaskInput, TaskInputInfo>>();
+
+                Dictionary<int, Pair<SerializedExpression, ExpressionInfo>> expressions =
+                    serializedTask.Expressions != null ?
+                    serializedTask.Expressions.ToDictionary(s => s.Address, s => new Pair<SerializedExpression, ExpressionInfo> { Serialized = s }) :
+                    new Dictionary<int, Pair<SerializedExpression, ExpressionInfo>>();
+
+                Pair<SerializedSubtask, TaskInfo> task;
+                if(!tasks.TryGetValue(1, out task))
+                {
+                    throw new ArgumentException("serializedTask is invalid", "serializedTask");
+                }
+
+                Compose(task, tasks, inputs, expressions);
+                task.Info.SetParents();
+                return task.Info;
+            }
+        }
+
+        public static SerializedTask[] FromTaskInfo(TaskInfo[] taskInfo)
+        {
+            if (taskInfo == null)
+            {
+                return null;
+            }
+            SerializedTask[] result = new SerializedTask[taskInfo.Length];
+            for (int i = 0; i < taskInfo.Length; ++i)
+            {
+                TaskInfo t = taskInfo[i];
+                if (t != null)
+                {
+                    result[i] = FromTaskInfo(t);
+                }
+            }
+            return result;
         }
 
         public static SerializedTask FromTaskInfo(TaskInfo taskInfo)
         {
-            throw new NotImplementedException();
+            if (taskInfo.Inputs == null && taskInfo.Expression == null && taskInfo.Children == null)
+            {
+                return new SerializedTask
+                {
+                    Tasks = new[] { CreateSubtask(taskInfo, 1) }
+                };
+            }
+
+            int address = 1;
+            Dictionary<TaskInfo, SerializedSubtask> tasks = new Dictionary<TaskInfo, SerializedSubtask>();
+            Dictionary<TaskInputInfo, SerializedTaskInput> inputs = new Dictionary<TaskInputInfo, SerializedTaskInput>();
+            Dictionary<ExpressionInfo, SerializedExpression> expressions = new Dictionary<ExpressionInfo, SerializedExpression>();
+
+            Decompose(ref address, taskInfo, tasks, inputs, expressions);
+
+            return new SerializedTask
+            {
+                Tasks = tasks.Values.ToArray(),
+                Inputs = inputs.Values.ToArray(),
+                Expressions = expressions.Values.ToArray(),
+            };
+        }
+
+
+        private static TaskInfo CreateTaskInfo(SerializedSubtask task)
+        {
+            TaskInfo taskInfo = new TaskInfo();
+            taskInfo.TaskId = task.TaskId;
+            taskInfo.TaskType = task.TaskType;
+            taskInfo.State = task.TaskState;
+            taskInfo.Cmd = task.Cmd;
+            taskInfo.RequiresClientSidePreprocessing = task.RequiresClientSideProcessing;
+            taskInfo.OutputsCount = task.OutputsCount;
+#if DEBUG_OUTPUT
+            taskInfo.DebugString = task.DebugString;
+#endif
+
+            return taskInfo;
+        }
+
+        private static void Compose(
+            Pair<SerializedSubtask, TaskInfo> task, 
+            Dictionary<int, Pair<SerializedSubtask, TaskInfo>> tasks,
+            Dictionary<int, Pair<SerializedTaskInput, TaskInputInfo>> inputs,
+            Dictionary<int, Pair<SerializedExpression, ExpressionInfo>> expressions)
+        {
+            TaskInfo taskInfo = CreateTaskInfo(task.Serialized);
+            task.Info = taskInfo;
+
+            if (task.Serialized.ExpressionAddress > 0)
+            {
+                Pair<SerializedExpression, ExpressionInfo> expression = expressions[task.Serialized.ExpressionAddress];
+                if (expression.Info == null)
+                {
+                    Compose(expression, tasks, inputs, expressions);
+                }
+                taskInfo.Expression = expression.Info;
+            }
+
+            if (task.Serialized.InputAddresses != null)
+            {
+                taskInfo.Inputs = new TaskInputInfo[task.Serialized.InputAddresses.Length];
+                for (int i = 0; i < task.Serialized.InputAddresses.Length; ++i)
+                {
+                    int inputAddress = task.Serialized.InputAddresses[i];
+                    if (inputAddress > 0)
+                    {
+                        Pair<SerializedTaskInput, TaskInputInfo> input = inputs[inputAddress];
+                        if (input.Info == null)
+                        {
+                            Compose(input, tasks, inputs, expressions);
+                        }
+                        taskInfo.Inputs[i] = input.Info;
+                    }
+                }
+            }
+
+            if (task.Serialized.ChildrenAddresses != null)
+            {
+                taskInfo.Children = new TaskInfo[task.Serialized.ChildrenAddresses.Length];
+                for (int i = 0; i < task.Serialized.ChildrenAddresses.Length; ++i)
+                {
+                    int childAddress = task.Serialized.ChildrenAddresses[i];
+                    if (childAddress > 0)
+                    {
+                        Pair<SerializedSubtask, TaskInfo> child = tasks[childAddress];
+                        if (child.Info == null)
+                        {
+                            Compose(child, tasks, inputs, expressions);
+                        }
+                        taskInfo.Children[i] = child.Info;
+                    }
+                }
+            }
+        }
+
+        private static void Compose(
+            Pair<SerializedTaskInput, TaskInputInfo> input,
+            Dictionary<int, Pair<SerializedSubtask, TaskInfo>> tasks,
+            Dictionary<int, Pair<SerializedTaskInput, TaskInputInfo>> inputs,
+            Dictionary<int, Pair<SerializedExpression, ExpressionInfo>> expressions)
+        {
+            TaskInputInfo taskInputInfo = new TaskInputInfo();
+            taskInputInfo.OutputIndex = input.Serialized.OutputIndex;
+            input.Info = taskInputInfo;
+
+            if(input.Serialized.OutputTaskAddress > 0)
+            {
+                Pair<SerializedSubtask, TaskInfo> outputTask = tasks[input.Serialized.OutputTaskAddress];
+                if(outputTask.Info == null)
+                {
+                    Compose(outputTask, tasks, inputs, expressions);
+                }
+                taskInputInfo.OutputTask = outputTask.Info;
+            }
+
+            if(input.Serialized.ScopeAddress > 0)
+            {
+                Pair<SerializedSubtask, TaskInfo> scopeTask = tasks[input.Serialized.ScopeAddress];
+                if(scopeTask.Info == null)
+                {
+                    Compose(scopeTask, tasks, inputs, expressions);
+                }
+                taskInputInfo.Scope = scopeTask.Info;
+            }
+
+        }
+
+        private static void Compose(
+            Pair<SerializedExpression, ExpressionInfo> expression,
+            Dictionary<int, Pair<SerializedSubtask, TaskInfo>> tasks,
+            Dictionary<int, Pair<SerializedTaskInput, TaskInputInfo>> inputs,
+            Dictionary<int, Pair<SerializedExpression, ExpressionInfo>> expressions)
+        {
+            ExpressionInfo expressionInfo = new ExpressionInfo();
+            expressionInfo.Code = expression.Serialized.Code;
+            expression.Info = expressionInfo;
+
+            if(expression.Serialized.ValueType == SerializedExpression.ExpressionValueType.Task)
+            {
+                if(expression.Serialized.ValueAddress > 0)
+                {
+                    Pair<SerializedSubtask, TaskInfo> valueTask = tasks[expression.Serialized.ValueAddress];
+                    if(valueTask.Info == null)
+                    {
+                        Compose(valueTask, tasks, inputs, expressions);
+                    }
+                    expressionInfo.Value = valueTask.Info;
+                }
+            }
+            else if(expression.Serialized.ValueType == SerializedExpression.ExpressionValueType.TaskInput)
+            {
+                if(expression.Serialized.ValueAddress > 0)
+                {
+                    Pair<SerializedTaskInput, TaskInputInfo> valueInput = inputs[expression.Serialized.ValueAddress];
+                    if(valueInput.Info == null)
+                    {
+                        Compose(valueInput, tasks, inputs, expressions);
+                    }
+                    expressionInfo.Value = valueInput.Info;
+                }
+            }
+            else
+            {
+                expressionInfo.Value = expression.Serialized.Value;
+            }
+
+            if(expression.Serialized.Children != null)
+            {
+                expressionInfo.Children = new ExpressionInfo[expression.Serialized.Children.Length];
+                for(int i = 0; i < expression.Serialized.Children.Length; ++i)
+                {
+                    int childAddress = expression.Serialized.Children[i];
+                    if(childAddress > 0)
+                    {
+                        Pair<SerializedExpression, ExpressionInfo> child = expressions[childAddress];
+                        if (child.Info == null)
+                        {
+                            Compose(child, tasks, inputs, expressions);
+                        }
+                        expressionInfo.Children[i] = child.Info;
+                    }
+                }
+            }
+        }
+
+        private static SerializedSubtask CreateSubtask(TaskInfo task, int address)
+        {
+            SerializedSubtask serializedTask = new SerializedSubtask();
+            serializedTask.Cmd = task.Cmd;
+            serializedTask.TaskId = task.TaskId;
+            serializedTask.TaskState = task.State;
+            serializedTask.TaskType = task.TaskType;
+            serializedTask.RequiresClientSideProcessing = task.RequiresClientSidePreprocessing;
+            serializedTask.OutputsCount = task.OutputsCount;
+            serializedTask.Address = address;
+
+#if DEBUG_OUTPUT
+            serializedTask.DebugString = task.DebugString;
+#endif
+            return serializedTask;
+        }
+
+        private static void Decompose(ref int address,
+            TaskInfo task, 
+            Dictionary<TaskInfo, SerializedSubtask> tasks,
+            Dictionary<TaskInputInfo, SerializedTaskInput> inputs, 
+            Dictionary<ExpressionInfo, SerializedExpression> expressions)
+        {
+            if(address <= 0)
+            {
+                throw new ArgumentException("address <= 0", "address");
+            }
+
+            if (tasks.ContainsKey(task))
+            {
+                return;
+            }
+
+            SerializedSubtask serializedTask = CreateSubtask(task, address);
+            address++;
+
+            tasks.Add(task, serializedTask);
+            if (task.Expression != null)
+            {
+                SerializedExpression serializedExpression;
+                if(expressions.TryGetValue(task.Expression, out serializedExpression))
+                {
+                    serializedTask.ExpressionAddress = serializedExpression.Address;
+                }
+                else
+                {
+                    serializedTask.ExpressionAddress = address;
+                    Decompose(ref address, task.Expression, tasks, inputs, expressions);
+                }
+            }
+
+            if (task.Inputs != null)
+            {
+                serializedTask.InputAddresses = new int[task.Inputs.Length];
+                for (int i = 0; i < task.Inputs.Length; ++i)
+                {
+                    TaskInputInfo input = task.Inputs[i];
+                    if (input != null)
+                    {
+                        SerializedTaskInput serializedInput;
+                        if(inputs.TryGetValue(input, out serializedInput))
+                        {
+                            serializedTask.InputAddresses[i] = serializedInput.Address;
+                        }
+                        else
+                        {
+                            serializedTask.InputAddresses[i] = address;
+                            Decompose(ref address, input, tasks, inputs, expressions);
+                        }
+                    }
+                }
+            }
+
+            if (task.Children != null)
+            {
+                serializedTask.ChildrenAddresses = new int[task.Children.Length];
+                for (int i = 0; i < task.Children.Length; ++i)
+                {
+                    TaskInfo child = task.Children[i];
+                    if (child != null)
+                    {
+                        SerializedSubtask serializedChildTask;
+                        if(tasks.TryGetValue(child, out serializedChildTask))
+                        {
+                            serializedTask.ChildrenAddresses[i] = serializedChildTask.Address;
+                        }
+                        else
+                        {
+                            serializedTask.ChildrenAddresses[i] = address;
+                            Decompose(ref address, child, tasks, inputs, expressions);
+                        }
+                        
+                    }
+                }
+            }
+        }
+
+        private static void Decompose(ref int address,
+           ExpressionInfo expression,
+           Dictionary<TaskInfo, SerializedSubtask> tasks,
+           Dictionary<TaskInputInfo, SerializedTaskInput> inputs,
+           Dictionary<ExpressionInfo, SerializedExpression> expressions)
+        {
+            if (expressions.ContainsKey(expression))
+            {
+                return;
+            }
+
+            SerializedExpression serializedExpression = new SerializedExpression();
+            serializedExpression.Code = expression.Code;
+            serializedExpression.Address = address;
+            address++;
+
+            expressions.Add(expression, serializedExpression);
+            if (expression.Value is TaskInfo)
+            {
+                TaskInfo taskInfo = (TaskInfo)expression.Value;
+                serializedExpression.ValueType = SerializedExpression.ExpressionValueType.Task;
+
+                SerializedSubtask serializedTask;
+                if(tasks.TryGetValue(taskInfo, out serializedTask))
+                {
+                    serializedExpression.ValueAddress = serializedTask.Address;
+                }
+                else
+                {
+                    serializedExpression.ValueAddress = address;
+                    Decompose(ref address, taskInfo, tasks, inputs, expressions);
+                }    
+            }
+            else if (expression.Value is TaskInputInfo)
+            {
+                TaskInputInfo taskInputInfo = (TaskInputInfo)expression.Value;
+                serializedExpression.ValueType = SerializedExpression.ExpressionValueType.TaskInput;
+
+                SerializedTaskInput serializedTaskInput;
+                if(inputs.TryGetValue(taskInputInfo, out serializedTaskInput))
+                {
+                    serializedExpression.ValueAddress = serializedTaskInput.Address;
+                }
+                else
+                {
+                    serializedExpression.ValueAddress = address;
+                    Decompose(ref address, taskInputInfo, tasks, inputs, expressions);
+                }
+            }
+            else
+            {
+                serializedExpression.ValueType = SerializedExpression.ExpressionValueType.Value;
+                serializedExpression.Value = expression.Value;
+            }
+
+            if (expression.Children != null)
+            {
+                serializedExpression.Children = new int[expression.Children.Length];
+                for (int i = 0; i < expression.Children.Length; ++i)
+                {
+                    ExpressionInfo childExpression = expression.Children[i];
+                    if(childExpression != null)
+                    {
+                        SerializedExpression serializedChildExpression;
+                        if(expressions.TryGetValue(childExpression, out serializedChildExpression))
+                        {
+                            serializedExpression.Children[i] = serializedChildExpression.Address;
+                        }
+                        else
+                        {
+                            serializedExpression.Children[i] = address;
+                            Decompose(ref address, childExpression, tasks, inputs, expressions);
+                        }
+                    }
+                }
+            }
+        }
+
+
+        private static void Decompose(ref int address,
+            TaskInputInfo input,
+            Dictionary<TaskInfo, SerializedSubtask> tasks,
+            Dictionary<TaskInputInfo, SerializedTaskInput> inputs,
+            Dictionary<ExpressionInfo, SerializedExpression> expressions)
+        {
+            if (inputs.ContainsKey(input))
+            {
+                return;
+            }
+
+            SerializedTaskInput serializedTaskInput = new SerializedTaskInput();
+            serializedTaskInput.Address = address;
+            address++;
+            serializedTaskInput.OutputIndex = input.OutputIndex;
+
+            inputs.Add(input, serializedTaskInput);
+
+            if(input.OutputTask != null)
+            {
+                SerializedSubtask serializedOutputTask;
+                if (tasks.TryGetValue(input.OutputTask, out serializedOutputTask))
+                {
+                    serializedTaskInput.OutputTaskAddress = serializedOutputTask.Address;
+                }
+                else
+                {
+                    serializedTaskInput.OutputTaskAddress = address;
+                    Decompose(ref address, input.OutputTask, tasks, inputs, expressions);
+                }
+            }
+
+            if(input.Scope != null)
+            {
+                SerializedSubtask serializedScope;
+                if(tasks.TryGetValue(input.Scope, out serializedScope))
+                {
+                    serializedTaskInput.ScopeAddress = serializedScope.Address;
+                }
+                else
+                {
+                    serializedTaskInput.ScopeAddress = address;
+                    Decompose(ref address, input.Scope, tasks, inputs, expressions);
+                }
+            }  
         }
     }
 
@@ -504,31 +960,44 @@ namespace Battlehub.VoxelCombat
     public class SerializedSubtask
     {
         [ProtoMember(1)]
-        public int TaskId;
+        public int Address;
 
         [ProtoMember(2)]
-        public TaskType TaskType;
+        public int TaskId;
 
         [ProtoMember(3)]
-        public TaskState TaskState;
+        public TaskType TaskType;
 
         [ProtoMember(4)]
-        public Cmd Cmd;
+        public TaskState TaskState;
 
         [ProtoMember(5)]
-        public int[] Children;
+        public Cmd Cmd;
 
         [ProtoMember(6)]
-        public int ExpressionId;
+        public int[] ChildrenAddresses;
 
         [ProtoMember(7)]
-        public int[] InputId;
+        public int ExpressionAddress;
 
         [ProtoMember(8)]
-        public int OutputsCount;
+        public int[] InputAddresses;
 
         [ProtoMember(9)]
+        public int OutputsCount;
+
+        [ProtoMember(10)]
         public bool RequiresClientSideProcessing;
+
+#if DEBUG_OUTPUT
+        [ProtoMember(11)]
+        public string DebugString;
+#endif
+
+        public override string ToString()
+        {
+            return TaskId + " " + TaskType;
+        }
     }
 
     [ProtoContract]
@@ -542,7 +1011,7 @@ namespace Battlehub.VoxelCombat
         }
 
         [ProtoMember(1)]
-        public int ExpressionId;
+        public int Address;
 
         [ProtoMember(2)]
         public int Code;
@@ -556,61 +1025,52 @@ namespace Battlehub.VoxelCombat
         [ProtoMember(5, DynamicType = true)]
         public object Value;
 
-        [ProtoMember(6, DynamicType = true)]
-        public int ValueId;
+        [ProtoMember(6)]
+        public int ValueAddress;
     }
 
     [ProtoContract]
     public class SerializedTaskInput
     {
         [ProtoMember(1)]
-        public int InputId;
+        public int Address;
 
         [ProtoMember(2)]
-        public int ScopeId;
+        public int ScopeAddress;
 
         [ProtoMember(3)]
-        public int OutputTaskId;
+        public int OutputTaskAddress;
 
         [ProtoMember(4)]
         public int OutputIndex;
+
     }
 
-    [ProtoContract(AsReferenceDefault = true)]
     public class TaskInfo
     {
         public const int TaskSucceded = 0;
         public const int TaskFailed = 1;
-
-        [ProtoMember(1)]
-        public int m_taskId;
-        [ProtoMember(2)]
-        public TaskType m_taskType;
-        [ProtoMember(3, AsReference = true)]
-        public Cmd m_cmd;
-        [ProtoMember(4)]
-        public TaskState m_state;
-        [ProtoMember(6, AsReference = true)]
-        public TaskInfo[] m_children;
-        [ProtoMember(7, AsReference = true)]
-        public ExpressionInfo m_expression;
-        [ProtoMember(8)]
-        public bool m_requiresClientSidePreprocessing;
-        [ProtoMember(9, AsReference = true)]
-        public TaskInputInfo[] m_inputs;
-        [ProtoMember(10)]
-        public int m_outputsCount;
-        private int m_playerIndex = -1;
-        #if DEBUG_OUTPUT
+        
+        public int TaskId;
+        public TaskType TaskType;
+        public Cmd Cmd;
+        public TaskState State;
+        public TaskInfo[] Children;
+        public ExpressionInfo Expression;
+        public bool RequiresClientSidePreprocessing;
+        public TaskInputInfo[] Inputs;
+        public int OutputsCount;
+        public int PlayerIndex = -1;
+#if DEBUG_OUTPUT
         public string DebugString;
-        #endif
+#endif
 
         public TaskInfo(TaskType taskType, Cmd cmd, TaskState state, ExpressionInfo expression, TaskInfo parent)
         {
-            m_taskType = taskType;
-            m_cmd = cmd;
-            m_state = state;
-            m_expression = expression;
+            TaskType = taskType;
+            Cmd = cmd;
+            State = state;
+            Expression = expression;
             Parent = parent;
         }
 
@@ -637,16 +1097,16 @@ namespace Battlehub.VoxelCombat
         public TaskInfo(Cmd cmd, int playerIndex)
             : this(cmd, null)
         {
-            m_playerIndex = playerIndex;
+            PlayerIndex = playerIndex;
         }
 
         public TaskInfo(TaskType type)
-            : this(type, new Cmd(CmdCode.Nop), TaskState.Idle, null, null)
+            : this(type, null, TaskState.Idle, null, null)
         {
         }
 
         public TaskInfo(TaskType type, TaskState state)
-           : this(type, new Cmd(CmdCode.Nop), state, null, null)
+           : this(type, null, state, null, null)
         {
         }
 
@@ -656,24 +1116,22 @@ namespace Battlehub.VoxelCombat
 
         public TaskInfo(TaskInfo taskInfo, bool isCmdTask)
         {
-            m_taskId = taskInfo.TaskId;
-            m_taskType = taskInfo.TaskType;
-            m_cmd = taskInfo.Cmd;
+            TaskId = taskInfo.TaskId;
+            TaskType = taskInfo.TaskType;
+            Cmd = taskInfo.Cmd;
             if(isCmdTask)
             {
-                m_state = TaskState.Idle;
+                State = TaskState.Idle;
             }
             else
             {
-                m_state = taskInfo.State;
-                m_children = taskInfo.Children;
-                m_expression = taskInfo.Expression;
-                m_requiresClientSidePreprocessing = taskInfo.RequiresClientSidePreprocessing;
-                m_inputs = taskInfo.Inputs;
-                m_outputsCount = taskInfo.OutputsCount;
+                State = taskInfo.State;
+                Children = taskInfo.Children;
+                Expression = taskInfo.Expression;
+                RequiresClientSidePreprocessing = taskInfo.RequiresClientSidePreprocessing;
+                Inputs = taskInfo.Inputs;
+                OutputsCount = taskInfo.OutputsCount;
             }
-
-            m_playerIndex = PlayerIndex;
         }
 
         public void Reset()
@@ -683,72 +1141,20 @@ namespace Battlehub.VoxelCombat
             PreprocessedCmd = null;
         }
     
-        public int TaskId
-        {
-            get { return m_taskId; }
-            set { m_taskId = value; }
-        }
-
-        public TaskType TaskType
-        {
-            get { return m_taskType; }
-            set { m_taskType = value; }
-        }
-
-        public Cmd Cmd
-        {
-            get { return m_cmd; }
-            set { m_cmd = value; }
-        }
-
-        public TaskState State
-        {
-            get { return m_state; }
-            set
-            {
-                m_state = value;
-            }
-        }
-
+       
         public TaskInfo Parent { get; set; }
 
-        public TaskInfo[] Children
+        public TaskInfo Root
         {
-            get { return m_children; }
-            set { m_children = value; }
-        }
-
-        public ExpressionInfo Expression
-        {
-            get { return m_expression; }
-            set { m_expression = value; }
-        }
-
-        public int PlayerIndex
-        {
-            get { return m_playerIndex; }
-            set { m_playerIndex = value; }
-        }
-
-        public TaskInputInfo[] Inputs
-        {
-            get { return m_inputs; }
-            set
+            get
             {
-                m_inputs = value;
+                TaskInfo task = this;
+                while(task.Parent != null)
+                {
+                    task = task.Parent;
+                }
+                return task;
             }
-        }
-
-        public int OutputsCount
-        {
-            get { return m_outputsCount; }
-            set { m_outputsCount = value; }
-        }
-
-        public bool RequiresClientSidePreprocessing
-        {
-            get { return m_requiresClientSidePreprocessing; }
-            set { m_requiresClientSidePreprocessing = value; }
         }
 
         public Cmd PreprocessedCmd
@@ -766,12 +1172,6 @@ namespace Battlehub.VoxelCombat
         public bool IsFailed
         {
             get { return StatusCode != TaskSucceded; }
-        }
-
-        [OnDeserialized]
-        public void OnDeserializedMethod(StreamingContext context)
-        {
-            SetParents(this, false);
         }
 
         public void SetParents()
@@ -854,12 +1254,37 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        public static TaskInfo FindById(int id, TaskInfo task)
+        {
+            if(task.TaskId == id)
+            {
+                return task;
+            }
+
+            if(task.Children != null)
+            {
+                for(int i = 0; i < task.Children.Length; ++i)
+                {
+                    TaskInfo child = task.Children[i];
+                    if(child != null)
+                    {
+                        TaskInfo result = FindById(id, child);
+                        if(result != null)
+                        {
+                            return result;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
         public override string ToString()
         {
             return TaskType + " " + TaskId + " "
-                #if DEBUG_OUTPUT
+#if DEBUG_OUTPUT
                 + DebugString + " "
-                #endif               
+#endif
                 + State + " " 
                 + (IsFailed ? "IsFailed=True" : "IsFailed=False");
         }
@@ -967,9 +1392,9 @@ namespace Battlehub.VoxelCombat
         {
             return new TaskInfo(TaskType.Sequence)
             {
-                #if DEBUG_OUTPUT
+#if DEBUG_OUTPUT
                 DebugString = debugString,
-                #endif
+#endif
                 Children = sequence,
             };
         }
@@ -987,9 +1412,9 @@ namespace Battlehub.VoxelCombat
         {
             return new TaskInfo(TaskType.Branch)
             {
-                #if DEBUG_OUTPUT
+#if DEBUG_OUTPUT
                 DebugString = debugString,
-                #endif
+#endif
                 Expression = expression,
                 Children = new[] { yes, no }
             };
@@ -1027,9 +1452,9 @@ namespace Battlehub.VoxelCombat
         {
             return new TaskInfo(TaskType.EvalExpression)
             {
-                #if DEBUG_OUTPUT
+#if DEBUG_OUTPUT
                 DebugString = debugString,
-                #endif
+#endif
                 Expression = expression,
                 OutputsCount = 1
             };
@@ -1144,9 +1569,9 @@ namespace Battlehub.VoxelCombat
         public static TaskInfo SearchForPath(TaskType taskType, TaskInfo pathVar, TaskInputInfo unitIndexInput)
         {
             TaskInfo searchForTask = SearchFor(taskType, unitIndexInput);
-            #if DEBUG_OUTPUT
+#if DEBUG_OUTPUT
             searchForTask.DebugString = "searchForTask";
-            #endif
+#endif
 
             ExpressionInfo searchForSucceded = ExpressionInfo.TaskSucceded(searchForTask);
 
@@ -1169,9 +1594,9 @@ namespace Battlehub.VoxelCombat
                         Branch(
                             searchForSucceded,
                             Sequence(
-                                #if DEBUG_OUTPUT
+#if DEBUG_OUTPUT
                                 "find path sequence",
-                                #endif
+#endif
                                 findPathTask,
                                 Branch(
                                     findPathSucceded,
@@ -1285,7 +1710,7 @@ namespace Battlehub.VoxelCombat
                             (
 #if DEBUG_OUTPUT
                                 "moveTaskSequence",
-#endif                                
+#endif
                                 EvalExpression(ExpressionInfo.Assign(randMovementsInput.OutputTask, ExpressionInfo.PrimitiveVal(0))),
                                 moveTask,
                                 Return(ExpressionInfo.TaskStatus(moveTask))

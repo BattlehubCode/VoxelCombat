@@ -68,7 +68,7 @@ namespace Battlehub.VoxelCombat
                     }
 
                     int playerIndex = m_gameState.LocalToPlayerIndex(LocalPlayerIndex);
-                    TaskTemplateData[] templateInfo = m_gameState.GetTaskTemplateData(playerIndex);
+                    SerializedTaskTemplate[] templateInfo = m_gameState.GetTaskTemplateData(playerIndex);
                     for(int i = 0; i < templateInfo.Length; ++i)
                     {
                         int index = templateInfo[i].Index;

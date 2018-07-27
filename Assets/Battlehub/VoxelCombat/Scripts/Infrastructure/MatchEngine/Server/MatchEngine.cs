@@ -427,14 +427,14 @@ namespace Battlehub.VoxelCombat
     public class TaskCmd : Cmd
     {
         [ProtoMember(1)]
-        public TaskInfo Task;
+        public SerializedTask Task;
 
         public TaskCmd()
         {
             Code = CmdCode.ExecuteTask;
         }
 
-        public TaskCmd(TaskInfo task)
+        public TaskCmd(SerializedTask task)
         {
             Code = CmdCode.ExecuteTask;
             Task = task;
@@ -788,7 +788,7 @@ namespace Battlehub.VoxelCombat
             if (cmd.Code == CmdCode.ExecuteTask)
             {
                 TaskCmd executeTaskCmd = (TaskCmd)cmd;
-                TaskInfo task = executeTaskCmd.Task;
+                TaskInfo task = SerializedTask.ToTaskInfo(executeTaskCmd.Task);
                 task.PlayerIndex = playerIndex;
                 m_taskEngines[playerIndex].SubmitTask(task);
             }

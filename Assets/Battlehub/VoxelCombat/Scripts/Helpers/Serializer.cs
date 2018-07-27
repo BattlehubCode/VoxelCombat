@@ -2,6 +2,7 @@
 using ProtoBuf;
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Battlehub.VoxelCombat
 {
@@ -11,7 +12,7 @@ namespace Battlehub.VoxelCombat
 
     public static class ProtobufSerializer
     {
-#if !UNITY_EDITOR && !UNITY_WSA && !SERVER
+#if !UNITY_EDITOR && !UNITY_WSA && !SERVER 
         private static VCTypeModel model = new VCTypeModel();
 #else
         private static ProtoBuf.Meta.RuntimeTypeModel model = new TypeModelCreator().Create();
@@ -24,14 +25,25 @@ namespace Battlehub.VoxelCombat
                 {
                     return;
                 }
-
-                if (Type.GetType(args.FormattedName) == null)
+                string typename = args.FormattedName;
+                typename = Regex.Replace(typename, @", Version=\d+.\d+.\d+.\d+", string.Empty);
+                typename = Regex.Replace(typename, @", Culture=\w+", string.Empty);
+                typename = Regex.Replace(typename, @", PublicKeyToken=\w+", string.Empty);
+                typename = typename.Replace(", Battlehub.VoxelCombat.Server", string.Empty);
+                typename = typename.TrimEnd(' ');
+                typename = typename.TrimEnd(',');
+                Type type = Type.GetType(typename);
+                if (type == null)
                 {
                     args.Type = typeof(NilContainer);
                 }
+                else
+                {
+                    args.Type = type;
+                }
             };
 
-#if UNITY_EDITOR || SERVER || UNITY_WSA
+#if UNITY_EDITOR  || UNITY_WSA || SERVER
             model.CompileInPlace();
 #endif
         }

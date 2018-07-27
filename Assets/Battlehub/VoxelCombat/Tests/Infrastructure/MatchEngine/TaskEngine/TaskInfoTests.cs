@@ -40,7 +40,8 @@ namespace Battlehub.VoxelCombat.Tests
             ExpressionInfo clone = null;
             Assert.DoesNotThrow(() =>
             {
-                clone = ProtobufSerializer.DeepClone(expression);
+                TaskInfo task = new TaskInfo { Expression = expression };
+                clone = SerializedTask.ToTaskInfo(ProtobufSerializer.DeepClone(SerializedTask.FromTaskInfo(task))).Expression;
             });
 
             Assert.IsNotNull(clone);
@@ -66,8 +67,9 @@ namespace Battlehub.VoxelCombat.Tests
 
             Assert.DoesNotThrow(() =>
             {
-                byte[] b = ProtobufSerializer.Serialize(canRun);
-                ProtobufSerializer.Deserialize<ExpressionInfo>(b);
+                TaskInfo task = new TaskInfo { Expression = canRun };
+                byte[] b = ProtobufSerializer.Serialize(SerializedTask.FromTaskInfo(task));
+                SerializedTask.ToTaskInfo(ProtobufSerializer.Deserialize<SerializedTask>(b));
             });
         }
 
@@ -78,8 +80,8 @@ namespace Battlehub.VoxelCombat.Tests
 
             Assert.DoesNotThrow(() =>
             {
-                byte[] b = ProtobufSerializer.Serialize(task);
-                ProtobufSerializer.Deserialize<TaskInfo>(b);
+                byte[] b = ProtobufSerializer.Serialize(SerializedTask.FromTaskInfo(task));
+                SerializedTask.ToTaskInfo(ProtobufSerializer.Deserialize<SerializedTask>(b));
             });
         }
 
@@ -90,8 +92,8 @@ namespace Battlehub.VoxelCombat.Tests
 
             Assert.DoesNotThrow(() =>
             {
-                byte[] b = ProtobufSerializer.Serialize(task);
-                ProtobufSerializer.Deserialize<TaskInfo>(b);
+                byte[] b = ProtobufSerializer.Serialize(SerializedTask.FromTaskInfo(task));
+                SerializedTask.ToTaskInfo(ProtobufSerializer.Deserialize<SerializedTask>(b));
             });
         }
 
@@ -102,7 +104,7 @@ namespace Battlehub.VoxelCombat.Tests
 
             Assert.DoesNotThrow(() =>
             {
-                ProtobufSerializer.DeepClone(task);
+                SerializedTask.ToTaskInfo(ProtobufSerializer.DeepClone(SerializedTask.FromTaskInfo(task)));
             });
         }
 
@@ -152,7 +154,7 @@ namespace Battlehub.VoxelCombat.Tests
 
             Assert.DoesNotThrow(() =>
             {
-                ProtobufSerializer.DeepClone(task);
+                SerializedTask.ToTaskInfo(ProtobufSerializer.DeepClone(SerializedTask.FromTaskInfo(task)));
             });
         }
 
@@ -171,7 +173,7 @@ namespace Battlehub.VoxelCombat.Tests
 
             Assert.DoesNotThrow(() =>
             {
-                ProtobufSerializer.DeepClone(task);
+                SerializedTask.ToTaskInfo(ProtobufSerializer.DeepClone(SerializedTask.FromTaskInfo(task)));
             });
         }
 
@@ -193,7 +195,7 @@ namespace Battlehub.VoxelCombat.Tests
                 );
             Assert.DoesNotThrow(() =>
             {
-                ProtobufSerializer.DeepClone(task);
+                SerializedTask.ToTaskInfo(ProtobufSerializer.DeepClone(SerializedTask.FromTaskInfo(task)));
             });
         }
 
@@ -204,7 +206,7 @@ namespace Battlehub.VoxelCombat.Tests
 
             Assert.DoesNotThrow(() =>
             {
-                ProtobufSerializer.DeepClone(task);
+                SerializedTask.ToTaskInfo(ProtobufSerializer.DeepClone(SerializedTask.FromTaskInfo(task)));
             });
         }
 
@@ -215,31 +217,10 @@ namespace Battlehub.VoxelCombat.Tests
 
             Assert.DoesNotThrow(() =>
             {
-                byte[] b = ProtobufSerializer.Serialize(task);
-                ProtobufSerializer.Deserialize<TaskInfo>(b);
+                SerializedTask.ToTaskInfo(ProtobufSerializer.DeepClone(SerializedTask.FromTaskInfo(task)));
             });
         }
-
-        [Test]
-        public void ExpressionInfoCloneTest()
-        {
-            ExpressionInfo expression = ExpressionInfo.TaskSucceded(new TaskInfo());
-            Assert.DoesNotThrow(() =>
-            {
-                ProtobufSerializer.DeepClone(expression);
-            });
-        }
-
-
-        [Test]
-        public void TaskInputInfoCloneTest()
-        {
-            Assert.DoesNotThrow(() =>
-            {
-                ProtobufSerializer.DeepClone(new TaskInputInfo());
-            });
-        }
-
+        
         [Test]
         public void TaskInfoSerializationDeserialization()
         {
@@ -262,7 +243,7 @@ namespace Battlehub.VoxelCombat.Tests
             TaskInfo clone = null;
             Assert.DoesNotThrow(() =>
             {
-                clone = ProtobufSerializer.DeepClone(taskInfo);
+                clone = SerializedTask.ToTaskInfo(ProtobufSerializer.DeepClone(SerializedTask.FromTaskInfo(taskInfo)));
             });
 
             Assert.IsNotNull(clone);

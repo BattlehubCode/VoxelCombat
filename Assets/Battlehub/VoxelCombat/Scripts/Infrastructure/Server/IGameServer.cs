@@ -117,55 +117,55 @@ namespace Battlehub.VoxelCombat
     }
 
     [ProtoContract]
-    public class TaskInfoArray
+    public class SerializedTaskArray
     {
-        [ProtoMember(1, AsReference = true)]
-        public TaskInfo[] TaskInfo;
+        [ProtoMember(1)]
+        public SerializedTask[] Tasks;
 
-        public TaskInfoArray()
+        public SerializedTaskArray()
         {
         }
 
-        public TaskInfoArray(TaskInfo[] taskInfo)
+        public SerializedTaskArray(SerializedTask[] tasks)
         {
-            TaskInfo = taskInfo;
+            Tasks = tasks;
         }
 
-        public static implicit operator TaskInfo[] (TaskInfoArray taskInfoArray)
+        public static implicit operator SerializedTask[] (SerializedTaskArray taskArray)
         {
-            return taskInfoArray.TaskInfo;
+            return taskArray.Tasks;
         }
 
-        public static implicit operator TaskInfoArray(TaskInfo[] taskInfo)
+        public static implicit operator SerializedTaskArray(SerializedTask[] serializedTasks)
         {
-            return new TaskInfoArray(taskInfo);
+            return new SerializedTaskArray(serializedTasks);
         }
     }
 
 
     [ProtoContract]
-    public class TaskTemplateDataArray
+    public class SerializedTaskTemplatesArray
     {
         [ProtoMember(1)]
-        public TaskTemplateData[] Templates;
+        public SerializedTaskTemplate[] Templates;
 
-        public TaskTemplateDataArray()
+        public SerializedTaskTemplatesArray()
         {
         }
 
-        public TaskTemplateDataArray(TaskTemplateData[] templates)
+        public SerializedTaskTemplatesArray(SerializedTaskTemplate[] templates)
         {
             Templates = templates;
         }
 
-        public static implicit operator TaskTemplateData[] (TaskTemplateDataArray templates)
+        public static implicit operator SerializedTaskTemplate[] (SerializedTaskTemplatesArray templates)
         {
             return templates.Templates;
         }
 
-        public static implicit operator TaskTemplateDataArray(TaskTemplateData[] templates)
+        public static implicit operator SerializedTaskTemplatesArray(SerializedTaskTemplate[] templates)
         {
-            return new TaskTemplateDataArray(templates);
+            return new SerializedTaskTemplatesArray(templates);
         }
     }
 
@@ -193,10 +193,9 @@ namespace Battlehub.VoxelCombat
     [ProtoInclude(31, typeof(RemoteArg<CommandsBundle>))]
     [ProtoInclude(32, typeof(RemoteArg<ChatMessage>))]
     [ProtoInclude(33, typeof(RemoteArg<ClientRequest>))]
-    [ProtoInclude(34, typeof(RemoteArg<TaskInfoArray[]>))]
-    [ProtoInclude(35, typeof(RemoteArg<TaskTemplateDataArray[]>))]
-    [ProtoInclude(36, typeof(RemoteArg<TaskInfo>))]
-    [ProtoInclude(37, typeof(RemoteArg<TaskTemplateData>))]
+    [ProtoInclude(34, typeof(RemoteArg<SerializedTaskArray[]>))]
+    [ProtoInclude(35, typeof(RemoteArg<SerializedTaskTemplatesArray[]>))]
+    [ProtoInclude(37, typeof(RemoteArg<SerializedTaskTemplate>))]
     public class RemoteArg
     {
         public virtual object Value
@@ -1201,7 +1200,7 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// Raised when match started and all players called ReadyToPlay method 
         /// </summary>
-        event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateDataArray[], Room>> ReadyToPlayAll;
+        event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room>> ReadyToPlayAll;
 
         //event ServerEventHandler<Guid[], Room> LeftRoom;  This event will be raised using Tick command
 
@@ -1214,7 +1213,7 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// Raised when match started and all players called ReadyToPlay method 
         /// </summary>
-        event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateDataArray[], Room> ReadyToPlayAll;
+        event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> ReadyToPlayAll;
 
         //event ServerEventHandler<Guid[], Room> LeftRoom;  This event will be raised using Tick command
 
@@ -1258,9 +1257,9 @@ namespace Battlehub.VoxelCombat
 
         void GetReplay(Guid clientId, ServerEventHandler<ReplayData, Room> callback);
 
-        void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<TaskInfo[], TaskTemplateData[]> callback);
+        void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<SerializedTask[], SerializedTaskTemplate[]> callback);
 
-        void SaveTaskTemplate(Guid clientId, Guid playerId, TaskInfo taskTemplate, TaskTemplateData templateInfo, ServerEventHandler callback);
+        void SaveTaskTemplate(Guid clientId, Guid playerId, SerializedTask taskTemplate, SerializedTaskTemplate templateInfo, ServerEventHandler callback);
     }
 
 }

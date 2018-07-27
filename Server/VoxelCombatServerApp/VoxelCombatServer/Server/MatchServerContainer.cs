@@ -67,7 +67,7 @@ namespace Battlehub.VoxelCombat
             Broadcast(RemoteEvent.Evt.ChatMessage, error, args, RemoteArg.Create(args.Arg));
         }
 
-        private void OnReadyToPlayAll(Error error, ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateDataArray[], Room> args)
+        private void OnReadyToPlayAll(Error error, ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> args)
         {
             Room room = args.Arg6;
             if (room.Mode == GameMode.Replay)

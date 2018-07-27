@@ -101,9 +101,9 @@ namespace Battlehub.VoxelCombat
 
         void SaveReplay(string name);
 
-        TaskInfo[] GetTaskTemplates(int playerIndex);
+        SerializedTask[] GetTaskTemplates(int playerIndex);
 
-        TaskTemplateData[] GetTaskTemplateData(int playerIndex);
+        SerializedTaskTemplate[] GetTaskTemplateData(int playerIndex);
     }
 
     public class PlayerStats
@@ -286,8 +286,8 @@ namespace Battlehub.VoxelCombat
         private PlayerStats[] m_playerStats;
         private Dictionary<int, VoxelAbilities>[] m_voxelAbilities;
         private IMatchPlayerControllerCli[] m_playerControllers;
-        private TaskInfo[][] m_taskTemplates;
-        private TaskTemplateData[][] m_TaskTemplateData;
+        private SerializedTask[][] m_taskTemplates;
+        private SerializedTaskTemplate[][] m_TaskTemplateData;
         private Room m_room;
         
         private void Awake()
@@ -492,7 +492,7 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        private void OnEngineStarted(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] voxelAbilities, TaskInfoArray[] taskTemplates, TaskTemplateDataArray[] taskTemplatesInfo, Room room)
+        private void OnEngineStarted(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] voxelAbilities, SerializedTaskArray[] taskTemplates, SerializedTaskTemplatesArray[] taskTemplatesInfo, Room room)
         {
             m_room = room;
 
@@ -511,7 +511,7 @@ namespace Battlehub.VoxelCombat
             m_players = players;
 
             m_voxelAbilities = voxelAbilities.Select(va => va.Abilities.ToDictionary(a => a.Type)).ToArray();
-            m_taskTemplates = taskTemplates.Select(t => t.TaskInfo).ToArray();
+            m_taskTemplates = taskTemplates.Select(t => t.Tasks).ToArray();
             m_TaskTemplateData = taskTemplatesInfo.Select(t => t.Templates).ToArray();
             if (IsReplay)
             {
@@ -861,12 +861,12 @@ namespace Battlehub.VoxelCombat
             throw new NotImplementedException();
         }
 
-        public TaskInfo[] GetTaskTemplates(int playerIndex)
+        public SerializedTask[] GetTaskTemplates(int playerIndex)
         {
             return m_taskTemplates[playerIndex];
         }
 
-        public TaskTemplateData[] GetTaskTemplateData(int playerIndex)
+        public SerializedTaskTemplate[] GetTaskTemplateData(int playerIndex)
         {
             return m_TaskTemplateData[playerIndex];
         }

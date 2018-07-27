@@ -79,7 +79,7 @@ namespace Battlehub.VoxelCombat
 
     public class LocalMatchServer : MonoBehaviour, IMatchServer
     {
-        public event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateDataArray[], Room> ReadyToPlayAll;
+        public event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> ReadyToPlayAll;
         
         public event ServerEventHandler<CommandsBundle> Tick;
         public event ServerEventHandler<RTTInfo> Ping;
@@ -115,8 +115,8 @@ namespace Battlehub.VoxelCombat
         private HashSet<Guid> m_loggedInPlayers;
         private Dictionary<Guid, Player> m_players;
         private Dictionary<Guid, VoxelAbilities[]> m_abilities;
-        private Dictionary<Guid, TaskInfo[]> m_taskTemplates;
-        private Dictionary<Guid, TaskTemplateData[]> m_taskTemplatesInfo;
+        private Dictionary<Guid, SerializedTask[]> m_tasks;
+        private Dictionary<Guid, SerializedTaskTemplate[]> m_serializedTaskTemplates;
 
         private Guid m_botAuthority;
         private IBotController[] m_bots;
@@ -234,13 +234,13 @@ namespace Battlehub.VoxelCombat
             }
 
             m_abilities = new Dictionary<Guid, VoxelAbilities[]>();
-            m_taskTemplates = new Dictionary<Guid, TaskInfo[]>();
-            m_taskTemplatesInfo = new Dictionary<Guid, TaskTemplateData[]>();
+            m_tasks = new Dictionary<Guid, SerializedTask[]>();
+            m_serializedTaskTemplates = new Dictionary<Guid, SerializedTaskTemplate[]>();
             for (int i = 0; i < m_room.Players.Count; ++i)
             {
                 m_abilities.Add(m_room.Players[i], CreateDefaultAbilities());
-                m_taskTemplates.Add(m_room.Players[i], CreateDefaultTaskTemplates());
-                m_taskTemplatesInfo.Add(m_room.Players[i], CreateDefaultTaskTemplateData());
+                m_tasks.Add(m_room.Players[i], CreateDefaultTaskTemplates());
+                m_serializedTaskTemplates.Add(m_room.Players[i], CreateDefaultTaskTemplateData());
 
             }
 
@@ -308,16 +308,16 @@ namespace Battlehub.VoxelCombat
             return abilities.ToArray();
         }
 
-        private TaskInfo[] CreateDefaultTaskTemplates()
+        private SerializedTask[] CreateDefaultTaskTemplates()
         {
-            List<TaskInfo> taskTemplates = new List<TaskInfo>();
-            taskTemplates.Add(TaskInfo.EatGrowSplit4(new TaskInputInfo(), new TaskInputInfo()));
+            List<SerializedTask> taskTemplates = new List<SerializedTask>();
+            taskTemplates.Add(SerializedTask.FromTaskInfo(TaskInfo.EatGrowSplit4(new TaskInputInfo(), new TaskInputInfo())));
             return taskTemplates.ToArray();
         }
 
-        private TaskTemplateData[] CreateDefaultTaskTemplateData()
+        private SerializedTaskTemplate[] CreateDefaultTaskTemplateData()
         {
-            return new[] { new TaskTemplateData { Name = "Eat Grow Split4", Col = 2, Row = 2, Type = TaskTemplateType.EatGrowSplit4 } };
+            return new[] { new SerializedTaskTemplate { Name = "Eat Grow Split4", Col = 2, Row = 2, Type = TaskTemplateType.EatGrowSplit4 } };
         }
 
         public bool IsLocal(Guid clientId, Guid playerId)
@@ -526,8 +526,8 @@ namespace Battlehub.VoxelCombat
 
                     Player[] players;
                     VoxelAbilitiesArray[] abilities;
-                    TaskInfoArray[] taskInfo;
-                    TaskTemplateDataArray[] TaskTemplateData;
+                    SerializedTaskArray[] serializedTasks;
+                    SerializedTaskTemplatesArray[] serializedTaskTemplates;
 
                     if (m_room != null)
                     {
@@ -538,16 +538,16 @@ namespace Battlehub.VoxelCombat
 
                         //Will override or
                         abilities = new VoxelAbilitiesArray[m_room.Players.Count];
-                        taskInfo = new TaskInfoArray[m_room.Players.Count];
-                        TaskTemplateData = new TaskTemplateDataArray[m_room.Players.Count];
+                        serializedTasks = new SerializedTaskArray[m_room.Players.Count];
+                        serializedTaskTemplates = new SerializedTaskTemplatesArray[m_room.Players.Count];
                         for (int i = 0; i < m_room.Players.Count; ++i)
                         {
                             Player player = m_players[m_room.Players[i]];
 
                             players[i] = player;
                             abilities[i] = m_abilities[m_room.Players[i]];
-                            taskInfo[i] = m_taskTemplates[m_room.Players[i]];
-                            TaskTemplateData[i] = m_taskTemplatesInfo[m_room.Players[i]];
+                            serializedTasks[i] = m_tasks[m_room.Players[i]];
+                            serializedTaskTemplates[i] = m_serializedTaskTemplates[m_room.Players[i]];
                             if (player.IsBot && player.BotType != BotType.Replay && player.BotType != BotType.Neutral)
                             {
                                 bots.Add(MatchFactory.CreateBotController(player, m_engine.GetTaskEngine(i)));
@@ -562,11 +562,11 @@ namespace Battlehub.VoxelCombat
                         error.Message = "Room not found";
                         players = new Player[0];
                         abilities = new VoxelAbilitiesArray[0];
-                        taskInfo = new TaskInfoArray[0];
-                        TaskTemplateData = new TaskTemplateDataArray[0];
+                        serializedTasks = new SerializedTaskArray[0];
+                        serializedTaskTemplates = new SerializedTaskTemplatesArray[0];
                     }
 
-                    RaiseReadyToPlayAll(error, players, abilities, taskInfo, TaskTemplateData);
+                    RaiseReadyToPlayAll(error, players, abilities, serializedTasks, serializedTaskTemplates);
                     m_engine.GrantBotCtrl(0);
                 });
 
@@ -578,7 +578,7 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        private void RaiseReadyToPlayAll(Error error, Player[] players, VoxelAbilitiesArray[] abilities, TaskInfoArray[] taskTemplates, TaskTemplateDataArray[] TaskTemplateData)
+        private void RaiseReadyToPlayAll(Error error, Player[] players, VoxelAbilitiesArray[] abilities, SerializedTaskArray[] serializedTasks, SerializedTaskTemplatesArray[] serializedTaskTemplates)
         {
             m_job.Submit(() =>
             {
@@ -589,7 +589,7 @@ namespace Battlehub.VoxelCombat
             {
                 if (ReadyToPlayAll != null)
                 {
-                    ReadyToPlayAll(error, players, m_loggedInPlayers.ToArray(), abilities, taskTemplates, TaskTemplateData, m_room);
+                    ReadyToPlayAll(error, players, m_loggedInPlayers.ToArray(), abilities, serializedTasks, serializedTaskTemplates, m_room);
                 }
             });
         }
@@ -659,7 +659,7 @@ namespace Battlehub.VoxelCombat
         }
 
 
-        public void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<TaskInfo[], TaskTemplateData[]> callback)
+        public void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<SerializedTask[], SerializedTaskTemplate[]> callback)
         {
             Error error = new Error(StatusCode.OK);
             if (!m_initialized)
@@ -670,18 +670,18 @@ namespace Battlehub.VoxelCombat
             if (m_lag == 0)
             {
 
-                callback(error, m_taskTemplates[playerId], m_taskTemplatesInfo[playerId]);
+                callback(error, m_tasks[playerId], m_serializedTaskTemplates[playerId]);
             }
             else
             {
                 m_job.Submit(() => { Thread.Sleep(m_lag); return null; }, result =>
                 {
-                    callback(error, m_taskTemplates[playerId], m_taskTemplatesInfo[playerId]);
+                    callback(error, m_tasks[playerId], m_serializedTaskTemplates[playerId]);
                 });
             }
         }
 
-        public void SaveTaskTemplate(Guid clientId, Guid playerId, TaskInfo taskTemplate, TaskTemplateData TaskTemplateData, ServerEventHandler callback)
+        public void SaveTaskTemplate(Guid clientId, Guid playerId, SerializedTask taskTemplate, SerializedTaskTemplate TaskTemplateData, ServerEventHandler callback)
         {
             Error error = new Error(StatusCode.OK);
             if (!m_initialized)
@@ -691,20 +691,20 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                TaskInfo[] templates;
-                if (!m_taskTemplates.TryGetValue(playerId, out templates))
+                SerializedTask[] templates;
+                if (!m_tasks.TryGetValue(playerId, out templates))
                 {
-                    templates = new TaskInfo[1];
+                    templates = new SerializedTask[1];
                 }
                 else
                 {
                     Array.Resize(ref templates, templates.Length + 1);
                 }
 
-                TaskTemplateData[] templateInfos;
-                if (!m_taskTemplatesInfo.TryGetValue(playerId, out templateInfos))
+                SerializedTaskTemplate[] templateInfos;
+                if (!m_serializedTaskTemplates.TryGetValue(playerId, out templateInfos))
                 {
-                    templateInfos = new TaskTemplateData[1];
+                    templateInfos = new SerializedTaskTemplate[1];
                 }
                 else
                 {

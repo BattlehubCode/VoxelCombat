@@ -163,11 +163,12 @@ namespace Battlehub.VoxelCombat
 
     public interface IBotSubmitTask
     {
+        void RegisterTask(TaskTemplateType type, SerializedTask taskInfo);
         void SubmitTask(float time, TaskTemplateType type, IMatchUnitAssetView unit);
     }
 
 
-    public interface IBotController
+    public interface IBotController : IBotSubmitTask
     {
         void Init();
         void Reset();
@@ -192,14 +193,48 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+    public class TaskInfoPool : Pool<TaskInfo>
+    {
+        private readonly Func<TaskInfo> m_instantiateFunc;
+        public TaskInfoPool(Func<TaskInfo> instantiateFunc, int size = 5)
+        {
+            m_instantiateFunc = instantiateFunc;
+            Initialize(size);
+        }
+
+        protected override void Destroy(TaskInfo obj)
+        {
+            obj.Reset();
+        }
+
+        protected override TaskInfo Instantiate(int index)
+        {
+            TaskInfo taskInfo = m_instantiateFunc();
+            taskInfo.SetParents();
+            return taskInfo;
+        }
+    }
 
     public class BotController : IBotController, IBotSubmitTask
     {
         public class State
         {
-            public readonly Dictionary<TaskTemplateType, TaskInfo> TaskTemplates = new Dictionary<TaskTemplateType, TaskInfo>
+            public readonly Dictionary<TaskTemplateType, TaskInfoPool> TaskTemplates = new Dictionary<TaskTemplateType, TaskInfoPool>
             {
-                { TaskTemplateType.EatGrowSplit4, TaskInfo.EatGrowSplit4(10, 5) }
+                {
+                    TaskTemplateType.EatGrowSplit4,
+                    new TaskInfoPool(() => 
+                    {
+                        TaskInfo coreTaskInfo = TaskInfo.EatGrowSplit4(10, 5);
+                        return TaskInfo.Procedure
+                        (
+                            null,
+                            null,
+                            coreTaskInfo,
+                            TaskInfo.Return(ExpressionInfo.TaskStatus(coreTaskInfo))
+                        );
+                    })
+                }
             };
 
             public readonly Dictionary<int, RunningTaskInfo> TaskIdToTask = new Dictionary<int, RunningTaskInfo>();
@@ -256,6 +291,12 @@ namespace Battlehub.VoxelCombat
             m_playerView.UnitRemoved -= OnUnitRemoved;
             m_playerView.AssetCreated -= OnAssetCreated;
             m_playerView.AssetRemoved -= OnAssetRemoved;
+
+            foreach(RunningTaskInfo task in m_state.TaskIdToTask.Values)
+            {
+                TaskInfo taskInfo = m_taskEngine.TerminateTask(task.TaskId);
+                m_state.TaskTemplates[task.Type].Release(taskInfo);
+            }
 
             m_taskEngine.TerminateAll();
             m_state.TaskIdToTask.Clear();
@@ -350,11 +391,28 @@ namespace Battlehub.VoxelCombat
                         }  
                     }
 
+                    m_state.TaskTemplates[completedTask.Type].Release(taskInfo);
                     m_state.TaskIdToTask.Remove(taskInfo.TaskId);
                     m_state.UnitIdToTask.Remove(unit.Id);
                     m_strategy.OnTaskCompleted(unit, completedTask, taskInfo);
                 }
             }  
+        }
+
+        void IBotSubmitTask.RegisterTask(TaskTemplateType type, SerializedTask serializedTask)
+        {
+            m_state.TaskTemplates[type] = new TaskInfoPool(() =>
+            {
+                TaskInfo coreTaskInfo = SerializedTask.ToTaskInfo(serializedTask);
+
+                return TaskInfo.Procedure
+                (
+                    null,
+                    null,
+                    coreTaskInfo,
+                    TaskInfo.Return(ExpressionInfo.TaskStatus(coreTaskInfo))
+                );
+            });
         }
 
         void IBotSubmitTask.SubmitTask(float time, TaskTemplateType type, IMatchUnitAssetView unit)
@@ -364,36 +422,29 @@ namespace Battlehub.VoxelCombat
                 throw new InvalidOperationException("unit " + unit.Id + " of type  " + (KnownVoxelTypes)unit.Data.Type + " is busy");
             }
 
-            TaskInfo taskInfo = ProtobufSerializer.DeepClone(m_state.TaskTemplates[type]);
+            TaskInfo taskInfo = m_state.TaskTemplates[type].Acquire();
             TaskInfo unitIdTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVal(unit.Id));
             TaskInfo playerIdTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVal(m_playerView.Index));
-
-            taskInfo.Inputs[0].OutputTask = unitIdTask;
-            taskInfo.Inputs[1].OutputTask = playerIdTask;
-
-            TaskInfo rootTask = TaskInfo.Procedure
-            (
-                unitIdTask,
-                playerIdTask,
-                taskInfo,
-                TaskInfo.Return(ExpressionInfo.TaskStatus(taskInfo))
-            );
-            rootTask.SetParents();
-            rootTask.Initialize(m_playerView.Index);
+            taskInfo.Children[0] = unitIdTask;
+            taskInfo.Children[1] = playerIdTask;
+            taskInfo.Children[2].Inputs[0].OutputTask = unitIdTask;
+            taskInfo.Children[2].Inputs[1].OutputTask = playerIdTask;
+            taskInfo.SetParents();
+            taskInfo.Initialize(m_playerView.Index);
 
             m_state.FreeUnits[(KnownVoxelTypes)unit.Data.Type].Remove(unit.Id);
             m_state.BusyUnits[(KnownVoxelTypes)unit.Data.Type].Add(unit.Id, unit);
 
-            m_taskEngine.SubmitTask(rootTask);
+            m_taskEngine.SubmitTask(taskInfo);
 
-            RunningTaskInfo runningTaskInfo = new RunningTaskInfo(type, unit, rootTask.TaskId, time);
-            m_state.TaskIdToTask.Add(rootTask.TaskId, runningTaskInfo);
+            RunningTaskInfo runningTaskInfo = new RunningTaskInfo(type, unit, taskInfo.TaskId, time);
+            m_state.TaskIdToTask.Add(taskInfo.TaskId, runningTaskInfo);
             m_state.UnitIdToTask.Add(unit.Id, runningTaskInfo);
         }
 
         private const float m_thinkInterval = 0.25f;
         private float m_thinkTime = m_thinkInterval;
-        public void Update(float time)
+        public virtual void Update(float time)
         {
             if(time < m_thinkTime)
             {

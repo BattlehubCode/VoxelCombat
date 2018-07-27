@@ -29,6 +29,9 @@ namespace Battlehub.VoxelCombat
         private IVoxelMap m_map;
         private IVoxelGame m_gameState;
         private IPlayerCameraController m_cameraController;
+        private Dictionary<int, TaskInfo> m_activeTasks;
+        private IBotController m_playersBot;
+       
 
         [SerializeField]
         private GameViewport m_viewport;
@@ -53,7 +56,7 @@ namespace Battlehub.VoxelCombat
                     if (Dependencies.GameView != null)
                     {
                         m_cameraController = Dependencies.GameView.GetCameraController(LocalPlayerIndex);
-                    }
+                    }  
                 }
             }
         }
@@ -67,8 +70,9 @@ namespace Battlehub.VoxelCombat
             m_inputManager = Dependencies.InputManager;
             m_map = Dependencies.Map;
             m_gameState = Dependencies.GameState;
+            
 
-            if(m_commandsPanel != null)
+            if (m_commandsPanel != null)
             {
                 m_commandsPanel.Move += OnMove;
                 m_commandsPanel.Attack += OnAttack;
@@ -102,12 +106,31 @@ namespace Battlehub.VoxelCombat
                 m_commandsPanel.Diminish -= OnDiminish;
               //  m_commandsPanel.Closed -= OnClosed;
             }
+
+            if(m_playersBot != null)
+            {
+                m_playersBot.Reset();
+            }
         }
 
         private void Start()
         {
             LocalPlayerIndex = m_viewport.LocalPlayerIndex;
+
+            int playerIndex = m_gameState.LocalToPlayerIndex(LocalPlayerIndex);
+
             m_cameraController = Dependencies.GameView.GetCameraController(LocalPlayerIndex);
+
+            m_playersBot = MatchFactoryCli.CreateBotController(m_gameState.GetPlayer(playerIndex), m_engine.GetClientTaskEngine(playerIndex));
+            m_playersBot.Init();
+
+            SerializedTask[] taskTemplates = m_gameState.GetTaskTemplates(playerIndex);
+            SerializedTaskTemplate[] taskTemplatesData = m_gameState.GetTaskTemplateData(playerIndex);
+            for(int i = 0; i < taskTemplates.Length; ++i)
+            {
+                TaskTemplateType coreTaskType = taskTemplatesData[i].Type;
+                m_playersBot.RegisterTask(coreTaskType, taskTemplates[i]);
+            }
         }
 
         private bool m_wasAButtonDown;
@@ -191,47 +214,36 @@ namespace Battlehub.VoxelCombat
         private void OnAuto(int action)
         {
             int playerIndex = m_gameState.LocalToPlayerIndex(m_localPlayerIndex);
-            TaskTemplateData[] templatesInfo = m_gameState.GetTaskTemplateData(playerIndex);
-            TaskInfo[] taskTemplates = m_gameState.GetTaskTemplates(playerIndex);
-
+            SerializedTaskTemplate[] templatesInfo = m_gameState.GetTaskTemplateData(playerIndex);
             for(int i = 0; i < templatesInfo.Length; ++i)
             {
-                TaskTemplateData templateInfo = templatesInfo[i];
+                SerializedTaskTemplate templateInfo = templatesInfo[i];
                 int index = templateInfo.Index;
                 if(index == action)
                 {
-                    SubmitTaskToClientTaskEngine(playerIndex, taskTemplates[i]);
+                    SubmitTaskToClientTaskEngine(templateInfo.Type);
+                    break;
                 }
             }
         }
 
-        private void SubmitTaskToClientTaskEngine(int playerIndex, TaskInfo template)
+        private void OnTaskStateChanged(TaskInfo taskInfo)
         {
-            ITaskEngine engine = m_engine.GetClientTaskEngine(playerIndex);
-            
+            if(taskInfo.State != TaskState.Active)
+            {
+
+            }
+        }
+
+        private void SubmitTaskToClientTaskEngine(TaskTemplateType templateType)
+        {
+            m_playersBot.Init();
+            int playerIndex = m_gameState.LocalToPlayerIndex(m_localPlayerIndex);
+            IMatchPlayerView playerView = m_gameState.GetPlayerView(playerIndex);
             long[] selection = m_unitSelection.GetSelection(playerIndex, playerIndex);
             for (int i = 0; i < selection.Length; ++i)
             {
-                TaskInputInfo unitIdInput = template.Inputs[0];
-                TaskInputInfo playerIdInput = template.Inputs[1];
-                TaskInfo unitIdTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVal(selection[i]));
-                TaskInfo playerIdTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVal(playerIndex));
-                unitIdInput.OutputTask = unitIdTask;
-                playerIdInput.OutputTask = playerIdTask;
-
-                TaskInfo task = ProtobufSerializer.DeepClone(
-                    TaskInfo.Sequence(
-                        unitIdTask,
-                        playerIdTask,
-                        template
-                    ));
-
-                task.SetParents();
-                task.Initialize(playerIndex);
-
-                engine.TerminateAll();
-                engine.SubmitTask(task);  
-                
+                m_playersBot.SubmitTask(Time.time, templateType, playerView.GetUnit(selection[i]));
             }
         }
 

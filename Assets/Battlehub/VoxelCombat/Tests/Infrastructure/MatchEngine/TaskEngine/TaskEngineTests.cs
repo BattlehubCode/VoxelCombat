@@ -213,8 +213,11 @@ namespace Battlehub.VoxelCombat.Tests
                 {
                     yes, no
                 }, 
-                () =>
+                result =>
                 {
+                    yes = TaskInfo.FindById(yes.TaskId, result);
+                    no = TaskInfo.FindById(no.TaskId, result);
+
                     Assert.AreEqual(TaskState.Completed, yes.State);
                     Assert.IsFalse(yes.IsFailed);
                     Assert.AreEqual(TaskState.Idle, no.State);
@@ -232,8 +235,11 @@ namespace Battlehub.VoxelCombat.Tests
                 {
                     yes, no
                 },
-                () =>
+                result =>
                 {
+                    yes = TaskInfo.FindById(yes.TaskId, result);
+                    no = TaskInfo.FindById(no.TaskId, result);
+
                     Assert.AreEqual(TaskState.Completed, no.State);
                     Assert.IsFalse(no.IsFailed);
                     Assert.AreEqual(TaskState.Idle, yes.State);
@@ -251,8 +257,11 @@ namespace Battlehub.VoxelCombat.Tests
                 {
                     yes, no
                 },
-                () =>
+                result =>
                 {
+                    yes = TaskInfo.FindById(yes.TaskId, result);
+                    no = TaskInfo.FindById(no.TaskId, result);
+
                     Assert.AreEqual(TaskState.Completed, no.State);
                     Assert.IsFalse(no.IsFailed);
                     Assert.AreEqual(TaskState.Idle, yes.State);
@@ -269,8 +278,10 @@ namespace Battlehub.VoxelCombat.Tests
                 {
                     yes
                 },
-                () =>
+                result =>
                 {
+                    yes = TaskInfo.FindById(yes.TaskId, result);
+
                     Assert.AreEqual(TaskState.Completed, yes.State);
                     Assert.IsFalse(yes.IsFailed);
                 });
@@ -286,15 +297,17 @@ namespace Battlehub.VoxelCombat.Tests
                 {
                     yes
                 },
-                () =>
+                result =>
                 {
+                    yes = TaskInfo.FindById(yes.TaskId, result);
                     Assert.AreEqual(TaskState.Idle, yes.State);
                     Assert.IsFalse(yes.IsFailed);
-                }, 0);
+                },
+            0);
         }
 
 
-        public void BranchTaskTest(bool value, TaskInfo[] children, Action done, int correction = 1)
+        public void BranchTaskTest(bool value, TaskInfo[] children, Action<TaskInfo> done, int correction = 1)
         {
             Assert.DoesNotThrow(() =>
             {
@@ -319,7 +332,7 @@ namespace Battlehub.VoxelCombat.Tests
                 Assert.AreEqual(TaskState.Completed, result.State);
                 Assert.IsFalse(result.IsFailed);
                 CleanupCheck(playerId);
-                done();
+                done(result);
                 Assert.Pass();
             });
 
@@ -536,25 +549,26 @@ namespace Battlehub.VoxelCombat.Tests
             const int playerId = 2;
 
             ExpressionInfo expr = ExpressionInfo.PrimitiveVal(true);
-            TaskInfo task = TaskInfo.Repeat
+            TaskInfo task = TaskInfo.Repeat(expr);
+            task.Children = new[]
+            {
+                new TaskInfo(TaskType.TEST_Mock),
+                new TaskInfo(TaskType.TEST_Mock),
+                TaskInfo.Sequence
                 (
-                    expr,
-                    new TaskInfo(TaskType.TEST_Mock),
-                    new TaskInfo(TaskType.TEST_Mock),
-                    TaskInfo.Sequence
-                    (
-                        new TaskInfo(TaskType.TEST_MockImmediate),
-                        TaskInfo.Assert((tb, ti) =>
-                        {
-                            expr.Value = PrimitiveContract.Create(false);
-                            return TaskState.Completed;
-                        }),
-                        TaskInfo.Continue(),
-                        new TaskInfo(TaskType.TEST_Fail)
-                    ),
                     new TaskInfo(TaskType.TEST_MockImmediate),
-                    new TaskInfo(TaskType.TEST_MockImmediate)
-                );
+                    TaskInfo.Assert((tb, ti) =>
+                    {
+                        expr = TaskInfo.FindById(task.TaskId, ti.Root).Expression;
+                        expr.Value = PrimitiveContract.Create(false);
+                        return TaskState.Completed;
+                    }),
+                    TaskInfo.Continue(),
+                    new TaskInfo(TaskType.TEST_Fail)
+                ),
+                new TaskInfo(TaskType.TEST_MockImmediate),
+                new TaskInfo(TaskType.TEST_MockImmediate)
+            };
 
 
             BeginCleanupCheck(playerId);
@@ -633,11 +647,12 @@ namespace Battlehub.VoxelCombat.Tests
             int continueCounter = 0;
             RepeatTaskTest(branchTask, input, 2, 2, childTask =>
             {
-                if(continueTask.TaskId == childTask.TaskId && continueTask.State == TaskState.Active)
+                if(continueTask.TaskId == childTask.TaskId && childTask.State == TaskState.Active)
                 {
                     continueCounter++;
                     if(continueCounter == 1)
                     {
+                        isTrue = TaskInfo.FindById(branchTask.TaskId, childTask.Root).Expression;
                         isTrue.Value = false;
                     }
                 }
@@ -1251,7 +1266,7 @@ namespace Battlehub.VoxelCombat.Tests
                 }
             };
             m_engine.GetTaskEngine(playerIndex).TaskStateChanged += taskStateChangedEventHandler;
-            m_engine.Submit(playerIndex, new TaskCmd(task));
+            m_engine.Submit(playerIndex, new TaskCmd(SerializedTask.FromTaskInfo(task)));
 
             RunEngine();
             Assert.Fail();

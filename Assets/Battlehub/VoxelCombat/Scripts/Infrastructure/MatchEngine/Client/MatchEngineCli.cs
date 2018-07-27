@@ -20,7 +20,7 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// All Players, Local Players, Abilities, Room
         /// </summary>
-        event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateDataArray[], Room> Started;
+        event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> Started;
 
         event MatchEngineCliEvent<RTTInfo> Ping;
         /// <summary>
@@ -47,7 +47,7 @@ namespace Battlehub.VoxelCombat
     {
         private RTTInfo m_rttInfo = new RTTInfo { RTT = 0, RTTMax = 0 };
         public event MatchEngineCliEvent ReadyToStart;
-        public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], TaskInfoArray[], TaskTemplateDataArray[], Room> Started;
+        public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> Started;
         public event MatchEngineCliEvent<RTTInfo> Ping;
 
         public event MatchEngineCliEvent<long, CommandsBundle> ExecuteCommands;
@@ -546,7 +546,7 @@ namespace Battlehub.VoxelCombat
             m_commands.Enqueue(payload);
         }
 
-        private void OnReadyToPlayAll(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] abilities, TaskInfoArray[] taskTemplates, TaskTemplateDataArray[] TaskTemplateData, Room room)
+        private void OnReadyToPlayAll(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] abilities, SerializedTaskArray[] taskTemplates, SerializedTaskTemplatesArray[] TaskTemplateData, Room room)
         { 
             if (m_matchServer.HasError(error))
             {
