@@ -89,12 +89,9 @@ namespace Battlehub.VoxelCombat
 
             if(m_minimap.IsLoaded)
             {
-                OnMinimapLoaded(this, EventArgs.Empty);
+                OnMinimapTextureChanged(this, EventArgs.Empty);
             }
-            else
-            {
-                m_minimap.Loaded += OnMinimapLoaded;
-            }
+            m_minimap.TextureChanged += OnMinimapTextureChanged;
 
             base.Start();
             StartCoroutine(Fit());
@@ -107,7 +104,7 @@ namespace Battlehub.VoxelCombat
 
             if (m_minimap != null)
             {
-                m_minimap.Loaded -= OnMinimapLoaded;
+                m_minimap.TextureChanged -= OnMinimapTextureChanged;
             }
 
             if (m_gameState != null)
@@ -505,7 +502,7 @@ namespace Battlehub.VoxelCombat
             //Debug.Log(m_rootRadius);
         }
 
-        private void OnMinimapLoaded(object sender, EventArgs e)
+        private void OnMinimapTextureChanged(object sender, EventArgs e)
         {
             m_background.texture = m_minimap.Background;
             m_foreground.texture = m_minimap.Foreground;

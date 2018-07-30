@@ -7,6 +7,7 @@ namespace Battlehub.VoxelCombat
     public interface IVoxelMinimapRenderer
     {
         event EventHandler Loaded;
+        event EventHandler TextureChanged;
 
         bool IsLoaded
         {
@@ -46,6 +47,7 @@ namespace Battlehub.VoxelCombat
     public class VoxelMinimapRenderer : MonoBehaviour, IVoxelMinimapRenderer
     {
         public event EventHandler Loaded;
+        public event EventHandler TextureChanged;
         public bool IsLoaded
         {
             get;
@@ -61,6 +63,8 @@ namespace Battlehub.VoxelCombat
         private Color32[] m_bgColors;
         private Color32[] m_fgColors;
         private Color32[][] m_fogOfWarColors = new Color32[GameConstants.MaxPlayers][];
+
+
 
         public Texture2DArray FogOfWar
         {
@@ -91,6 +95,7 @@ namespace Battlehub.VoxelCombat
         private IVoxelMap m_voxelMap;
         private IMaterialsCache m_materialCache;
         private IVoxelGame m_gameState;
+        private IGlobalSettings m_settings;
 
         private void Awake()
         {
@@ -109,21 +114,18 @@ namespace Battlehub.VoxelCombat
             m_groundBaseColor = m_materialCache.GetPrimaryColor(0);
             m_transparentColor = new Color(0, 0, 0, 0);
 
-            if(Dependencies.Settings.DisableFogOfWar)
-            {
-                m_fogOfWarColor = m_transparentColor;
-                m_fogOfWarVisitedColor = m_transparentColor;
-            }
-            else
-            {
-                m_fogOfWarColor = new Color(0.05f, 0.05f, 0.05f, 1);
-                m_fogOfWarVisitedColor = new Color(0, 0, 0, 0.3f);
-            }
-
+            m_settings = Dependencies.Settings;
+            m_settings.DisableFogOfWarChanged += OnDisableFogOfWarChanged;
+            UpdateColors();
         }
 
         private void OnDestroy()
         {
+            if(m_settings != null)
+            {
+                m_settings.DisableFogOfWarChanged -= OnDisableFogOfWarChanged;
+            }
+
             if(m_gameState != null)
             {
                 m_gameState.Started -= OnGameStarted;
@@ -145,13 +147,60 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void OnGameStarted()
+
+        private void UpdateColors()
+        {
+            if (m_settings.DisableFogOfWar)
+            {
+                m_fogOfWarColor = m_transparentColor;
+                m_fogOfWarVisitedColor = m_transparentColor;
+            }
+            else
+            {
+                m_fogOfWarColor = new Color(0.05f, 0.05f, 0.05f, 1);
+                m_fogOfWarVisitedColor = new Color(0, 0, 0, 0.3f);
+            }
+        }
+
+        private void OnDisableFogOfWarChanged()
+        {
+            UpdateColors();
+
+            if (m_bgTexture != null)
+            {
+                Destroy(m_bgTexture);
+            }
+
+            if (m_fgTexture != null)
+            {
+                Destroy(m_fgTexture);
+            }
+
+            if (m_fogOfWarTextures != null)
+            {
+                Destroy(m_fogOfWarTextures);
+            }
+
+            CreateAndSetTextures();
+        }
+
+        private void CreateAndSetTextures()
         {
             CreateTextures();
 
             Shader.SetGlobalTexture("_FogOfWarTex", FogOfWar);
             Shader.SetGlobalInt("_MapWeight", m_voxelMap.Map.Weight);
-       
+
+            if (TextureChanged != null)
+            {
+                TextureChanged(this, EventArgs.Empty);
+            }
+        }
+
+        private void OnGameStarted()
+        {
+            CreateAndSetTextures();
+
             if (Loaded != null)
             {
                 Loaded(this, EventArgs.Empty);

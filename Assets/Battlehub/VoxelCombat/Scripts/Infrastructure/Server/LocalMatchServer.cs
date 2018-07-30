@@ -548,7 +548,7 @@ namespace Battlehub.VoxelCombat
                             abilities[i] = m_abilities[m_room.Players[i]];
                             serializedTasks[i] = m_tasks[m_room.Players[i]];
                             serializedTaskTemplates[i] = m_serializedTaskTemplates[m_room.Players[i]];
-                            if (player.IsBot && player.BotType != BotType.Replay && player.BotType != BotType.Neutral)
+                            if (player.IsActiveBot)
                             {
                                 bots.Add(MatchFactory.CreateBotController(player, m_engine.GetTaskEngine(i)));
                             }
@@ -567,7 +567,15 @@ namespace Battlehub.VoxelCombat
                     }
 
                     RaiseReadyToPlayAll(error, players, abilities, serializedTasks, serializedTaskTemplates);
-                    m_engine.GrantBotCtrl(0);
+                    for(int i = 0; i < players.Length; ++i)
+                    {
+                        if(players[i].IsActiveBot)
+                        {
+                            m_engine.GrantBotCtrl(i);
+                            break;
+                        }
+                    }
+ 
                 });
 
                 m_pingTimer.Ping(clientId);
@@ -779,10 +787,8 @@ namespace Battlehub.VoxelCombat
                         engine.CompletePlayerRegistration();
                  
                         m_prevTickTime = Time.realtimeSinceStartup;
-
                         m_engine = engine;
 
-                     
                         if(callback != null )
                         {
                             callback(error);

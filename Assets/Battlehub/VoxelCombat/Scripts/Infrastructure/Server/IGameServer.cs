@@ -461,6 +461,11 @@ namespace Battlehub.VoxelCombat
             get { return BotType != BotType.None; }
         }
 
+        public bool IsActiveBot
+        {
+            get { return IsBot && BotType != BotType.Neutral && BotType != BotType.Replay; }
+        }
+
         int IPersistentObject.Id //Not Used
         {
             get;

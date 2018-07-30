@@ -102,7 +102,7 @@ namespace Battlehub.VoxelCombat
                 {
                     Handle = "Cancel",
                     Target = InputControlType.Button18,
-                    Source = KeyCodeButton( KeyCode.Escape )
+                    Source = KeyCodeButton( KeyCode.Escape, KeyCode.F10)
                 },
                 new InputControlMapping
                 {
@@ -114,7 +114,7 @@ namespace Battlehub.VoxelCombat
                 {
                     Handle = "Back",
                     Target = InputControlType.Back,
-                    Source = KeyCodeButton( KeyCode.Escape )
+                    Source = KeyCodeButton( KeyCode.Escape, KeyCode.F10)
                 },
 
             };

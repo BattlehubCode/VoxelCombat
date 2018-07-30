@@ -307,6 +307,7 @@ namespace Battlehub.VoxelCombat
         {
             get { return m_job; }
         }
+
                
     }
 }

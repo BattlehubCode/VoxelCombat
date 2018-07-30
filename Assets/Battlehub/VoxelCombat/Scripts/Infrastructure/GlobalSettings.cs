@@ -18,6 +18,9 @@ namespace Battlehub.VoxelCombat
 
     public interface IGlobalSettings
     {
+        event Action DisableFogOfWarChanged;
+        event Action DebugModeChanged;
+
         string GameServerUrl
         {
             get;
@@ -29,6 +32,12 @@ namespace Battlehub.VoxelCombat
         }
 
         string MatchServerUrl
+        {
+            get;
+            set;
+        }
+
+        bool DebugMode
         {
             get;
             set;
@@ -53,6 +62,9 @@ namespace Battlehub.VoxelCombat
 
     public class GlobalSettings : MonoBehaviour, IGlobalSettings
     {
+        public event Action DisableFogOfWarChanged;
+        public event Action DebugModeChanged;
+
         [SerializeField]
         private string m_serverUrl = "ws://localhost:7777";
 
@@ -72,11 +84,32 @@ namespace Battlehub.VoxelCombat
             set { Dependencies.State.SetValue("Battlehub.VoxelCombat.MatchServerUrl", value); }
         }
 
+        public bool DebugMode
+        {
+            get { return PlayerPrefs.GetInt("Battlehub.VoxelCombat.DebugMode", 0) == 1; }
+            set
+            {
+                PlayerPrefs.SetInt("Battlehub.VoxelCombat.DebugMode", value ? 1 : 0);
+                DisableFogOfWar = value;
+                if(DebugModeChanged != null)
+                {
+                    DebugModeChanged();
+                }
+            }
+        }
+
         private bool m_disableFogOfWar = true;
         public bool DisableFogOfWar
         {
             get { return m_disableFogOfWar; }
-            set { m_disableFogOfWar = value; }
+            set
+            {
+                m_disableFogOfWar = value;
+                if(DisableFogOfWarChanged != null)
+                {
+                    DisableFogOfWarChanged();
+                }
+            }
         }
 
         private static Guid m_clientId = Guid.NewGuid();
@@ -90,6 +123,11 @@ namespace Battlehub.VoxelCombat
         public PlayerCamCtrlSettings[] PlayerCamCtrl
         {
             get { return m_playerCamCtrl; }
+        }
+
+        protected void Awake()
+        {
+            DebugMode = DebugMode;
         }
     }
 }

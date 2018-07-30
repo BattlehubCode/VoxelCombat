@@ -26,8 +26,15 @@ namespace Battlehub.VoxelCombat.Tests
         }
 
         public event EventHandler Loaded;
+        public event EventHandler TextureChanged;
+
         public void RaiseLoaded()
         {
+            if(TextureChanged != null)
+            {
+                TextureChanged(this, EventArgs.Empty);
+            }
+
             if(Loaded != null)
             {
                 Loaded(this, EventArgs.Empty);

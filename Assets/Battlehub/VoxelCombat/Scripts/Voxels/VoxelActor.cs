@@ -489,6 +489,8 @@ namespace Battlehub.VoxelCombat
         private void OnMoveCompleted()
         {
             m_movementState.StopMove();
+
+            WriteDebugInfo();
         }
 
         private void OnRotateLeftCompleted()
@@ -514,11 +516,13 @@ namespace Battlehub.VoxelCombat
         private void OnGrowCompleted()
         {
             m_movementState.StopGrow();
+            WriteDebugInfo();
         }
 
         private void OnDiminishCompleted()
         {
             m_movementState.StopDiminish();
+            WriteDebugInfo();
         }
 
 
@@ -739,6 +743,7 @@ namespace Battlehub.VoxelCombat
             m_animateFromPosition = transform.position;
             m_animateToPosition = transform.position;
         }
+
 
     }
 

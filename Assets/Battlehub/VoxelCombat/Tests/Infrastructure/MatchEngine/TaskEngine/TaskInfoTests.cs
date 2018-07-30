@@ -251,11 +251,6 @@ namespace Battlehub.VoxelCombat.Tests
             Assert.AreEqual(taskInfo.TaskId, clone.TaskId);
             Assert.AreEqual(taskInfo.TaskType, TaskType.Branch);
             Assert.AreEqual(taskInfo.TaskType, clone.TaskType);
-            Assert.IsNotNull(clone.Cmd);
-            Assert.AreEqual(taskInfo.Cmd.Code, CmdCode.Nop);
-            Assert.AreEqual(taskInfo.Cmd.Code, clone.Cmd.Code);
-            Assert.AreEqual(taskInfo.Cmd.UnitIndex, clone.Cmd.UnitIndex);
-            Assert.AreEqual(taskInfo.Cmd.Duration, clone.Cmd.Duration);
             Assert.AreEqual(taskInfo.State, clone.State);
             Assert.AreEqual(taskInfo.Parent, clone.Parent);
             Assert.IsNotNull(clone.Expression);

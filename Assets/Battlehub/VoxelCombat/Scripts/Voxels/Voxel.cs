@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Battlehub.VoxelCombat
 {
@@ -21,8 +22,6 @@ namespace Battlehub.VoxelCombat
         public event VoxelActorEvent BeforeDiminishCompleted;
         public event VoxelActorEvent ResizeCompleted;
         //public event VoxelActorEvent ChangeAltitudeCompleted;
-
-
 
         protected void RaiseBeginMove(long tick)
         {
@@ -74,7 +73,12 @@ namespace Battlehub.VoxelCombat
         {
             get { return m_renderer; }
         }
-        
+
+        [SerializeField]
+        protected Canvas m_debugInfoCanvas;
+
+        [SerializeField]
+        protected Text m_debugInfoText;
 
         private IParticleEffectFactory m_effectFactory;
         protected IParticleEffectFactory EffectFactory
@@ -94,6 +98,8 @@ namespace Battlehub.VoxelCombat
         {
             get { return m_gameState; }
         }
+
+        private IGlobalSettings m_settings;
 
         private int m_owner = 0; //unknown
         public int Owner
@@ -230,13 +236,14 @@ namespace Battlehub.VoxelCombat
 
         public void GoToAcquiredState()
         {
-            
             gameObject.SetActive(true);
 
             if (Acquired != null)
             {
                 Acquired(this);
             }
+
+            WriteDebugInfo();
         }
 
       
@@ -275,6 +282,11 @@ namespace Battlehub.VoxelCombat
         
         private void Start()
         {
+            m_settings = Dependencies.Settings;
+
+            OnDebugModeChanged();
+            m_settings.DebugModeChanged += OnDebugModeChanged;
+
             m_gameState = Dependencies.GameState;
             m_voxelFactory = Dependencies.VoxelFactory;
             m_effectFactory = Dependencies.EffectFactory;
@@ -295,6 +307,10 @@ namespace Battlehub.VoxelCombat
 
         private void OnDestroy()
         {
+            if(m_settings != null)
+            {
+                m_settings.DebugModeChanged -= OnDebugModeChanged;
+            }
             OnDestroyOveride();
         }
 
@@ -395,8 +411,6 @@ namespace Battlehub.VoxelCombat
                     m_isChangingHeight = false;
                 }
             }
-
-           
         }
 
         protected virtual float EvalHeight(int height)
@@ -467,7 +481,6 @@ namespace Battlehub.VoxelCombat
         {
             return (m_targetSelection & (1ul << playerIndex)) != 0;
         }
-
 
         private ulong m_selection;
         private List<cakeslice.Outline> m_selectionOutlines;
@@ -722,6 +735,28 @@ namespace Battlehub.VoxelCombat
                     break;
                 default:
                     throw new System.ArgumentException("data.Dir has wrong value " + data.Dir);
+            }
+        }
+
+        protected virtual void OnDebugModeChanged()
+        {
+            if (m_debugInfoCanvas != null)
+            {
+                m_debugInfoCanvas.gameObject.SetActive(m_settings.DebugMode);
+
+                WriteDebugInfo();
+
+            }
+        }
+
+        protected void WriteDebugInfo()
+        {
+            if (m_settings!= null && m_settings.DebugMode && m_voxelData != null)
+            {
+                MapPos pos = Dependencies.Map.Map.GetCellPosition(Root.position, Weight);
+                m_debugInfoText.text = "Id " + m_voxelData.UnitOrAssetIndex + System.Environment.NewLine +
+                                   "Row " + pos.Row + System.Environment.NewLine +
+                                   "Col " + pos.Col;
             }
         }
     }

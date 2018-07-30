@@ -15,7 +15,7 @@ namespace Battlehub.VoxelCombat
         private ButtonsPanel m_consolePanel;
 
         [SerializeField]
-        private ButtonsPanel m_helpPanel;
+        private ButtonsPanel m_settingsPanel;
 
         private IVoxelGame m_gameState;
         private IVoxelInputManager m_inputManager;
@@ -36,7 +36,7 @@ namespace Battlehub.VoxelCombat
                 m_localPlayerIndex = value;
                 m_menuPanel.LocalPlayerIndex = value;
                 m_consolePanel.LocalPlayerIndex = value;
-                m_helpPanel.LocalPlayerIndex = value;
+                m_settingsPanel.LocalPlayerIndex = value;
                 m_resultsPanel.LocalPlayerIndex = value;
 
                 m_eventSystem = Dependencies.EventSystemManager.GetEventSystem(m_localPlayerIndex);
@@ -61,8 +61,8 @@ namespace Battlehub.VoxelCombat
             m_menuPanel.IsOpenedChanged += OnMenuPanelIsOpenedChanged;
             m_menuPanel.Action += OnMenuPanelAction;
 
-            m_helpPanel.IsOpenedChanged += OnHelpIsOpenedChanged;
-            m_helpPanel.Action += OnHelpPanelAction;
+            m_settingsPanel.IsOpenedChanged += OnSettingsIsOpenedChanged;
+            m_settingsPanel.Action += OnSettingsPanelAction;
 
             m_consolePanel.IsOpenedChanged += OnConsoleIsOpenedChanged;
             m_consolePanel.Action += OnConsoleAction;
@@ -92,10 +92,10 @@ namespace Battlehub.VoxelCombat
                 m_menuPanel.Action -= OnMenuPanelAction;
             }
 
-            if(m_helpPanel != null)
+            if(m_settingsPanel != null)
             {
-                m_helpPanel.IsOpenedChanged -= OnHelpIsOpenedChanged;
-                m_helpPanel.Action -= OnHelpPanelAction;
+                m_settingsPanel.IsOpenedChanged -= OnSettingsIsOpenedChanged;
+                m_settingsPanel.Action -= OnSettingsPanelAction;
             }
 
             if(m_consolePanel != null)
@@ -143,7 +143,7 @@ namespace Battlehub.VoxelCombat
                     }
                     m_menuPanel.SetIsOpened(false);
                     m_consolePanel.SetIsOpened(false);
-                    m_helpPanel.SetIsOpened(false);
+                    m_settingsPanel.SetIsOpened(false);
                     m_resultsPanel.SetIsOpened(false);
                 }
             }  
@@ -198,7 +198,7 @@ namespace Battlehub.VoxelCombat
         {
             m_notification.Close();
             m_resultsPanel.SetIsOpened(false, false);
-            m_helpPanel.SetIsOpened(false, false);
+            m_settingsPanel.SetIsOpened(false, false);
             m_consolePanel.SetIsOpened(false, false);
             UpdateIsOpenedState();
         }
@@ -224,7 +224,7 @@ namespace Battlehub.VoxelCombat
                     break;
                 case 3: //help
                     m_menuPanel.SetIsOpened(false);
-                    m_helpPanel.SetIsOpened(true);
+                    m_settingsPanel.SetIsOpened(true);
                     
                     break;
                 case 4: //back to menu
@@ -263,7 +263,7 @@ namespace Battlehub.VoxelCombat
         {
             if(sender.IsOpened)
             {
-                m_helpPanel.SetIsOpened(false, false);
+                m_settingsPanel.SetIsOpened(false, false);
                 m_menuPanel.SetIsOpened(false, false);
                 m_consolePanel.SetIsOpened(false, false);
             }
@@ -289,7 +289,7 @@ namespace Battlehub.VoxelCombat
             {
                 m_resultsPanel.SetIsOpened(false, false);
                 m_menuPanel.SetIsOpened(false, false);
-                m_helpPanel.SetIsOpened(false, false);
+                m_settingsPanel.SetIsOpened(false, false);
             }
             else
             {
@@ -304,7 +304,7 @@ namespace Battlehub.VoxelCombat
             m_consolePanel.SetIsOpened(false);
         }
 
-        private void OnHelpIsOpenedChanged(ButtonsPanel sender)
+        private void OnSettingsIsOpenedChanged(ButtonsPanel sender)
         {
             if(sender.IsOpened)
             {
@@ -320,14 +320,18 @@ namespace Battlehub.VoxelCombat
             UpdateIsOpenedState();
         }
 
-        private void OnHelpPanelAction(ButtonsPanel sender, int code)
+        private void OnSettingsPanelAction(ButtonsPanel sender, int code)
         {
-            m_helpPanel.SetIsOpened(false);
+            if(code == 1)
+            {
+                m_settingsPanel.SetIsOpened(false);
+            }
+            
         }
 
         private void UpdateIsOpenedState()
         {
-            bool isOpened = m_helpPanel.IsOpened || m_resultsPanel.IsOpened || m_menuPanel.IsOpened || m_consolePanel.IsOpened;
+            bool isOpened = m_settingsPanel.IsOpened || m_resultsPanel.IsOpened || m_menuPanel.IsOpened || m_consolePanel.IsOpened;
             if(!isOpened)
             {
                 m_eventSystem.SetSelectedGameObjectOnLateUpdate(null);

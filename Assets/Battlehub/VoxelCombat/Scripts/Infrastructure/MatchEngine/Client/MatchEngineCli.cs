@@ -402,7 +402,7 @@ namespace Battlehub.VoxelCombat
                     for (int i = 0; i < m_bots.Length; ++i)
                     {
                         Player player = m_game.GetPlayer(i);
-                        if (player.IsBot && player.BotType != BotType.Replay && player.BotType != BotType.Neutral)
+                        if (player.IsActiveBot)
                         {
                             IBotController bot = MatchFactoryCli.CreateBotController(player, m_taskEngines[i]);
                             bot.Init();
@@ -521,6 +521,7 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
+               // if(command.Code != )
                 m_pathFinders[playerIndex].Terminate(command.UnitIndex);
             }
             

@@ -101,6 +101,114 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+    public class BotControlManager
+    {
+        private IMatchEngine m_engine;
+        private ITimeService m_time;
+        private Player[] m_players;
+        private Guid[] m_clientIds;
+        private int m_botCtrlIndex = -1;
+        private Guid m_clientId;
+        private float m_pingTime;
+        private const float m_timeout = 5;
+
+        //public bool UseServer
+        //{
+        //    get { return false; }
+        //}
+
+        public BotControlManager(ITimeService time, IMatchEngine engine, Player[] players, Guid[] clientIds)
+        {
+            m_engine = engine;
+            m_time = time;
+            m_players = players;
+            m_clientIds = clientIds;
+        }
+
+        public bool IsActiveBot(int playerIndex)
+        {
+            if (m_players[playerIndex] == null)
+            {
+                return false;
+            }
+            return m_players[playerIndex].IsActiveBot;
+        }
+
+        public bool HasControl(Guid clientId)
+        {
+            return m_clientId == clientId;
+        }
+
+        public void ActivateNext()
+        {
+            if(m_botCtrlIndex >= 0)
+            {
+                Player player = m_players[m_botCtrlIndex];
+                if(player != null)
+                {
+                    m_engine.DenyBotCtrl(m_botCtrlIndex);
+                }
+            }
+
+            bool isActivated = false;
+            for(int i = 0; i < m_players.Length; ++i)
+            {
+                m_botCtrlIndex++;
+                m_botCtrlIndex %= m_players.Length;
+                Player player = m_players[m_botCtrlIndex];
+                if(m_clientId != m_clientIds[m_botCtrlIndex] && player != null && !player.IsBot)
+                {
+                    m_clientId = m_clientIds[m_botCtrlIndex];
+                    m_engine.GrantBotCtrl(m_botCtrlIndex);
+                    m_pingTime = m_time.Time;
+                    isActivated = true;
+                }
+            }
+
+            if(!isActivated)
+            {
+                m_clientId = Guid.Empty;
+                m_botCtrlIndex = -1;
+            }
+        }
+
+        public void Ping(Guid clientId)
+        {
+            if(m_botCtrlIndex < 0)
+            {
+                return;
+            }
+            
+            if(m_clientId == clientId && m_players[m_botCtrlIndex] != null)
+            {
+                m_pingTime = m_time.Time;
+            }
+        }
+
+        public void Update()
+        {
+            if (m_botCtrlIndex < 0)
+            {
+                return;
+            }
+
+            if ((m_time.Time - m_pingTime) > m_timeout)
+            {
+                ActivateNext();
+            }
+        }
+
+        public void Disconnect(int playerIndex)
+        {
+            m_players[playerIndex] = null;
+            if(m_clientIds[playerIndex] == m_clientId)
+            {
+                m_clientId = Guid.Empty;
+            }
+            m_clientIds[playerIndex] = Guid.Empty;
+            
+        }
+    }
    
     public class MatchServerImpl : IMatchServer, ILoop, IMatchServerDiagnostics
     {
@@ -149,6 +257,8 @@ namespace Battlehub.VoxelCombat
         private Player m_neutralPlayer;
         private Guid m_serverIdentity = new Guid(ConfigurationManager.AppSettings["ServerIdentity"]);
 
+        //private readonly List<Player> m_players;
+        private readonly List<Guid> m_clientIds;
         private readonly HashSet<Guid> m_registeredClients;
         private readonly HashSet<Guid> m_readyToPlayClients;
         private readonly Dictionary<Guid, Dictionary<Guid, Player>> m_clientIdToPlayers;
@@ -165,6 +275,7 @@ namespace Battlehub.VoxelCombat
 
         private bool enabled;
         private ITimeService m_time;
+        private BotControlManager m_botControlManager;
 
         public bool IsConnectionStateChanging
         {
@@ -197,9 +308,10 @@ namespace Battlehub.VoxelCombat
             m_readyToPlayClients = new HashSet<Guid>();
             m_clientIdToPlayers = new Dictionary<Guid, Dictionary<Guid, Player>>();
             m_playerToClientId = new Dictionary<Guid, Guid>();
-            for (int i = 0; i < clientIds.Length; ++i)
+            m_clientIds = clientIds.ToList();
+            for (int i = 0; i < m_clientIds.Count; ++i)
             {
-                Guid clientId = clientIds[i];
+                Guid clientId = m_clientIds[i];
                 if (clientId != Guid.Empty)
                 {
                     Dictionary<Guid, Player> idToPlayer;
@@ -229,6 +341,7 @@ namespace Battlehub.VoxelCombat
             if (!m_room.Players.Contains(m_neutralPlayer.Id))
             {
                 m_room.Players.Insert(0, m_neutralPlayer.Id);
+                m_clientIds.Insert(0, Guid.Empty);
             }
 
             m_abilities = new Dictionary<Guid, VoxelAbilities[]>();
@@ -255,7 +368,12 @@ namespace Battlehub.VoxelCombat
         {
             enabled = false;
 
-            m_room.Players.Remove(m_neutralPlayer.Id);
+            int index = m_room.Players.IndexOf(m_neutralPlayer.Id);
+            if(index >= 0)
+            {
+                m_room.Players.RemoveAt(index);
+                m_clientIds.RemoveAt(index);
+            }
 
             if (m_engine != null)
             {
@@ -325,14 +443,19 @@ namespace Battlehub.VoxelCombat
                 {
                     int playerIndex = m_room.Players.IndexOf(playerId);
 
-                    m_room.Players.RemoveAt(playerIndex);
-                    m_players.Remove(playerId);
+                    //m_players.Remove(playerId);
+
+                    m_botControlManager.Disconnect(playerIndex);
+                    
+                    //m_room.Players.RemoveAt(playerIndex);
 
                     Cmd cmd = new Cmd(CmdCode.LeaveRoom, -1);
 
                     //#warning Fix Engine to handle LeaveRoom command without removing PlayerControllers. Just change colors or destroy units
                     if (m_initialized)
                     {
+                        m_botControlManager.ActivateNext();
+
                         m_engine.Submit(playerIndex, cmd);
                     }
                     else
@@ -503,7 +626,7 @@ namespace Battlehub.VoxelCombat
                 callback(error, cmd);
                 return;
             }
-            
+
             if(cmd.Code == CmdCode.LeaveRoom)
             {
                 error.Code = StatusCode.NotAllowed;
@@ -520,12 +643,48 @@ namespace Battlehub.VoxelCombat
                     error.Code = StatusCode.Paused;
                     error.Message = "Match is paused"; 
                 }
+                else if (playerIndex < 0 || playerIndex >= m_room.Players.Count)
+                {
+                    error.Code = StatusCode.NotAllowed;
+                    error.Message = "Wrong player index";
+                }
                 else
                 {
-                    m_engine.Submit(playerIndex, cmd); // if I will use RTT Ticks then it will be possible to reverse order of commands sent by client (which is BAD!)
+                    if(m_botControlManager.IsActiveBot(playerIndex))
+                    {
+                        if (m_botControlManager.HasControl(clientId))
+                        {
+                            m_engine.Submit(playerIndex, cmd); // if I will use RTT Ticks then it will be possible to reverse order of commands sent by client (which is BAD!)
+                        }
+                        else
+                        {
+                            error.Code = StatusCode.NotAuthorized;
+                            error.Message = "Not authorized";
+                        }
+                    }
+                    else
+                    {
+                        Guid playerClientId;
+                        if (m_playerToClientId.TryGetValue(m_room.Players[playerIndex], out playerClientId))
+                        {
+                            if(clientId == playerClientId)
+                            {
+                                m_engine.Submit(playerIndex, cmd);
+                            }
+                            else
+                            {
+                                error.Code = StatusCode.NotAuthorized;
+                                error.Message = "Not authorized";
+                            }
+                        }
+                        else
+                        {
+                            error.Code = StatusCode.NotAuthorized;
+                            error.Message = "Not authorized";
+                        }
+                    }       
                 }
             }
-
             callback(error, cmd);
         }
 
@@ -575,6 +734,11 @@ namespace Battlehub.VoxelCombat
 
             callback(error);
 
+            if(m_botControlManager != null)
+            {
+                m_botControlManager.Ping(clientId);
+            }
+            
             RTTInfo rttInfo = m_pingTimer.Pong (clientId, () => OnPingPongCompleted(error, clientId));
             m_pingTimer.Ping(clientId);
             if (Ping != null)
@@ -583,6 +747,8 @@ namespace Battlehub.VoxelCombat
                 m_pingArgs.Targets = new[] { clientId };
                 Ping(error, m_pingArgs);
             }
+
+
         }
 
         private void OnPingPongCompleted(Error error, Guid clientId)
@@ -607,15 +773,15 @@ namespace Battlehub.VoxelCombat
                 m_initialized = true;
 
                 error.Code = StatusCode.OK;
-                players = new Player[m_room.Players.Count];
+                players = new Player[m_players.Count];
 
                 List<IBotController> bots = new List<IBotController>();
 
                 //Will override or
-                abilities = new VoxelAbilitiesArray[m_room.Players.Count];
-                taskInfo = new SerializedTaskArray[m_room.Players.Count];
-                taskTemplateInfo = new SerializedTaskTemplatesArray[m_room.Players.Count];
-                for (int i = 0; i < m_room.Players.Count; ++i)
+                abilities = new VoxelAbilitiesArray[m_players.Count];
+                taskInfo = new SerializedTaskArray[m_players.Count];
+                taskTemplateInfo = new SerializedTaskTemplatesArray[m_players.Count];
+                for (int i = 0; i < m_players.Count; ++i)
                 {
                     Player player = m_players[m_room.Players[i]];
 
@@ -626,7 +792,7 @@ namespace Battlehub.VoxelCombat
 
                     if (player.IsBot && player.BotType != BotType.Replay)
                     {
-                        //bots.Add(MatchFactory.CreateBotController(player, m_engine, m_engine.BotPathFinder, m_engine.BotTaskRunner));
+                        bots.Add(MatchFactory.CreateBotController(player, m_engine.GetTaskEngine(i)));
                     }
                 }
 
@@ -654,6 +820,13 @@ namespace Battlehub.VoxelCombat
             {
                 ReadyToPlayAll(error, m_readyToPlayAllArgs);
             }
+                        
+            m_botControlManager = new BotControlManager(
+                m_time, 
+                m_engine, 
+                m_room.Players.Select(p => m_players.ContainsKey(p) ? m_players[p] : null).ToArray(),
+                m_clientIds.ToArray());
+            m_botControlManager.ActivateNext();
         }
 
         public void Pause(Guid clientId, bool pause, ServerEventHandler callback)
@@ -899,14 +1072,20 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-
             m_engine.Update();
-           
-            //for (int i = 0; i < m_bots.Length; ++i)
-            //{
-            //    m_bots[i].Update(m_time.Time);
-            //}
 
+            //if(m_botControlManager.UseServer)
+            //{
+                //for (int i = 0; i < m_bots.Length; ++i)
+                //{
+                //    m_bots[i].Update(m_time.Time);
+                //}
+            //}
+            //else
+            {
+                m_botControlManager.Update();
+            }
+            
             FixedUpdate();
         }
 

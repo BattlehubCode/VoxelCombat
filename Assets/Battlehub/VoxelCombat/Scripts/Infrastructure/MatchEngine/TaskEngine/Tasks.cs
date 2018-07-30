@@ -281,7 +281,9 @@ namespace Battlehub.VoxelCombat
             if (m_taskEngine.IsClient)
             {
                 TaskInfo taskInfo = new TaskInfo(m_taskInfo, true);
-                m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, new TaskCmd(SerializedTask.FromTaskInfo(taskInfo)));
+                TaskCmd taskCmd = new TaskCmd(SerializedTask.FromTaskInfo(taskInfo));
+                taskCmd.UnitIndex = m_taskInfo.Cmd.UnitIndex;
+                m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, taskCmd);
             }
             else
             {
@@ -364,7 +366,9 @@ namespace Battlehub.VoxelCombat
             if (m_taskEngine.IsClient)
             {
                 TaskInfo taskInfo = new TaskInfo(m_taskInfo, true);
-                m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, new TaskCmd(SerializedTask.FromTaskInfo(taskInfo)));
+                TaskCmd taskCmd = new TaskCmd(SerializedTask.FromTaskInfo(taskInfo));
+                taskCmd.UnitIndex = m_taskInfo.Cmd.UnitIndex;
+                m_taskEngine.MatchEngine.Submit(m_taskInfo.PlayerIndex, taskCmd);
             }
             else
             {
@@ -498,7 +502,7 @@ namespace Battlehub.VoxelCombat
                 {
                     if (m_taskInfo.State == TaskState.Active)
                     {
-                        UnityEngine.Debug.LogWarning("Path finding should not be termiated when task is in active state");
+                        UnityEngine.Debug.LogWarning("Path finding should not be termiated when task is in active state" + m_taskInfo.ToString());
                         //throw new InvalidOperationException();
                         m_taskInfo.StatusCode = TaskInfo.TaskFailed;
                         m_taskInfo.State = TaskState.Completed;
