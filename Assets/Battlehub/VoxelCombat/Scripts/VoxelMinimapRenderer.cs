@@ -444,6 +444,11 @@ namespace Battlehub.VoxelCombat
 
         public void Move(VoxelData voxelData, Coordinate from, Coordinate to)
         {
+            if(m_settings.DisableFogOfWar)
+            {
+                return;
+            }
+            
             if (from.Weight < GameConstants.MinVoxelActorWeight && to.Weight < GameConstants.MinVoxelActorWeight)
             {
                 return;
@@ -466,6 +471,10 @@ namespace Battlehub.VoxelCombat
 
         public void Spawn(VoxelData voxelData, Coordinate coord)
         {
+            if (m_settings.DisableFogOfWar)
+            {
+                return;
+            }
             if (coord.Weight < GameConstants.MinVoxelActorWeight)
             {
                 return;
@@ -478,6 +487,10 @@ namespace Battlehub.VoxelCombat
 
         public void Die(VoxelData voxelData, Coordinate coord)
         {
+            if (m_settings.DisableFogOfWar)
+            {
+                return;
+            }
             if (coord.Weight < GameConstants.MinVoxelActorWeight)
             {
                 return;
@@ -506,6 +519,10 @@ namespace Battlehub.VoxelCombat
 
         public void ObserveCell(int playerId, MapPos pos, int weight)
         {
+            if (m_settings.DisableFogOfWar)
+            {
+                return;
+            }
             Color32[] colors = m_fogOfWarColors[playerId];
             if(colors == null)
             {
@@ -517,6 +534,10 @@ namespace Battlehub.VoxelCombat
 
         public void IgnoreCell(int playerId, MapPos pos, int weight)
         {
+            if (m_settings.DisableFogOfWar)
+            {
+                return;
+            }
             Color32[] colors = m_fogOfWarColors[playerId];
             if (colors == null)
             {
@@ -529,6 +550,10 @@ namespace Battlehub.VoxelCombat
 
         private void Fill(Color32[] colors, Coordinate coord, Color32 color)
         {
+            if (m_settings.DisableFogOfWar)
+            {
+                return;
+            }
             int size = (1 << coord.Weight) * m_scale; 
             coord = coord.ToWeight(0);
             coord.Row -= m_bounds.Row;

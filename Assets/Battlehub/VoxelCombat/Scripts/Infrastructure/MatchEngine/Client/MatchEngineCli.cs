@@ -61,9 +61,8 @@ namespace Battlehub.VoxelCombat
         private IVoxelGame m_game;
 
         private float m_pauseTime;
-        private float m_prevTickTime;
-        private long m_tick;
-        private readonly Queue<CommandsBundle> m_commands = new Queue<CommandsBundle>();
+        private float m_startTime;
+        private CommandsQueue m_cmdQueue;
         private bool m_isInitialized;
 
         private IPathFinder[] m_pathFinders;
@@ -235,128 +234,69 @@ namespace Battlehub.VoxelCombat
 
         private void OnFixedUpdate()
         {
-            while ((Time.realtimeSinceStartup - m_prevTickTime) >= GameConstants.MatchEngineTick)
+            for (int i = 0; i < m_taskRunners.Length; ++i)
             {
-                for (int i = 0; i < m_taskRunners.Length; ++i)
+                ITaskRunner taskRunner = m_taskRunners[i];
+                if (taskRunner != null)
                 {
-                    ITaskRunner taskRunner = m_taskRunners[i];
-                    if (taskRunner != null)
-                    {
-                        taskRunner.Tick();
-                    }
+                    taskRunner.Tick();
                 }
+            }
 
-                for (int i = 0; i < m_pathFinders.Length; ++i)
+            for (int i = 0; i < m_pathFinders.Length; ++i)
+            {
+                IPathFinder pathFinder = m_pathFinders[i];
+                if (pathFinder != null)
                 {
-                    IPathFinder pathFinder = m_pathFinders[i];
-                    if (pathFinder != null)
-                    {
-                        pathFinder.Tick();
-                    }
+                    pathFinder.Tick();
                 }
+            }
 
+            bool holdOn = false;
+            while (Time.realtimeSinceStartup  >= m_startTime + m_cmdQueue.CurrentTick * GameConstants.MatchEngineTick)
+            {
+                CommandsBundle commands;
 
-                //Exec commands from current tick
-                if (m_commands.Count != 0)
+                long tick;
+                commands = m_cmdQueue.Tick(out tick);
+                if (commands != null)
                 {
                     Error error = new Error(StatusCode.OK);
-                    CommandsBundle commands = m_commands.Peek();
-
-                    if (commands.Tick == m_tick)
-                    {
-                        m_commands.Dequeue();
-
-                        if (ExecuteCommands != null)
-                        {
-                            ExecuteCommands(error, m_tick, commands);
-                        }
-
-                        if (commands.TasksStateInfo != null && commands.TasksStateInfo.Count > 0)
-                        {
-                            HandleTaskStateChanged(commands.TasksStateInfo);
-                        }
-
-                        if (commands.ClientRequests != null && commands.ClientRequests.Count > 0)
-                        {
-                            ProcessRequest(commands.ClientRequests);
-                        }
-                    }
-                    else if (m_tick < (commands.Tick - 8)) //This means the diff between server time and client time > 400ms, so we try to make adjustment
-                    {
-
-                        //current client time is less then server time more than 400ms (server is in future)
-
-                        
-
-#warning DON'T KNOW IF IT'S SAFE TO MAKE SUCH ADJUSTMENT
-                        m_tick++;
-                        Debug.LogWarning("Diff between server time and client time is too high. Probabliy ping is lower then measured initially");
-                    }
-                    else if (m_tick > commands.Tick)
+                    if (commands.Tick < tick)
                     {
                         error.Code = StatusCode.HighPing;
-                        while (commands != null && m_tick > commands.Tick)
-                        {
-                            m_commands.Dequeue();
-
-                            if (ExecuteCommands != null)
-                            {
-                                ExecuteCommands(error, m_tick, commands);
-                            }
-
-                            if (commands.TasksStateInfo != null && commands.TasksStateInfo.Count > 0)
-                            {
-                                HandleTaskStateChanged(commands.TasksStateInfo);
-                            }
-
-                            if (commands.ClientRequests != null && commands.ClientRequests.Count > 0)
-                            {
-                                ProcessRequest(commands.ClientRequests);
-                            }
-
-                            if (m_commands.Count > 0)
-                            {
-                                commands = m_commands.Peek();
-                            }
-                            else
-                            {
-                                commands = null;
-                            }
-                        }
-
-                        if (commands != null && commands.Tick == m_tick)
-                        {
-                            m_commands.Dequeue();
-
-                            error.Code = StatusCode.OK;
-                            if (ExecuteCommands != null)
-                            {
-                                ExecuteCommands(error, m_tick, commands);
-                            }
-
-                            if (commands.TasksStateInfo != null && commands.TasksStateInfo.Count > 0)
-                            {
-                                HandleTaskStateChanged(commands.TasksStateInfo);
-                            }
-
-                            if (commands.ClientRequests != null && commands.ClientRequests.Count > 0)
-                            {
-                                ProcessRequest(commands.ClientRequests);
-                            }
-                        }
+                        holdOn = true;
                     }
-                }
 
-                for (int i = 0; i < m_taskEngines.Length; ++i)
-                {
-                    ITaskEngine taskEngine = m_taskEngines[i];
-                    if (taskEngine != null)
+                    if (ExecuteCommands != null)
                     {
-                        taskEngine.Tick();
+                        ExecuteCommands(error, tick, commands);
+                    }
+
+                    if (commands.TasksStateInfo != null && commands.TasksStateInfo.Count > 0)
+                    {
+                        HandleTaskStateChanged(commands.TasksStateInfo);
+                    }
+
+                    if (commands.ClientRequests != null && commands.ClientRequests.Count > 0)
+                    {
+                        ProcessRequest(commands.ClientRequests);
                     }
                 }
-                m_tick++;
-                m_prevTickTime += GameConstants.MatchEngineTick;
+            }
+
+            for (int i = 0; i < m_taskEngines.Length; ++i)
+            {
+                ITaskEngine taskEngine = m_taskEngines[i];
+                if (taskEngine != null)
+                {
+                    taskEngine.Tick();
+                }
+            }
+
+            if (holdOn)
+            {
+                m_startTime += GameConstants.MatchEngineTick;
             }
         }
 
@@ -498,7 +438,7 @@ namespace Battlehub.VoxelCombat
             enabled = !pause;
             if(enabled)
             {
-                m_prevTickTime += (Time.realtimeSinceStartup - m_pauseTime);
+                m_startTime += (Time.realtimeSinceStartup - m_pauseTime);
             }
             else
             {
@@ -544,7 +484,7 @@ namespace Battlehub.VoxelCombat
                 m_matchServer.Disconnect();
                 return;
             }
-            m_commands.Enqueue(payload);
+            m_cmdQueue.Enqueue(payload);
         }
 
         private void OnReadyToPlayAll(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] abilities, SerializedTaskArray[] taskTemplates, SerializedTaskTemplatesArray[] TaskTemplateData, Room room)
@@ -556,20 +496,27 @@ namespace Battlehub.VoxelCombat
                 return;
             }
       
-            m_prevTickTime = Time.realtimeSinceStartup;
-            if(m_rttInfo.RTT < GameConstants.MatchEngineTick)
+            m_startTime = Time.realtimeSinceStartup;
+            //if(m_rttInfo.RTT < GameConstants.MatchEngineTick)
+            //{
+            //    //In case of low rtt we offset client timer by one tick to the past
+            //    m_prevTickTime += GameConstants.MatchEngineTick;
+            //}
+
+
+            long maxPing = GameConstants.PingTimeout;
+            if(m_rttInfo.RTTMax < maxPing)
             {
-                //In case of low rtt we offset client timer by one tick to the past
-                m_prevTickTime += GameConstants.MatchEngineTick;
+                //set max ping to RTT_MAX?
             }
 
+            m_cmdQueue = new CommandsQueue(maxPing);
             m_isInitialized = true;
 
             m_taskEngines = new ITaskEngine[players.Length];
             m_pathFinders = new IPathFinder[players.Length];
             m_taskRunners = new ITaskRunner[players.Length];
 
-           
             for (int i = 0; i < players.Length; ++i)
             {
                 Player player = players[i];
@@ -640,9 +587,10 @@ namespace Battlehub.VoxelCombat
 
                 if (m_isInitialized)
                 {
-                    Debug.LogWarning("RECONNECT IS NOT TESTED");
-                    enabled = true;
-                    m_prevTickTime = Time.realtimeSinceStartup;
+                    throw new NotSupportedException("RECONNECT IS NOT SUPPORTED");
+                   // Debug.LogWarning("RECONNECT IS NOT TESTED");
+                   // enabled = true;
+                   // m_startTime = Time.realtimeSinceStartup;
                 }
                 else
                 {

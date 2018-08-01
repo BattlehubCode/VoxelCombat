@@ -148,7 +148,7 @@ namespace Battlehub.VoxelCombat
         private readonly Queue<RequestTimeout> m_timeoutQueue = new Queue<RequestTimeout>();
         private readonly Dictionary<int, RequestData> m_pendingRequests = new Dictionary<int, RequestData>();
      
-        public LowProtocol(string serverUrl, float time, float timeout = 30)
+        public LowProtocol(string serverUrl, float time, float timeout = 360)
         {
             m_time = time;
             m_timeout = timeout;
@@ -231,6 +231,10 @@ namespace Battlehub.VoxelCombat
 
         private void OnSockedClosed(ISocket sender)
         {
+#if !SERVER
+            UnityEngine.Debug.Log("Socket closed");
+#endif
+
             IsEnabled = false;
 
             foreach(RequestData data in m_pendingRequests.Values)
@@ -248,6 +252,9 @@ namespace Battlehub.VoxelCombat
 
         private void OnSocketError(ISocket sender, SocketErrorArgs errorArgs)
         {
+            #if !SERVER
+            UnityEngine.Debug.Log("Socket error " + errorArgs.Message + " " + errorArgs.Exception != null ? errorArgs.Exception.ToString() : null);
+            #endif
             if (SocketError != null)
             {
                 SocketError(this, errorArgs);

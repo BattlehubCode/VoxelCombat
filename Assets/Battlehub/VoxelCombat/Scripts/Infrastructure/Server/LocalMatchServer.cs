@@ -518,10 +518,6 @@ namespace Battlehub.VoxelCombat
                     //Some clients will look -50 ms to the past and some clients will look -500 ms or more to the past.
                     //Is this a big deal? Don't know... Further investigation and playtest needed
 
-                    enabled = true;
-                    m_prevTickTime = Time.realtimeSinceStartup;
-                    m_initialized = true;
-
                     m_room = m_gState.GetValue<Room>("LocalGameServer.m_room");
 
                     Player[] players;
@@ -597,6 +593,10 @@ namespace Battlehub.VoxelCombat
             {
                 if (ReadyToPlayAll != null)
                 {
+                    enabled = true;
+                    m_prevTickTime = Time.realtimeSinceStartup;
+                    m_initialized = true;
+
                     ReadyToPlayAll(error, players, m_loggedInPlayers.ToArray(), abilities, serializedTasks, serializedTaskTemplates, m_room);
                 }
             });

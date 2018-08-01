@@ -706,7 +706,11 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            m_minimap.EndUpdate();
+            if (!m_gSettings.DisableFogOfWar)
+            {
+                m_minimap.EndUpdate();
+            }
+            
 
             IsCompleted = isGameCompleted;
         }
