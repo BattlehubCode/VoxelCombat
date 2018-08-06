@@ -8,11 +8,9 @@ namespace Battlehub.VoxelCombat
     public class CommandsQueue 
     {
         private long m_tick;
-        public long CurrentTick
-        {
-            get { return m_tick; }
-        }
-
+        private long m_hold;
+    
+        
         private readonly long m_maxPing;
         private readonly Queue<CommandsBundle> m_commands;
 
@@ -27,7 +25,16 @@ namespace Battlehub.VoxelCombat
             long maxExpectedSrvTick = m_tick + m_maxPing;
             if(maxExpectedSrvTick < command.Tick)
             {
+                Dependencies.Logger.LogWarningFormat("Command arrived too early. Tick {0}, Cmd Tick {1}", m_tick, command.Tick);
                 m_tick = command.Tick - m_maxPing;
+            }
+            else if(command.Tick < m_tick)
+            {
+                Dependencies.Logger.LogWarningFormat("Command arrived too late. Tick {0}, Cmd Tick {1}", m_tick, command.Tick);
+                if (m_hold == 0)
+                {
+                    m_hold = m_tick - command.Tick;
+                }
             }
             m_commands.Enqueue(command);
         }
@@ -46,7 +53,7 @@ namespace Battlehub.VoxelCombat
                 CommandsBundle nextCmd = m_commands.Peek();
                 if(m_tick > nextCmd.Tick)
                 {
-                    cmd = m_commands.Dequeue();
+                    cmd = m_commands.Dequeue(); 
                 }
                 else
                 {
@@ -54,12 +61,27 @@ namespace Battlehub.VoxelCombat
                     {
                         cmd = m_commands.Dequeue();
                     }
-                    m_tick++;
+
+                    if (m_hold == 0)
+                    {
+                        m_tick++;
+                    }
+                    else
+                    {
+                        m_hold--;
+                    }
                 }
             }
             else
             {
-                m_tick++;
+                if (m_hold == 0)
+                {
+                    m_tick++;
+                }
+                else
+                {
+                    m_hold--;
+                }
             }
             
             return cmd;

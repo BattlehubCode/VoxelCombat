@@ -988,7 +988,7 @@ namespace Battlehub.VoxelCombat
         public const int OutOfSync = 6;  //Player submit command that can't be executed because server state changed (For example tried to move to occupied cell)
         public const int NotFound = 8; //Something was not found
         public const int TooMuchLocalPlayers = 9;
-        public const int HighPing = 10; //Ping is too high;
+        public const int Outdated = 10; //Ping is too high;
         public const int Paused = 11; //Game was paused
         public const int NotRegistered = 12;// Client was not registered
         public const int AlreadyJoined = 13;
@@ -1027,7 +1027,7 @@ namespace Battlehub.VoxelCombat
                     return "Too Much Local Players";
                 case TooMuchPlayersInRoom:
                     return "Too Much Players In Room";
-                case HighPing:
+                case Outdated:
                     return "High Ping";
                 case Paused:
                     return "Paused";

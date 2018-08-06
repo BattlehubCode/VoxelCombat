@@ -632,7 +632,7 @@ namespace Battlehub.VoxelCombat
         {
             if(m_engine.HasError(error))
             {
-                if(error.Code != StatusCode.HighPing)
+                if(error.Code != StatusCode.Outdated)
                 {
                     m_notification.ShowError(error);
                     return;
@@ -655,9 +655,9 @@ namespace Battlehub.VoxelCombat
                     continue;
                 }
 
-                if (error.Code == StatusCode.HighPing)
+                if (error.Code == StatusCode.Outdated)
                 {
-                    Debug.LogWarning("Executing cmd with high ping " + serverTick);
+                    Debug.LogWarning("Executing outdated command a little bit faster " + serverTick);
                 }
 
                 IMatchPlayerControllerCli playerController = m_playerControllers[p];

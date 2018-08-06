@@ -262,6 +262,9 @@ namespace Battlehub.VoxelCombat
             while (true)
             {
                 QueuedMessage message = null;
+
+                float iterationStart = Time;
+
                 lock (m_incomingMessages)
                 {
                     if (!m_isMainThreadRunning)
@@ -297,7 +300,7 @@ namespace Battlehub.VoxelCombat
                             OnMessage(message.Sender, message.Message);
                         }
                     }
-                  
+
                     OnTick();
 
                     m_incomingMessagesFrequency.Tick();
@@ -318,6 +321,9 @@ namespace Battlehub.VoxelCombat
                     throw;
 #endif
                 }
+
+                int iterationDuration = (int)((Time - iterationStart) * 1000);
+                Thread.Sleep(Math.Max(1, 35 - iterationDuration));
             }
         }
 

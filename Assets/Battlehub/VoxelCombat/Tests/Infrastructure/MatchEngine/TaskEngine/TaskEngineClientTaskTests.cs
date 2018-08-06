@@ -74,6 +74,8 @@ namespace Battlehub.VoxelCombat.Tests
         protected readonly string TestEnv0 = "test_env_0";
         protected readonly string TestEnv1 = "test_env_1";
 
+       
+
         [UnityTest]
         public IEnumerator InitTestLag()
         {

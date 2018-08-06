@@ -250,6 +250,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelEater.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelSpawner.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelStateMachineBehavior.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Tests\Infrastructure\MatchEngine\TaskEngine\MovementTests.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Tests\Infrastructure\MatchEngine\TaskEngine\TaskEngineClientTaskTests.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Tests\Infrastructure\MatchEngine\TaskEngine\TaskEngineTests.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Tests\Infrastructure\MatchEngine\TaskEngine\TaskInfoTests.cs" />

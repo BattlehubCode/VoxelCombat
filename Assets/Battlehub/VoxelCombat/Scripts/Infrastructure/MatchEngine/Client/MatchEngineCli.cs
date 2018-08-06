@@ -61,7 +61,7 @@ namespace Battlehub.VoxelCombat
         private IVoxelGame m_game;
 
         private float m_pauseTime;
-        private float m_startTime;
+        private float m_nextTickTime;
         private CommandsQueue m_cmdQueue;
         private bool m_isInitialized;
 
@@ -232,7 +232,52 @@ namespace Battlehub.VoxelCombat
             OnFixedUpdate();
         }
 
+
         private void OnFixedUpdate()
+        {
+            if (Time.realtimeSinceStartup < m_nextTickTime)
+            {
+                return;
+            }
+
+            long tick;
+            CommandsBundle commands = m_cmdQueue.Tick(out tick);
+            if (commands != null)
+            {
+                Error error = new Error(StatusCode.OK);
+                if (commands.Tick < tick)
+                {
+                    error.Code = StatusCode.Outdated;
+                }
+                else
+                {
+                    m_nextTickTime += GameConstants.MatchEngineTick;
+                    OnTick();
+                }
+
+                if (ExecuteCommands != null)
+                {
+                    ExecuteCommands(error, tick, commands);
+                }
+
+                if (commands.TasksStateInfo != null && commands.TasksStateInfo.Count > 0)
+                {
+                    HandleTaskStateChanged(commands.TasksStateInfo);
+                }
+
+                if (commands.ClientRequests != null && commands.ClientRequests.Count > 0)
+                {
+                    ProcessRequest(commands.ClientRequests);
+                }
+            }
+            else
+            {
+                m_nextTickTime += GameConstants.MatchEngineTick;
+                OnTick();
+            }
+        }
+
+        private void OnTick()
         {
             for (int i = 0; i < m_taskRunners.Length; ++i)
             {
@@ -252,39 +297,6 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            bool holdOn = false;
-            while (Time.realtimeSinceStartup  >= m_startTime + m_cmdQueue.CurrentTick * GameConstants.MatchEngineTick)
-            {
-                CommandsBundle commands;
-
-                long tick;
-                commands = m_cmdQueue.Tick(out tick);
-                if (commands != null)
-                {
-                    Error error = new Error(StatusCode.OK);
-                    if (commands.Tick < tick)
-                    {
-                        error.Code = StatusCode.HighPing;
-                        holdOn = true;
-                    }
-
-                    if (ExecuteCommands != null)
-                    {
-                        ExecuteCommands(error, tick, commands);
-                    }
-
-                    if (commands.TasksStateInfo != null && commands.TasksStateInfo.Count > 0)
-                    {
-                        HandleTaskStateChanged(commands.TasksStateInfo);
-                    }
-
-                    if (commands.ClientRequests != null && commands.ClientRequests.Count > 0)
-                    {
-                        ProcessRequest(commands.ClientRequests);
-                    }
-                }
-            }
-
             for (int i = 0; i < m_taskEngines.Length; ++i)
             {
                 ITaskEngine taskEngine = m_taskEngines[i];
@@ -292,11 +304,6 @@ namespace Battlehub.VoxelCombat
                 {
                     taskEngine.Tick();
                 }
-            }
-
-            if (holdOn)
-            {
-                m_startTime += GameConstants.MatchEngineTick;
             }
         }
 
@@ -438,7 +445,7 @@ namespace Battlehub.VoxelCombat
             enabled = !pause;
             if(enabled)
             {
-                m_startTime += (Time.realtimeSinceStartup - m_pauseTime);
+                m_nextTickTime += (Time.realtimeSinceStartup - m_pauseTime);
             }
             else
             {
@@ -496,7 +503,6 @@ namespace Battlehub.VoxelCombat
                 return;
             }
       
-            m_startTime = Time.realtimeSinceStartup;
             //if(m_rttInfo.RTT < GameConstants.MatchEngineTick)
             //{
             //    //In case of low rtt we offset client timer by one tick to the past
@@ -505,10 +511,12 @@ namespace Battlehub.VoxelCombat
 
 
             long maxPing = GameConstants.PingTimeout;
-            if(m_rttInfo.RTTMax < maxPing)
+            if(m_rttInfo.RTTMax > maxPing)
             {
+                Debug.LogWarningFormat("Ping is too high {0} ms", m_rttInfo.RTTMax * GameConstants.MatchEngineTick);
                 //set max ping to RTT_MAX?
             }
+            m_nextTickTime = Time.realtimeSinceStartup + Math.Max(0, (maxPing - m_rttInfo.RTTMax) / 4) * GameConstants.MatchEngineTick;
 
             m_cmdQueue = new CommandsQueue(maxPing);
             m_isInitialized = true;
