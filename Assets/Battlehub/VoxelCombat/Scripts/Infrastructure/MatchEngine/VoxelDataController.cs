@@ -585,6 +585,33 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
+        protected virtual CmdResultCode HandleLastStep(VoxelData controlledData, VoxelAbilities abilities, MapRoot map, float mapSize, Coordinate from, Coordinate to, bool isLastStep, bool willDie, bool verbose, out MapCell targetCell)
+        {
+            CmdResultCode result = CanMove(controlledData, abilities, map, mapSize, from, to, isLastStep, false, true, out targetCell);
+            if (result != CmdResultCode.Success)
+            {
+                return result;
+            }
+
+            VoxelData target = map.Get(to);
+            if (target == null || target.Next != null)
+            {
+                MapCell cell = map.Get(to.Row, to.Col, to.Weight);                
+                VoxelData beneath = cell.GetDefaultTargetFor(controlledData.Type, controlledData.Weight, controlledData.Owner, false, out target);
+                if(beneath.Altitude + beneath.Height != to.Altitude)
+                {
+                    result = CmdResultCode.Fail_UnableToMove;
+                }
+            }
+            else if (!target.IsCollapsableBy(controlledData.Type, controlledData.Weight))
+            {
+                targetCell = null;
+                result = CmdResultCode.Fail_UnableToMove;
+            }
+            return result;
+
+        }
+        
         public CmdResultCode Move(Coordinate to, bool isLastStep,
             Action<VoxelData, VoxelData, int, int> eatCallback = null,
             Action<VoxelData, int> collapseCallback = null,
@@ -613,7 +640,7 @@ namespace Battlehub.VoxelCombat
             CmdResultCode result = CmdResultCode.Fail_UnableToMove;
             if(isLastStep)
             {
-                result = CanMove(m_controlledData, m_abilities, m_map, m_mapSize, from, to, isLastStep, false, true, out cell);
+                result = HandleLastStep(m_controlledData, m_abilities, m_map, m_mapSize, from, to, isLastStep, false, true, out cell);
             }
 
             if((result & CmdResultCode.HardFail) == CmdResultCode.HardFail)

@@ -666,8 +666,7 @@ namespace Battlehub.VoxelCombat
         {
             Voxel voxel = m_factory.Acquire(type);
             voxel.transform.position = position;
-
-    
+           
             VoxelData data = m_factory.InstantiateData(type);
             data.Type = type;
 
@@ -679,6 +678,8 @@ namespace Battlehub.VoxelCombat
             data.VoxelRef = voxel;
 
             voxel.ReadFrom(data);
+            voxel.WriteDebugInfo();
+
             return data;
         }
 

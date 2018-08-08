@@ -193,6 +193,11 @@ namespace Battlehub.VoxelCombat
                 callback((int)lvalue + (int)rvalue);
                 return;
             }
+            else if(lvalue is string)
+            {
+                callback(((string)lvalue) + rvalue);
+                return;
+            }
             throw new NotSupportedException();
         }
     }
@@ -422,4 +427,5 @@ namespace Battlehub.VoxelCombat
             callback(taskInfo.Cmd.IsHardFailed);
         }
     }
+
 }

@@ -1993,6 +1993,7 @@ namespace Battlehub.VoxelCombat
                         Voxel voxel = m_factory.Acquire(data.Type);
                         voxel.transform.position = Map.GetWorldPosition(mappos, data.Weight);
                         voxel.ReadFrom(data);
+                        voxel.WriteDebugInfo();
 
                         data.VoxelRef = voxel;
                     }

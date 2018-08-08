@@ -509,12 +509,27 @@ namespace Battlehub.VoxelCombat
 
             Material foregroundMaterial = Instantiate(m_foregroundLayerMaterial);
             foregroundMaterial.SetTexture("_FogOfWarTex", m_minimap.FogOfWar);
-            foregroundMaterial.SetInt("_FogOfWarTexIndex", m_gameState.LocalToPlayerIndex(m_viewport.LocalPlayerIndex));
+            if(m_gameState.IsReplay)
+            {
+                foregroundMaterial.SetInt("_FogOfWarTexIndex", 0);
+            }
+            else
+            {
+                foregroundMaterial.SetInt("_FogOfWarTexIndex", m_gameState.LocalToPlayerIndex(m_viewport.LocalPlayerIndex));
+            }
+            
             m_foreground.material = foregroundMaterial;
 
             Material fogOfWarMaterial = Instantiate(m_fogOfWarMaterial);
             fogOfWarMaterial.SetTexture("_FogOfWarTex", m_minimap.FogOfWar);
-            fogOfWarMaterial.SetInt("_FogOfWarTexIndex", m_gameState.LocalToPlayerIndex(m_viewport.LocalPlayerIndex));
+            if (m_gameState.IsReplay)
+            {
+                fogOfWarMaterial.SetInt("_FogOfWarTexIndex", 0);
+            }
+            else
+            {
+                fogOfWarMaterial.SetInt("_FogOfWarTexIndex", m_gameState.LocalToPlayerIndex(m_viewport.LocalPlayerIndex));
+            }
             m_fogOfWar.material = fogOfWarMaterial;
         }
     }

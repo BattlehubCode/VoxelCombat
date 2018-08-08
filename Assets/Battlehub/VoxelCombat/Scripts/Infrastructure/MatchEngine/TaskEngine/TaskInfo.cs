@@ -77,6 +77,10 @@ namespace Battlehub.VoxelCombat
         TEST_Fail = 1002,
         TEST_Pass = 1003,
         TEST_Assert = 1004,
+        TEST_SearchForWall = 1100,
+        DEBUG_Log = 2000,
+        DEBUG_LogWarning = 2001,
+        DEBUG_LogError = 2002,
     }
 
     public enum TaskState
@@ -1301,6 +1305,54 @@ namespace Battlehub.VoxelCombat
             };
         }
 
+        public static TaskInfo Log(string text)
+        {
+            return new TaskInfo(TaskType.DEBUG_Log)
+            {
+                Expression = ExpressionInfo.PrimitiveVal(text)
+            };
+        }
+
+        public static TaskInfo LogWarning(string text)
+        {
+            return new TaskInfo(TaskType.DEBUG_LogWarning)
+            {
+                Expression = ExpressionInfo.PrimitiveVal(text)
+            };
+        }
+
+        public static TaskInfo LogError(string text)
+        {
+            return new TaskInfo(TaskType.DEBUG_LogError)
+            {
+                Expression = ExpressionInfo.PrimitiveVal(text)
+            };
+        }
+
+        public static TaskInfo Log(ExpressionInfo expr)
+        {
+            return new TaskInfo(TaskType.DEBUG_Log)
+            {
+                Expression = expr
+            };
+        }
+
+        public static TaskInfo LogWarning(ExpressionInfo expr)
+        {
+            return new TaskInfo(TaskType.DEBUG_LogWarning)
+            {
+                Expression = expr
+            };
+        }
+
+        public static TaskInfo LogError(ExpressionInfo expr)
+        {
+            return new TaskInfo(TaskType.DEBUG_LogError)
+            {
+                Expression = expr
+            };
+        }
+
         public static TaskInfo Var()
         {
             return new TaskInfo(TaskType.Nop)
@@ -1365,7 +1417,6 @@ namespace Battlehub.VoxelCombat
                 Children = sequence,
             };
         }
-
 
         public static TaskInfo Repeat(string debugString, ExpressionInfo expression, params TaskInfo[] sequence)
         {
@@ -1572,7 +1623,6 @@ namespace Battlehub.VoxelCombat
 #if DEBUG_OUTPUT
             searchForTask.DebugString = "searchForTask";
 #endif
-
             ExpressionInfo searchForSucceded = ExpressionInfo.TaskSucceded(searchForTask);
 
             TaskInputInfo coordinateInput = new TaskInputInfo(searchForTask, 1);

@@ -322,11 +322,7 @@ namespace Battlehub.VoxelCombat
 
         private void OnSettingsPanelAction(ButtonsPanel sender, int code)
         {
-            if(code == 1)
-            {
-                m_settingsPanel.SetIsOpened(false);
-            }
-            
+            m_settingsPanel.SetIsOpened(false);
         }
 
         private void UpdateIsOpenedState()

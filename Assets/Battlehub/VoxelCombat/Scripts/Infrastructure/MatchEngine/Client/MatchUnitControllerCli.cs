@@ -265,6 +265,7 @@ namespace Battlehub.VoxelCombat
             Voxel voxel = m_voxelFactory.Acquire(voxelData.Type);
             voxel.transform.position = m_voxelMap.GetWorldPosition(mapPos, weight);
             voxel.ReadFrom(voxelData);
+            voxel.WriteDebugInfo();
             voxelData.VoxelRef = voxel;
             return voxel;
         }

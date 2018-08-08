@@ -9,11 +9,11 @@ namespace Battlehub.VoxelCombat
 {
     public interface ILogger
     {
-        void Log(string str);
+        void Log(object str);
         void LogFormat(string str, params object[] args);
-        void LogWarning(string str);
+        void LogWarning(object str);
         void LogWarningFormat(string str, params object[] args);
-        void LogError(string str);
+        void LogError(object str);
         void LogErrorFormat(string str, params object[] args);
     }
 
@@ -21,7 +21,7 @@ namespace Battlehub.VoxelCombat
     public class Logger : ILogger
     {
 #if !SERVER
-        public void Log(string str)
+        public void Log(object str)
         {
             Debug.Log(str);
         }
@@ -31,7 +31,7 @@ namespace Battlehub.VoxelCombat
             Debug.LogFormat(str, args);
         }
 
-        public void LogWarning(string str)
+        public void LogWarning(object str)
         {
             Debug.LogWarning(str);
         }
@@ -41,7 +41,7 @@ namespace Battlehub.VoxelCombat
             Debug.LogWarningFormat(str, args);
         }
 
-        public void LogError(string str)
+        public void LogError(object str)
         {
             Debug.LogError(str);
         }
@@ -51,7 +51,7 @@ namespace Battlehub.VoxelCombat
             Debug.LogErrorFormat(str, args);
         }
 #else
-        public void Log(string str)
+        public void Log(object str)
         {
             Debug.WriteLine(str);
         }
@@ -61,7 +61,7 @@ namespace Battlehub.VoxelCombat
             Debug.WriteLine(str, args);
         }
 
-        public void LogWarning(string str)
+        public void LogWarning(object str)
         {
             Debug.WriteLine("Warning! : " + str);
         }
@@ -71,7 +71,7 @@ namespace Battlehub.VoxelCombat
             Debug.WriteLine("Warning! : " + str, args);
         }
 
-        public void LogError(string str)
+        public void LogError(object str)
         {
             Debug.WriteLine("Error! : " + str);
         }

@@ -74,7 +74,7 @@ namespace Battlehub.VoxelCombat
     public interface ITaskMemory
     {
         bool HasOutput(int scopeId, int taskId, int index);
-        void CreateOutputs(int scopeId, int taskId, int count);
+        void CreateOutputsIfRequired(int scopeId, int taskId, int count);
         void WriteOutput(int scopeId, int taskId, int index, object value);
         object ReadOutput(int scopeId, int taskId, int index);
         void DestroyScope(int scopeId);
@@ -132,10 +132,19 @@ namespace Battlehub.VoxelCombat
             return true;
         }
 
-        public void CreateOutputs(int scopeId, int taskId, int count)
+        public void CreateOutputsIfRequired(int scopeId, int taskId, int count)
         {
             Dictionary<int, object[]> scope = CreateScope(scopeId);
-            scope[taskId] = new object[count];
+            object[] outputs;
+            if(!scope.TryGetValue(taskId, out outputs))
+            {
+                scope[taskId] = new object[count];
+            }
+            else if(outputs.Length != count)
+            {
+                Array.Resize(ref outputs, count);
+                scope[taskId] = outputs;
+            }
         }
 
         public object ReadOutput(int scopeId, int taskId, int index)
@@ -398,7 +407,11 @@ namespace Battlehub.VoxelCombat
                 { TaskType.TEST_MockImmediate, new TaskPool<MockImmediateTask>(taskPoolSize) },
                 { TaskType.TEST_Fail, new TaskPool<TestFailTask>(taskPoolSize) },
                 { TaskType.TEST_Pass, new TaskPool<TestPassTask>(taskPoolSize) },
-                { TaskType.TEST_Assert, new TaskPool<TestAssertTask>(taskPoolSize) }
+                { TaskType.TEST_Assert, new TaskPool<TestAssertTask>(taskPoolSize) },
+                { TaskType.TEST_SearchForWall, new TaskPool<TestSearchAroundForWallTask>(taskPoolSize) },
+                { TaskType.DEBUG_Log, new TaskPool<LogTask>(taskPoolSize) },
+                { TaskType.DEBUG_LogWarning, new TaskPool<LogWarningTask>(taskPoolSize) },
+                { TaskType.DEBUG_LogError, new TaskPool<LogErrorTask>(taskPoolSize) },
             };
 
             m_cmdExpressionTaskPool = new TaskPool<ExecuteCmdTaskWithExpression>(taskPoolSize);

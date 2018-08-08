@@ -88,7 +88,7 @@ namespace Battlehub.VoxelCombat
             if(m_taskInfo.OutputsCount > 0 && m_taskInfo.Parent != null)
             {
                 int scopeId = m_taskInfo.Parent.TaskId;
-                m_taskEngine.Memory.CreateOutputs(scopeId, m_taskInfo.TaskId, m_taskInfo.OutputsCount);
+                m_taskEngine.Memory.CreateOutputsIfRequired(scopeId, m_taskInfo.TaskId, m_taskInfo.OutputsCount);
             }
             #if DEBUG_OUTPUT
             UnityEngine.Debug.Log("Constructing " + m_taskInfo.ToString());
@@ -254,7 +254,54 @@ namespace Battlehub.VoxelCombat
         }
     }
 
- 
+    public class LogTask : TaskBase
+    {
+        protected override void OnTick()
+        {
+            if(m_taskInfo.Expression.IsEvaluating)
+            {
+                return;
+            }
+            m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, str =>
+            {
+                Dependencies.Logger.Log(str);
+                m_taskInfo.State = TaskState.Completed;
+            });
+        }
+    }
+
+    public class LogWarningTask : TaskBase
+    {
+        protected override void OnTick()
+        {
+            if (m_taskInfo.Expression.IsEvaluating)
+            {
+                return;
+            }
+            m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, str =>
+            {
+                Dependencies.Logger.LogWarning(str);
+                m_taskInfo.State = TaskState.Completed;
+            });
+        }
+    }
+
+    public class LogErrorTask : TaskBase
+    {
+        protected override void OnTick()
+        {
+            if (m_taskInfo.Expression.IsEvaluating)
+            {
+                return;
+            }
+            m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, str =>
+            {
+                Dependencies.Logger.LogError(str);
+                m_taskInfo.State = TaskState.Completed;
+            });
+        }
+    }
+
     public class ExecuteCmdTaskWithExpression : TaskBase
     {
         private bool m_running;
@@ -607,13 +654,15 @@ namespace Battlehub.VoxelCombat
             public int m_radius;
             public int m_maxRadius;
             private int m_startRadius;
+            public int m_mapSize;
             
-            public SearchAroundContext(MapPos pos, int weight, int startRadius, int maxRadius)
+            public SearchAroundContext(MapPos pos, int mapSize, int weight, int startRadius, int maxRadius)
             {
                 m_position = pos;
                 m_weight = weight;
                 m_startRadius = startRadius;
                 m_maxRadius = maxRadius;
+                m_mapSize = mapSize;
                 Reset();
             }
 
@@ -653,10 +702,11 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                m_dataController = m_unit.DataController.Clone(); 
+                m_dataController = m_unit.DataController.Clone();
+                int mapSize = m_dataController.Map.GetMapSizeWith(m_unit.Data.Weight);
                 if (ctx == null)
                 {
-                    ctx = new SearchAroundContext(m_unit.Position, m_unit.Data.Weight, StartRadius, GetMaxRadius(m_unit));
+                    ctx = new SearchAroundContext(m_unit.Position, mapSize, m_unit.Data.Weight, StartRadius, GetMaxRadius(m_unit));
                 }
                 m_taskEngine.TaskRunner.Run(unitIndex, -1, ctx, FindSuitableData, FindSuitableDataCompleted, (id, context) =>
                 {
@@ -777,6 +827,11 @@ namespace Battlehub.VoxelCombat
 
             int row = ctx.m_position.Row + ctx.m_deltaRow;
             int col = ctx.m_position.Col + ctx.m_deltaCol;
+
+            if(row < 0 || col < 0 || row >= ctx.m_mapSize || col >= ctx.m_mapSize)
+            {
+                return false;
+            }
 
             int altitude;
             if (GetSuitableData(ctx, unitData, row, col, out altitude))
@@ -914,6 +969,40 @@ namespace Battlehub.VoxelCombat
             return result == CmdResultCode.Success;
         }
     }
+
+    public class TestSearchAroundForWallTask : SearchAroundForTask
+    {
+        protected override int StartRadius
+        {
+            get
+            {
+                return 0;
+            }
+        }
+        protected override bool GetSuitableData(SearchAroundContext ctx, VoxelData unitData, int row, int col, out int altitude)
+        {
+            altitude = int.MinValue;
+            MapCell cell = m_taskEngine.MatchEngine.Map.Get(row, col, ctx.m_weight);
+            if (cell.Last == null)
+            {
+                return false;
+            }
+
+            if(cell.Last.Owner != unitData.Owner)
+            {
+                return false;
+            }
+
+            if (cell.Last.Type != (int)KnownVoxelTypes.Ground)
+            {
+                return false;
+            }
+
+            altitude = cell.Last.Altitude + cell.Last.Height;
+            return true;
+        }
+    }
+
 
     public class ExecuteMoveTask : ExecuteCmdTask
     {

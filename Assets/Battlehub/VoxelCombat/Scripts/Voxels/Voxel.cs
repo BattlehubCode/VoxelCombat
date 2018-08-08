@@ -749,9 +749,9 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        protected void WriteDebugInfo()
+        public void WriteDebugInfo()
         {
-            if (m_settings!= null && m_settings.DebugMode && m_voxelData != null)
+            if (m_settings!= null && m_settings.DebugMode && m_voxelData != null && m_debugInfoText != null)
             {
                 MapPos pos = Dependencies.Map.Map.GetCellPosition(Root.position, Weight);
                 m_debugInfoText.text = "Id " + m_voxelData.UnitOrAssetIndex + System.Environment.NewLine +
