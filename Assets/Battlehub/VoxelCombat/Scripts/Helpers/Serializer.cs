@@ -72,7 +72,5 @@ namespace Battlehub.VoxelCombat
                 return stream.ToArray();
             }
         }
-
-
     }
 }

@@ -514,64 +514,8 @@ namespace Battlehub.VoxelCombat
 
                 RTTInfo rttInfo = m_pingTimer.Pong(clientId, () =>
                 {
-                    //Currently MatchEngine will be launched immediately and it does not care about different RTT for diffierent clients.
-                    //Some clients will look -50 ms to the past and some clients will look -500 ms or more to the past.
-                    //Is this a big deal? Don't know... Further investigation and playtest needed
+                    OnPong(error);
 
-                    m_room = m_gState.GetValue<Room>("LocalGameServer.m_room");
-
-                    Player[] players;
-                    VoxelAbilitiesArray[] abilities;
-                    SerializedTaskArray[] serializedTasks;
-                    SerializedTaskTemplatesArray[] serializedTaskTemplates;
-
-                    if (m_room != null)
-                    {
-                        error.Code = StatusCode.OK;
-                        players = new Player[m_room.Players.Count];
-
-                        List<IBotController> bots = new List<IBotController>();
-
-                        //Will override or
-                        abilities = new VoxelAbilitiesArray[m_room.Players.Count];
-                        serializedTasks = new SerializedTaskArray[m_room.Players.Count];
-                        serializedTaskTemplates = new SerializedTaskTemplatesArray[m_room.Players.Count];
-                        for (int i = 0; i < m_room.Players.Count; ++i)
-                        {
-                            Player player = m_players[m_room.Players[i]];
-
-                            players[i] = player;
-                            abilities[i] = m_abilities[m_room.Players[i]];
-                            serializedTasks[i] = m_tasks[m_room.Players[i]];
-                            serializedTaskTemplates[i] = m_serializedTaskTemplates[m_room.Players[i]];
-                            if (player.IsActiveBot)
-                            {
-                                bots.Add(MatchFactory.CreateBotController(player, m_engine.GetTaskEngine(i)));
-                            }
-                        }
-
-                        m_bots = bots.ToArray();
-                    }
-                    else
-                    {
-                        error.Code = StatusCode.NotFound;
-                        error.Message = "Room not found";
-                        players = new Player[0];
-                        abilities = new VoxelAbilitiesArray[0];
-                        serializedTasks = new SerializedTaskArray[0];
-                        serializedTaskTemplates = new SerializedTaskTemplatesArray[0];
-                    }
-
-                    RaiseReadyToPlayAll(error, players, abilities, serializedTasks, serializedTaskTemplates);
-                    for(int i = 0; i < players.Length; ++i)
-                    {
-                        if(players[i].IsActiveBot)
-                        {
-                            m_engine.GrantBotCtrl(i);
-                            break;
-                        }
-                    }
- 
                 });
 
                 m_pingTimer.Ping(clientId);
@@ -580,6 +524,67 @@ namespace Battlehub.VoxelCombat
                     Ping(error, rttInfo);
                 }
             });
+        }
+
+        private void OnPong(Error error)
+        {
+            //Currently MatchEngine will be launched immediately and it does not care about different RTT for diffierent clients.
+            //Some clients will look -50 ms to the past and some clients will look -500 ms or more to the past.
+            //Is this a big deal? Don't know... Further investigation and playtest needed
+
+            m_room = m_gState.GetValue<Room>("LocalGameServer.m_room");
+
+            Player[] players;
+            VoxelAbilitiesArray[] abilities;
+            SerializedTaskArray[] serializedTasks;
+            SerializedTaskTemplatesArray[] serializedTaskTemplates;
+
+            if (m_room != null)
+            {
+                error.Code = StatusCode.OK;
+                players = new Player[m_room.Players.Count];
+
+                List<IBotController> bots = new List<IBotController>();
+
+                //Will override or
+                abilities = new VoxelAbilitiesArray[m_room.Players.Count];
+                serializedTasks = new SerializedTaskArray[m_room.Players.Count];
+                serializedTaskTemplates = new SerializedTaskTemplatesArray[m_room.Players.Count];
+                for (int i = 0; i < m_room.Players.Count; ++i)
+                {
+                    Player player = m_players[m_room.Players[i]];
+
+                    players[i] = player;
+                    abilities[i] = m_abilities[m_room.Players[i]];
+                    serializedTasks[i] = m_tasks[m_room.Players[i]];
+                    serializedTaskTemplates[i] = m_serializedTaskTemplates[m_room.Players[i]];
+                    if (player.IsActiveBot)
+                    {
+                        bots.Add(MatchFactory.CreateBotController(player, m_engine.GetTaskEngine(i)));
+                    }
+                }
+
+                m_bots = bots.ToArray();
+            }
+            else
+            {
+                error.Code = StatusCode.NotFound;
+                error.Message = "Room not found";
+                players = new Player[0];
+                abilities = new VoxelAbilitiesArray[0];
+                serializedTasks = new SerializedTaskArray[0];
+                serializedTaskTemplates = new SerializedTaskTemplatesArray[0];
+            }
+
+            RaiseReadyToPlayAll(error, players, abilities, serializedTasks, serializedTaskTemplates);
+            for (int i = 0; i < players.Length; ++i)
+            {
+                if (players[i].IsActiveBot)
+                {
+                    m_engine.GrantBotCtrl(i);
+                    break;
+                }
+            }
         }
 
         private void RaiseReadyToPlayAll(Error error, Player[] players, VoxelAbilitiesArray[] abilities, SerializedTaskArray[] serializedTasks, SerializedTaskTemplatesArray[] serializedTaskTemplates)

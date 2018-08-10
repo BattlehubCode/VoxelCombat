@@ -83,9 +83,16 @@ namespace Battlehub.VoxelCombat
 
         private string m_persistentDataPath;
 
+        private static LocalGameServer m_instance;
+
         private void Awake()
         {
-            //m_persistentDataPath = Application.persistentDataPath;
+            if(m_instance != null && m_instance != this)
+            {
+                throw new InvalidOperationException();
+            }
+
+            m_instance = this;
             m_persistentDataPath = Application.streamingAssetsPath;
             Debug.Log(m_persistentDataPath);
 
@@ -105,7 +112,15 @@ namespace Battlehub.VoxelCombat
             }
 
             LoadPlayers();
-            GState.SetValue("LocalGameServer.m_players", m_players);
+            GState.SetValue("LocalGameServer.m_players", m_players); 
+        }
+
+        private void OnDestroy()
+        {
+            if(m_instance == this)
+            {
+                m_instance = null;
+            }
         }
 
         private void OnEnable()
@@ -804,6 +819,11 @@ namespace Battlehub.VoxelCombat
 
         public void CreateBot(Guid clientId, string botName, BotType botType, ServerEventHandler<Guid, Room> callback)
         {
+            if (m_instance != null && m_instance != this)
+            {
+                throw new InvalidOperationException();
+            }
+
             Error error = new Error();
             Room room = null;
             Guid botId = Guid.Empty;

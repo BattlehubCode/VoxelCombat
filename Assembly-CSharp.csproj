@@ -262,6 +262,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Tests\Mocks\ProgressMock.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Tests\Mocks\UnitSelectionMock.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Tests\Mocks\VoxelMapMock.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Tests\ProtobufConcurrentDeserialization.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Tests\TestGameInit.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Tests\VoxelDataTests.cs" />
     <Compile Include="Assets\Battlehub\VoxelExplosion\Scripts\CameraControl.cs" />

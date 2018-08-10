@@ -41,6 +41,9 @@ namespace Battlehub.VoxelCombat
             m_multiplayerButton.onClick.AddListener(OnMultiplayerClick);
             m_replaysButton.onClick.AddListener(OnReplaysClick);
             m_goBackButton.onClick.AddListener(OnGoBack);
+
+            CursorHelper.visible = true;
+            CursorHelper.lockState = CursorLockMode.None;
         }
 
         protected override void OnDestroy()

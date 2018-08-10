@@ -598,7 +598,7 @@ namespace Battlehub.VoxelCombat
             {
                 MapCell cell = map.Get(to.Row, to.Col, to.Weight);                
                 VoxelData beneath = cell.GetDefaultTargetFor(controlledData.Type, controlledData.Weight, controlledData.Owner, false, out target);
-                if(beneath.Altitude + beneath.Height != to.Altitude)
+                if(beneath == null || beneath.Altitude + beneath.Height != to.Altitude)
                 {
                     result = CmdResultCode.Fail_UnableToMove;
                 }

@@ -1204,9 +1204,17 @@ namespace Battlehub.VoxelCombat
         [OnDeserialized]
         public void OnDeserializedMethod(StreamingContext context)
         {
-            SetParent(Root, null);
-            SetRefs(Root);
-            ConnectSiblings();
+            try
+            {
+                SetParent(Root, null);
+                SetRefs(Root);
+                ConnectSiblings();
+            }
+            catch(Exception e)
+            {
+                Debug.LogError(e);
+                throw;
+            }
         }
 
         private void SetRefs(MapCell root)
@@ -1256,6 +1264,10 @@ namespace Battlehub.VoxelCombat
                     for (int c = 0; c < size; ++c)
                     {
                         MapCell cell = Get(r, c, w);
+                        if(cell == null)
+                        {
+                            Debug.LogErrorFormat("cell is null row {0}, col {1}, weight {2}", r, c, w);
+                        }
 
                         if (r + 1 < size)
                         {
