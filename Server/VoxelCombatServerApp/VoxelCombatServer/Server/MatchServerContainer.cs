@@ -105,7 +105,7 @@ namespace Battlehub.VoxelCombat
         {
             m_tickEvent.Error = error;
             m_tickEvent.Args[0].Value = args.Arg;
-            byte[] result = ProtobufSerializer.Serialize(m_tickEvent);
+            byte[] result = m_serializer.Serialize(m_tickEvent);
             BroadcastAll(result);
         }
 
@@ -165,7 +165,7 @@ namespace Battlehub.VoxelCombat
             RemoteCall rpc;
             try
             {
-                rpc = ProtobufSerializer.Deserialize<RemoteCall>(request.Data);
+                rpc = m_serializer.Deserialize<RemoteCall>(request.Data);
             }
             catch (Exception e)
             {

@@ -104,6 +104,8 @@ namespace Battlehub.VoxelCombat
         private IJob m_job;
         private IMatchEngine m_engine;
         private IReplaySystem m_replay;
+        private ProtobufSerializer m_serializer;
+
 
         private float m_pauseTime;
         private float m_prevTickTime;
@@ -141,6 +143,7 @@ namespace Battlehub.VoxelCombat
             }
             m_gState = Dependencies.State;
             m_job = Dependencies.Job;
+            m_serializer = new ProtobufSerializer();
 
             //Adding neutral player to room
             m_neutralPlayer = new Player();
@@ -263,6 +266,7 @@ namespace Battlehub.VoxelCombat
 
         private void OnDestroy()
         {
+            m_serializer = null;
             if(m_gState != null)
             {
                 m_gState.SetValue("LocalGameServer.m_replay", null);
@@ -380,15 +384,33 @@ namespace Battlehub.VoxelCombat
                 m_job.Submit(() =>
                 {
                     error.Code = StatusCode.OK;
+                    ProtobufSerializer serializer = null;
                     try
                     {
-                        byte[] mapDataBytes = File.ReadAllBytes(filePath);
-                        mapData = ProtobufSerializer.Deserialize<MapData>(mapDataBytes);
+                        var pool = Dependencies.Serializer;
+                        if(pool != null)
+                        {
+                            serializer = pool.Acquire();
+                            byte[] mapDataBytes = File.ReadAllBytes(filePath);
+                            mapData = serializer.Deserialize<MapData>(mapDataBytes);
+                        }
+                        
                     }
                     catch (Exception e)
                     {
                         error.Code = StatusCode.UnhandledException;
                         error.Message = e.Message;
+                    }
+                    finally
+                    {
+                        if(serializer != null)
+                        {
+                            var pool = Dependencies.Serializer;
+                            if(pool != null)
+                            {
+                                pool.Release(serializer);
+                            }
+                        }
                     }
 
                     return null;
@@ -425,7 +447,7 @@ namespace Battlehub.VoxelCombat
 
         public void Submit(Guid clientId, int playerIndex, Cmd cmd, ServerEventHandler<Cmd> callback)
         {
-            cmd = ProtobufSerializer.DeepClone(cmd);
+            cmd = m_serializer.DeepClone(cmd);
 
             Error error = new Error();
             error.Code = StatusCode.OK;
@@ -763,7 +785,29 @@ namespace Battlehub.VoxelCombat
                 {
                     m_job.Submit(() =>
                     {
-                        MapRoot mapRoot = ProtobufSerializer.Deserialize<MapRoot>(mapData.Bytes);
+                        ProtobufSerializer serializer = null;
+                        MapRoot mapRoot = null;
+                        try
+                        {
+                            var pool = Dependencies.Serializer;
+                            if(pool != null)
+                            {
+                                serializer = pool.Acquire();
+                                mapRoot = serializer.Deserialize<MapRoot>(mapData.Bytes);
+                            }
+                        }
+                        finally
+                        {
+                            if(serializer != null)
+                            {
+                                var pool = Dependencies.Serializer;
+                                if (pool != null)
+                                {
+                                    pool.Release(serializer);
+                                }
+                            }
+                        }
+                        
                         return mapRoot;
                     },
                     result =>

@@ -20,9 +20,10 @@ namespace Battlehub.VoxelCombat
         private IGameServer m_gameServer;
         private string m_path;
         private string m_matchServerUrl;
-
+        
         private GameServerContainer()
         {
+            
             m_path = HttpContext.Current.Server.MapPath("/Data");
             m_matchServerUrl = ConfigurationManager.AppSettings["MatchServerUrl"];
         }
@@ -122,7 +123,7 @@ namespace Battlehub.VoxelCombat
             RemoteCall rpc;
             try
             {
-                rpc = ProtobufSerializer.Deserialize<RemoteCall>(request.Data);
+                rpc = m_serializer.Deserialize<RemoteCall>(request.Data);
             }
             catch(Exception e)
             {

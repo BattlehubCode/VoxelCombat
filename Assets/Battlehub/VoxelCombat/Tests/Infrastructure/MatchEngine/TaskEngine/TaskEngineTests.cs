@@ -1,12 +1,9 @@
-﻿using UnityEngine.TestTools;
-using NUnit.Framework;
-using System.Collections;
-using UnityEngine;
-using System.Diagnostics;
-using System.IO;
-using System.Collections.Generic;
+﻿using NUnit.Framework;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using UnityEngine;
 
 namespace Battlehub.VoxelCombat.Tests
 {
@@ -17,7 +14,7 @@ namespace Battlehub.VoxelCombat.Tests
         protected MapRoot m_map;
         private float m_prevTickTime;
         private long m_tick;
-
+        private static ProtobufSerializer m_protobufSerializer = new ProtobufSerializer();
         protected const int MAX_TICKS = 1000;
         //4 Players, Depth 6, Flat square, Size 4x4, Cell weight 4 (Map name test_env_0 4 players)
         protected readonly string TestEnv0 = "021ef2f8-789c-44ff-b59b-0f43064c581b.data";
@@ -58,8 +55,8 @@ namespace Battlehub.VoxelCombat.Tests
                 allAbilities[i] = m_abilities[i].ToDictionary(a => a.Type);
             }
 
-            MapData mapData = ProtobufSerializer.Deserialize<MapData>(File.ReadAllBytes(filePath));
-            m_map = ProtobufSerializer.Deserialize<MapRoot>(mapData.Bytes);
+            MapData mapData = m_protobufSerializer.Deserialize<MapData>(File.ReadAllBytes(filePath));
+            m_map = m_protobufSerializer.Deserialize<MapRoot>(mapData.Bytes);
             m_engine = MatchFactory.CreateMatchEngine(m_map, playersCount);
             for (int i = 0; i < m_players.Length; ++i)
             {

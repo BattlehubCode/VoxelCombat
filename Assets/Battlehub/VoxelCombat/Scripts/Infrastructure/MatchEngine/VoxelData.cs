@@ -1212,7 +1212,7 @@ namespace Battlehub.VoxelCombat
             }
             catch(Exception e)
             {
-                Debug.LogError(e);
+                Debug.LogError(e.ToString());
                 throw;
             }
         }
@@ -1264,11 +1264,12 @@ namespace Battlehub.VoxelCombat
                     for (int c = 0; c < size; ++c)
                     {
                         MapCell cell = Get(r, c, w);
+#if !SERVER
                         if(cell == null)
                         {
                             Debug.LogErrorFormat("cell is null row {0}, col {1}, weight {2}", r, c, w);
                         }
-
+#endif
                         if (r + 1 < size)
                         {
                             cell.SiblingPRow = Get(r + 1, c, w);

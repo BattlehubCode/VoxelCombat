@@ -19,9 +19,11 @@ namespace Battlehub.VoxelCombat
         private Action m_call;
         private Action<Error> m_response;
         private ITimeService m_time;
+        private ProtobufSerializer m_serializer;
 
         public MatchServerClient(ITimeService time, string url, Guid roomId)
         {
+            m_serializer = new ProtobufSerializer();
             m_time = time;
             m_url = string.Format("{0}?roomId={1}&identity={2}&cmd=", url, roomId, ServerContainer.ServerIdentity);
         }
@@ -200,7 +202,7 @@ namespace Battlehub.VoxelCombat
 
         private void Call(RemoteCall rpc, Action<Error, RemoteResult> callback)
         {
-            byte[] rpcSerialized = ProtobufSerializer.Serialize(rpc);
+            byte[] rpcSerialized = m_serializer.Serialize(rpc);
             m_protocol.BeginRequest(rpcSerialized, null, (requestError, response, userState) =>
             {
                 RemoteResult result;
@@ -209,7 +211,7 @@ namespace Battlehub.VoxelCombat
                 {
                     try
                     {
-                        result = ProtobufSerializer.Deserialize<RemoteResult>(response);
+                        result = m_serializer.Deserialize<RemoteResult>(response);
                         error = result.Error;
                     }
                     catch (Exception e)

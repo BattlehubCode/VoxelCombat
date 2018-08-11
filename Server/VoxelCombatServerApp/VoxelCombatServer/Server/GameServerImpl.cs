@@ -54,9 +54,11 @@ namespace Battlehub.VoxelCombat
         private readonly string m_matchServerUrl;
         private IPlayerRepository m_playerRepository;
         private ITimeService m_time;
+        private ProtobufSerializer m_serializer;
 
         public GameServerImpl(string persistentDataPath, string matchServerUrl)
         {
+            m_serializer = new ProtobufSerializer();
             m_matchServerUrl = matchServerUrl;
             m_persistentDataPath = persistentDataPath;
             Log = LogManager.GetLogger(GetType());
@@ -696,7 +698,7 @@ namespace Battlehub.VoxelCombat
                 }
 
                 //Relace with async version
-                byte[] mapInfoBytes = ProtobufSerializer.Serialize(mapInfo);
+                byte[] mapInfoBytes = m_serializer.Serialize(mapInfo);
                 File.WriteAllBytes(dataPath + mapInfo.Id + ".info", mapInfoBytes);
                 File.WriteAllBytes(dataPath + mapInfo.Id + ".data", mapData);
             }
@@ -803,7 +805,7 @@ namespace Battlehub.VoxelCombat
                 else
                 {
                     byte[] mapInfoBytes = File.ReadAllBytes(filePath);
-                    MapInfo info = ProtobufSerializer.Deserialize<MapInfo>(mapInfoBytes);
+                    MapInfo info = m_serializer.Deserialize<MapInfo>(mapInfoBytes);
                     callback(error, info);
                 }
                 
@@ -1500,7 +1502,7 @@ namespace Battlehub.VoxelCombat
 
                 MatchServerClient matchServerClient = new MatchServerClient(m_time, m_matchServerUrl, room.Id);
                 Guid roomCreatorClientId = room.CreatorClientId;
-                room = ProtobufSerializer.DeepClone(room);
+                room = m_serializer.DeepClone(room);
                 room.CreatorClientId = roomCreatorClientId;
                 GetPlayers(room.Players.ToArray(), (getPlayersError, players) =>
                 {
@@ -1640,7 +1642,7 @@ namespace Battlehub.VoxelCombat
             }
 
             byte[] replayDataBytes = File.ReadAllBytes(filePath);
-            return ProtobufSerializer.Deserialize<ReplayData>(replayDataBytes);
+            return m_serializer.Deserialize<ReplayData>(replayDataBytes);
         }
 
         private bool ReplayExists(Guid replayId)
@@ -1749,11 +1751,11 @@ namespace Battlehub.VoxelCombat
                         Directory.CreateDirectory(dataPath);
                     }
 
-                    byte[] replayInfoBytes = ProtobufSerializer.Serialize(replayInfo);
+                    byte[] replayInfoBytes = m_serializer.Serialize(replayInfo);
 
                     File.WriteAllBytes(dataPath + replayInfo.Id + ".info", replayInfoBytes);
 
-                    byte[] replayDataBytes = ProtobufSerializer.Serialize(replayData);
+                    byte[] replayDataBytes = m_serializer.Serialize(replayData);
 
                     File.WriteAllBytes(dataPath + replayData.Id + ".data", replayDataBytes);
 

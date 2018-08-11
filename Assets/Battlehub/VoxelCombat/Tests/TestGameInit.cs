@@ -158,7 +158,8 @@ namespace Battlehub.VoxelCombat
                 SupportedModes = GameMode.All
             };
 
-            byte[] bytes = ProtobufSerializer.Serialize(emptyMap);
+            ProtobufSerializer serializer = new ProtobufSerializer();
+            byte[] bytes = serializer.Serialize(emptyMap);
             MapData mapData = new MapData
             {
                 Id = mapInfo.Id,

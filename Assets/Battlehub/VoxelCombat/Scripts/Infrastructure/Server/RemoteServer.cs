@@ -17,6 +17,7 @@ namespace Battlehub.VoxelCombat
 
         private ILowProtocol m_protocol;
         protected IGlobalSettings m_settings;
+        protected ProtobufSerializer m_serializer;
 
         protected abstract string ServerUrl
         {
@@ -25,7 +26,7 @@ namespace Battlehub.VoxelCombat
 
         protected virtual void Awake()
         {
-
+            m_serializer = new ProtobufSerializer();
         }
 
         public void Connect()
@@ -82,6 +83,7 @@ namespace Battlehub.VoxelCombat
   
         protected virtual void OnDestroy()
         {
+            m_serializer = null;
             if (m_protocol != null)
             {
                 m_protocol.Dispose();
@@ -138,7 +140,7 @@ namespace Battlehub.VoxelCombat
 
         protected virtual void OnMessage(ILowProtocol sender, byte[] args)
         {
-            RemoteEvent evt = ProtobufSerializer.Deserialize<RemoteEvent>(args);
+            RemoteEvent evt = m_serializer.Deserialize<RemoteEvent>(args);
             OnRemoteEvent(evt);
         }
 
@@ -196,7 +198,7 @@ namespace Battlehub.VoxelCombat
         protected void Call(RemoteCall rpc, Action<Error, RemoteResult> callback)
         {
             RemoteCall.Proc proc = rpc.Procedure;
-            byte[] rpcSerialized = ProtobufSerializer.Serialize(rpc);
+            byte[] rpcSerialized = m_serializer.Serialize(rpc);
             m_protocol.BeginRequest(rpcSerialized, null, (requestError, response, userState) =>
             {
                 RemoteResult result;
@@ -205,7 +207,7 @@ namespace Battlehub.VoxelCombat
                 {
                     try
                     {
-                        result = ProtobufSerializer.Deserialize<RemoteResult>(response);
+                        result = m_serializer.Deserialize<RemoteResult>(response);
                         error = result.Error;
                     }
                     catch (Exception e)

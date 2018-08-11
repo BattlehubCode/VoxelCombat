@@ -245,7 +245,28 @@ namespace Battlehub.VoxelCombat
             {
                 try
                 {
-                    m_map = ProtobufSerializer.Deserialize<MapRoot>(bytes);
+                    ProtobufSerializer serializer = null;
+                    try
+                    {
+                        var pool = Dependencies.Serializer;
+                        if(pool != null)
+                        {
+                            serializer = pool.Acquire();
+                            m_map = serializer.Deserialize<MapRoot>(bytes);
+                        }
+                    }
+                    finally
+                    {
+                        if (serializer != null)
+                        {
+                            var pool = Dependencies.Serializer;
+                            if(pool != null)
+                            {
+                                pool.Release(serializer);
+                            }
+                        }
+                    }
+
                     CalculateBounds();
                     
                     //how to make sure than no one accessing cameras during background thread job ?
@@ -505,7 +526,29 @@ namespace Battlehub.VoxelCombat
             m_job.Submit(
             () =>
             {
-                byte[] bytes = ProtobufSerializer.Serialize(Map);
+                byte[] bytes = null;
+                ProtobufSerializer serializer = null;
+                try
+                {
+                    var pool = Dependencies.Serializer;
+                    if (pool != null)
+                    {
+                        serializer = pool.Acquire();
+                        bytes = serializer.Serialize(Map);
+                    }
+                }
+                finally
+                {
+                    if(serializer != null)
+                    {
+                        var pool = Dependencies.Serializer;
+                        if (pool != null)
+                        {
+                            pool.Release(serializer);
+                        }
+                    }
+                }
+
                 return bytes;
             },
             result =>

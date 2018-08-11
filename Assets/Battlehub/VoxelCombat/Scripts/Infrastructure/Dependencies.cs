@@ -103,6 +103,11 @@ namespace Battlehub.VoxelCombat
                     m_localGameServer = serverGO.AddComponent<LocalGameServer>();
                 }
             }
+
+            if(m_serializersPool == null)
+            {
+                m_serializersPool = new SerializersPool(10);
+            }
         }
 
         private void OnDestroy()
@@ -132,6 +137,15 @@ namespace Battlehub.VoxelCombat
             m_eventSystemManager = null;
 
             m_gState = null;
+
+            //Don't do it serializers are always required. no need to cleanup
+            //m_serializersPool = null;
+        }
+
+        private static Pool<ProtobufSerializer> m_serializersPool;
+        public static Pool<ProtobufSerializer> Serializer
+        {
+            get { return m_serializersPool; }
         }
 
         private static ILogger m_logger;

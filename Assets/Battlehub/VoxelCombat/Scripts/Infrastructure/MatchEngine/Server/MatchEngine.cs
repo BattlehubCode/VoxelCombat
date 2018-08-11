@@ -632,6 +632,9 @@ namespace Battlehub.VoxelCombat
     {
         public event Action<int, Cmd> OnSubmitted;
 
+        private ProtobufSerializer m_serializer;
+
+
         private bool m_hasNewCommands;
         //private const bool EnableLog = true;
         //public event Action<int, Cmd> OnSubmitted;
@@ -663,6 +666,9 @@ namespace Battlehub.VoxelCombat
 
         public MatchEngine(MapRoot map, int playersCount)
         {
+            m_serializer = new ProtobufSerializer();
+            
+
             m_map = map;
 
             m_players = new IMatchPlayerController[playersCount];
@@ -905,7 +911,7 @@ namespace Battlehub.VoxelCombat
 
             if (m_hasNewCommands)
             {
-                commands = ProtobufSerializer.DeepClone(m_serverCommands);
+                commands = m_serializer.DeepClone(m_serverCommands);
                 if (m_serverCommands.TasksStateInfo.Count > 0)
                 {
                     m_serverCommands.TasksStateInfo.Clear();

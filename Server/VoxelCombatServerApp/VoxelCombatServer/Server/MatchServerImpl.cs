@@ -232,6 +232,7 @@ namespace Battlehub.VoxelCombat
         public event ServerEventHandler<ServerEventArgs<ChatMessage>> ChatMessage;
         private IMatchEngine m_engine;
         private IReplaySystem m_replay;
+        private ProtobufSerializer m_serializer;
 
         private float m_pauseTime;
         private float m_prevTickTime;
@@ -299,6 +300,8 @@ namespace Battlehub.VoxelCombat
 
         public MatchServerImpl(ITimeService timeService, string persistentDataPath, Guid creatorClientId, Room room, Guid[] clientIds, Player[] players, ReplayData replay)
         {
+            m_serializer = new ProtobufSerializer();
+
             m_time = timeService;
             m_persistentDataPath = persistentDataPath;
             m_room = room;
@@ -519,7 +522,7 @@ namespace Battlehub.VoxelCombat
                 {
                     if (!HasError(error))
                     {
-                        mapData = ProtobufSerializer.Deserialize<MapData>(mapDataBytes);
+                        mapData = m_serializer.Deserialize<MapData>(mapDataBytes);
                     }
                 }
                 catch (Exception e)
@@ -961,7 +964,7 @@ namespace Battlehub.VoxelCombat
                 }
                 else
                 {
-                    MapRoot mapRoot = ProtobufSerializer.Deserialize<MapRoot>(mapData.Bytes);
+                    MapRoot mapRoot = m_serializer.Deserialize<MapRoot>(mapData.Bytes);
                     IMatchEngine engine = MatchFactory.CreateMatchEngine(mapRoot, m_room.Players.Count);
 
                     Dictionary<int, VoxelAbilities>[] allAbilities = new Dictionary<int, VoxelAbilities>[m_room.Players.Count];

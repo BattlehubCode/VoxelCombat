@@ -85,14 +85,19 @@ namespace Battlehub.VoxelCombat
 
         private static LocalGameServer m_instance;
 
+        private ProtobufSerializer m_serializer;
+
         private void Awake()
         {
             if(m_instance != null && m_instance != this)
             {
                 throw new InvalidOperationException();
             }
-
+            
             m_instance = this;
+
+            m_serializer = new ProtobufSerializer();
+
             m_persistentDataPath = Application.streamingAssetsPath;
             Debug.Log(m_persistentDataPath);
 
@@ -121,6 +126,8 @@ namespace Battlehub.VoxelCombat
             {
                 m_instance = null;
             }
+
+            m_serializer = null;
         }
 
         private void OnEnable()
@@ -442,7 +449,7 @@ namespace Battlehub.VoxelCombat
                     for (int i = 0; i < filePath.Length; ++i)
                     {
                         byte[] mapInfoBytes = File.ReadAllBytes(filePath[i]);
-                        mapsInfo[i] = ProtobufSerializer.Deserialize<MapInfo>(mapInfoBytes);
+                        mapsInfo[i] = m_serializer.Deserialize<MapInfo>(mapInfoBytes);
                     }
                 }
                 else
@@ -493,11 +500,11 @@ namespace Battlehub.VoxelCombat
                     Directory.CreateDirectory(dataPath);
                 }
 
-                byte[] mapInfoBytes = ProtobufSerializer.Serialize(mapInfo);
+                byte[] mapInfoBytes = m_serializer.Serialize(mapInfo);
 
                 File.WriteAllBytes(dataPath + mapInfo.Id + ".info", mapInfoBytes);
 
-                byte[] mapDataBytes = ProtobufSerializer.Serialize(mapData);
+                byte[] mapDataBytes = m_serializer.Serialize(mapData);
 
                 File.WriteAllBytes(dataPath + mapData.Id + ".data", mapDataBytes);
             }
@@ -552,15 +559,29 @@ namespace Battlehub.VoxelCombat
                 Job.Submit(() =>
                 {
                     error.Code = StatusCode.OK;
+                    ProtobufSerializer serializer = null;
+                    var pool = Dependencies.Serializer;
                     try
                     {
+                        if(pool != null)
+                        {
+                            serializer = pool.Acquire();
+                        }
+
                         byte[] mapDataBytes = File.ReadAllBytes(filePath);
-                        mapData = ProtobufSerializer.Deserialize<MapData>(mapDataBytes);
+                        mapData = serializer.Deserialize<MapData>(mapDataBytes);
                     }
                     catch (Exception e)
                     {
                         error.Code = StatusCode.UnhandledException;
                         error.Message = e.Message;
+                    }
+                    finally
+                    {
+                        if(serializer != null && pool != null)
+                        {
+                            pool.Release(serializer);
+                        }
                     }
 
                     return null;
@@ -582,7 +603,7 @@ namespace Battlehub.VoxelCombat
             }
 
             byte[] mapInfoBytes = File.ReadAllBytes(filePath);
-            return ProtobufSerializer.Deserialize<MapInfo>(mapInfoBytes);
+            return m_serializer.Deserialize<MapInfo>(mapInfoBytes);
         }
 
 
@@ -1062,8 +1083,24 @@ namespace Battlehub.VoxelCombat
 
         private void SavePlayers()
         {
-            byte[] playersData = ProtobufSerializer.Serialize(m_players.Values.Where(p => p.BotType == BotType.None).ToArray());
-            File.WriteAllBytes(m_persistentDataPath + "/players.dat", playersData);
+            var pool = Dependencies.Serializer;
+
+            ProtobufSerializer serializer = null;
+            try
+            {
+                serializer = pool.Acquire();
+                byte[] playersData = serializer.Serialize(m_players.Values.Where(p => p.BotType == BotType.None).ToArray());
+                File.WriteAllBytes(m_persistentDataPath + "/players.dat", playersData);
+            }
+            finally
+            {
+                if(serializer != null)
+                {
+                    pool.Release(serializer);
+                }
+            }
+            
+            
         }
 
         private void LoadPlayers()
@@ -1072,7 +1109,7 @@ namespace Battlehub.VoxelCombat
             if (File.Exists(path))
             {
                 byte[] playersData = File.ReadAllBytes(path);
-                Player[] players = ProtobufSerializer.Deserialize<Player[]>(playersData);
+                Player[] players = m_serializer.Deserialize<Player[]>(playersData);
 
                 m_players = players.ToDictionary(p => p.Id);
             }
@@ -1104,7 +1141,7 @@ namespace Battlehub.VoxelCombat
                     for (int i = 0; i < filePath.Length; ++i)
                     {
                         byte[] replayInfoBytes = File.ReadAllBytes(filePath[i]);
-                        replaysInfo[i] = ProtobufSerializer.Deserialize<ReplayInfo>(replayInfoBytes);
+                        replaysInfo[i] = m_serializer.Deserialize<ReplayInfo>(replayInfoBytes);
                     }
                 }
                 else
@@ -1138,7 +1175,7 @@ namespace Battlehub.VoxelCombat
             }
 
             byte[] replayDataBytes = File.ReadAllBytes(filePath);
-            return ProtobufSerializer.Deserialize<ReplayData>(replayDataBytes);
+            return m_serializer.Deserialize<ReplayData>(replayDataBytes);
         }
 
         public void SetReplay(Guid clientId, Guid id, ServerEventHandler callback)
@@ -1190,11 +1227,11 @@ namespace Battlehub.VoxelCombat
                     Directory.CreateDirectory(dataPath);
                 }
 
-                byte[] replayInfoBytes = ProtobufSerializer.Serialize(replayInfo);
+                byte[] replayInfoBytes = m_serializer.Serialize(replayInfo);
 
                 File.WriteAllBytes(dataPath + replayInfo.Id + ".info", replayInfoBytes);
 
-                byte[] replayDataBytes = ProtobufSerializer.Serialize(replayData);
+                byte[] replayDataBytes = m_serializer.Serialize(replayData);
 
                 File.WriteAllBytes(dataPath + replayData.Id + ".data", replayDataBytes);
 

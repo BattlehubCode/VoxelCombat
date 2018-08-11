@@ -189,7 +189,7 @@ namespace Battlehub.VoxelCombat
 
                 if(mapDataBin != null && !HasError(error))
                 {
-                    mapData = ProtobufSerializer.Deserialize<MapData>(mapDataBin);
+                    mapData = m_serializer.Deserialize<MapData>(mapDataBin);
                 }
 
                 callback(error, mapData);
@@ -217,7 +217,7 @@ namespace Battlehub.VoxelCombat
                     mapsInfo = new MapInfo[mapInfoBin.Length];
                     for (int i = 0; i < mapsInfo.Length; ++i)
                     {
-                        mapsInfo[i] = ProtobufSerializer.Deserialize<MapInfo>(mapInfoBin[i]);
+                        mapsInfo[i] = m_serializer.Deserialize<MapInfo>(mapInfoBin[i]);
                     }
                 }
                
@@ -274,7 +274,7 @@ namespace Battlehub.VoxelCombat
                     replayInfo = new ReplayInfo[replayInfoBin.Length];
                     for (int i = 0; i < replayInfo.Length; ++i)
                     {
-                        replayInfo[i] = ProtobufSerializer.Deserialize<ReplayInfo>(replayInfoBin[i]);
+                        replayInfo[i] = m_serializer.Deserialize<ReplayInfo>(replayInfoBin[i]);
                     }
                 }
                 callback(error, replayInfo);
@@ -505,7 +505,7 @@ namespace Battlehub.VoxelCombat
                 RemoteCall.Proc.UploadMapData,
                 clientId,
                 RemoteArg.Create(mapInfo),
-                RemoteArg.Create(ProtobufSerializer.Serialize(mapData)));
+                RemoteArg.Create(m_serializer.Serialize(mapData)));
 
             Call(rpc, (error, result) => callback(error));
         }

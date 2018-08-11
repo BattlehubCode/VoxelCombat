@@ -93,7 +93,7 @@ namespace Battlehub.VoxelCombat
                 MapData mapData = null;
                 if(mapDataBin != null && !HasError(error))
                 {
-                    mapData = ProtobufSerializer.Deserialize<MapData>(mapDataBin);
+                    mapData = m_serializer.Deserialize<MapData>(mapDataBin);
                 }
 
                 callback(error, mapData);

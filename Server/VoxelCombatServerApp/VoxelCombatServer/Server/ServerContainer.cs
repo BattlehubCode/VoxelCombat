@@ -75,8 +75,11 @@ namespace Battlehub.VoxelCombat
             get { return m_stopwatch.ElapsedMilliseconds / 1000.0f; }
         }
 
+        protected ProtobufSerializer m_serializer;
+
         protected ServerContainer()
         {
+            m_serializer = new ProtobufSerializer();
             Log = LogManager.GetLogger(GetType());
         }
 
@@ -345,7 +348,7 @@ namespace Battlehub.VoxelCombat
         protected void Send(RemoteEvent.Evt evt, Error error, Guid target, params RemoteArg[] args)
         {
             RemoteEvent remoteEvent = new RemoteEvent(evt, error, args);
-            byte[] data = ProtobufSerializer.Serialize(remoteEvent);
+            byte[] data = m_serializer.Serialize(remoteEvent);
 
             lock (m_protocolToClientId)
             {
@@ -365,7 +368,7 @@ namespace Battlehub.VoxelCombat
         public void Broadcast(RemoteEvent.Evt evt, Error error, ServerEventArgs globalArgs, params RemoteArg[] args)
         {
             RemoteEvent remoteEvent = new RemoteEvent(evt, error, args);
-            byte[] result = ProtobufSerializer.Serialize(remoteEvent);
+            byte[] result = m_serializer.Serialize(remoteEvent);
             if (globalArgs.Targets != null && globalArgs.Targets.Length > 0)
             {
                 Broadcast(globalArgs.Targets, result);
@@ -447,7 +450,7 @@ namespace Battlehub.VoxelCombat
         protected void Return(ILowProtocol sender, LowRequestArgs request, Error error, params RemoteArg[] args)
         {
             RemoteResult remoteResult = new RemoteResult(error, args);
-            byte[] result = ProtobufSerializer.Serialize(remoteResult);
+            byte[] result = m_serializer.Serialize(remoteResult);
             EnqueueResponse(sender, request.Id, result);
         }
 
