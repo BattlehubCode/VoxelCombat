@@ -50,10 +50,8 @@ namespace Battlehub.VoxelCombat
 #if UNITY_EDITOR  || UNITY_WSA || SERVER
             try
             {
+                model.MetadataTimeoutMilliseconds *= 1000;
                 model.CompileInPlace();
-
-                int i = 0;
-                i++;
             }
             catch(Exception e)
             {
@@ -69,11 +67,12 @@ namespace Battlehub.VoxelCombat
             return (TData)model.DeepClone(data);
         }
 
-        public TData Deserialize<TData>(byte[] b)
+        public TData Deserialize<TData>(byte[] b) where TData : new()
         {
             using (var stream = new MemoryStream(b))
             {
-                TData deserialized = (TData)model.Deserialize(stream, null, typeof(TData));
+                TData result = new TData();
+                TData deserialized = (TData)model.Deserialize(stream, result, typeof(TData));
                 return deserialized;
             }
         }
@@ -99,14 +98,15 @@ namespace Battlehub.VoxelCombat
         public IEnumerator NewTestScriptWithEnumeratorPasses()
         {
 
-            Thread[] t = new Thread[5];
+            Thread[] t = new Thread[1];
             for (int i = 0; i < t.Length; ++i)
             {
                 t[i] = new Thread(ThreadProc);
-                t[i].Start();
+                t[i].Start(new ProtobufSerializer2());
             }
 
-            
+            //ThreadProc();
+            //Assert.Pass();
 
             while (true)
             {
@@ -119,23 +119,24 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private object m_lock = new object();
+        private static object m_lock = new object();
 
-        private void ThreadProc()
+        private void ThreadProc(object s)
         {
-            ProtobufSerializer2 serializer;
-            lock (m_lock)
-            {
-                serializer = new ProtobufSerializer2();
-            }
-            
-            MapRoot mapRoot = new MapRoot(6);
+            ProtobufSerializer2 serializer = (ProtobufSerializer2)s;
+         
 
+            MapRoot mapRoot = new MapRoot(8);
 
-            for (int i = 0; i < 250; ++i)
+            //for (int i = 0; i < 40; ++i)
+            for (int i = 0; i < 15; ++i)
             {
-                byte[] data = serializer.Serialize(mapRoot);
-                MapRoot clone = serializer.Deserialize<MapRoot>(data);
+                // lock(m_lock)
+                {
+                    byte[] data = serializer.Serialize(mapRoot);
+                    MapRoot clone = serializer.Deserialize<MapRoot>(data);
+                }
+
             }
         }
     }

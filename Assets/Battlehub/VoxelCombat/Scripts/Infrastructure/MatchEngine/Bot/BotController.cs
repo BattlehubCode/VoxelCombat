@@ -219,6 +219,8 @@ namespace Battlehub.VoxelCombat
     {
         public class State
         {
+           
+
             public readonly Dictionary<TaskTemplateType, TaskInfoPool> TaskTemplates = new Dictionary<TaskTemplateType, TaskInfoPool>
             {
                 {
@@ -235,6 +237,7 @@ namespace Battlehub.VoxelCombat
                         );
                     })
                 }
+               
             };
 
             public readonly Dictionary<int, RunningTaskInfo> TaskIdToTask = new Dictionary<int, RunningTaskInfo>();
@@ -434,6 +437,8 @@ namespace Battlehub.VoxelCombat
 
             m_state.FreeUnits[(KnownVoxelTypes)unit.Data.Type].Remove(unit.Id);
             m_state.BusyUnits[(KnownVoxelTypes)unit.Data.Type].Add(unit.Id, unit);
+
+          
 
             m_taskEngine.SubmitTask(taskInfo);
 

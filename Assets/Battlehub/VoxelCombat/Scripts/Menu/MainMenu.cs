@@ -17,6 +17,9 @@ namespace Battlehub.VoxelCombat
         private Button m_replaysButton;
 
         [SerializeField]
+        private Button m_mapEditorButton;
+
+        [SerializeField]
         private Button m_goBackButton;
 
         [SerializeField]
@@ -40,7 +43,9 @@ namespace Battlehub.VoxelCombat
             m_compaignButton.onClick.AddListener(OnCompaignClick);
             m_multiplayerButton.onClick.AddListener(OnMultiplayerClick);
             m_replaysButton.onClick.AddListener(OnReplaysClick);
+            m_mapEditorButton.onClick.AddListener(OnMapEditorClick);
             m_goBackButton.onClick.AddListener(OnGoBack);
+            
 
             CursorHelper.visible = true;
             CursorHelper.lockState = CursorLockMode.None;
@@ -62,6 +67,11 @@ namespace Battlehub.VoxelCombat
             if(m_replaysButton != null)
             {
                 m_replaysButton.onClick.RemoveListener(OnReplaysClick);
+            }
+
+            if(m_mapEditorButton != null)
+            {
+                m_mapEditorButton.onClick.RemoveListener(OnMapEditorClick);
             }
 
             if(m_goBackButton != null)
@@ -129,6 +139,11 @@ namespace Battlehub.VoxelCombat
         private void OnReplaysClick()
         {
             m_navigation.Navigate("ReplaysMenu");
+        }
+
+        private void OnMapEditorClick()
+        {
+            m_navigation.Navigate("MapEditorMenu");
         }
 
         private void OnGoBack()

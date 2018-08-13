@@ -345,7 +345,11 @@ namespace Battlehub.VoxelCombat
                 return false;
             }
 
-            return Height != 0 && //Voxel which will be eaten should have non-zero height
+            return 
+                
+                //Removing this rule
+                //Height != 0 && //Voxel which will be eaten should have non-zero height
+                
                 height + altitude > Altitude && //Eater altitude + height should be greater that voxel altitude
                 Weight < weight && //Eater should have greater weight
                 Type != (int)KnownVoxelTypes.Ground && //Voxel should not be ground
@@ -1173,8 +1177,8 @@ namespace Battlehub.VoxelCombat
         }
     }
 
-    [ProtoContract]
-    public class MapRoot
+    [ProtoContract(SkipConstructor = true)]
+    public class MapRoot 
     {
         [ProtoMember(1)]
         public int Weight;
@@ -1201,8 +1205,8 @@ namespace Battlehub.VoxelCombat
             ConnectSiblings();
         }
 
-        [OnDeserialized]
-        public void OnDeserializedMethod(StreamingContext context)
+        [ProtoAfterDeserialization]
+        public void OnDeserializedMethod(SerializationContext ctx)
         {
             try
             {
@@ -1392,7 +1396,13 @@ namespace Battlehub.VoxelCombat
             }
 
             int size = GetMapSize(currentWeight - withWeight);
-            if(size == 0)
+
+            int testSize = (int)Mathf.Pow(2, currentWeight - withWeight);
+            if(testSize != size)
+            {
+                throw new InvalidOperationException("Something wrong??");
+            }
+            if (size == 0)
             {
                 return null;
             }
@@ -1400,10 +1410,16 @@ namespace Battlehub.VoxelCombat
             int row = i / size;
             int col = j / size;
 
+            int childIndex = row * 2 + col;
+            if (childIndex < 0 || childIndex >= currentParent.Children.Length)
+            {
+                Debug.LogError("out of range");
+            }
+
             i %= size;
             j %= size;
 
-            return Get(i, j, withWeight, currentParent.Children[row * 2 + col], currentWeight - 1);
+            return Get(i, j, withWeight, currentParent.Children[childIndex], currentWeight - 1);
         }
 
         public void ForEachRowInRadius(Coordinate coord, int radius, Action<MapCell, MapPos> action)

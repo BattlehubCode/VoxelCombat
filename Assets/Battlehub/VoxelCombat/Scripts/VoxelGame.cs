@@ -314,7 +314,8 @@ namespace Battlehub.VoxelCombat
             m_engine.ExecuteCommands += OnEngineCommands;
 
             INavigation navigation = Dependencies.Navigation;
-            if (string.IsNullOrEmpty(navigation.PrevSceneName))
+            if (string.IsNullOrEmpty(navigation.PrevSceneName) || 
+                navigation.PrevSceneName == SceneManager.GetActiveScene().name)
             {
                 if(m_remoteGameServer != null)
                 {
@@ -339,7 +340,8 @@ namespace Battlehub.VoxelCombat
         private void Start()
         {
             INavigation navigation = Dependencies.Navigation;
-            if (string.IsNullOrEmpty(navigation.PrevSceneName))
+            if (string.IsNullOrEmpty(navigation.PrevSceneName) ||
+                navigation.PrevSceneName == SceneManager.GetActiveScene().name)
             {
                 if (m_remoteGameServer == null)
                 {
@@ -375,8 +377,6 @@ namespace Battlehub.VoxelCombat
                 m_engine.ExecuteCommands -= OnEngineCommands;
             }
         }
-
-
 
         private void OnConnectionStateChanged(Error error, ValueChangedArgs<bool> payload)
         {
@@ -436,9 +436,13 @@ namespace Battlehub.VoxelCombat
                     return;
                 }
 
+                if(Dependencies.Navigation != null)
+                {
+                    
+                }
                 DontDestroyOnLoadManager.DestroyAll();
                 Dependencies.State.SetValue("Battlehub.VoxelGame.TestGameInitArgs", gameInitArgs);
-                SceneManager.LoadScene("Game");
+                Dependencies.Navigation.Navigate("Game");
             }
         }
 
@@ -554,6 +558,17 @@ namespace Battlehub.VoxelCombat
             {
                 Started();
             }
+
+            INavigation nav = Dependencies.Navigation;
+            if(nav != null && nav.Args != null && nav.Args.ContainsKey("mapeditor"))
+            {
+                m_console.Write("mapeditor");
+                object args = nav.Args["mapeditor"];
+                if(args != null)
+                {
+                    m_console.Write(args.ToString());
+                }
+            }   
         }
 
         private void OnEngineError(Error error)

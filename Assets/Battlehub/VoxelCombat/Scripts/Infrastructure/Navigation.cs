@@ -70,7 +70,7 @@ namespace Battlehub.VoxelCombat
         public string PrevSceneName
         {
             get { return GState.GetValue<string>("Battlehub.VoxelCombat.Navigation.prevScene"); }
-            private set { GState.SetValue("Battlehub.VoxelCombat.Navigation.prevScene", value); }
+            set { GState.SetValue("Battlehub.VoxelCombat.Navigation.prevScene", value); }
         }
 
         public Dictionary<string, object> Args
@@ -120,6 +120,7 @@ namespace Battlehub.VoxelCombat
             Args = args;
             Target = target;
             m_localNavigationStack.Clear();
+            PrevSceneName = SceneManager.GetActiveScene().name;
             SceneManager.LoadScene(scene);
         }
 

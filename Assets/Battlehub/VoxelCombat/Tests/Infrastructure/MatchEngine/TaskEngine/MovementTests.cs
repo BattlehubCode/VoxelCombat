@@ -7,8 +7,6 @@ using UnityEngine.TestTools;
 
 namespace Battlehub.VoxelCombat
 {
-   
-
     public class MovementTests : LocalMatchServerTestBase
     {
         private const string TestEnv2 = "test_env_2";
@@ -138,7 +136,6 @@ namespace Battlehub.VoxelCombat
                 unitNumber,
                 TestEnv4);
         }
-
 
         public IEnumerator TaskTest(
             int playerId,

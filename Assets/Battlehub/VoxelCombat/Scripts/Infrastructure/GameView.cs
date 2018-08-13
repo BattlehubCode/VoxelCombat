@@ -176,7 +176,7 @@ namespace Battlehub.VoxelCombat
 #if UNITY_EDITOR
         private void Update()
         {
-            if (Dependencies.InputManager.GetButtonDown(InputAction.ToggleCursor, -1, false, false))
+            if (Dependencies.InputManager.GetButtonDown(InputAction.ToggleCursor, -1, true, false))
             {
                 CursorHelper.visible = !CursorHelper.visible;
                 if(CursorHelper.visible)

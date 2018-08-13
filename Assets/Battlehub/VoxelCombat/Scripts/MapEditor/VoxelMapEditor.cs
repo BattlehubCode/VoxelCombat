@@ -124,6 +124,9 @@ namespace Battlehub.VoxelCombat
        
             if(value)
             {
+                CursorHelper.visible = true;
+                CursorHelper.lockState = CursorLockMode.None;
+
                 if (GLRenderer.Instance != null)
                 {
                     GLRenderer.Instance.Add(this);

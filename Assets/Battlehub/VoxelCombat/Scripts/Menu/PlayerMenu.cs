@@ -135,7 +135,7 @@ namespace Battlehub.VoxelCombat
 
             if (m_gameState.IsMenuOpened(LocalPlayerIndex))
             {
-                if (m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex, false, false))
+                if (m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex, true, false))
                 {
                     if (m_menuPanel.IsOpened)
                     {

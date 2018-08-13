@@ -315,7 +315,9 @@ namespace Battlehub.VoxelCombat
         private SerializedTask[] CreateDefaultTaskTemplates()
         {
             List<SerializedTask> taskTemplates = new List<SerializedTask>();
-            taskTemplates.Add(SerializedTask.FromTaskInfo(TaskInfo.EatGrowSplit4(new TaskInputInfo(), new TaskInputInfo())));
+                 taskTemplates.Add(SerializedTask.FromTaskInfo(
+                    TaskInfo.EatGrowSplit4(new TaskInputInfo(), new TaskInputInfo())));
+            
             return taskTemplates.ToArray();
         }
 

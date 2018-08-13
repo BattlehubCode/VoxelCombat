@@ -109,7 +109,15 @@ namespace Battlehub.VoxelCombat
                     CameraFogOfWar fogOfWar = m_camera.GetComponent<CameraFogOfWar>();
                     if(fogOfWar != null)
                     {
-                        fogOfWar.PlayerIndex = Dependencies.GameState.LocalToPlayerIndex(m_localPlayerIndex);
+                        if(Dependencies.GameState.IsReplay)
+                        {
+                            fogOfWar.PlayerIndex = 0;
+                        }
+                        else
+                        {
+                            fogOfWar.PlayerIndex = Dependencies.GameState.LocalToPlayerIndex(m_localPlayerIndex);
+                        }
+                        
                     }
                 }
             }

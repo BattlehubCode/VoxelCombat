@@ -472,6 +472,10 @@ namespace Battlehub.VoxelCombat
         /// </summary>
         private void OnBeginMove()
         {
+            if(VoxelData.Weight != Weight)
+            {
+                Debug.LogErrorFormat("VoxeData.Weight {0} != Weight {1}", VoxelData.Weight, Weight);
+            }
             RaiseBeginMove(m_tick);
         }
 

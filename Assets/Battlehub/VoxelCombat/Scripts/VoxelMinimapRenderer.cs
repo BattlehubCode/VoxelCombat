@@ -64,8 +64,6 @@ namespace Battlehub.VoxelCombat
         private Color32[] m_fgColors;
         private Color32[][] m_fogOfWarColors = new Color32[GameConstants.MaxPlayers][];
 
-
-
         public Texture2DArray FogOfWar
         {
             get { return m_fogOfWarTextures; }
@@ -117,6 +115,7 @@ namespace Battlehub.VoxelCombat
             m_settings = Dependencies.Settings;
             m_settings.DisableFogOfWarChanged += OnDisableFogOfWarChanged;
             UpdateColors();
+
         }
 
         private void OnDestroy()
