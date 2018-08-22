@@ -289,6 +289,10 @@ namespace Battlehub.VoxelCombat
         private SerializedTask[][] m_taskTemplates;
         private SerializedTaskTemplate[][] m_TaskTemplateData;
         private Room m_room;
+
+        private int m_matchEngineReconnectAttempts = GameConstants.ReconnectAttemptsCount;
+        private int m_gameServerReconnectAttempts = GameConstants.ReconnectAttemptsCount;
+        private float m_gameServerNextReconnectTime;
         
         private void Awake()
         {
@@ -312,6 +316,8 @@ namespace Battlehub.VoxelCombat
             m_engine.Ping += OnEnginePing;
             m_engine.Paused += OnEnginePaused;
             m_engine.ExecuteCommands += OnEngineCommands;
+            m_engine.Reconnected += OnReconnected;
+            m_engine.ReconnectFailed += OnReconnectFailed;
 
             INavigation navigation = Dependencies.Navigation;
             if (string.IsNullOrEmpty(navigation.PrevSceneName) || 
@@ -334,9 +340,10 @@ namespace Battlehub.VoxelCombat
                 m_gameServer = Dependencies.GameServer;
             }
 
+
             m_progress.IsVisible = true;
         }
-  
+
         private void Start()
         {
             INavigation navigation = Dependencies.Navigation;
@@ -375,6 +382,13 @@ namespace Battlehub.VoxelCombat
                 m_engine.Ping -= OnEnginePing;
                 m_engine.Paused -= OnEnginePaused;
                 m_engine.ExecuteCommands -= OnEngineCommands;
+                m_engine.Reconnected -= OnReconnected;
+                m_engine.ReconnectFailed -= OnReconnectFailed;
+            }
+
+            if(m_gameServer != null)
+            {
+                m_gameServer.ConnectionStateChanged -= OnGameServerReconnected;
             }
         }
 
@@ -396,7 +410,10 @@ namespace Battlehub.VoxelCombat
                 isConnected = m_remoteGameServer.IsConnected;
             }
 
-            TestGameInit.Init(gameInitArgs.MapName, gameInitArgs.PlayersCount, gameInitArgs.BotsCount, isConnected, () => { }, initError => m_notification.ShowError(initError));
+            TestGameInit.Init(gameInitArgs.MapName, gameInitArgs.PlayersCount, gameInitArgs.BotsCount, isConnected, () => 
+            {
+
+            }, initError => m_notification.ShowError(initError));
         }
 
         private void OnConsoleCommand(IConsole console, string cmd, params string[] args)
@@ -569,6 +586,75 @@ namespace Battlehub.VoxelCombat
                     m_console.Write(args.ToString());
                 }
             }   
+
+            if(m_gameServer.IsConnectionStateChanging)
+            {
+                Debug.LogError("Game Server should be connected at this point");
+            }
+
+            m_gameServer.ConnectionStateChanged += OnGameServerReconnected;
+        }
+
+        private void OnGameServerReconnected(Error error, ValueChangedArgs<bool> payload)
+        {
+            if(!m_gameServer.IsConnected)
+            {
+                bool wasConnected = payload.OldValue;
+                if (wasConnected)
+                {
+                    m_gameServerReconnectAttempts = GameConstants.ReconnectAttemptsCount;
+                }
+
+                if(m_gameServerReconnectAttempts > 0)
+                {
+                    Debug.LogWarning("GameServer is not connected. Trying to reconnect. Attempt = " + ((GameConstants.ReconnectAttemptsCount - m_gameServerReconnectAttempts) + 1));
+                    m_gameServer.Connect();
+                    m_gameServerReconnectAttempts--;
+                }
+                else
+                {
+                    m_notification.ShowError("Unable to connect to GameServer");
+                }  
+            }
+        }
+
+        private void OnReconnected(Error error, Player[] payload, Guid[] extra1, VoxelAbilitiesArray[] extra2, SerializedTaskArray[] extra3, SerializedTaskTemplatesArray[] extra4, Room extra5, MapRoot mapRoot)
+        {
+            m_notification.Close();
+            m_voxelMap.IsOn = false;
+            m_voxelMap.Load(mapRoot);
+            m_voxelMap.IsOn = true;
+        }
+
+        private void OnReconnectFailed(Error error)
+        {
+            if(m_engine.HasError(error))
+            {
+                ShowErrorAndTryToLeaveRoomAndNavigateToMenu("Unable to reconnect");
+            }
+            else
+            {
+                m_notification.ShowError("Trying to reconnect.Attempt = " + (GameConstants.ReconnectAttemptsCount - m_matchEngineReconnectAttempts) + 1);
+                TryReconnect();
+            }
+        }
+
+        private void TryReconnect()
+        {
+            if (m_matchEngineReconnectAttempts == 0)
+            {
+                ShowErrorAndTryToLeaveRoomAndNavigateToMenu("Unable to reconnect");
+                return;
+            }
+
+            m_matchEngineReconnectAttempts--;
+            m_engine.Reconnect((reconnectError, isReconnecting) =>
+            {
+                if (!isReconnecting)
+                {
+                    ShowErrorAndTryToLeaveRoomAndNavigateToMenu("Something went wrong. Unable to reconnect");
+                }
+            });
         }
 
         private void OnEngineError(Error error)
@@ -593,14 +679,11 @@ namespace Battlehub.VoxelCombat
                 m_playerControllers = null;
             }
 
-            if (m_engine.HasError(error))
-            {
-                ShowErrorAndTryToLeaveRoomAndNavigateToMenu(error.ToString());
-            }
-            else
-            {
-                ShowErrorAndTryToLeaveRoomAndNavigateToMenu();
-            }
+            m_matchEngineReconnectAttempts = GameConstants.ReconnectAttemptsCount;
+
+            m_notification.ShowError("Engine stopped : " + error.ToString() + ". Trying to reconnect..");
+
+            TryReconnect();           
         }
 
         private void ShowErrorAndTryToLeaveRoomAndNavigateToMenu(string errorMessage = "")

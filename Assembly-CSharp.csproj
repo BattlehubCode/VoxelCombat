@@ -151,16 +151,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\InControlKeyboardProfile.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\IVoxelInputManager.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Log.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\AttackTaskProcessor.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\BotController.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\BotStrategy.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\ChooseTaskProcessor.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\ConvertTaskProcessor.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\EatTaskProcessor.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\GrowTaskProcessor.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\SearchTaskProcessor.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\Split4TaskProcessor.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\SplitTaskProcessor.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Client\CommandsQueue.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Client\MatchEngineCli.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Client\MatchFactoryCli.cs" />

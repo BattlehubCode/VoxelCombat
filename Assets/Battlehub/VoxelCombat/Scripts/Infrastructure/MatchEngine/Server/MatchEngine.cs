@@ -445,7 +445,7 @@ namespace Battlehub.VoxelCombat
     public class ClientRequest 
     {
         [ProtoMember(1)]
-        public int TaskId;
+        public long TaskId;
 
         [ProtoMember(2)]
         public int PlayerIndex;
@@ -458,7 +458,7 @@ namespace Battlehub.VoxelCombat
 
         }
 
-        public ClientRequest(int taskId, int playerIndex, Cmd cmd)
+        public ClientRequest(long taskId, int playerIndex, Cmd cmd)
         {
             PlayerIndex = playerIndex;
             TaskId = taskId;

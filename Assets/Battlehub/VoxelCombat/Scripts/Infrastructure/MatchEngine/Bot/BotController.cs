@@ -181,10 +181,10 @@ namespace Battlehub.VoxelCombat
     {
         public readonly TaskTemplateType Type;
         public readonly IMatchUnitAssetView Target;
-        public readonly int TaskId;
+        public readonly long TaskId;
         public readonly float StartTime;
 
-        public RunningTaskInfo(TaskTemplateType type, IMatchUnitAssetView target, int taskId, float startTime)
+        public RunningTaskInfo(TaskTemplateType type, IMatchUnitAssetView target, long taskId, float startTime)
         {
             Type = type;
             Target = target;
@@ -219,8 +219,6 @@ namespace Battlehub.VoxelCombat
     {
         public class State
         {
-           
-
             public readonly Dictionary<TaskTemplateType, TaskInfoPool> TaskTemplates = new Dictionary<TaskTemplateType, TaskInfoPool>
             {
                 {
@@ -240,7 +238,7 @@ namespace Battlehub.VoxelCombat
                
             };
 
-            public readonly Dictionary<int, RunningTaskInfo> TaskIdToTask = new Dictionary<int, RunningTaskInfo>();
+            public readonly Dictionary<long, RunningTaskInfo> TaskIdToTask = new Dictionary<long, RunningTaskInfo>();
             public readonly Dictionary<long, RunningTaskInfo> UnitIdToTask = new Dictionary<long, RunningTaskInfo>();
             public readonly Dictionary<KnownVoxelTypes, Dictionary<long, IMatchUnitAssetView>> BusyUnits = new Dictionary<KnownVoxelTypes, Dictionary<long, IMatchUnitAssetView>>();
             public readonly Dictionary<KnownVoxelTypes, Dictionary<long, IMatchUnitAssetView>> FreeUnits = new Dictionary<KnownVoxelTypes, Dictionary<long, IMatchUnitAssetView>>();

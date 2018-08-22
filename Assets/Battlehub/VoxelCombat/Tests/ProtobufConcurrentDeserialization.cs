@@ -47,19 +47,11 @@ namespace Battlehub.VoxelCombat
                 }
             };
 
-#if UNITY_EDITOR  || UNITY_WSA || SERVER
-            try
-            {
-                model.MetadataTimeoutMilliseconds *= 1000;
-                model.CompileInPlace();
-            }
-            catch(Exception e)
-            {
-                int i = 0;
-                i++;
-            }
+#if UNITY_EDITOR || UNITY_WSA || SERVER
+            model.MetadataTimeoutMilliseconds *= 1000;
+            model.CompileInPlace();
+
 #endif
-           
         }
 
         public TData DeepClone<TData>(TData data)
@@ -119,8 +111,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private static object m_lock = new object();
-
         private void ThreadProc(object s)
         {
             ProtobufSerializer2 serializer = (ProtobufSerializer2)s;
@@ -134,7 +124,7 @@ namespace Battlehub.VoxelCombat
                 // lock(m_lock)
                 {
                     byte[] data = serializer.Serialize(mapRoot);
-                    MapRoot clone = serializer.Deserialize<MapRoot>(data);
+                    serializer.Deserialize<MapRoot>(data);
                 }
 
             }

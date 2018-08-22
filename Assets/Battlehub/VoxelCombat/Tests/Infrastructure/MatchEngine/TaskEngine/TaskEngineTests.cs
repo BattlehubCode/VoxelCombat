@@ -1240,7 +1240,7 @@ namespace Battlehub.VoxelCombat.Tests
 
         protected void FinializeTest(int playerIndex, TaskInfo task, TaskEngineEvent<TaskInfo> callback, TaskEngineEvent<TaskInfo> childTaskCallback = null)
         {
-            int identity = 0;
+            long identity = 0;
             TaskEngine.GenerateIdentitifers(task, ref identity);
 
             TaskEngineEvent<TaskInfo> taskStateChangedEventHandler = null;

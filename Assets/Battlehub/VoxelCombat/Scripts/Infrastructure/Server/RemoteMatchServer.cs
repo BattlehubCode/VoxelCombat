@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Battlehub.VoxelCombat
 {
@@ -129,6 +130,25 @@ namespace Battlehub.VoxelCombat
                 RemoteArg.Create(TaskTemplateData));
 
             Call(rpc, (error, result) => callback(error));
+        }
+
+        public void GetState(Guid clientId, ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> callback)
+        {
+            RemoteCall rpc = new RemoteCall(
+                RemoteCall.Proc.GetState,
+                clientId);
+
+            Call(rpc, (error, result) =>
+            {
+                callback(error, 
+                    result.Get<Player[]>(0), 
+                    result.Get<Guid[]>(1),
+                    result.Get<VoxelAbilitiesArray[]>(2),
+                    result.Get<SerializedTaskArray[]>(3),
+                    result.Get<SerializedTaskTemplatesArray[]>(4),
+                    result.Get<Room>(5),
+                    result.Get<MapRoot>(6));
+            });
         }
 
         public void Pause(Guid clientId, bool pause, ServerEventHandler callback)

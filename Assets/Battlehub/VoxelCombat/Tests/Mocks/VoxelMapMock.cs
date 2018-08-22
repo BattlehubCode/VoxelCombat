@@ -212,6 +212,45 @@ namespace Battlehub.VoxelCombat.Tests
             return Map.GetWorldPosition(coordinate.MapPos, coordinate.Weight, MapPos.Align.Center, MapPos.Align.Center);
         }
 
+        public void Load(MapRoot mapRoot)
+        {
+            if (m_isBusy)
+            {
+                throw new InvalidOperationException("m_isBusy");
+            }
+
+            m_isBusy = true;
+            m_progressIndicator.IsVisible = true;
+            m_progressIndicator.SetText("LOADING...");
+
+            for (int i = 0; i < m_mapCameras.Count; ++i)
+            {
+                m_mapCameras[i].IsOn = false;
+            }
+
+            m_map = mapRoot;
+            CalculateBounds();
+
+            for (int i = 0; i < m_mapCameras.Count; ++i)
+            {
+                m_mapCameras[i].Map = m_map;
+            }
+
+            m_isBusy = false;
+            m_progressIndicator.IsVisible = false;
+
+            if (Loaded != null)
+            {
+                Loaded(this, EventArgs.Empty);
+            }
+
+            for (int i = 0; i < m_mapCameras.Count; ++i)
+            {
+                m_mapCameras[i].IsOn = m_isOn;
+            }
+        }
+
+
         public void Load(byte[] bytes, Action done)
         {
             if (m_isBusy)

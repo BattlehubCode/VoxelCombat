@@ -368,7 +368,7 @@ namespace Battlehub.VoxelCombat
     public class TaskStateInfo
     {
         [ProtoMember(1)]
-        public int TaskId;
+        public long TaskId;
 
         [ProtoMember(2)]
         public TaskState State;
@@ -389,7 +389,7 @@ namespace Battlehub.VoxelCombat
 
         }
 
-        public TaskStateInfo(int taskId, int playerId, TaskState state, int statusCode)
+        public TaskStateInfo(long taskId, int playerId, TaskState state, int statusCode)
         {
             TaskId = taskId;
             PlayerId = playerId;
@@ -967,7 +967,7 @@ namespace Battlehub.VoxelCombat
         public int Address;
 
         [ProtoMember(2)]
-        public int TaskId;
+        public long TaskId;
 
         [ProtoMember(3)]
         public TaskType TaskType;
@@ -1055,7 +1055,7 @@ namespace Battlehub.VoxelCombat
         public const int TaskSucceded = 0;
         public const int TaskFailed = 1;
         
-        public int TaskId;
+        public long TaskId;
         public TaskType TaskType;
         public Cmd Cmd;
         public TaskState State;
@@ -1258,7 +1258,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public static TaskInfo FindById(int id, TaskInfo task)
+        public static TaskInfo FindById(long id, TaskInfo task)
         {
             if(task.TaskId == id)
             {

@@ -282,6 +282,7 @@ namespace Battlehub.VoxelCombat
             Pong,
             Pause,
             IsAliveCheck,
+            GetState,
 
             SendChatMessage,
         }
@@ -589,6 +590,7 @@ namespace Battlehub.VoxelCombat
     public delegate void ServerEventHandler<TSender, TPayload, TExtra>(Error error, TSender sender, TPayload payload, TExtra extra);
     public delegate void ServerEventHandler<TSender, TPayload, TExtra, TExtra2>(Error error, TSender sender, TPayload payload, TExtra extra, TExtra2 extra2);
     public delegate void ServerEventHandler<TSender, TPayload, TExtra, TExtra2, TExtra3, TExtra4>(Error error, TSender sender, TPayload payload, TExtra extra, TExtra2 extra2, TExtra3 extra3, TExtra4 extra4);
+    public delegate void ServerEventHandler<TSender, TPayload, TExtra, TExtra2, TExtra3, TExtra4, Textra5>(Error error, TSender sender, TPayload payload, TExtra extra, TExtra2 extra2, TExtra3 extra3, TExtra4 extra4, Textra5 extra5);
 
 
     public static class EnumExtensions
@@ -1214,6 +1216,13 @@ namespace Battlehub.VoxelCombat
         event ServerEventHandler<ServerEventArgs<RTTInfo>> Ping; // Raised by server. Pong method should be called in response to this event. RTTInfo contains information from previos Ping Pong cycle
 
         event ServerEventHandler<ServerEventArgs<bool>> Paused;
+
+        /// <summary>
+        /// Equivalent of ReadyToPlayAll event used during reconnect
+        /// </summary>
+        /// <param name="clientId"></param>
+        /// <param name="callback"></param>
+        void GetState(Guid clientId, ServerEventHandler<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> callback);
 #else
         /// <summary>
         /// Raised when match started and all players called ReadyToPlay method 
@@ -1227,6 +1236,8 @@ namespace Battlehub.VoxelCombat
         event ServerEventHandler<RTTInfo> Ping; // Raised by server. Pong method should be called in response to this event. RTTInfo contains information from previos Ping Pong cycle
 
         event ServerEventHandler<bool> Paused;
+
+        void GetState(Guid clientId, ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> callback);
 #endif
         void Activate();
 
@@ -1265,6 +1276,7 @@ namespace Battlehub.VoxelCombat
         void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<SerializedTask[], SerializedTaskTemplate[]> callback);
 
         void SaveTaskTemplate(Guid clientId, Guid playerId, SerializedTask taskTemplate, SerializedTaskTemplate templateInfo, ServerEventHandler callback);
+
     }
 
 }

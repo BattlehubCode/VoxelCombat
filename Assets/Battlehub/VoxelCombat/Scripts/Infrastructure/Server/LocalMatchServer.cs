@@ -631,6 +631,11 @@ namespace Battlehub.VoxelCombat
             });
         }
 
+        public void GetState(Guid clientId, ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> callback)
+        {
+            throw new NotSupportedException("This method does not makes sense for LocalMatchServer");
+        }
+
         public void Pause(Guid clientId, bool pause, ServerEventHandler callback)
         {
             Error error = new Error(StatusCode.OK);

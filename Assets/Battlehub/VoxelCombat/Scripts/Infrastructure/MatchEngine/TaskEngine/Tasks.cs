@@ -87,7 +87,7 @@ namespace Battlehub.VoxelCombat
           
             if(m_taskInfo.OutputsCount > 0 && m_taskInfo.Parent != null)
             {
-                int scopeId = m_taskInfo.Parent.TaskId;
+                long scopeId = m_taskInfo.Parent.TaskId;
                 m_taskEngine.Memory.CreateOutputsIfRequired(scopeId, m_taskInfo.TaskId, m_taskInfo.OutputsCount);
             }
             #if DEBUG_OUTPUT

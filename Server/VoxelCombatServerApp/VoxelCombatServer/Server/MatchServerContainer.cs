@@ -215,6 +215,50 @@ namespace Battlehub.VoxelCombat
                         }
                     }
                     break;
+                case RemoteCall.Proc.GetState:
+                    {
+
+                        m_matchServer.GetState(rpc.ClientId, (error, arg, arg2, arg3, arg4, arg5, arg6, arg7) =>
+                        {
+                            Room room = arg6;
+                            if (room.Mode == GameMode.Replay)
+                            {
+                                Return(sender, request,
+                                    error,
+                                    RemoteArg.Create(arg),
+                                    RemoteArg.Create(new Guid[0]),
+                                    RemoteArg.Create(arg3),
+                                    RemoteArg.Create(arg4),
+                                    RemoteArg.Create(arg5),
+                                    RemoteArg.Create(arg6),
+                                    RemoteArg.Create(arg7));
+                            }
+                            else
+                            {
+                                Dictionary<Guid, Dictionary<Guid, Player>> clientIdToPlayers = arg2;
+                                Dictionary<Guid, Player> players;
+                                if (!clientIdToPlayers.TryGetValue(rpc.ClientId, out players))
+                                {
+                                    Return(sender, request, new Error(StatusCode.NotFound));
+                                }
+
+                                else
+                                {
+                                    Return(sender, request,
+                                        error,
+                                        RemoteArg.Create(arg),
+                                        RemoteArg.Create(players.Keys.ToArray()),
+                                        RemoteArg.Create(arg3),
+                                        RemoteArg.Create(arg4),
+                                        RemoteArg.Create(arg5),
+                                        RemoteArg.Create(arg6),
+                                        RemoteArg.Create(arg7));
+                                }
+                            }
+
+                        });
+                    }
+                    break;
                 case RemoteCall.Proc.GetReplay:
                  
                     m_matchServer.GetReplay(rpc.ClientId, (error, replayData, room) =>

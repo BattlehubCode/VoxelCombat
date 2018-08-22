@@ -6,6 +6,33 @@ using System.Linq;
 
 namespace Battlehub.VoxelCombat
 {
+    public class DisconnectedClient
+    {
+        public Guid ClientId;
+        public float Time;
+
+        public DisconnectedClient(Guid clientId, float time)
+        {
+            ClientId = clientId;
+            Time = time;
+        }
+
+        public override int GetHashCode()
+        {
+            return ClientId.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            DisconnectedClient other = obj as DisconnectedClient;
+            if (other == null)
+            {
+                return false;
+            }
+            return ClientId.Equals(other.ClientId);
+        }
+    }
+
     public class GameServerImpl : IGameServer,  ILoop, IGameServerDiagnostics
     {
         protected readonly ILog Log;
@@ -31,6 +58,7 @@ namespace Battlehub.VoxelCombat
         private readonly Dictionary<Guid, Guid> m_replaysByClientId = new Dictionary<Guid, Guid>();
         private readonly Dictionary<Guid, Room> m_roomsByClientId = new Dictionary<Guid, Room>();
         private readonly Dictionary<Guid, Room> m_roomsById = new Dictionary<Guid, Room>();
+        private readonly List<DisconnectedClient> m_readyToBeUnregisteredClients = new List<DisconnectedClient>();
 
         private readonly Dictionary<Guid, Guid> m_playerToClientId = new Dictionary<Guid, Guid>();
         private readonly Dictionary<Guid, List<Player>> m_players = new Dictionary<Guid, List<Player>>();
@@ -39,6 +67,7 @@ namespace Battlehub.VoxelCombat
         private readonly List<Guid> m_runningMatches = new List<Guid>();
         private readonly List<float> m_runningMatchesNextCheck = new List<float>();
         private const float RunningMatchesCheckInterval = 30;
+        private float m_nextTick;
 
         public bool IsConnectionStateChanging
         {
@@ -84,7 +113,17 @@ namespace Battlehub.VoxelCombat
         //Must call callback synchroniously
         public void RegisterClient(Guid clientId, ServerEventHandler callback)
         {
-            m_players.Add(clientId, new List<Player>());
+            int index = m_readyToBeUnregisteredClients.IndexOf(new DisconnectedClient(clientId, 0));
+            if (index >= 0)
+            {
+                m_readyToBeUnregisteredClients.RemoveAt(index);
+            }
+
+            if (!m_players.ContainsKey(clientId))
+            {
+                m_players.Add(clientId, new List<Player>());
+            }
+            
 
             callback(new Error { Code = StatusCode.OK });
         }
@@ -92,18 +131,19 @@ namespace Battlehub.VoxelCombat
         //Must call callback synchroniously
         public void UnregisterClient(Guid clientId, ServerEventHandler callback)
         {
+            m_readyToBeUnregisteredClients.Add(new DisconnectedClient(clientId, m_time.Time + GameConstants.WaitForReconnectTimeout));
+            callback(new Error { Code = StatusCode.OK });
+        }
+
+        private void UnregisterClient(Guid clientId)
+        {
             List<Player> loggedInPlayers;
             if (m_players.TryGetValue(clientId, out loggedInPlayers))
             {
                 Logoff(clientId, loggedInPlayers.Select(p => p.Id).ToArray(), (error, guids) =>
                 {
                     m_players.Remove(clientId);
-                    callback(error);
                 });
-            }
-            else
-            {
-                callback(new Error { Code = StatusCode.OK });
             }
         }
 
@@ -1886,7 +1926,20 @@ namespace Battlehub.VoxelCombat
                     });
                 }
             }
-           
+
+            if(m_nextTick < m_time.Time)
+            {
+                for (int i = m_readyToBeUnregisteredClients.Count - 1; i >= 0; --i)
+                {
+                    DisconnectedClient disconnectedClient = m_readyToBeUnregisteredClients[i];
+                    if (disconnectedClient.Time < m_time.Time)
+                    {
+                        m_readyToBeUnregisteredClients.RemoveAt(i);
+                        UnregisterClient(disconnectedClient.ClientId);
+                    }
+                }
+                m_nextTick = m_time.Time + 1;
+            }
         }
 
         public void Destroy()

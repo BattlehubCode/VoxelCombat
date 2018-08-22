@@ -84,6 +84,11 @@ namespace Battlehub.VoxelCombat
         protected virtual void OnDestroy()
         {
             m_serializer = null;
+            Dispose();
+        }
+
+        private void Dispose()
+        {
             if (m_protocol != null)
             {
                 m_protocol.Dispose();
@@ -91,6 +96,7 @@ namespace Battlehub.VoxelCombat
                 m_protocol.Disabled -= OnDisabled;
                 m_protocol.SocketError -= OnSocketError;
                 m_protocol.Message -= OnMessage;
+                m_protocol = null;
             }
         }
 
@@ -129,6 +135,7 @@ namespace Battlehub.VoxelCombat
         protected virtual void OnSocketError(ILowProtocol sender, SocketErrorArgs args)
         {
             IsConnectionStateChanging = false;
+            Dispose();
 
             if (ConnectionStateChanged != null)
             {

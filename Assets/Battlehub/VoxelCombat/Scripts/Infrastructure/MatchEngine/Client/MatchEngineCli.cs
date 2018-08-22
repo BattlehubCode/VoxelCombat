@@ -9,9 +9,10 @@ namespace Battlehub.VoxelCombat
     public delegate void MatchEngineCliEvent<T>(Error error, T payload);
     public delegate void MatchEngineCliEvent<T, V>(Error error, T payload, V extra1);
     public delegate void MatchEngineCliEvent<T, V, W>(Error error, T payload, V extra1, W extra2);
-    public delegate void MatchEngineCliEvent<T, V, W, Y>(Error error, T payload, V extra1, W extra2, Y extra3);
-    public delegate void MatchEngineCliEvent<T, V, W, Y, Z>(Error error, T payload, V extra1, W extra2, Y extra3, Z extra4);
-    public delegate void MatchEngineCliEvent<S, T, V, W, Y, Z>(Error error, S payload, T extra1, V extra2, W extra3, Y extra4, Z extra5);
+    public delegate void MatchEngineCliEvent<T, V, W, X>(Error error, T payload, V extra1, W extra2, X extra3);
+    public delegate void MatchEngineCliEvent<T, V, W, X, Y>(Error error, T payload, V extra1, W extra2, X extra3, Y extra4);
+    public delegate void MatchEngineCliEvent<S, T, V, W, X, Y>(Error error, S payload, T extra1, V extra2, W extra3, X extra4, Y extra5);
+    public delegate void MatchEngineCliEvent<S, T, V, W, X, Y, Z>(Error error, S payload, T extra1, V extra2, W extra3, X extra4, Y extra5, Z extra6);
 
 
     public interface IMatchEngineCli
@@ -31,6 +32,9 @@ namespace Battlehub.VoxelCombat
         event MatchEngineCliEvent Stopped;
         event MatchEngineCliEvent<bool> Paused;
 
+        event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> Reconnected;
+        event MatchEngineCliEvent ReconnectFailed;
+
         ITaskEngine GetClientTaskEngine(int playerIndex);
         ITaskRunner GetTaskRunner(int playerIndex);
         IPathFinder GetPathFinder(int playerIndex);
@@ -41,11 +45,15 @@ namespace Battlehub.VoxelCombat
         void ReadyToPlay(MatchEngineCliEvent callback);
         void Pause(bool pause, MatchEngineCliEvent callback);
         void Submit(int playerIndex, Cmd command);
+        void Reconnect(MatchEngineCliEvent<bool> callback);
+
     }
 
     public class MatchEngineCli : MonoBehaviour, IMatchEngineCli
     {
         private RTTInfo m_rttInfo = new RTTInfo { RTT = 0, RTTMax = 0 };
+        
+
         public event MatchEngineCliEvent ReadyToStart;
         public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> Started;
         public event MatchEngineCliEvent<RTTInfo> Ping;
@@ -54,6 +62,9 @@ namespace Battlehub.VoxelCombat
         public event MatchEngineCliEvent Error;
         public event MatchEngineCliEvent Stopped;
         public event MatchEngineCliEvent<bool> Paused;
+
+        public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> Reconnected;
+        public event MatchEngineCliEvent ReconnectFailed;
 
         private IMatchServer m_matchServer;
         private IGlobalSettings m_gSettings;
@@ -64,7 +75,7 @@ namespace Battlehub.VoxelCombat
         private float m_nextTickTime;
         private CommandsQueue m_cmdQueue;
         private bool m_isInitialized;
-
+  
         private IPathFinder[] m_pathFinders;
         private ITaskRunner[] m_taskRunners;
         private ITaskEngine[] m_taskEngines;
@@ -228,12 +239,6 @@ namespace Battlehub.VoxelCombat
         }
 
         private void FixedUpdate()
-        {
-            OnFixedUpdate();
-        }
-
-
-        private void OnFixedUpdate()
         {
             if (Time.realtimeSinceStartup < m_nextTickTime)
             {
@@ -583,6 +588,24 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        public void Reconnect(MatchEngineCliEvent<bool> callback)
+        {
+            if(!m_isInitialized)
+            {
+                throw new InvalidOperationException("Unable to reconnect because wasn't initialized");
+            }
+
+            if(!m_matchServer.IsConnectionStateChanging && !m_matchServer.IsConnected)
+            {
+                m_matchServer.Connect();
+                callback(new Error(StatusCode.OK), true);
+            }
+            else
+            {
+                callback(new Error(StatusCode.NotAllowed), false);
+            }
+        }
+
         private void OnConnectionStateChanged(Error error, ValueChangedArgs<bool> args)
         {
             if (args.NewValue)
@@ -595,7 +618,23 @@ namespace Battlehub.VoxelCombat
 
                 if (m_isInitialized)
                 {
-                    throw new NotSupportedException("RECONNECT IS NOT SUPPORTED");
+
+                    m_matchServer.GetState(m_gSettings.ClientId, (getStateError, players, localPlayers, abilities, tasks, taskTemplates, room, mapRoot) =>
+                    {
+                        if(m_matchServer.HasError(getStateError))
+                        {
+                            ReconnectFailed(getStateError);
+                            return;
+                        }
+
+                        if(Reconnected != null)
+                        {
+                            Reconnected(getStateError, players, localPlayers, abilities, tasks, taskTemplates, room, mapRoot);
+                        }
+
+                        enabled = true;
+                    });
+
                    // Debug.LogWarning("RECONNECT IS NOT TESTED");
                    // enabled = true;
                    // m_startTime = Time.realtimeSinceStartup;
@@ -612,9 +651,32 @@ namespace Battlehub.VoxelCombat
             {
                 enabled = false;
 
-                if(Stopped != null)
+                m_cmdQueue.Clear();
+
+                if (m_isInitialized)
                 {
-                    Stopped(error);
+                    bool wasConnected = args.OldValue;
+                    if(wasConnected)
+                    {
+                        if (Stopped != null)
+                        {
+                            Stopped(error);
+                        }
+                    }
+                    else
+                    {
+                        if (ReconnectFailed != null)
+                        {
+                            ReconnectFailed(new Error(StatusCode.OK));
+                        }
+                    }
+                }
+                else
+                {
+                    if (Stopped != null)
+                    {
+                        Stopped(error);
+                    }
                 }
             }
         }

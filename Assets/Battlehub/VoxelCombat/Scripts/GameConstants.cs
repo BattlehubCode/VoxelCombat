@@ -7,8 +7,6 @@
         public const int VoxelCameraRadius = 16;// 2; //= 6;
         public const int VoxelCameraWeight = 4;
         
-
-
         public const int MinVoxelActorWeight = VoxelCameraWeight - 2;
         public const int MaxVoxelActorWeight = 4;
 
@@ -16,11 +14,15 @@
         public const int MaxPlayers = 8;
         public const int MaxLocalPlayers = 4;
 
+        public const int ReconnectAttemptsCount = 20;
+
         /// <summary>
         /// Smallest fraction of time used by MatchEngine measured in milliseconds
         /// </summary>
         public const float MatchEngineTick = 50.0f / 1000.0f; //seconds
         public const long PingTimeout = 10;
+        public const float WaitForReconnectTimeout = 30f;
+
         // public const long PingTimeout = 8; //8 * MatchEngineTick milliseconds
         public const int PathFinderBatchSize = 200; 
         public const int TaskRunnerBatchSize = 200;

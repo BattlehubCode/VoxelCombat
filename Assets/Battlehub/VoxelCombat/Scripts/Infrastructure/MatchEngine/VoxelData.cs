@@ -2165,6 +2165,7 @@ namespace Battlehub.VoxelCombat
 #endif
 
         void Load(byte[] bytes, Action done);
+        void Load(MapRoot root);
         void Save(Action<byte[]> done);
         void Create(int weight);
     }

@@ -64,35 +64,8 @@
     <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Log.cs">
       <Link>Log.cs</Link>
     </Compile>
-    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\AttackTaskProcessor.cs">
-      <Link>MatchEngine\Bot\AttackTaskProcessor.cs</Link>
-    </Compile>
     <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\BotController.cs">
       <Link>MatchEngine\Bot\BotController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\BotStrategy.cs">
-      <Link>MatchEngine\Bot\BotStrategy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\ChooseTaskProcessor.cs">
-      <Link>MatchEngine\Bot\ChooseTaskProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\ConvertTaskProcessor.cs">
-      <Link>MatchEngine\Bot\ConvertTaskProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\EatTaskProcessor.cs">
-      <Link>MatchEngine\Bot\EatTaskProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\GrowTaskProcessor.cs">
-      <Link>MatchEngine\Bot\GrowTaskProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\SearchTaskProcessor.cs">
-      <Link>MatchEngine\Bot\SearchTaskProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\Split4TaskProcessor.cs">
-      <Link>MatchEngine\Bot\Split4TaskProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\SplitTaskProcessor.cs">
-      <Link>MatchEngine\Bot\SplitTaskProcessor.cs</Link>
     </Compile>
     <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Server\MatchEngine.cs">
       <Link>MatchEngine\Server\MatchEngine.cs</Link>

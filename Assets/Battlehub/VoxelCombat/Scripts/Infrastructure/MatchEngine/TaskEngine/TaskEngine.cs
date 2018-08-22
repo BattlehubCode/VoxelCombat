@@ -53,8 +53,8 @@ namespace Battlehub.VoxelCombat
         /// <returns>unique task id</returns>
         void SubmitTask(TaskInfo taskInfo);
         void SubmitResponse(ClientRequest request);
-        void SetTaskState(int taskId, TaskState state, int statusCode);
-        TaskInfo TerminateTask(int taskId);
+        void SetTaskState(long taskId, TaskState state, int statusCode);
+        TaskInfo TerminateTask(long taskId);
         void TerminateAll();
 
         void Tick();
@@ -65,7 +65,7 @@ namespace Battlehub.VoxelCombat
 
     public interface ITaskMemoryTestView
     {
-        Dictionary<int, Dictionary<int, object[]>> Memory
+        Dictionary<long, Dictionary<long, object[]>> Memory
         {
             get;
         }
@@ -73,35 +73,35 @@ namespace Battlehub.VoxelCombat
 
     public interface ITaskMemory
     {
-        bool HasOutput(int scopeId, int taskId, int index);
-        void CreateOutputsIfRequired(int scopeId, int taskId, int count);
-        void WriteOutput(int scopeId, int taskId, int index, object value);
-        object ReadOutput(int scopeId, int taskId, int index);
-        void DestroyScope(int scopeId);
+        bool HasOutput(long scopeId, long taskId, int index);
+        void CreateOutputsIfRequired(long scopeId, long taskId, int count);
+        void WriteOutput(long scopeId, long taskId, int index, object value);
+        object ReadOutput(long scopeId, long taskId, int index);
+        void DestroyScope(long scopeId);
     }
     public class TaskMemory : ITaskMemory, ITaskMemoryTestView
     {
-        private readonly Dictionary<int, Dictionary<int, object[]>> m_memory = new Dictionary<int, Dictionary<int, object[]>>();
+        private readonly Dictionary<long, Dictionary<long, object[]>> m_memory = new Dictionary<long, Dictionary<long, object[]>>();
 
-        Dictionary<int, Dictionary<int, object[]>> ITaskMemoryTestView.Memory
+        Dictionary<long, Dictionary<long, object[]>> ITaskMemoryTestView.Memory
         {
             get { return m_memory; }
         }
 
-        private Dictionary<int, object[]> CreateScope(int scopeId)
+        private Dictionary<long, object[]> CreateScope(long scopeId)
         {
-            Dictionary<int, object[]> scope;
+            Dictionary<long, object[]> scope;
             if (!m_memory.TryGetValue(scopeId, out scope))
             {
-                scope = new Dictionary<int, object[]>();
+                scope = new Dictionary<long, object[]>();
                 m_memory.Add(scopeId, scope);
             }
             return scope;
         }
 
-        private Dictionary<int, object[]> GetScope(int scopeId, int taskId)
+        private Dictionary<long, object[]> GetScope(long scopeId, long taskId)
         {
-            Dictionary<int, object[]> scope;
+            Dictionary<long, object[]> scope;
             if (!m_memory.TryGetValue(scopeId, out scope))
             {
                 Debug.LogWarningFormat("Trying to read out of scope input. Scope: {0}, TaskId: {1}", scopeId, taskId);
@@ -110,9 +110,9 @@ namespace Battlehub.VoxelCombat
             return scope;
         }
 
-        public bool HasOutput(int scopeId, int taskId, int index)
+        public bool HasOutput(long scopeId, long taskId, int index)
         {
-            Dictionary<int, object[]> scope;
+            Dictionary<long, object[]> scope;
             if (!m_memory.TryGetValue(scopeId, out scope))
             {
                 return false;
@@ -132,9 +132,9 @@ namespace Battlehub.VoxelCombat
             return true;
         }
 
-        public void CreateOutputsIfRequired(int scopeId, int taskId, int count)
+        public void CreateOutputsIfRequired(long scopeId, long taskId, int count)
         {
-            Dictionary<int, object[]> scope = CreateScope(scopeId);
+            Dictionary<long, object[]> scope = CreateScope(scopeId);
             object[] outputs;
             if(!scope.TryGetValue(taskId, out outputs))
             {
@@ -147,19 +147,19 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public object ReadOutput(int scopeId, int taskId, int index)
+        public object ReadOutput(long scopeId, long taskId, int index)
         {
-            Dictionary<int, object[]> scope = GetScope(scopeId, taskId);
+            Dictionary<long, object[]> scope = GetScope(scopeId, taskId);
             return scope[taskId][index];
         }
 
-        public void WriteOutput(int scopeId, int taskId, int index, object value)
+        public void WriteOutput(long scopeId, long taskId, int index, object value)
         {
-            Dictionary<int, object[]> scope = GetScope(scopeId, taskId);
+            Dictionary<long, object[]> scope = GetScope(scopeId, taskId);
             scope[taskId][index] = value;
         }
 
-        public void DestroyScope(int scopeId)
+        public void DestroyScope(long scopeId)
         {
             m_memory.Remove(scopeId);
         }
@@ -207,7 +207,7 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-        Dictionary<int, TaskBase> IdToActiveTask
+        Dictionary<long, TaskBase> IdToActiveTask
         {
             get;
         }
@@ -252,9 +252,9 @@ namespace Battlehub.VoxelCombat
         private readonly IMatchView m_match;
         private readonly ITaskRunner m_taskRunner;
         private readonly IPathFinder m_pathFinder;
-        private int m_taskIdentity;
+        private long m_taskIdentity;
         private readonly List<TaskBase> m_activeTasks;
-        private readonly Dictionary<int, TaskBase> m_idToActiveTask;
+        private readonly Dictionary<long, TaskBase> m_idToActiveTask;
         private readonly TaskMemory m_mem;
 
         private class PendingClientRequest
@@ -307,7 +307,7 @@ namespace Battlehub.VoxelCombat
             get { return m_activeTasks;}
         }
 
-        Dictionary<int, TaskBase> ITaskEngineTestView.IdToActiveTask
+        Dictionary<long, TaskBase> ITaskEngineTestView.IdToActiveTask
         {
             get { return m_idToActiveTask; }
         }
@@ -351,7 +351,7 @@ namespace Battlehub.VoxelCombat
             m_taskRunner = taskRunner;
             m_pathFinder = pathFinder;
             m_activeTasks = new List<TaskBase>();
-            m_idToActiveTask = new Dictionary<int, TaskBase>();
+            m_idToActiveTask = new Dictionary<long, TaskBase>();
             m_timeoutRequests = new List<PendingClientRequest>();
             m_requests = new Dictionary<long, PendingClientRequest>();
             m_mem = new TaskMemory();
@@ -438,7 +438,7 @@ namespace Battlehub.VoxelCombat
             HandleTaskActivation(null, taskInfo);
         }
 
-        public void SetTaskState(int taskId, TaskState state, int statusCode)
+        public void SetTaskState(long taskId, TaskState state, int statusCode)
         {
             TaskBase task;
             if(m_idToActiveTask.TryGetValue(taskId, out task))
@@ -595,7 +595,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public TaskInfo TerminateTask(int taskId)
+        public TaskInfo TerminateTask(long taskId)
         {
             TaskBase task;
             if (m_idToActiveTask.TryGetValue(taskId, out task))
@@ -652,7 +652,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public static void GenerateIdentitifers(TaskInfo taskInfo, ref int taskIdentitiy)
+        public static void GenerateIdentitifers(TaskInfo taskInfo, ref long taskIdentitiy)
         {
             unchecked
             {

@@ -4,8 +4,11 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 
+
+
 namespace Battlehub.VoxelCombat
 {
+    using ReadyToPlayAllArgs = ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room>;
     //This is for testing purposes only and does not needed on client -> should be moved to server
     public class PingTimer
     {
@@ -117,6 +120,11 @@ namespace Battlehub.VoxelCombat
         //    get { return false; }
         //}
 
+        public bool HasActiveClient
+        {
+            get { return m_clientId != Guid.Empty; }
+        }
+
         public BotControlManager(ITimeService time, IMatchEngine engine, Player[] players, Guid[] clientIds)
         {
             m_engine = engine;
@@ -205,8 +213,13 @@ namespace Battlehub.VoxelCombat
             {
                 m_clientId = Guid.Empty;
             }
-            m_clientIds[playerIndex] = Guid.Empty;
-            
+            m_clientIds[playerIndex] = Guid.Empty; 
+        }
+
+        public void Connect(Guid clientId, Player player, int playerIndex)
+        {
+            m_players[playerIndex] = player;
+            m_clientIds[playerIndex] = clientId;
         }
     }
    
@@ -218,7 +231,7 @@ namespace Battlehub.VoxelCombat
             ConnectionStateChanged(new Error(), new ValueChangedArgs<bool>(false, false));
         }
 
-        private readonly ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> m_readyToPlayAllArgs = new ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room>();
+        private ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> m_readyToPlayAllArgs = new ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room>();
         private readonly ServerEventArgs<CommandsBundle> m_tickArgs = new ServerEventArgs<CommandsBundle>();
         private readonly ServerEventArgs<RTTInfo> m_pingArgs = new ServerEventArgs<RTTInfo>();
         private readonly ServerEventArgs<bool> m_pausedArgs = new ServerEventArgs<bool>();
@@ -262,6 +275,7 @@ namespace Battlehub.VoxelCombat
         private readonly List<Guid> m_clientIds;
         private readonly HashSet<Guid> m_registeredClients;
         private readonly HashSet<Guid> m_readyToPlayClients;
+        private readonly List<DisconnectedClient> m_readyToBeUnregisteredClients;
         private readonly Dictionary<Guid, Dictionary<Guid, Player>> m_clientIdToPlayers;
         private readonly Dictionary<Guid, Player> m_players;
         private readonly Dictionary<Guid, Guid> m_playerToClientId;
@@ -309,6 +323,7 @@ namespace Battlehub.VoxelCombat
 
             m_registeredClients = new HashSet<Guid>();
             m_readyToPlayClients = new HashSet<Guid>();
+            m_readyToBeUnregisteredClients = new List<DisconnectedClient>();
             m_clientIdToPlayers = new Dictionary<Guid, Dictionary<Guid, Player>>();
             m_playerToClientId = new Dictionary<Guid, Guid>();
             m_clientIds = clientIds.ToList();
@@ -432,10 +447,76 @@ namespace Battlehub.VoxelCombat
             {
                 m_registeredClients.Add(clientId);
             }
+            else
+            {
+                int index = m_readyToBeUnregisteredClients.IndexOf(new DisconnectedClient(clientId, 0));
+                if (index >= 0)
+                {
+                    m_readyToBeUnregisteredClients.RemoveAt(index);
+                    Dictionary<Guid, Player> disconnectedPlayers;
+                    if (m_clientIdToPlayers.TryGetValue(clientId, out disconnectedPlayers))
+                    {
+                        foreach (Guid playerId in disconnectedPlayers.Keys)
+                        {
+                            int playerIndex = m_room.Players.IndexOf(playerId);
+                            m_botControlManager.Disconnect(playerIndex);
+
+                            Player player = m_players[playerId];
+                            m_botControlManager.Connect(clientId, player, playerIndex);
+                        }
+
+                        if(!m_botControlManager.HasActiveClient)
+                        {
+                            m_botControlManager.ActivateNext();
+                        }
+                    }
+                }
+            }
             callback(new Error(StatusCode.OK));
         }
 
         public void UnregisterClient(Guid clientId, ServerEventHandler callback)
+        {
+            Error error = new Error(StatusCode.OK);
+            if (m_initialized)
+            {
+                m_readyToBeUnregisteredClients.Add(new DisconnectedClient(clientId, m_time.Time + GameConstants.WaitForReconnectTimeout));
+
+                BeginUnregisterClient(clientId);
+                callback(error);
+            }
+            else
+            {
+                BeginUnregisterClient(clientId);
+                UnregisterClient(clientId);
+                m_pingTimer.OnClientDisconnected(clientId, () => OnPingPongCompleted(error, clientId));
+                if (!HasError(error))
+                {
+                    TryToInitEngine(callback);
+                }
+                else
+                {
+                    callback(error);
+                }
+            }
+        }
+
+        private void BeginUnregisterClient(Guid clientId)
+        {
+            Dictionary<Guid, Player> disconnectedPlayers;
+            if (m_clientIdToPlayers.TryGetValue(clientId, out disconnectedPlayers))
+            {
+                foreach (Guid playerId in disconnectedPlayers.Keys)
+                {
+                    int playerIndex = m_room.Players.IndexOf(playerId);
+                    m_botControlManager.Disconnect(playerIndex);
+                }
+
+                m_botControlManager.ActivateNext();
+            }
+        }
+
+        private void UnregisterClient(Guid clientId)
         {
             m_registeredClients.Remove(clientId);
 
@@ -446,19 +527,10 @@ namespace Battlehub.VoxelCombat
                 {
                     int playerIndex = m_room.Players.IndexOf(playerId);
 
-                    //m_players.Remove(playerId);
-
-                    m_botControlManager.Disconnect(playerIndex);
-                    
-                    //m_room.Players.RemoveAt(playerIndex);
-
                     Cmd cmd = new Cmd(CmdCode.LeaveRoom, -1);
 
-                    //#warning Fix Engine to handle LeaveRoom command without removing PlayerControllers. Just change colors or destroy units
                     if (m_initialized)
                     {
-                        m_botControlManager.ActivateNext();
-
                         m_engine.Submit(playerIndex, cmd);
                     }
                     else
@@ -471,21 +543,6 @@ namespace Battlehub.VoxelCombat
 
                 m_readyToPlayClients.Remove(clientId);
                 m_clientIdToPlayers.Remove(clientId);
-
-                if(!m_initialized)
-                {
-                    Error error = new Error(StatusCode.OK);
-                    m_pingTimer.OnClientDisconnected(clientId, () => OnPingPongCompleted(error, clientId));
-
-                    if (!HasError(error))
-                    {
-                        TryToInitEngine(callback);
-                    }
-                    else
-                    {
-                        callback(error);
-                    }
-                }
             }
         }
 
@@ -760,11 +817,32 @@ namespace Battlehub.VoxelCombat
             //Some clients will look -50 ms to the past and some clients will look -500 ms or more to the past.
             //Is this a big deal? Don't know... Further investigation and playtest needed
 
-            if(m_engine == null)
+            if (m_engine == null)
             {
                 throw new InvalidOperationException("m_engine == null");
             }
 
+
+            m_readyToPlayAllArgs = GetReadyToPlayAllArgs(error);
+
+            if (HasError(error))
+            {
+                ReadyToPlayAll(error, m_readyToPlayAllArgs);
+            }
+            else
+            {
+                m_botControlManager = new BotControlManager(
+                    m_time,
+                    m_engine,
+                    m_room.Players.Select(p => m_players.ContainsKey(p) ? m_players[p] : null).ToArray(),
+                    m_clientIds.ToArray());
+                m_botControlManager.ActivateNext();
+            }
+        }
+
+        private ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room>
+            GetReadyToPlayAllArgs(Error error)
+        {
             Player[] players;
             VoxelAbilitiesArray[] abilities;
             SerializedTaskArray[] taskInfo;
@@ -811,25 +889,31 @@ namespace Battlehub.VoxelCombat
                 taskTemplateInfo = new SerializedTaskTemplatesArray[0];
             }
 
-            m_readyToPlayAllArgs.Arg = players;
-            m_readyToPlayAllArgs.Arg2 = m_clientIdToPlayers;
-            m_readyToPlayAllArgs.Arg3 = abilities;
-            m_readyToPlayAllArgs.Arg4 = taskInfo;
-            m_readyToPlayAllArgs.Arg5 = taskTemplateInfo;
-            m_readyToPlayAllArgs.Arg6 = m_room;
-            m_readyToPlayAllArgs.Except = Guid.Empty;
 
-            if (HasError(error))
+            var readyToPlayAllArgs = new ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room>();
+            readyToPlayAllArgs.Arg = players;
+            readyToPlayAllArgs.Arg2 = m_clientIdToPlayers;
+            readyToPlayAllArgs.Arg3 = abilities;
+            readyToPlayAllArgs.Arg4 = taskInfo;
+            readyToPlayAllArgs.Arg5 = taskTemplateInfo;
+            readyToPlayAllArgs.Arg6 = m_room;
+            readyToPlayAllArgs.Except = Guid.Empty;
+            return readyToPlayAllArgs;
+        }
+
+        public void GetState(Guid clientId, ServerEventHandler<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> callback)
+        {
+            Error error = new Error(StatusCode.OK);
+            if (!m_clientIdToPlayers.ContainsKey(clientId))
             {
-                ReadyToPlayAll(error, m_readyToPlayAllArgs);
+                error.Code = StatusCode.NotRegistered;
+                callback(error, null, null, null, null, null, null, null);
+                return;
             }
-                        
-            m_botControlManager = new BotControlManager(
-                m_time, 
-                m_engine, 
-                m_room.Players.Select(p => m_players.ContainsKey(p) ? m_players[p] : null).ToArray(),
-                m_clientIds.ToArray());
-            m_botControlManager.ActivateNext();
+
+
+            m_readyToPlayAllArgs = GetReadyToPlayAllArgs(error);
+            callback(error, m_readyToPlayAllArgs.Arg, m_readyToPlayAllArgs.Arg2, m_readyToPlayAllArgs.Arg3, m_readyToPlayAllArgs.Arg4, m_readyToPlayAllArgs.Arg5, m_readyToPlayAllArgs.Arg6, m_engine.Map);
         }
 
         public void Pause(Guid clientId, bool pause, ServerEventHandler callback)
@@ -1019,7 +1103,6 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-
         public bool Start(ITimeService time)
         {
             m_time = time;
@@ -1118,6 +1201,16 @@ namespace Battlehub.VoxelCombat
 
                 m_tick++;
                 m_prevTickTime += GameConstants.MatchEngineTick;
+
+                for(int i = m_readyToBeUnregisteredClients.Count - 1; i >= 0; --i)
+                {
+                    DisconnectedClient disconnectedClient = m_readyToBeUnregisteredClients[i];
+                    if(disconnectedClient.Time < m_time.Time)
+                    {
+                        m_readyToBeUnregisteredClients.RemoveAt(i);
+                        UnregisterClient(disconnectedClient.ClientId);
+                    }
+                }
             }
         }
 

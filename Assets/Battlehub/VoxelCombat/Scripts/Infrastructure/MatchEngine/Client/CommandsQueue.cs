@@ -9,8 +9,7 @@ namespace Battlehub.VoxelCombat
     {
         private long m_tick;
         private long m_hold;
-    
-        
+     
         private readonly long m_maxPing;
         private readonly Queue<CommandsBundle> m_commands;
 
@@ -18,6 +17,11 @@ namespace Battlehub.VoxelCombat
         {
             m_maxPing = maxPing;
             m_commands = new Queue<CommandsBundle>();
+        }
+
+        public void Clear()
+        {
+            m_commands.Clear();
         }
 
         public void Enqueue(CommandsBundle command)
