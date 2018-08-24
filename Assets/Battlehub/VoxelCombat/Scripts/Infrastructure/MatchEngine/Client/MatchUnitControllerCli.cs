@@ -924,7 +924,7 @@ namespace Battlehub.VoxelCombat
         {
             if(m_controlledVoxel != null)
             {
-                m_controlledVoxel.BeginConvert(m_currentTick, cmd.Duration);
+                m_controlledVoxel.BeginConvert(m_currentTick, cmd.Duration * GameConstants.MatchEngineTick);
             }
             
         }
