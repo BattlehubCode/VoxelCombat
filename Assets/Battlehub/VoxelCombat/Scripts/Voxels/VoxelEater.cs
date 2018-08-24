@@ -57,6 +57,7 @@ namespace Battlehub.VoxelCombat
             {
                 base.Health = value;
                 UpdateCells();
+                UpdateUI(true);
             }
         }
 
@@ -202,6 +203,7 @@ namespace Battlehub.VoxelCombat
             {
                 IntVec position = GetIntPositionLocal(digesting.TargetPosition);
                 SetTexturePixel(position, true, true);
+                UpdateUI(true);
             }
         }
 
@@ -352,6 +354,31 @@ namespace Battlehub.VoxelCombat
             return FillOrder[m_usedIndices.Count];
         }
 
+        private void UpdateUI(bool animate)
+        {
+            if(m_ui == null)
+            {
+                return;
+            }
+            for(int i = 0; i < m_ui.Count; ++i)
+            {
+                float healthPerentage = ((float)m_usedIndices.Count) / (m_usedIndices.Count + m_emptyIndices.Count);
+                m_ui[i].UpdateProgress(animate, healthPerentage);
+            }
+        }
+
+        protected override void OnSelect(int playerIndex)
+        {
+            base.OnSelect(playerIndex);
+            UpdateUI(false);
+        }
+
+        protected override void OnUnselect(int playerIndex)
+        {
+            base.OnUnselect(playerIndex);
+        }
+
+
         public override void ReadFrom(VoxelData data)
         {
             base.ReadFrom(data);
@@ -365,8 +392,10 @@ namespace Battlehub.VoxelCombat
             }
             m_tex.Apply(false);
             m_flippedTex.Apply(false);
+
+            UpdateUI(false);
         }
-        
+
         private void EmptyAllCells()
         {
             m_usedIndices = new List<int>();
@@ -397,7 +426,7 @@ namespace Battlehub.VoxelCombat
             m_flippedTex.Apply(false);
         }
 
-
+  
         /// <summary>
         /// Voxel cells per row
         /// </summary>

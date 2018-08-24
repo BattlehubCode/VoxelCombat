@@ -128,6 +128,10 @@ namespace Battlehub.VoxelCombat
         private bool m_isFrozen;
 
 
+        private bool m_isShowingProgress;
+        private float m_showProgressStartTime;
+        private float m_showProgressDuration;
+
         private abstract class QueuedActionBase
         {
             public long Tick
@@ -189,7 +193,6 @@ namespace Battlehub.VoxelCombat
         private bool m_isInProgress;
         private readonly Queue<QueuedActionBase> m_actionQueue = new Queue<QueuedActionBase>();
 
-
         protected override void SetMaterials(Material primary, Material secondary)
         {
             base.SetMaterials(Instantiate(primary), Instantiate(secondary));
@@ -242,10 +245,16 @@ namespace Battlehub.VoxelCombat
             get { return m_height; }
             set
             {
+                int oldValue = m_height;
                 m_height = value;
                 Vector3 localScale = Root.localScale;
                 localScale.y = EvalHeight(m_height);
                 Root.localScale = localScale;
+
+                if (oldValue != m_height)
+                {
+                    UpdateUIVisibility();
+                }
             }
         }
 
@@ -269,7 +278,6 @@ namespace Battlehub.VoxelCombat
             {                
             }
         }
-
 
         protected override void AwakeOverride()
         {
@@ -576,20 +584,87 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public override void Move(int altitude, long tick, float duration)
+        private void BeginShowProgress(float duration)
         {
-            if(m_isInProgress)
+            m_isShowingProgress = true;
+            m_showProgressStartTime = Time.time;
+            m_showProgressDuration = duration;
+        }
+
+        protected override void UpdateOverride()
+        {
+            base.UpdateOverride();
+            if(m_isShowingProgress)
             {
-                m_actionQueue.Enqueue(new QueuedAction<int>(MoveAction, altitude, tick, duration));
+                if(Time.time >= m_showProgressStartTime + m_showProgressDuration)
+                {
+                    m_isShowingProgress = false;
+                    m_isInProgress = false;
+                    if (m_ui != null)
+                    {
+                        for (int i = 0; i < m_ui.Count; ++i)
+                        {
+                            m_ui[i].UpdateProgress(true, 1);
+                        }
+                    }
+                }
+                else
+                {
+                    if (m_ui != null)
+                    {
+                        for(int i = 0; i < m_ui.Count; ++i)
+                        {
+                            m_ui[i].UpdateProgress(true, (Time.time - m_showProgressStartTime) / m_showProgressDuration);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void RunAction<T>(Action<T, float> action, T value, long tick, float duration)
+        {
+            if (m_isInProgress)
+            {
+                m_actionQueue.Enqueue(new QueuedAction<T>(action, value, tick, duration));
             }
             else
             {
                 m_tick = tick;
                 m_isInProgress = true;
-                MoveAction(altitude, duration);
+                action(value, duration);
             }
         }
 
+        private void RunAction(Action<float> action, long tick, float duration)
+        {
+            if (m_isInProgress)
+            {
+                m_actionQueue.Enqueue(new QueuedAction(action,  tick, duration));
+            }
+            else
+            {
+                m_tick = tick;
+                m_isInProgress = true;
+                action(duration);
+            }
+        }
+
+        public override void BeginConvert(long tick, float duration)
+        {
+            RunAction(BeginCovertAction, tick, duration);
+        }
+
+        private void BeginCovertAction(float duration)
+        {
+            BeginShowProgress(duration);
+        }
+
+        public override void Move(int altitude, long tick, float duration)
+        {
+            RunAction(MoveAction, altitude, tick, duration);
+        }
+
+       
         private void MoveAction(int altitude, float duration)
         {
             m_altitude = altitude;
@@ -609,16 +684,7 @@ namespace Battlehub.VoxelCombat
 
         public override void RotateLeft(long tick, float duration)
         {
-            if (m_isInProgress)
-            {
-                m_actionQueue.Enqueue(new QueuedAction(RotateLeftAction, tick, duration));
-            }
-            else
-            {
-                m_tick = tick;
-                m_isInProgress = true;
-                RotateLeftAction(duration);
-            }
+            RunAction(RotateLeftAction, tick, duration);
         }
 
         private void RotateLeftAction(float duration)
@@ -634,16 +700,7 @@ namespace Battlehub.VoxelCombat
 
         public override void RotateRight(long tick, float duration)
         {
-            if (m_isInProgress)
-            {
-                m_actionQueue.Enqueue(new QueuedAction(RotateRightAction, tick, duration));
-            }
-            else
-            {
-                m_tick = tick;
-                m_isInProgress = true;
-                RotateRightAction(duration);
-            }
+            RunAction(RotateRightAction, tick, duration);
         }
 
         private void RotateRightAction(float duration)
@@ -657,18 +714,16 @@ namespace Battlehub.VoxelCombat
             m_movementState.RotateRight();
         }
 
+        public override void BeginGrow(long tick, float duration)
+        {
+            
+        }
+
+
+
         public override void Grow(Vector3 position, long tick, float duration)
         {
-            if (m_isInProgress)
-            {
-                m_actionQueue.Enqueue(new QueuedAction<Vector3>(GrowAction, position, tick, duration));
-            }
-            else
-            {
-                m_tick = tick;
-                m_isInProgress = true;
-                GrowAction(position, duration);
-            }
+            RunAction(GrowAction, position, tick, duration);
         }
 
         private void GrowAction(Vector3 position, float duration)
@@ -687,16 +742,7 @@ namespace Battlehub.VoxelCombat
 
         public override void Diminish(Vector3 position, long tick, float duration)
         {
-            if (m_isInProgress)
-            {
-                m_actionQueue.Enqueue(new QueuedAction<Vector3>(DiminishAction, position, tick, duration));
-            }
-            else
-            {
-                m_tick = tick;
-                m_isInProgress = true;
-                DiminishAction(position, duration);
-            }
+            RunAction(DiminishAction, position, tick, duration);
         }
 
         private void DiminishAction(Vector3 position, float duration)

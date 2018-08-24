@@ -26,6 +26,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 using UnityEngine.VR;
+using UnityEngine.UI;
 
 namespace cakeslice
 {
@@ -221,18 +222,21 @@ namespace cakeslice
                             else
                                 m.SetInt("_Culling", (int)UnityEngine.Rendering.CullMode.Off);
 
-                            commandBuffer.DrawRenderer(outline.GetComponent<Renderer>(), m, 0, 0);
+                  
+                            
+                            
+                            commandBuffer.DrawRenderer(outline.Renderer, m, 0, 0);
                             MeshFilter mL = outline.GetComponent<MeshFilter>();
                             if(mL)
                             {
                                 for(int i = 1; i < mL.sharedMesh.subMeshCount; i++)
-                                    commandBuffer.DrawRenderer(outline.GetComponent<Renderer>(), m, i, 0);
+                                    commandBuffer.DrawRenderer(outline.Renderer, m, i, 0);
                             }
                             SkinnedMeshRenderer sMR = outline.GetComponent<SkinnedMeshRenderer>();
                             if(sMR)
                             {
                                 for(int i = 1; i < sMR.sharedMesh.subMeshCount; i++)
-                                    commandBuffer.DrawRenderer(outline.GetComponent<Renderer>(), m, i, 0);
+                                    commandBuffer.DrawRenderer(outline.Renderer, m, i, 0);
                             }
                         }
                     }

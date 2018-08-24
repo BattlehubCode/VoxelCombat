@@ -54,11 +54,11 @@ namespace Battlehub.VoxelCombat
                     UpdateState();
                     if (m_lastSelected == null || m_lastSelected.GetComponent<HUDControlBehavior>().IsDisabled)
                     {
-                        m_eventSystem.SetSelectedGameObject(m_buttons[0].gameObject);
+                        m_eventSystem.SetSelectedGameObjectOnLateUpdate(m_buttons[m_buttons.Length / 2].gameObject);
                     }
                     else
                     {
-                        m_eventSystem.SetSelectedGameObject(m_lastSelected);
+                        m_eventSystem.SetSelectedGameObjectOnLateUpdate(m_lastSelected);
                     }
 
                     m_names = new string[m_buttons.Length];

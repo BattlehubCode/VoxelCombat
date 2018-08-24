@@ -78,8 +78,8 @@
         };
 #endif
 
-        public const int DefaultTestInitPlayersCount = 1;
-        public const int DefaultTestInitBotsCount = 1;
+        public const int DefaultTestInitPlayersCount = 2;
+        public const int DefaultTestInitBotsCount = 0;
     }
 
 }

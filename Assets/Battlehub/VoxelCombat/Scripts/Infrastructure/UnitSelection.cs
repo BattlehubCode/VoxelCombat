@@ -185,15 +185,6 @@ namespace Battlehub.VoxelCombat
                 Select(selectorIndex, ownerIndex, null);
             }
         }
-
-        //public void ClearSelection()
-        //{
-        //    int[] selectors = m_selection.Keys.ToArray();
-        //    for(int i = 0; i < selectors.Length; ++i)
-        //    {
-        //        ClearSelection(selectors[i]);
-        //    }  
-        //}
     }
 }
 

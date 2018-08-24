@@ -290,11 +290,11 @@ namespace Battlehub.VoxelCombat
                 selectedIndex = selection[0];
             }
 
-            long unitIndex = FindClosestTo(selectedIndex, selection, true);
-            if(unitIndex >= 0)
+            VoxelData unitData = FindClosestTo(PlayerIndex, selectedIndex, selection, false);
+            if (unitData != null)
             {
-                m_unitSelection.Unselect(playerIndex, playerIndex, new[] { unitIndex });
-                m_wasSelected.Remove(unitIndex);
+                m_unitSelection.Unselect(playerIndex, playerIndex, new[] { unitData.UnitOrAssetIndex });
+                m_wasSelected.Remove(unitData.UnitOrAssetIndex);
             }
         }
 
@@ -317,23 +317,23 @@ namespace Battlehub.VoxelCombat
                 }
             }
             
-            long unitIndex = FindClosestTo(selectedIndex, units, false);
-            if (unitIndex >= 0)
+            VoxelData unitData = FindClosestTo(PlayerIndex, selectedIndex, units, false);
+            if (unitData != null)
             {
                 if (m_wasSelected.Count == 0)
                 {
-                    m_unitSelection.Select(playerIndex, playerIndex, new[] { unitIndex });
+                    m_unitSelection.Select(playerIndex, playerIndex, new[] { unitData.UnitOrAssetIndex });
                 }
                 else
                 {
-                    m_unitSelection.AddToSelection(playerIndex, playerIndex, new[] { unitIndex });
+                    m_unitSelection.AddToSelection(playerIndex, playerIndex, new[] { unitData.UnitOrAssetIndex });
                 }
 
-                m_wasSelected.Add(unitIndex);
+                m_wasSelected.Add(unitData.UnitOrAssetIndex);
 
                 if (m_wasSelected.Count == 1)
                 {
-                    IVoxelDataController dc = m_gameState.GetVoxelDataController(playerIndex, unitIndex);
+                    IVoxelDataController dc = m_gameState.GetVoxelDataController(playerIndex, unitData.UnitOrAssetIndex);
                     Coordinate coord = dc.Coordinate;
                     coord = coord.ToWeight(m_cameraController.Weight);
                     coord.Altitude += dc.ControlledData.Height;
@@ -346,10 +346,8 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private long FindClosestTo(long selectedIndex, long[] units, bool unselectMode)
+        private VoxelData FindClosestTo(int playerIndex, long selectedIndex, long[] units, bool unselectMode)
         {
-            int playerIndex = PlayerIndex;
-
             MapPos mapCursor = m_cameraController.MapCursor;
             Vector3 selectedPosition;
             if (selectedIndex == -1 || m_mapCursor != mapCursor)
@@ -363,7 +361,7 @@ namespace Battlehub.VoxelCombat
 
             float minDistance = float.PositiveInfinity;
             long closestIndex = -1;
-
+            VoxelData closestVoxelData = null;
             Plane[] planes = GeometryUtility.CalculateFrustumPlanes(m_viewport.Camera);
 
             for (int i = 0; i < units.Length; ++i)
@@ -390,9 +388,7 @@ namespace Battlehub.VoxelCombat
                     }
                 }
 
-
                 IVoxelDataController controller = m_gameState.GetVoxelDataController(playerIndex, unitIndex);
-                
                 Vector3 position = m_map.GetWorldPosition(controller.Coordinate);
                 if (IsVisible(planes, controller.ControlledData.VoxelRef) && VoxelData.IsControllableUnit(controller.ControlledData.Type))
                 {
@@ -403,11 +399,12 @@ namespace Battlehub.VoxelCombat
                     {
                         minDistance = distance;
                         closestIndex = unitIndex;
+                        closestVoxelData = controller.ControlledData;
                     }
                 }
             }
 
-            return closestIndex;
+            return closestVoxelData;
         }
 
         private long GetAt(long[] units, MapPos position)

@@ -28,9 +28,6 @@ namespace Battlehub.VoxelCombat
         //  [ProtoMember(23)]
         //  public int FallDuration; //How much ticks fall for 4 units should take
 
-
-
-
         [ProtoMember(30)]
         public int MinMoveDistance;
         [ProtoMember(31)]
@@ -51,6 +48,14 @@ namespace Battlehub.VoxelCombat
         public int ActionInterval;
         [ProtoMember(39)]
         public int TargetCheckInterval;
+        [ProtoMember(40)]
+        public int SplitDelay;
+        [ProtoMember(41)]
+        public int GrowDelay;
+        [ProtoMember(42)]
+        public int DiminishDelay;
+        [ProtoMember(43)]
+        public int ConvertDelay;
 
         [ProtoMember(70)]
         public int MinWeight;
@@ -130,6 +135,11 @@ namespace Battlehub.VoxelCombat
             ActionInterval = abilities.ActionInterval;
             TargetCheckInterval = abilities.TargetCheckInterval;
 
+            SplitDelay = abilities.SplitDelay;
+            GrowDelay = abilities.GrowDelay;
+            DiminishDelay = abilities.DiminishDelay;
+            ConvertDelay = abilities.ConvertDelay;
+
             MinWeight = abilities.MinWeight;
             MaxWeight = abilities.MaxWeight;
 
@@ -163,6 +173,11 @@ namespace Battlehub.VoxelCombat
                     DiminishDuration = 10;
                     ConvertDuration = 10;
                     TargetCheckInterval = 10;
+
+                    SplitDelay = 0;
+                    GrowDelay = 0;
+                    DiminishDelay = 0;
+                    ConvertDelay = 200;
 
                     MinWeight = 2;
                     MaxWeight = 4;

@@ -80,7 +80,7 @@ namespace Battlehub.VoxelCombat
         private IEventSystemManager m_eventSystemMananger;
         private IndependentEventSystem m_eventSystem;
         private GameObject m_lastSelected;
-
+ 
         private bool m_isOpen;
         public bool IsOpen
         {
@@ -92,9 +92,13 @@ namespace Battlehub.VoxelCombat
                 bool newValue = value && selection.Length > 0;
                 if (m_isOpen != newValue)
                 {
+                
                     m_isOpen = newValue;
-                    IsAutoCommandsOpen = !m_isOpen;
-
+                    if(m_isOpen)
+                    {
+                        IsAutoCommandsOpen = false;
+                    }
+               
                     m_commandsRoot.gameObject.SetActive(m_isOpen);
                     m_selection.SelectionChanged -= OnSelectionChanged;
 
@@ -113,13 +117,13 @@ namespace Battlehub.VoxelCombat
                     {
                         if(m_lastSelected == null || m_lastSelected.GetComponent<HUDControlBehavior>().IsDisabled)
                         {
-                            m_eventSystem.SetSelectedGameObject(m_autoBtn.gameObject);
+                            m_eventSystem.SetSelectedGameObjectOnLateUpdate(m_autoBtn.gameObject);
                         }
                         else
                         {
-                            m_eventSystem.SetSelectedGameObject(m_lastSelected);
+                            m_eventSystem.SetSelectedGameObjectOnLateUpdate(m_lastSelected);
                         }
-                        
+
                         m_virtualMouse.BackupVirtualMouse();
                         m_virtualMouse.IsVirtualMouseEnabled = m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex);
                         m_virtualMouse.IsVirtualMouseCursorVisible = m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex);
@@ -127,7 +131,11 @@ namespace Battlehub.VoxelCombat
                     else
                     {
                         m_virtualMouse.RestoreVirtualMouse();
-                        m_eventSystem.SetSelectedGameObject(null);
+                        if(!m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
+                        {
+                            m_virtualMouse.CenterVirtualMouse();
+                        }
+                        m_eventSystem.SetSelectedGameObjectOnLateUpdate(null);
                     }
 
                     m_gameState.IsContextActionInProgress(LocalPlayerIndex, m_isOpen);
@@ -140,8 +148,22 @@ namespace Battlehub.VoxelCombat
             get { return m_autoCommandsPanel.IsOpen; }
             set
             {
+                bool changed = m_autoCommandsPanel != value;
                 m_autoCommandsPanel.IsOpen = value;
                 m_primaryGrid.SetActive(!value);
+
+                if (!m_autoCommandsPanel.IsOpen && changed)
+                {
+                    if (m_lastSelected == null || m_lastSelected.GetComponent<HUDControlBehavior>().IsDisabled)
+                    {
+                        m_eventSystem.SetSelectedGameObjectOnLateUpdate(m_autoBtn.gameObject);
+                    }
+                    else
+                    {
+                        m_eventSystem.SetSelectedGameObjectOnLateUpdate(m_lastSelected);
+                    }
+                }
+               
             }
         }
 
@@ -289,9 +311,9 @@ namespace Battlehub.VoxelCombat
         private void Update()
         {
             if (m_inputManager.GetButtonDown(InputAction.Back, LocalPlayerIndex, false, false) ||
-                m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex, false, false))
+                           m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex, false, false))
             {
-                if(IsAutoCommandsOpen)
+                if (IsAutoCommandsOpen)
                 {
                     IsAutoCommandsOpen = false;
                 }

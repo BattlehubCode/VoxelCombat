@@ -163,7 +163,7 @@ namespace Battlehub.VoxelCombat
 
                         if (!m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
                         {
-                            m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates[0], true, true);
+                            m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates.Last(), true, true);
                         }
                     }
                 });
@@ -179,13 +179,17 @@ namespace Battlehub.VoxelCombat
                             MovementCmd movementCmd = (MovementCmd)cmd[0];
                             if (!m_inputManager.IsKeyboardAndMouse(LocalPlayerIndex))
                             {
-                                m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates[0], true, true);
+                                m_cameraController.SetVirtualMousePosition(movementCmd.Coordinates.Last(), true, true);
                             }
                             SubmitToEngine(m_gameState.LocalToPlayerIndex(LocalPlayerIndex), cmd);
                         }
                     });
                     m_wasAButtonDown = false;
                 }
+            }
+            else if(m_inputManager.GetButtonDown(InputAction.B, LocalPlayerIndex, false, false))
+            {
+                OnCancel();
             }
             else if (m_inputManager.GetButtonDown(InputAction.Y, LocalPlayerIndex, false, false))
             {

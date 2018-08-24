@@ -80,6 +80,9 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         protected Text m_debugInfoText;
 
+        [SerializeField]
+        private VoxelUI m_uiPrefab;
+
         private IParticleEffectFactory m_effectFactory;
         protected IParticleEffectFactory EffectFactory
         {
@@ -193,11 +196,29 @@ namespace Battlehub.VoxelCombat
             get { return m_height;  }
             set
             {
+                int oldValue = m_height;
                 m_height = value;
                 
                 Vector3 localScale = Root.localScale;
                 localScale.y = EvalHeight(m_height) ;
                 Root.localScale = localScale;
+
+                if(oldValue != m_height )
+                {
+                    UpdateUIVisibility();
+                }
+            }
+        }
+
+        protected void UpdateUIVisibility()
+        {
+            if(m_ui == null)
+            {
+                return;
+            }
+            for (int i = 0; i < m_ui.Count; ++i)
+            {
+                m_ui[i].gameObject.SetActive(m_height != 0);
             }
         }
 
@@ -409,6 +430,7 @@ namespace Battlehub.VoxelCombat
                 {
                     m_previousHeight = m_height;
                     m_isChangingHeight = false;
+                    UpdateUIVisibility();
                 }
             }
         }
@@ -484,26 +506,28 @@ namespace Battlehub.VoxelCombat
 
         private ulong m_selection;
         private List<cakeslice.Outline> m_selectionOutlines;
+        protected List<VoxelUI> m_ui;
         public void Select(int playerIndex) //this is player index (not owner index)
         {
             if (!IsSelected(playerIndex))
             {
                 m_selection |= (1ul << playerIndex);
 
-                if (m_renderer != null)
+                // Dependencies.GameView.GetViewport(m_gameState.PlayerToLocalIndex(pla))
+                if (m_gameState == null)
                 {
-                    if(m_selectionOutlines == null)
-                    {
-                        m_selectionOutlines = new List<cakeslice.Outline>();
-                    }
+                    m_gameState = Dependencies.GameState;
+                }
 
-                    if(m_gameState == null)
+                if (m_gameState.IsLocalPlayer(playerIndex))
+                {
+                    if(m_renderer != null)
                     {
-                        m_gameState = Dependencies.GameState;
-                    }
+                        if (m_selectionOutlines == null)
+                        {
+                            m_selectionOutlines = new List<cakeslice.Outline>();
+                        }
 
-                    if(m_gameState.IsLocalPlayer(playerIndex))
-                    {
                         cakeslice.Outline outline = m_renderer.gameObject.AddComponent<cakeslice.Outline>();
                         m_selectionOutlines.Add(outline);
 
@@ -526,50 +550,91 @@ namespace Battlehub.VoxelCombat
                             }
                         }
                     }
+
+                    if(m_uiPrefab != null)
+                    {
+                        VoxelUI ui = Instantiate(m_uiPrefab, transform, false);
+
+                        int localPlayerIndex = m_gameState.PlayerToLocalIndex(playerIndex);
+                        ui.gameObject.layer = GameConstants.PlayerLayers[localPlayerIndex];
+                        ui.LocalPlayerIndex = localPlayerIndex;
+                        if (m_ui == null)
+                        {
+                            m_ui = new List<VoxelUI>();
+                        }
+                        m_ui.Add(ui);
+                        UpdateUIVisibility();
+                    }
                 }
-                else
-                {
-                    Debug.LogError("MeshRenderer is null");
-                }
+
+                OnSelect(playerIndex);
             }
         }
+
+        protected virtual void OnSelect(int playerIndex)
+        {
+
+        }
+
+
         public void Unselect(int playerIndex) ///this is player index (not owner index)
         {
             if (IsSelected(playerIndex))
             {
                 m_selection &= ~(1ul << playerIndex);
 
-                if (m_renderer != null)
+                if (m_selectionOutlines != null)
                 {
-                    if(m_selectionOutlines != null)
+                    if (m_gameState == null)
                     {
-                        if (m_gameState == null)
-                        {
-                            m_gameState = Dependencies.GameState;
-                        }
-
-                        if (m_gameState.IsLocalPlayer(playerIndex))
-                        {
-                            int localPlayerIndex = m_gameState.PlayerToLocalIndex(playerIndex);
-
-                            cakeslice.Outline outline = m_selectionOutlines.Where(o => o.layerMask == GameConstants.PlayerLayerMasks[localPlayerIndex]).FirstOrDefault();
-
-                            if (outline != null)
-                            {
-                                Destroy(outline);
-                            }
-
-                        }
-
-                        m_selectionOutlines = null;
+                        m_gameState = Dependencies.GameState;
                     }
+
+                    if (m_gameState.IsLocalPlayer(playerIndex))
+                    {
+                        int localPlayerIndex = m_gameState.PlayerToLocalIndex(playerIndex);
+
+                        cakeslice.Outline outline = m_selectionOutlines.Where(o => o.layerMask == GameConstants.PlayerLayerMasks[localPlayerIndex]).FirstOrDefault();
+
+                        if (outline != null)
+                        {
+                            Destroy(outline);
+                        }
+                    }
+
+                    m_selectionOutlines = null;
                 }
-                else
+
+                if(m_ui != null)
                 {
-                    Debug.LogError("MeshRenderer is null");
+                    if (m_gameState == null)
+                    {
+                        m_gameState = Dependencies.GameState;
+                    }
+
+                    if(m_gameState.IsLocalPlayer(playerIndex))
+                    {
+                        int localPlayerIndex = m_gameState.PlayerToLocalIndex(playerIndex);
+
+                       VoxelUI ui = m_ui.Where(o => o.gameObject.layer == GameConstants.PlayerLayers[localPlayerIndex]).FirstOrDefault();
+                        if (ui != null)
+                        {
+                            Destroy(ui.gameObject);
+                        }
+                    }
+
+                    m_ui = null;
                 }
+
+                OnUnselect(playerIndex);
             }
         }
+    
+        protected virtual void OnUnselect(int playerIndex)
+        {
+
+        }
+
         public bool IsSelected(int playerIndex)
         {
             return (m_selection & (1ul << playerIndex)) != 0;
@@ -587,12 +652,27 @@ namespace Battlehub.VoxelCombat
         {
         }
 
+        public virtual void BeginGrow(long tick, float duration)
+        {
+
+        }
+
         public virtual void Grow(Vector3 position, long tick, float duration)
         {
         }
 
+        public virtual void BeginDiminish(long tick, float duration)
+        {
+
+        }
+
         public virtual void Diminish(Vector3 position, long tick, float duration)
         {
+        }
+
+        public virtual void BeginConvert(long tick, float duration)
+        {
+
         }
 
         public virtual void BeginEat(Voxel voxel, long tick)
@@ -715,6 +795,8 @@ namespace Battlehub.VoxelCombat
 
             m_previousAltitude = data.Altitude;
             m_altitude = data.Altitude;
+
+            UpdateUIVisibility();
         }
 
         protected virtual void ReadRotation(VoxelData data)

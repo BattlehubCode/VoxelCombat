@@ -29,7 +29,6 @@ using System.Collections.Generic;
 namespace cakeslice
 {
     [ExecuteInEditMode]
-    [RequireComponent(typeof(Renderer))]
     public class Outline : MonoBehaviour
     {
         public Renderer Renderer { get; private set; }
@@ -37,14 +36,12 @@ namespace cakeslice
         public int color;
         public bool eraseRenderer;
        
-       
         public int layerMask = -1;
-        [HideInInspector]
-        public Material[] originalMaterials;
 
         private void Awake()
         {
             Renderer = GetComponent<Renderer>();
+            
         }
 
         void OnEnable()

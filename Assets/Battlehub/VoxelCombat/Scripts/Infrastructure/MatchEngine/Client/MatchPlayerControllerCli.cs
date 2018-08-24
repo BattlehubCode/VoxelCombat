@@ -114,7 +114,7 @@ namespace Battlehub.VoxelCombat
             m_voxel = voxel;
             if (m_voxel != null)
             {
-                for (int i = 1; i <= GameConstants.MaxLocalPlayers; ++i)
+                for (int i = 1; i <= GameConstants.MaxPlayers; ++i)
                 {
                     if (IsSelectedAsTarget(i))
                     {
@@ -129,7 +129,7 @@ namespace Battlehub.VoxelCombat
             bool wasVisible = m_voxel != null;
             if (wasVisible)
             {
-                for (int i = 1; i <= GameConstants.MaxLocalPlayers; ++i)
+                for (int i = 1; i <= GameConstants.MaxPlayers; ++i)
                 {
                     m_voxel.UnselectAsTarget(i);
                 }

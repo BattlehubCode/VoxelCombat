@@ -129,7 +129,7 @@ namespace Battlehub.VoxelCombat
             m_controlledVoxel = voxel;
             if (m_controlledVoxel != null)
             {
-                for (int i = 1; i <= GameConstants.MaxLocalPlayers; ++i)
+                for (int i = 1; i <= GameConstants.MaxPlayers; ++i)
                 {
                     if (IsSelected(i))
                     {
@@ -152,7 +152,7 @@ namespace Battlehub.VoxelCombat
             bool wasVisible = m_controlledVoxel != null;
             if (wasVisible)
             {
-                for (int i = 1; i <= GameConstants.MaxLocalPlayers; ++i)
+                for (int i = 1; i <= GameConstants.MaxPlayers; ++i)
                 {
                     m_controlledVoxel.Unselect(i);
                     m_controlledVoxel.UnselectAsTarget(i);
@@ -494,7 +494,6 @@ namespace Battlehub.VoxelCombat
         }
 
 
-
         public VoxelActorUnitControllerCli(IVoxelDataController dataController)
             :base(dataController)
         {
@@ -613,49 +612,62 @@ namespace Battlehub.VoxelCombat
                     //Last command was failed go to idle state 
                 }
             }
-            else if (cmd.Code == CmdCode.StateChanged)
-            {
-                OnStateChanged(cmd);
-            }
-            else if (cmd.Code == CmdCode.Move)
-            {
-                OnMove(cmd);
-            }
-            else if (cmd.Code == CmdCode.RotateLeft)
-            {
-                OnRotateLeft();
-            }
-            else if (cmd.Code == CmdCode.RotateRight)
-            {
-                OnRotateRight();
-            }
-            else if (cmd.Code == CmdCode.Split)
-            {
-                OnSplit();
-            }
-            else if (cmd.Code == CmdCode.Split4)
-            {
-                OnSplit4();
-            }
-            else if (cmd.Code == CmdCode.Grow)
-            {
-                OnGrow();
-            }
-            else if (cmd.Code == CmdCode.Diminish)
-            {
-                OnDiminish();
-            }
-            else if (cmd.Code == CmdCode.Convert)
-            {
-                OnConvert(cmd);
-            }
-            else if (cmd.Code == CmdCode.SetHealth)
-            {
-                OnSetHealth(cmd);
-            }
             else
             {
-                OnCommand(cmd);
+                switch(cmd.Code)
+                {
+                    case CmdCode.StateChanged:
+                        OnStateChanged(cmd);
+                        break;
+                    case CmdCode.Move:
+                        OnMove(cmd);
+                        break;
+                    case CmdCode.RotateLeft:
+                        OnRotateLeft();
+                        break;
+                    case CmdCode.RotateRight:
+                        OnRotateRight();
+                        break;
+                    case CmdCode.BeginSplit:
+                        OnBeginSplit(cmd);
+                        break;
+                    case CmdCode.Split:
+                        OnSplit();
+                        break;
+                    case CmdCode.BeginSplit4:
+                        OnBeginSplit4(cmd);
+                        break;
+                    case CmdCode.Split4:
+                        OnSplit4();
+                        break;
+                    case CmdCode.BeginGrow:
+                        OnBeginGrow(cmd);
+                        break;
+                    case CmdCode.Grow:
+                        OnGrow();
+                        break;
+                    case CmdCode.BeginDiminish:
+                        OnBeginDiminish(cmd);
+                        break;
+                    case CmdCode.Diminish:
+                        OnDiminish();
+                        break;
+                    case CmdCode.BeginConvert:
+                        OnBeginConvert(cmd);
+                        break;
+                    case CmdCode.Convert:
+                        OnConvert(cmd);
+                        break;
+                    case CmdCode.BeginSetHealth:
+                        OnBeginSetHealth(cmd);
+                        break;
+                    case CmdCode.SetHealth:
+                        OnSetHealth(cmd);
+                        break;
+                    default:
+                        OnCommand(cmd);
+                        break;
+                }
             }
         }
 
@@ -749,6 +761,11 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        protected virtual void OnBeginSplit(Cmd cmd)
+        {
+            
+        }
+
         protected virtual void OnSplit()
         {
             Coordinate[] coordinates;
@@ -784,6 +801,11 @@ namespace Battlehub.VoxelCombat
                 Collapse(m_currentTick, 0);
                 EatAndExpand(m_currentTick, 0);
             }
+        }
+
+        protected virtual void OnBeginSplit4(Cmd cmd)
+        {
+
         }
 
         protected virtual void OnSplit4()
@@ -824,6 +846,11 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        protected virtual void OnBeginGrow(Cmd cmd)
+        {
+
+        }
+
         protected virtual void OnGrow()
         {
             int previousAltitude = m_dataController.ControlledData.Altitude;
@@ -846,6 +873,11 @@ namespace Battlehub.VoxelCombat
                 float duration = (m_dataController.Abilities.GrowDuration) * GameConstants.MatchEngineTick;
                 Collapse(m_currentTick, duration);
             }
+        }
+
+        protected virtual void OnBeginDiminish(Cmd cmd)
+        {
+            
         }
 
         protected virtual void OnDiminish()
@@ -871,6 +903,11 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        protected virtual void OnBeginSetHealth(Cmd cmd)
+        {
+
+        }
+
         protected virtual void OnSetHealth(Cmd cmd)
         {
             ChangeParamsCmd changeCmd = (ChangeParamsCmd)cmd;
@@ -881,6 +918,15 @@ namespace Battlehub.VoxelCombat
             {
                 m_controlledVoxel.Health = changeCmd.IntParams[0];
             }
+        }
+
+        protected virtual void OnBeginConvert(Cmd cmd)
+        {
+            if(m_controlledVoxel != null)
+            {
+                m_controlledVoxel.BeginConvert(m_currentTick, cmd.Duration);
+            }
+            
         }
 
         protected virtual void OnConvert(Cmd cmd)

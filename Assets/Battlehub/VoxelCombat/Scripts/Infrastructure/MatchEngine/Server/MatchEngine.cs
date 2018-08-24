@@ -16,12 +16,18 @@ namespace Battlehub.VoxelCombat
         public const int RotateRight = 5;
         public const int ExecuteTask = 8;
         public const int Cancel = 10;
-      
+
+        public const int BeginSplit = 19;
         public const int Split = 20;
+        public const int BeginSplit4 = 23;
         public const int Split4 = 24;
-        public const int Grow = 25;
-        public const int Diminish = 26;
-       // public const int Automatic = 40;
+        public const int BeginGrow = 25;
+        public const int Grow = 26;
+        public const int BeginDiminish = 27;
+        public const int Diminish = 28;
+        // public const int Automatic = 40;
+
+        public const int BeginConvert = 51;
         public const int Convert = 50;
         public const int Explode = 75;
         public const int StateChanged = 90;
@@ -31,6 +37,7 @@ namespace Battlehub.VoxelCombat
         public const int Composite = 100;
 
         //Debug command
+        public const int BeginSetHealth = 199;
         public const int SetHealth = 200;
         public const int Kill = 201;
 
@@ -386,7 +393,7 @@ namespace Battlehub.VoxelCombat
         [ProtoMember(3)]
         public int Duration;
 
-        [ProtoMember(4)]
+        [ProtoMember(5)]
         public CmdResultCode ErrorCode;
 
         public bool IsFailed
@@ -421,6 +428,11 @@ namespace Battlehub.VoxelCombat
             UnitIndex = cmd.UnitIndex;
             Duration = cmd.Duration;
         }
+
+        public virtual Cmd Clone()
+        {
+            return new Cmd(this);
+        }
     }
 
     [ProtoContract]
@@ -438,7 +450,12 @@ namespace Battlehub.VoxelCombat
         {
             Code = CmdCode.ExecuteTask;
             Task = task;
-        }  
+        }
+  
+        public override Cmd Clone()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     [ProtoContract]
@@ -493,6 +510,23 @@ namespace Battlehub.VoxelCombat
             UnitIndex = unitIndex;
             Duration = duration;
         }
+
+        public CoordinateCmd(CoordinateCmd cmd) : base(cmd)
+        {
+            if(cmd.Coordinates != null)
+            {
+                Coordinates = new Coordinate[cmd.Coordinates.Length];
+                for(int i = 0; i < Coordinates.Length; ++i)
+                {
+                    Coordinates[i] = cmd.Coordinates[i];
+                }
+            }
+        }
+
+        public override Cmd Clone()
+        {
+            return new CoordinateCmd(this);
+        }
     }
 
     [ProtoContract]
@@ -524,6 +558,18 @@ namespace Battlehub.VoxelCombat
             UnitIndex = unitIndex;
             Duration = duration;
         }
+
+        public TargetCmd(TargetCmd cmd) : base(cmd)
+        {
+            TargetPlayerIndex = cmd.TargetPlayerIndex;
+            TargetIndex = cmd.TargetIndex;
+        }
+
+        public override Cmd Clone()
+        {
+            return new TargetCmd(this);
+        }
+
     }
 
     [ProtoContract]
@@ -559,6 +605,19 @@ namespace Battlehub.VoxelCombat
             UnitIndex = unitIndex;
             Duration = duration;
         }
+
+        public MovementCmd(MovementCmd cmd) : base(cmd)
+        {
+            TargetPlayerIndex = cmd.TargetPlayerIndex;
+            TargetIndex = cmd.TargetIndex;
+            HasTarget = cmd.HasTarget;
+            IsLastCmdInSequence = cmd.IsLastCmdInSequence;
+        }
+
+        public override Cmd Clone()
+        {
+            return new MovementCmd(this);
+        }
     }
 
     /// <summary>
@@ -583,6 +642,33 @@ namespace Battlehub.VoxelCombat
         {
             Code = code;
         }
+
+        public ChangeParamsCmd(ChangeParamsCmd cmd) : base(cmd)
+        {
+            if(cmd.IntParams != null)
+            {
+                IntParams = new int[cmd.IntParams.Length];
+                for(int i = 0; i < cmd.IntParams.Length; ++i)
+                {
+                    IntParams[i] = cmd.IntParams[i];
+                }
+            }
+
+            if(cmd.FloatParams != null)
+            {
+                FloatParams = new float[cmd.FloatParams.Length]; 
+                for(int i = 0; i < cmd.FloatParams.Length; ++i)
+                {
+                    FloatParams[i] = cmd.FloatParams[i];
+                }
+            }
+        }
+
+        public override Cmd Clone()
+        {
+            return new ChangeParamsCmd(this);
+        }
+
     }
 
     [ProtoContract]
@@ -594,6 +680,21 @@ namespace Battlehub.VoxelCombat
         public CompositeCmd()
         {
             Code = CmdCode.Composite;
+        }
+
+        public CompositeCmd(CompositeCmd cmd) : base(cmd)
+        {
+            if(cmd.Commands != null)
+            {
+                Commands = new Cmd[cmd.Commands.Length];
+                for(int i = 0; i < Commands.Length; ++i)
+                {
+                    if(cmd.Commands[i] != null)
+                    {
+                        Commands[i] = cmd.Commands[i].Clone();
+                    }
+                }
+            }
         }
     }
 

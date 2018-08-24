@@ -239,9 +239,16 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        protected void OnInstantCmd(Cmd cmd, int duration)
+        protected void OnInstantCmd(int beginCmdCode, Cmd cmd, int delay, int duration)
         {
             State = VoxelDataState.Busy;
+
+            Cmd beginCmd = cmd.Clone();
+            beginCmd.Code = beginCmdCode;
+
+            beginCmd.Duration = delay;
+            m_commandsQueue.Enqueue(beginCmd);
+
             cmd.Duration = duration;
             m_commandsQueue.Enqueue(cmd);
         }
@@ -282,22 +289,22 @@ namespace Battlehub.VoxelCombat
                     OnMoveCmd(cmd);
                     break;
                 case CmdCode.Split:
-                    OnInstantCmd(cmd, m_dataController.Abilities.SplitDuration);
+                    OnInstantCmd(CmdCode.BeginSplit, cmd, m_dataController.Abilities.SplitDelay, m_dataController.Abilities.SplitDuration);
                     break;
                 case CmdCode.Split4:
-                    OnInstantCmd(cmd, m_dataController.Abilities.SplitDuration);
+                    OnInstantCmd(CmdCode.BeginSplit4, cmd, m_dataController.Abilities.SplitDelay, m_dataController.Abilities.SplitDuration);
                     break;
                 case CmdCode.Grow:
-                    OnInstantCmd(cmd, m_dataController.Abilities.GrowDuration);
+                    OnInstantCmd(CmdCode.BeginGrow, cmd, m_dataController.Abilities.GrowDelay,  m_dataController.Abilities.GrowDuration);
                     break;
                 case CmdCode.Diminish:
-                    OnInstantCmd(cmd, m_dataController.Abilities.DiminishDuration);
+                    OnInstantCmd(CmdCode.Diminish, cmd, m_dataController.Abilities.DiminishDelay, m_dataController.Abilities.DiminishDuration);
                     break;
                 case CmdCode.Convert:
-                    OnInstantCmd(cmd, m_dataController.Abilities.ConvertDuration);
+                    OnInstantCmd(CmdCode.BeginConvert, cmd, m_dataController.Abilities.ConvertDelay, m_dataController.Abilities.ConvertDuration);
                     break;
                 case CmdCode.SetHealth:
-                    OnInstantCmd(cmd, 0);
+                    OnInstantCmd(CmdCode.BeginSetHealth, cmd, 0, 0);
                     break;
             }
         }
@@ -457,6 +464,13 @@ namespace Battlehub.VoxelCombat
 
                     switch (cmd.Code)
                     {
+                        case CmdCode.BeginSplit:
+                        case CmdCode.BeginSplit4:
+                        case CmdCode.BeginGrow:
+                        case CmdCode.BeginDiminish:
+                        case CmdCode.BeginConvert:
+                        case CmdCode.BeginSetHealth:
+                            return cmd;
                         case CmdCode.Split:
                         {
                             CoordinateCmd coordinateCmd = new CoordinateCmd(cmd.Code, cmd.UnitIndex, cmd.Duration);
