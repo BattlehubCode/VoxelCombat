@@ -8,7 +8,7 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private SpriteRenderer m_ui;
 
-        private float m_fillProgress = 0;
+        //private float m_fillProgress = 0;
 
         [SerializeField]
         private float m_progress;
@@ -21,15 +21,19 @@ namespace Battlehub.VoxelCombat
                 if(m_progress != newValue)
                 {
                     m_progress = newValue;
-                    m_fillProgress = 0;
-                    if (Animate)
-                    {
-                        enabled = true;
-                    }
-                    else
-                    {
-                        m_ui.transform.localScale = new Vector3(m_progress, 1, 1);
-                    }                    
+                    //if(m_progress < m_fillProgress)
+                    //{
+                    //    m_fillProgress = m_progress;
+                    //}
+                    //if (Animate)
+                    //{
+                    //    enabled = true;
+                    //}
+                    //else
+                    //{
+                    //    m_fillProgress = m_progress;
+                    //}
+                    m_ui.transform.localScale = new Vector3(m_progress, 1, 1);
                 }
             }
         }
@@ -48,16 +52,11 @@ namespace Battlehub.VoxelCombat
             
         }
 
-        private void Update()
-        {
-            if(Mathf.Approximately(m_ui.transform.localScale.x, m_progress))
-            {
-                enabled = false;
-            }
-
-            m_fillProgress += Time.deltaTime;
-            m_ui.transform.localScale = new Vector3(Mathf.Lerp(m_ui.transform.localScale.x, m_progress, m_fillProgress), 1, 1);
-        }
+        //private void Update()
+        //{
+        //    m_fillProgress = Mathf.Lerp(m_fillProgress, m_progress, Time.deltaTime);
+        //    m_ui.transform.localScale = new Vector3(Mathf.Lerp(m_ui.transform.localScale.x, 1, m_fillProgress), 1, 1);
+        //}
     }
 }
 

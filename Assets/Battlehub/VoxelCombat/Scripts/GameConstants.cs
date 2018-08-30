@@ -4,7 +4,7 @@
     {
         public const float UnitSize = 0.5f;
 
-        public const int VoxelCameraRadius = 16;// 2; //= 6;
+        public const int VoxelCameraRadius = 3;//16;// 2; //= 6;
         public const int VoxelCameraWeight = 4;
         
         public const int MinVoxelActorWeight = VoxelCameraWeight - 2;

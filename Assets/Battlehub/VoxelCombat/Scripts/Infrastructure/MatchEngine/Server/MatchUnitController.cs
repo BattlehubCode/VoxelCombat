@@ -25,7 +25,7 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-        void Tick(out Cmd cmd);
+        void Tick(long tick, out Cmd cmd);
 
         void Destroy();
     }
@@ -104,18 +104,14 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            if(cmd.Code != CmdCode.Cancel && State != VoxelDataState.Idle)
+            if(cmd.Code != CmdCode.Cancel && State == VoxelDataState.Moving)
             {
                 RaiseCmdFailed(null, CmdResultCode.Fail_InvalidOperation);
             }
-            else
+          
+            if (cmd.Code != CmdCode.LeaveRoom)
             {
-                GoToIdleState();
-            }
-           
-            if (cmd.Code != CmdCode.Cancel && cmd.Code != CmdCode.LeaveRoom)
-            {
-                if (State == VoxelDataState.Busy)
+                if (cmd.Code != CmdCode.Cancel && (State & VoxelDataState.Busy) == VoxelDataState.Busy)
                 {
                     return;
                 }
@@ -123,7 +119,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void Tick(out Cmd cmd)
+        public void Tick(long tick, out Cmd cmd)
         {
             if(m_createdVoxels.Count != 0)
             {
@@ -151,7 +147,7 @@ namespace Battlehub.VoxelCombat
 
             if (m_ticksBeforeNextCommand == 0)
             {
-                cmd = OnTick();
+                cmd = OnTick(tick);
 
                 if (State != m_prevState)
                 {
@@ -239,23 +235,26 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        protected void OnInstantCmd(int beginCmdCode, Cmd cmd, int delay, int duration)
+        protected void OnInstantCmd(VoxelDataState state, int beginCmdCode, Cmd cmd, int delay, int duration)
         {
-            State = VoxelDataState.Busy;
+            State = state;
 
-            Cmd beginCmd = cmd.Clone();
-            beginCmd.Code = beginCmdCode;
+            if(beginCmdCode != CmdCode.Nop)
+            {
+                Cmd beginCmd = cmd.Clone();
+                beginCmd.Code = beginCmdCode;
 
-            beginCmd.Duration = delay;
-            m_commandsQueue.Enqueue(beginCmd);
-
+                beginCmd.Duration = delay;
+                m_commandsQueue.Enqueue(beginCmd);
+            }
+        
             cmd.Duration = duration;
             m_commandsQueue.Enqueue(cmd);
         }
 
         protected virtual void OnGoToIdleState() { }
         protected abstract void OnSetCommand(Cmd cmd);
-        protected abstract Cmd OnTick();
+        protected abstract Cmd OnTick(long tick);
 
         public void Destroy()
         {
@@ -289,22 +288,32 @@ namespace Battlehub.VoxelCombat
                     OnMoveCmd(cmd);
                     break;
                 case CmdCode.Split:
-                    OnInstantCmd(CmdCode.BeginSplit, cmd, m_dataController.Abilities.SplitDelay, m_dataController.Abilities.SplitDuration);
+                    OnInstantCmd(VoxelDataState.Mutating, CmdCode.BeginSplit, cmd, m_dataController.Abilities.SplitDelay, m_dataController.Abilities.SplitDuration);
                     break;
                 case CmdCode.Split4:
-                    OnInstantCmd(CmdCode.BeginSplit4, cmd, m_dataController.Abilities.SplitDelay, m_dataController.Abilities.SplitDuration);
+                    OnInstantCmd(VoxelDataState.Mutating, CmdCode.BeginSplit4, cmd, m_dataController.Abilities.SplitDelay, m_dataController.Abilities.SplitDuration);
                     break;
                 case CmdCode.Grow:
-                    OnInstantCmd(CmdCode.BeginGrow, cmd, m_dataController.Abilities.GrowDelay,  m_dataController.Abilities.GrowDuration);
+                    OnInstantCmd(VoxelDataState.Mutating, CmdCode.BeginGrow, cmd, m_dataController.Abilities.GrowDelay,  m_dataController.Abilities.GrowDuration);
                     break;
                 case CmdCode.Diminish:
-                    OnInstantCmd(CmdCode.Diminish, cmd, m_dataController.Abilities.DiminishDelay, m_dataController.Abilities.DiminishDuration);
+                    OnInstantCmd(VoxelDataState.Mutating, CmdCode.Diminish, cmd, m_dataController.Abilities.DiminishDelay, m_dataController.Abilities.DiminishDuration);
                     break;
                 case CmdCode.Convert:
-                    OnInstantCmd(CmdCode.BeginConvert, cmd, m_dataController.Abilities.ConvertDelay, m_dataController.Abilities.ConvertDuration);
+                    OnInstantCmd(VoxelDataState.Mutating, CmdCode.BeginConvert, cmd, m_dataController.Abilities.ConvertDelay, m_dataController.Abilities.ConvertDuration);
                     break;
                 case CmdCode.SetHealth:
-                    OnInstantCmd(CmdCode.BeginSetHealth, cmd, 0, 0);
+                    OnInstantCmd(VoxelDataState.Mutating, CmdCode.BeginSetHealth, cmd, 0, 0);
+                    break;
+                case CmdCode.Cancel:
+                    {
+                        if(State != VoxelDataState.Moving) //This if is required to prevent fast-movement using cancel cmd
+                        {
+                            m_ticksBeforeNextCommand = 0;
+                        }
+                        GoToIdleState();
+                        OnInstantCmd(VoxelDataState.Busy, CmdCode.Nop, cmd, 0, 0);
+                    }
                     break;
             }
         }
@@ -387,7 +396,7 @@ namespace Battlehub.VoxelCombat
         }
 
    
-        protected override Cmd OnTick() //Tick should be able return several commands
+        protected override Cmd OnTick(long tick) //Tick should be able return several commands
         {
             if (State == VoxelDataState.Moving)
             {
@@ -430,7 +439,7 @@ namespace Battlehub.VoxelCombat
                         default:
                         {
                             cmd = HandleNextCmd(cmd);
-                            dequeue = cmd != null; //if null then wait al little bit and try again
+                            dequeue = cmd != null; //if null then wait a little bit and try again
                             break;
                         }      
                     }
@@ -455,7 +464,7 @@ namespace Battlehub.VoxelCombat
 
                 return null;
             }
-            else if (State == VoxelDataState.Busy)
+            else if ((State & VoxelDataState.Busy) == VoxelDataState.Busy)
             {
                 if (m_commandsQueue.Count > 0)
                 {
@@ -470,7 +479,11 @@ namespace Battlehub.VoxelCombat
                         case CmdCode.BeginDiminish:
                         case CmdCode.BeginConvert:
                         case CmdCode.BeginSetHealth:
+                        {
+                           m_dataController.ControlledData.Unit.MutationStartTick = tick;
                             return cmd;
+                        }
+                            
                         case CmdCode.Split:
                         {
                             CoordinateCmd coordinateCmd = new CoordinateCmd(cmd.Code, cmd.UnitIndex, cmd.Duration);
@@ -564,6 +577,12 @@ namespace Battlehub.VoxelCombat
                             RaiseCmdExecuted();
                             return changeCmd;
                         }
+                        case CmdCode.Cancel:
+                            {
+                                RaiseCmdExecuted();
+                                return cmd;
+                            }
+
                     }
                 }
             }
@@ -703,7 +722,7 @@ namespace Battlehub.VoxelCombat
 
         }
 
-        protected override Cmd OnTick()
+        protected override Cmd OnTick(long tick)
         {
             m_ticksBeforeNextCommand = DataController.Abilities.ActionInterval;
 

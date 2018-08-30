@@ -37,7 +37,7 @@ namespace Battlehub.VoxelCombat
 
                 m_wasConnected = false;
 
-                m_protocol = new LowProtocol<Socket>(ServerUrl, Time.time);
+                m_protocol = new LowProtocol<Socket>(ServerUrl, Time.realtimeSinceStartup);
                 m_protocol.Enabled += OnEnabled;
                 m_protocol.Disabled += OnDisabled;
                 m_protocol.SocketError += OnSocketError;
@@ -102,7 +102,7 @@ namespace Battlehub.VoxelCombat
 
         protected virtual void Update()
         {
-            m_protocol.UpdateTime(Time.time);
+            m_protocol.UpdateTime(Time.realtimeSinceStartup);
         }
 
         protected virtual void OnEnabled(ILowProtocol sender)

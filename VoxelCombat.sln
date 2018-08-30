@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VoxelCombat", "Assembly-CSharp.csproj", "{C490BCE8-EEC7-0AC1-F465-6C3267D355AD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{C490BCE8-EEC7-0AC1-F465-6C3267D355AD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VoxelCombat", "Assembly-CSharp-Editor.csproj", "{7C9D230C-B7A2-6F73-3EE0-9DE34499CA35}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{7C9D230C-B7A2-6F73-3EE0-9DE34499CA35}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

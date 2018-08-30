@@ -718,7 +718,7 @@ namespace Battlehub.VoxelCombat
 
         void Update();
 
-        bool Tick(out CommandsBundle commands);
+        bool Tick(long tick, out CommandsBundle commands);
 
         void SubmitResponse(ClientRequest response);
 
@@ -943,7 +943,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public bool Tick(out CommandsBundle commands)
+        public bool Tick(long tick, out CommandsBundle commands)
         {
             for (int i = 0; i < m_players.Length; ++i)
             {
@@ -960,7 +960,7 @@ namespace Battlehub.VoxelCombat
 
                 CommandsArray playerCommands;
 
-                if (playerController.Tick(out playerCommands))
+                if (playerController.Tick(tick, out playerCommands))
                 {
                     m_hasNewCommands = true;
                 }

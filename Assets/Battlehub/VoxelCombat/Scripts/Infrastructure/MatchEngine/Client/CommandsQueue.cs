@@ -9,6 +9,11 @@ namespace Battlehub.VoxelCombat
     {
         private long m_tick;
         private long m_hold;
+
+        public long CurrentTick
+        {
+            get { return m_tick; }
+        }
      
         private readonly long m_maxPing;
         private readonly Queue<CommandsBundle> m_commands;

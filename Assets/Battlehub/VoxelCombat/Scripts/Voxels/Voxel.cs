@@ -210,18 +210,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        protected void UpdateUIVisibility()
-        {
-            if(m_ui == null)
-            {
-                return;
-            }
-            for (int i = 0; i < m_ui.Count; ++i)
-            {
-                m_ui[i].gameObject.SetActive(m_height != 0);
-            }
-        }
-
         public abstract int Type
         {
             get;
@@ -652,6 +640,26 @@ namespace Battlehub.VoxelCombat
         {
         }
 
+        public virtual void BeginSplit(long tick, float duration)
+        {
+
+        }
+
+        public virtual void Split(long tick, float duration)
+        {
+
+        }
+
+        public virtual void BeginSplit4(long tick, float duration)
+        {
+
+        }
+
+        public virtual void Split4(long tick, float duration)
+        {
+
+        }
+
         public virtual void BeginGrow(long tick, float duration)
         {
 
@@ -818,6 +826,28 @@ namespace Battlehub.VoxelCombat
                 default:
                     throw new System.ArgumentException("data.Dir has wrong value " + data.Dir);
             }
+        }
+
+        protected virtual void UpdateUIVisibility()
+        {
+            if (m_ui == null)
+            {
+                return;
+            }
+            for (int i = 0; i < m_ui.Count; ++i)
+            {
+                m_ui[i].gameObject.SetActive(m_height != 0);
+            }
+        }
+
+        public virtual void OnStateChanged(VoxelDataState prevState, VoxelDataState newState)
+        {
+            
+        }
+
+        public virtual void OnCancel()
+        {
+
         }
 
         protected virtual void OnDebugModeChanged()

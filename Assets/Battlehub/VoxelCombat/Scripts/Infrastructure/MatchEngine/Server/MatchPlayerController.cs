@@ -20,7 +20,7 @@ namespace Battlehub.VoxelCombat
 
         void Submit(Cmd command);
 
-        bool Tick(out CommandsArray commands);
+        bool Tick(long tick, out CommandsArray commands);
 
         IMatchUnitController GetUnitController(long index);
 
@@ -334,7 +334,7 @@ namespace Battlehub.VoxelCombat
         }
 
 
-        public bool Tick(out CommandsArray commands)
+        public bool Tick(long tick, out CommandsArray commands)
         {
             m_isPlayerInRoom = !m_isPlayerLeftRoom;
 
@@ -351,7 +351,7 @@ namespace Battlehub.VoxelCombat
                 IMatchUnitController unitController = m_units[i];
 
                 Cmd cmd;
-                unitController.Tick(out cmd);
+                unitController.Tick(tick, out cmd);
 
                 IList<VoxelDataCellPair> createdVoxels = unitController.CreatedVoxels;
                 if (createdVoxels.Count != 0)

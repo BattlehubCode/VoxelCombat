@@ -9,13 +9,15 @@ namespace Battlehub.VoxelCombat
 {
     public delegate void VoxelDataEvent<T>(T payload);
 
+    [Flags]
     public enum VoxelDataState
     {
-        Idle,
-        SearchingPath,
-        Moving,
+        Idle = 0,
+        SearchingPath = 1,
+        Moving = 2,
         //Dead,
-        Busy,
+        Busy = 4,
+        Mutating = 8 | Busy
     }
 
     public class VoxelDataCellPair
@@ -36,6 +38,10 @@ namespace Battlehub.VoxelCombat
         [ProtoMember(1)]
         public VoxelDataState State;
 
+        [ProtoMember(2)]
+        public long MutationStartTick;
+
+        public int MutationDuration;
 
         public VoxelUnitData()
         {

@@ -356,6 +356,10 @@ namespace Battlehub.VoxelCombat
 
         private void UpdateUI(bool animate)
         {
+            if(VoxelData.Unit.State == VoxelDataState.Mutating)
+            {
+                return;
+            }
             if(m_ui == null)
             {
                 return;
@@ -370,7 +374,7 @@ namespace Battlehub.VoxelCombat
         protected override void OnSelect(int playerIndex)
         {
             base.OnSelect(playerIndex);
-            UpdateUI(false);
+            UpdateUI(false);   
         }
 
         protected override void OnUnselect(int playerIndex)
@@ -378,6 +382,11 @@ namespace Battlehub.VoxelCombat
             base.OnUnselect(playerIndex);
         }
 
+        public override void OnStateChanged(VoxelDataState prevState, VoxelDataState newState)
+        {
+            base.OnStateChanged(prevState, newState);
+            UpdateUI(false);
+        }
 
         public override void ReadFrom(VoxelData data)
         {
@@ -392,9 +401,9 @@ namespace Battlehub.VoxelCombat
             }
             m_tex.Apply(false);
             m_flippedTex.Apply(false);
-
             UpdateUI(false);
         }
+
 
         private void EmptyAllCells()
         {

@@ -127,11 +127,9 @@ namespace Battlehub.VoxelCombat
 
         private bool m_isFrozen;
 
-
-        private bool m_isShowingProgress;
-        private float m_showProgressStartTime;
-        private float m_showProgressDuration;
-
+        /// <summary>
+        /// True during any time consuming conversions like Convert To Wall/Spawner/Bomb GrowUp etc.
+        /// </summary>        
         private abstract class QueuedActionBase
         {
             public long Tick
@@ -149,7 +147,7 @@ namespace Battlehub.VoxelCombat
             public QueuedActionBase(long tick, float duration)
             {
                 Tick = tick;
-                CompleteTime = Time.time + duration;
+                CompleteTime = Time.realtimeSinceStartup + duration;
             }
 
             public abstract void Run();
@@ -166,7 +164,7 @@ namespace Battlehub.VoxelCombat
 
             public override void Run()
             {
-                m_action(Mathf.Max(0.01f, CompleteTime - Time.time));
+                m_action(Mathf.Max(0.01f, CompleteTime - Time.realtimeSinceStartup));
             }
         }
 
@@ -185,11 +183,11 @@ namespace Battlehub.VoxelCombat
 
             public override void Run()
             {
-                m_action(m_value, Mathf.Max(0.01f, CompleteTime - Time.time));
+                m_action(m_value, Mathf.Max(0.01f, CompleteTime - Time.realtimeSinceStartup));
             }
         }
 
-        private long m_tick;
+        private long m_startTick;
         private bool m_isInProgress;
         private readonly Queue<QueuedActionBase> m_actionQueue = new Queue<QueuedActionBase>();
 
@@ -279,8 +277,11 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        private IMatchEngineCli m_engine;
+
         protected override void AwakeOverride()
         {
+            
             m_weight = GameConstants.MinVoxelActorWeight;
       
             m_animationState = VoxelActorState.Idle;
@@ -292,6 +293,8 @@ namespace Battlehub.VoxelCombat
         protected override void StartOverride()
         {
             base.StartOverride();
+
+            m_engine = Dependencies.MatchEngine;
 
             m_animateFromPosition = transform.position;
             m_animateToPosition = transform.position;
@@ -388,7 +391,7 @@ namespace Battlehub.VoxelCombat
             {
                 QueuedActionBase queuedAction = m_actionQueue.Dequeue();
 
-                m_tick = queuedAction.Tick;
+                m_startTick = queuedAction.Tick;
 
                 queuedAction.Run();
             }
@@ -407,7 +410,7 @@ namespace Battlehub.VoxelCombat
                     RoundPosition();
                     RoundStomicRotation();
 
-                    RaiseMoveCompleted(m_tick);
+                    RaiseMoveCompleted(m_startTick);
                     ExecuteNextAction();
                 }
                 else if ((m_animationState & VoxelActorState.Rotate) != 0)
@@ -415,7 +418,7 @@ namespace Battlehub.VoxelCombat
                     RoundRotation();
                     RoundPosition();
 
-                    RaiseRotateCompleted(m_tick);
+                    RaiseRotateCompleted(m_startTick);
                     ExecuteNextAction();
                 }
                 else if ((m_animationState & VoxelActorState.Resize) != 0)
@@ -434,7 +437,7 @@ namespace Battlehub.VoxelCombat
                     RoundRotation();
                     RoundPosition();
 
-                    RaiseResizeCompleted(m_tick);
+                    RaiseResizeCompleted(m_startTick);
                     ExecuteNextAction();
                 }
 
@@ -484,7 +487,7 @@ namespace Battlehub.VoxelCombat
             {
                 Debug.LogErrorFormat("VoxeData.Weight {0} != Weight {1}", VoxelData.Weight, Weight);
             }
-            RaiseBeginMove(m_tick);
+            RaiseBeginMove(m_startTick);
         }
 
         /// <summary>
@@ -492,7 +495,7 @@ namespace Battlehub.VoxelCombat
         /// </summary>
         private void OnBeforeMoveCompleted()
         {
-            RaiseBeforeMoveCompleted(m_tick);
+            RaiseBeforeMoveCompleted(m_startTick);
         }
 
         /// <summary>
@@ -517,12 +520,12 @@ namespace Battlehub.VoxelCombat
 
         private void OnBeforeGrowCompleted()
         {
-            RaiseBeforeGrowCompleted(m_tick);
+            RaiseBeforeGrowCompleted(m_startTick);
         }
 
         private void OnBeforeDiminishCompleted()
         {
-            RaiseBeforeDiminishCompleted(m_tick);
+            RaiseBeforeDiminishCompleted(m_startTick);
         }
 
         private void OnGrowCompleted()
@@ -584,39 +587,47 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void BeginShowProgress(float duration)
+        private void BeginMutation(float duration)
         {
-            m_isShowingProgress = true;
-            m_showProgressStartTime = Time.time;
-            m_showProgressDuration = duration;
+            UpdateProgressUI(false);
+        }
+
+        public override void OnStateChanged(VoxelDataState prevState, VoxelDataState newState)
+        {
+            base.OnStateChanged(prevState, newState);
+
+            if (prevState == VoxelDataState.Mutating)
+            {
+                UpdateProgressUI(false);
+                m_isInProgress = false;
+            }
         }
 
         protected override void UpdateOverride()
         {
             base.UpdateOverride();
-            if(m_isShowingProgress)
+            if(VoxelData.Unit.State == VoxelDataState.Mutating)
             {
-                if(Time.time >= m_showProgressStartTime + m_showProgressDuration)
+                if(m_engine.Tick >= VoxelData.Unit.MutationStartTick  + VoxelData.Unit.MutationDuration)
                 {
-                    m_isShowingProgress = false;
-                    m_isInProgress = false;
-                    if (m_ui != null)
-                    {
-                        for (int i = 0; i < m_ui.Count; ++i)
-                        {
-                            m_ui[i].UpdateProgress(true, 1);
-                        }
-                    }
+                    m_isInProgress = false;   
                 }
-                else
+                UpdateProgressUI(true);
+            }
+        }
+
+        protected void UpdateProgressUI(bool animate)
+        {
+            if (m_ui != null)
+            {
+                for (int i = 0; i < m_ui.Count; ++i)
                 {
-                    if (m_ui != null)
+                    float t = ((float)(m_engine.Tick - VoxelData.Unit.MutationStartTick)) / VoxelData.Unit.MutationDuration;
+                    if(t > 1)
                     {
-                        for(int i = 0; i < m_ui.Count; ++i)
-                        {
-                            m_ui[i].UpdateProgress(true, (Time.time - m_showProgressStartTime) / m_showProgressDuration);
-                        }
+                        t = 1;
                     }
+                    m_ui[i].UpdateProgress(animate, t);
                 }
             }
         }
@@ -629,7 +640,7 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                m_tick = tick;
+                m_startTick = tick;
                 m_isInProgress = true;
                 action(value, duration);
             }
@@ -643,7 +654,7 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                m_tick = tick;
+                m_startTick = tick;
                 m_isInProgress = true;
                 action(duration);
             }
@@ -656,7 +667,27 @@ namespace Battlehub.VoxelCombat
 
         private void BeginCovertAction(float duration)
         {
-            BeginShowProgress(duration);
+            BeginMutation(duration);
+        }
+
+        public override void BeginSplit(long tick, float duration)
+        {
+            RunAction(BeginSplitAction, tick, duration);
+        }
+
+        private void BeginSplitAction(float duration)
+        {
+            BeginMutation(duration);
+        }
+
+        public override void BeginSplit4(long tick, float duration)
+        {
+            RunAction(BeginSplit4Action, tick, duration);
+        }
+
+        private void BeginSplit4Action(float duration)
+        {
+            BeginMutation(duration);
         }
 
         public override void Move(int altitude, long tick, float duration)
@@ -664,7 +695,6 @@ namespace Battlehub.VoxelCombat
             RunAction(MoveAction, altitude, tick, duration);
         }
 
-       
         private void MoveAction(int altitude, float duration)
         {
             m_altitude = altitude;
@@ -716,10 +746,13 @@ namespace Battlehub.VoxelCombat
 
         public override void BeginGrow(long tick, float duration)
         {
-            
+            RunAction(BeginGrowAction, tick, duration);
         }
 
-
+        private void BeginGrowAction(float duration)
+        {
+            BeginMutation(duration);
+        }
 
         public override void Grow(Vector3 position, long tick, float duration)
         {
@@ -740,6 +773,16 @@ namespace Battlehub.VoxelCombat
             m_movementState.Grow();
         }
 
+        public override void BeginDiminish(long tick, float duration)
+        {
+            RunAction(BeginDiminishAction, tick, duration);
+        }
+
+        private void BeginDiminishAction(float duration)
+        {
+            BeginMutation(duration);
+        }
+
         public override void Diminish(Vector3 position, long tick, float duration)
         {
             RunAction(DiminishAction, position, tick, duration);
@@ -758,6 +801,8 @@ namespace Battlehub.VoxelCombat
 
             m_movementState.Diminish();
         }
+
+        
 
         /// <summary>
         /// Can't recieve or handle any commands while frozen
@@ -792,9 +837,25 @@ namespace Battlehub.VoxelCombat
 
             m_animateFromPosition = transform.position;
             m_animateToPosition = transform.position;
+
+            if(m_engine == null)
+            {
+                m_engine = Dependencies.MatchEngine;
+            }
+            if (VoxelData.Unit.State == VoxelDataState.Mutating)
+            {
+                UpdateProgressUI(false);
+            }
         }
 
-
+        protected override void OnSelect(int playerIndex)
+        {
+            base.OnSelect(playerIndex);
+            if(VoxelData.Unit.State == VoxelDataState.Mutating)
+            {
+                UpdateProgressUI(false);
+            }
+        }
     }
 
 }

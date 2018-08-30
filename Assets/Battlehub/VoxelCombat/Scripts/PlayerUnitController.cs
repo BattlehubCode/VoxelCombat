@@ -31,7 +31,7 @@ namespace Battlehub.VoxelCombat
         private IPlayerCameraController m_cameraController;
         private Dictionary<int, TaskInfo> m_activeTasks;
         private IBotController m_playersBot;
-       
+        private ILocationPicker m_locationPicker;
 
         [SerializeField]
         private GameViewport m_viewport;
@@ -70,7 +70,7 @@ namespace Battlehub.VoxelCombat
             m_inputManager = Dependencies.InputManager;
             m_map = Dependencies.Map;
             m_gameState = Dependencies.GameState;
-            
+            m_locationPicker = Dependencies.LocationPicker;
 
             if (m_commandsPanel != null)
             {
@@ -247,7 +247,7 @@ namespace Battlehub.VoxelCombat
             long[] selection = m_unitSelection.GetSelection(playerIndex, playerIndex);
             for (int i = 0; i < selection.Length; ++i)
             {
-                m_playersBot.SubmitTask(Time.time, templateType, playerView.GetUnit(selection[i]));
+                m_playersBot.SubmitTask(Time.realtimeSinceStartup, templateType, playerView.GetUnit(selection[i]));
             }
         }
 
@@ -319,10 +319,57 @@ namespace Battlehub.VoxelCombat
             ConvertUnitTo(type);
         }
 
+        
         private void OnWall()
         {
-            int type = (int)KnownVoxelTypes.Ground;
-            ConvertUnitTo(type);
+            int targetType = (int)KnownVoxelTypes.Ground;
+            int unitIndex = 0;
+            int playerIndex = m_gameState.LocalToPlayerIndex(m_localPlayerIndex);
+            long[] selectedUnitIds = m_unitSelection.GetSelection(playerIndex, playerIndex);
+            Coordinate[] coordinates = new Coordinate[selectedUnitIds.Length];
+
+            PickLocations(targetType, unitIndex, playerIndex, selectedUnitIds, coordinates, voxelData => voxelData.Weight, () =>
+            {
+                for(int i = 0; i < selectedUnitIds.Length; ++i)
+                {
+                    long unitId = selectedUnitIds[i];
+
+                    //Search for path and move (move to closest location if path was not found);
+                    //Execute as task until cancelled.
+                    //Highlight group of walls only during placement phase
+                    //Automatically cancel task if selected location is occupied.
+                }
+            });   
+        }
+
+        private void PickLocations(int targetType, int unitIndex, int playerIndex, long[] selecteUnitIds, Coordinate[] coordinates, Func<VoxelData, int> getTargetWeight, Action callback)
+        {
+            if(unitIndex >= selecteUnitIds.Length)
+            {
+                callback();
+                return;
+            }
+
+            long unitId = selecteUnitIds[unitIndex];
+            IVoxelDataController dc = m_gameState.GetVoxelDataController(playerIndex, unitIndex);
+            if(dc != null)
+            {
+                m_locationPicker.Pick(dc.ControlledData, targetType, getTargetWeight(dc.ControlledData), (error, coordinate) =>
+                {
+                    if(!error)
+                    {
+                        coordinates[unitIndex] = coordinate;
+                    }
+
+                    unitIndex++;
+                    PickLocations(targetType, unitIndex, playerIndex, selecteUnitIds, coordinates, getTargetWeight, callback);
+                });
+            }
+            else
+            {
+                unitIndex++;
+                PickLocations(targetType, unitIndex, playerIndex, selecteUnitIds, coordinates, getTargetWeight, callback);
+            }
         }
 
 

@@ -884,7 +884,7 @@ namespace Battlehub.VoxelCombat
                 m_replay.Tick(m_engine, m_tick);
 
                 CommandsBundle commands;
-                if(m_engine.Tick(out commands))
+                if(m_engine.Tick(m_tick, out commands))
                 {
                     commands.Tick = m_tick;
                     if (Tick != null)

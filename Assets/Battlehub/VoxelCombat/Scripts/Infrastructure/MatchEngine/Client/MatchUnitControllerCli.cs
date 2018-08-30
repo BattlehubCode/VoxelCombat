@@ -632,13 +632,13 @@ namespace Battlehub.VoxelCombat
                         OnBeginSplit(cmd);
                         break;
                     case CmdCode.Split:
-                        OnSplit();
+                        OnSplit(cmd);
                         break;
                     case CmdCode.BeginSplit4:
                         OnBeginSplit4(cmd);
                         break;
                     case CmdCode.Split4:
-                        OnSplit4();
+                        OnSplit4(cmd);
                         break;
                     case CmdCode.BeginGrow:
                         OnBeginGrow(cmd);
@@ -664,6 +664,9 @@ namespace Battlehub.VoxelCombat
                     case CmdCode.SetHealth:
                         OnSetHealth(cmd);
                         break;
+                    case CmdCode.Cancel:
+                        OnCancel(cmd);
+                        break;
                     default:
                         OnCommand(cmd);
                         break;
@@ -673,7 +676,7 @@ namespace Battlehub.VoxelCombat
 
         protected virtual void OnCommand(Cmd cmd)
         {
-
+            
         }
 
         protected void AcquireReleaseVisibility(VoxelData voxelData, MapPos mapPos, int weight)
@@ -698,9 +701,17 @@ namespace Battlehub.VoxelCombat
         protected virtual void OnStateChanged(Cmd cmd)
         {
             ChangeParamsCmd changeParamsCmd = (ChangeParamsCmd)cmd;
+
+            VoxelDataState prevState = m_dataController.GetVoxelDataState();
+
             CmdResultCode noFail = m_dataController.SetVoxelDataState((VoxelDataState)changeParamsCmd.IntParams[1]);
             if(noFail != CmdResultCode.Success)
                 throw new InvalidOperationException();
+
+            if (m_controlledVoxel != null)
+            {
+                m_controlledVoxel.OnStateChanged(prevState, m_dataController.GetVoxelDataState());
+            }
         }
 
         protected virtual void OnMove(Cmd cmd)
@@ -761,13 +772,27 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        protected virtual void OnBeginSplit(Cmd cmd)
+        private void BeginMutation(Cmd cmd)
         {
-            
+            m_dataController.ControlledData.Unit.MutationStartTick = m_currentTick;
+            m_dataController.ControlledData.Unit.MutationDuration = cmd.Duration;
         }
 
-        protected virtual void OnSplit()
+        protected virtual void OnBeginSplit(Cmd cmd)
         {
+            BeginMutation(cmd);
+            if (m_controlledVoxel != null)
+            {
+                m_controlledVoxel.BeginSplit(m_currentTick, cmd.Duration * GameConstants.MatchEngineTick);
+            }
+        }
+
+        protected virtual void OnSplit(Cmd cmd)
+        {
+            if(m_controlledVoxel != null)
+            {
+                m_controlledVoxel.Split(m_currentTick, cmd.Duration * GameConstants.MatchEngineTick);
+            }
             Coordinate[] coordinates;
             CmdResultCode noFail = m_dataController.Split(out coordinates, EatOrDestroyCallback, CollapseCallback, DieCallback);
             if(noFail != CmdResultCode.Success)
@@ -805,11 +830,19 @@ namespace Battlehub.VoxelCombat
 
         protected virtual void OnBeginSplit4(Cmd cmd)
         {
-
+            BeginMutation(cmd);
+            if (m_controlledVoxel != null)
+            {
+                m_controlledVoxel.BeginSplit4(m_currentTick, cmd.Duration * GameConstants.MatchEngineTick);
+            }
         }
 
-        protected virtual void OnSplit4()
+        protected virtual void OnSplit4(Cmd cmd)
         {
+            if (m_controlledVoxel != null)
+            {
+                m_controlledVoxel.Split4(m_currentTick, cmd.Duration * GameConstants.MatchEngineTick);
+            }
             Coordinate[] coordinates;
             CmdResultCode noFail = m_dataController.Split4(out coordinates, ExpandCallback, DieCallback);
             if(noFail != CmdResultCode.Success)
@@ -848,7 +881,11 @@ namespace Battlehub.VoxelCombat
 
         protected virtual void OnBeginGrow(Cmd cmd)
         {
-
+            BeginMutation(cmd);
+            if (m_controlledVoxel != null)
+            {
+                m_controlledVoxel.BeginGrow(m_currentTick, cmd.Duration * GameConstants.MatchEngineTick);
+            }
         }
 
         protected virtual void OnGrow()
@@ -877,7 +914,11 @@ namespace Battlehub.VoxelCombat
 
         protected virtual void OnBeginDiminish(Cmd cmd)
         {
-            
+            BeginMutation(cmd);
+            if (m_controlledVoxel != null)
+            {
+                m_controlledVoxel.BeginDiminish(m_currentTick, cmd.Duration * GameConstants.MatchEngineTick);
+            }
         }
 
         protected virtual void OnDiminish()
@@ -920,13 +961,21 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        protected virtual void OnBeginConvert(Cmd cmd)
+        protected virtual void OnCancel(Cmd cmd)
         {
             if(m_controlledVoxel != null)
             {
+                m_controlledVoxel.OnCancel();
+            }
+        }
+
+        protected virtual void OnBeginConvert(Cmd cmd)
+        {
+            BeginMutation(cmd);
+            if (m_controlledVoxel != null)
+            {
                 m_controlledVoxel.BeginConvert(m_currentTick, cmd.Duration * GameConstants.MatchEngineTick);
             }
-            
         }
 
         protected virtual void OnConvert(Cmd cmd)

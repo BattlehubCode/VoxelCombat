@@ -35,6 +35,11 @@ namespace Battlehub.VoxelCombat
         event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> Reconnected;
         event MatchEngineCliEvent ReconnectFailed;
 
+        long Tick
+        {
+            get;
+        }
+
         ITaskEngine GetClientTaskEngine(int playerIndex);
         ITaskRunner GetTaskRunner(int playerIndex);
         IPathFinder GetPathFinder(int playerIndex);
@@ -51,8 +56,7 @@ namespace Battlehub.VoxelCombat
 
     public class MatchEngineCli : MonoBehaviour, IMatchEngineCli
     {
-        private RTTInfo m_rttInfo = new RTTInfo { RTT = 0, RTTMax = 0 };
-        
+        private RTTInfo m_rttInfo = new RTTInfo { RTT = 0, RTTMax = 0 };       
 
         public event MatchEngineCliEvent ReadyToStart;
         public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> Started;
@@ -80,6 +84,11 @@ namespace Battlehub.VoxelCombat
         private ITaskRunner[] m_taskRunners;
         private ITaskEngine[] m_taskEngines;
         private IBotController[] m_bots; //Client side controlled bots
+
+        public long Tick
+        {
+            get { return m_cmdQueue.CurrentTick; }
+        }
 
         public IPathFinder GetPathFinder(int playerIndex)
         {

@@ -174,9 +174,9 @@ namespace Battlehub.VoxelCombat
                     ConvertDuration = 10;
                     TargetCheckInterval = 10;
 
-                    SplitDelay = 0;
-                    GrowDelay = 0;
-                    DiminishDelay = 0;
+                    SplitDelay = 50;
+                    GrowDelay = 50;
+                    DiminishDelay = 50;
                     ConvertDelay = 200;
 
                     MinWeight = 2;
