@@ -39,6 +39,7 @@ namespace Battlehub.VoxelCombat
         public const int UnitState = 102;
         public const int UnitCanGrow = 103;
         public const int UnitCanSplit4 = 105;
+        public const int UnitCanConvert = 106;
  
         //Complex search expressions
         public const int EnemyVisible = 200;
@@ -47,9 +48,10 @@ namespace Battlehub.VoxelCombat
         //Task
         public const int TaskStatusCode = 500;
         public const int TaskSucceded = 501;
-        public const int CmdResultCode = 502;
-        public const int CmdSucceded = 503;
-        public const int CmdHardFailed = 504;
+        public const int TaskFailed = 502;
+        public const int CmdResultCode = 552;
+        public const int CmdSucceded = 553;
+        public const int CmdHardFailed = 554;
 
     }
 
@@ -318,11 +320,29 @@ namespace Battlehub.VoxelCombat
             };
         }
 
+        public static ExpressionInfo UnitCanConvert(ExpressionInfo unitId, ExpressionInfo playerId, ExpressionInfo targetType)
+        {
+            return new ExpressionInfo
+            {
+                Code = ExpressionCode.UnitCanConvert,
+                Children = new[] { unitId, playerId, targetType }
+            };
+        }
+
         public static ExpressionInfo TaskSucceded(TaskInfo task)
         {
             return new ExpressionInfo
             {
                 Code = ExpressionCode.TaskSucceded,
+                Value = task,
+            };
+        }
+
+        public static ExpressionInfo TaskFailed(TaskInfo task)
+        {
+            return new ExpressionInfo
+            {
+                Code = ExpressionCode.TaskFailed,
                 Value = task,
             };
         }
@@ -431,6 +451,7 @@ namespace Battlehub.VoxelCombat
     public enum TaskTemplateType
     {
         EatGrowSplit4,
+        ConvertTo,
     }
 
     [ProtoContract]
@@ -1054,6 +1075,7 @@ namespace Battlehub.VoxelCombat
     {
         public const int TaskSucceded = 0;
         public const int TaskFailed = 1;
+        public const int TaskFailedCanRepeat = 2;
         
         public long TaskId;
         public TaskType TaskType;
@@ -1520,6 +1542,7 @@ namespace Battlehub.VoxelCombat
             };
         }
 
+
         public static TaskInfo UnitOrAssetIndex(long unitOrAssetIndex)
         {
             return EvalExpression(ExpressionInfo.PrimitiveVal(unitOrAssetIndex));
@@ -1578,6 +1601,27 @@ namespace Battlehub.VoxelCombat
             return new TaskInfo(TaskType.Command)
             {
                 Cmd = new Cmd(CmdCode.Diminish),
+                Inputs = new[] { unitIndexInput }
+            };
+        }
+
+        public static TaskInfo Command(TaskInputInfo unitIndexInput, TaskInputInfo cmdInput)
+        {
+            return new TaskInfo(TaskType.Command)
+            {
+                Inputs = new[] { unitIndexInput, cmdInput }
+            };
+        }
+
+
+        public static TaskInfo Convert(TaskInputInfo unitIndexInput, int type)
+        {
+            return new TaskInfo(TaskType.Command)
+            {
+                Cmd = new ChangeParamsCmd(CmdCode.Convert)
+                {
+                    IntParams = new[] { type }
+                },
                 Inputs = new[] { unitIndexInput }
             };
         }
@@ -1954,6 +1998,137 @@ namespace Battlehub.VoxelCombat
 
             eatSplitGrow.Inputs = new[] { unitIndexInput, playerIdInput };
             return eatSplitGrow;
+        }
+
+        //public static TaskInfo MoveAndConvertToUntilSucces(Coordinate targetCoordinate, int targetType, int iterations = int.MaxValue)
+        //{
+        //    TaskInputInfo unitIndexInput = new TaskInputInfo();
+        //    TaskInputInfo playerIndexInput = new TaskInputInfo();
+        //    TaskInfo task = MoveAndConvertToUntilSucces(unitIndexInput, playerIndexInput, targetCoordinate, targetType);
+        //    task.Inputs = new[] { unitIndexInput, playerIndexInput };
+        //    return task;
+        //}
+
+        //public static TaskInfo MoveAndConvertToUntilSucces(TaskInputInfo unitIndexInput, TaskInputInfo playerIndexInput, Coordinate targetCoordinate, int targetType, int iterations = int.MaxValue)
+        //{
+        //    TaskInfo defineGoalTask = EvalExpression(ExpressionInfo.Val(new[] { targetCoordinate }));
+        //    TaskInfo moveAndConvertTo = MoveToAndRunTask(unitIndexInput, playerIndexInput, new TaskInputInfo(defineGoalTask, 0), targetType);
+        //    TaskInfo task = Procedure
+        //    (
+        //        defineGoalTask,
+        //        Repeat(iterations,
+        //            moveAndConvertTo,
+        //            Branch(ExpressionInfo.TaskSucceded(moveAndConvertTo),
+        //                Return(ExpressionInfo.TaskStatus(moveAndConvertTo))),
+        //            MoveToRandomLocation(unitIndexInput)
+        //        ),
+        //        Return(ExpressionInfo.PrimitiveVal(TaskFailed))
+        //    );
+        //    return task;
+        //}
+
+        public static TaskInfo Define(TaskInputInfo unitIndexInput, TaskInfo playerIndexInput, Coordinate coordinate)
+        {
+            return EvalExpression(ExpressionInfo.Val(new[] { coordinate }));
+        }
+
+        public static TaskInfo DefineConvertCmd(TaskInputInfo unitIndexInput, TaskInfo playerIndexInput, int targetType)
+        {
+            return EvalExpression(ExpressionInfo.Val(new ChangeParamsCmd(CmdCode.Convert) { IntParams = new[] { targetType } }));
+        }
+
+        public static TaskInfo DefineCanConvertExpr(TaskInputInfo unitIndexInput, TaskInfo playerIndexInput, int targetType)
+        {
+            ExpressionInfo canConvert = ExpressionInfo.UnitCanConvert(
+                ExpressionInfo.Val(unitIndexInput),
+                ExpressionInfo.Val(playerIndexInput),
+                ExpressionInfo.PrimitiveVal(targetType));
+
+            return EvalExpression(ExpressionInfo.Val(canConvert));
+        }
+
+        public static TaskInfo MoveAndConvertTo(Coordinate targetCoordinate, int targetType)
+        {
+            TaskInputInfo unitIndexInput = new TaskInputInfo();
+            TaskInputInfo playerIndexInput = new TaskInputInfo();
+            TaskInfo task = MoveAndConvertTo(unitIndexInput, playerIndexInput, targetCoordinate, targetType);
+            task.Inputs = new[] { unitIndexInput, playerIndexInput };
+            return task;
+        }
+
+       
+        public static TaskInfo MoveAndConvertTo(TaskInputInfo unitIndexInput, TaskInputInfo playerIndexInput, Coordinate targetCoordinate, int targetType)
+        {
+            TaskInfo defineGoalTask = EvalExpression(ExpressionInfo.Val(new[] { targetCoordinate } ));
+            TaskInfo defineCmd = EvalExpression(ExpressionInfo.Val(new ChangeParamsCmd(CmdCode.Convert) { IntParams = new[] { targetType } }));
+
+            ExpressionInfo canConvert = ExpressionInfo.UnitCanConvert(
+                ExpressionInfo.Val(unitIndexInput),
+                ExpressionInfo.Val(playerIndexInput),
+                ExpressionInfo.PrimitiveVal(targetType));
+
+            TaskInfo defineExpr = EvalExpression(ExpressionInfo.Val(canConvert));
+
+            TaskInfo moveAndConvertTo = MoveToAndExecCmd(
+                unitIndexInput, 
+                playerIndexInput, 
+                new TaskInputInfo(defineCmd, 0), 
+                new TaskInputInfo(defineExpr, 0), 
+                new TaskInputInfo(defineGoalTask, 0));
+
+            TaskInfo task = Procedure
+            (
+                defineGoalTask,
+                defineCmd,
+                defineExpr,
+                moveAndConvertTo,
+                Return(ExpressionInfo.TaskStatus(moveAndConvertTo))  
+            );
+            
+            return task;
+        }
+
+        public static TaskInfo MoveToAndExecCmd()
+        {
+            TaskInputInfo unitIndexInput = new TaskInputInfo();
+            TaskInputInfo playerIndexInput = new TaskInputInfo();
+            TaskInputInfo cmdInput = new TaskInputInfo();
+            TaskInputInfo canExecCmdExpressionInput = new TaskInputInfo();
+            TaskInputInfo atCoordInput = new TaskInputInfo();
+            
+            TaskInfo task = MoveToAndExecCmd(unitIndexInput, playerIndexInput, cmdInput, canExecCmdExpressionInput, atCoordInput);
+            task.Inputs = new[] { unitIndexInput, playerIndexInput, cmdInput, canExecCmdExpressionInput, atCoordInput };
+            return task;
+        }
+
+        public static TaskInfo MoveToAndExecCmd(TaskInputInfo unitIndexInput, TaskInputInfo playerIndexInput, TaskInputInfo cmdInput, TaskInputInfo canExecuteExpressionInput, TaskInputInfo atCoordinateInput)
+        {
+            TaskInfo findPathTask = FindPath(unitIndexInput, atCoordinateInput);
+            TaskInfo moveTask = Move(unitIndexInput, new TaskInputInfo(findPathTask, 0));
+            TaskInfo execCmdTask = Command(unitIndexInput, cmdInput);
+            TaskInfo evalExpression = EvalExpression(ExpressionInfo.Val(canExecuteExpressionInput));
+            
+            TaskInfo task = Procedure
+                (
+                    findPathTask,
+                    moveTask,
+
+                    Branch(ExpressionInfo.Or(ExpressionInfo.TaskFailed(findPathTask), ExpressionInfo.TaskFailed(moveTask)),
+                        Return(ExpressionInfo.PrimitiveVal(TaskFailed))),
+
+                    evalExpression,
+
+                    Branch(ExpressionInfo.NotEq(ExpressionInfo.Val(new TaskInputInfo(evalExpression, 0)), ExpressionInfo.PrimitiveVal(CmdResultCode.Success)),
+                        Return(ExpressionInfo.PrimitiveVal(TaskFailed))),
+                    
+                    Log("Can RuntTask Completed"),
+                    execCmdTask,
+
+                    Return(ExpressionInfo.TaskStatus(execCmdTask))
+                );
+
+            task.Inputs = new[] { unitIndexInput, playerIndexInput };
+            return task;
         }
 
     }

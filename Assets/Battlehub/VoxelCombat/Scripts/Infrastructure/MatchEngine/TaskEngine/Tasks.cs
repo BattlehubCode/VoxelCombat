@@ -369,13 +369,27 @@ namespace Battlehub.VoxelCombat
             m_unit = null;
         }
 
+
+        protected virtual void ReadFirstInput()
+        {
+            Cmd cmd = ReadInput<Cmd>(m_taskInfo.Inputs[1]);
+            m_taskInfo.Cmd = cmd;
+        }
+
+
         protected override void OnConstruct()
         {
+            if(InputsCount > 1)
+            {
+                ReadFirstInput();
+            }
+
             if (InputsCount > 0)
             {
                 long unitIndex = ReadInput<long>(m_taskInfo.Inputs[0]);
                 m_taskInfo.Cmd.UnitIndex = unitIndex;
             }
+
 
             if (m_unit != null)
             {
@@ -481,8 +495,21 @@ namespace Battlehub.VoxelCombat
             base.OnConstruct();
             m_expression.Evaluate(m_taskInfo.Expression, m_taskEngine, value =>
             {
-                m_taskEngine.Memory.WriteOutput(m_taskInfo.Parent.TaskId, m_taskInfo.TaskId, 0, value);
-                m_taskInfo.State = TaskState.Completed;
+                if(value is ExpressionInfo)
+                {
+                    ExpressionInfo encapsulatedExpression = (ExpressionInfo)value;
+                    m_taskEngine.GetExpression(encapsulatedExpression.Code).Evaluate(
+                        encapsulatedExpression, m_taskEngine, encapsulatedValue =>
+                        {
+                            m_taskEngine.Memory.WriteOutput(m_taskInfo.Parent.TaskId, m_taskInfo.TaskId, 0, encapsulatedValue);
+                            m_taskInfo.State = TaskState.Completed;
+                        });
+                }
+                else
+                {
+                    m_taskEngine.Memory.WriteOutput(m_taskInfo.Parent.TaskId, m_taskInfo.TaskId, 0, value);
+                    m_taskInfo.State = TaskState.Completed;
+                }
             });
         }       
     }
@@ -517,13 +544,17 @@ namespace Battlehub.VoxelCombat
             Coordinate[] waypoints = ReadInput<Coordinate[]>(m_taskInfo.Inputs[1]);
 
             m_unit = m_taskEngine.MatchEngine.GetPlayerView(m_taskInfo.PlayerIndex).GetUnit(unitIndex);
-            if(m_unit == null)
+            if(m_unit == null || waypoints == null || waypoints.Length == 0)
             {
                 m_taskInfo.StatusCode = TaskInfo.TaskFailed;
                 m_taskInfo.State = TaskState.Completed;
             }
             else
             {
+                if(waypoints.Length == 1)
+                {
+                    waypoints = new[] { m_unit.DataController.Coordinate, waypoints[0] };
+                }
                 m_taskEngine.PathFinder.Find(unitIndex, -1, m_unit.DataController.Clone(), waypoints, (id, path) =>
                 {
                     if (path[path.Length - 1] == waypoints[waypoints.Length - 1])
@@ -537,6 +568,7 @@ namespace Battlehub.VoxelCombat
                     }
                     else
                     {
+                        WriteOutput(0, path);
                         if (m_taskInfo.State != TaskState.Active)
                         {
                             throw new InvalidOperationException("m_taskInfo.State shoud be equal to Active but its " + m_taskInfo.State);
@@ -1006,18 +1038,16 @@ namespace Battlehub.VoxelCombat
 
     public class ExecuteMoveTask : ExecuteCmdTask
     {
-        protected override void OnConstruct()
+        protected override void ReadFirstInput()
         {
-            if(InputsCount > 1)
+            if (InputsCount > 1)
             {
-                Coordinate[] path = ReadInput<Coordinate[]>(m_taskInfo.Inputs[1]);   
+                Coordinate[] path = ReadInput<Coordinate[]>(m_taskInfo.Inputs[1]);
                 m_taskInfo.Cmd = new MovementCmd(CmdCode.Move)
                 {
                     Coordinates = path,
                 };
             }
-
-            base.OnConstruct();
         }
 
         protected override void OnCompleted()

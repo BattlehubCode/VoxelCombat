@@ -12,7 +12,7 @@ namespace Battlehub.VoxelCombat
         private const string TestEnv2 = "test_env_2";
         private const string TestEnv3 = "test_env_3";
         private const string TestEnv4 = "test_env_4";
-
+     
         private TaskInfo MoveToCoordinate(Coordinate[] path, TaskInputInfo unitIndexInput, TaskInputInfo playerIndexInput)
         {
             TaskInfo pathVar = TaskInfo.EvalExpression(ExpressionInfo.Val(path));
@@ -137,6 +137,8 @@ namespace Battlehub.VoxelCombat
                 TestEnv4);
         }
 
+      
+
         public IEnumerator TaskTest(
             int playerId,
             Func<TaskInputInfo, TaskInputInfo, TaskInfo> GetTestTaskInfo,
@@ -208,10 +210,7 @@ namespace Battlehub.VoxelCombat
             });
 
 
-            while (true)
-            {
-                yield return null;
-            }
+            yield return Run();
         }
     }
 }

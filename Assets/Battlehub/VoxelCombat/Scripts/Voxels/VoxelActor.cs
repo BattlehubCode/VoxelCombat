@@ -842,6 +842,12 @@ namespace Battlehub.VoxelCombat
             {
                 m_engine = Dependencies.MatchEngine;
             }
+
+            if(VoxelData.Unit == null)
+            {
+                VoxelData.Unit = new VoxelUnitData();
+            }
+
             if (VoxelData.Unit.State == VoxelDataState.Mutating)
             {
                 UpdateProgressUI(false);

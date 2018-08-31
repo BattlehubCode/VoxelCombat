@@ -679,6 +679,8 @@ namespace Battlehub.VoxelCombat
             data.Owner = Owner;
             data.Health = m_selectedAbilities.DefaultHealth;
             data.VoxelRef = voxel;
+            data.Unit = new VoxelUnitData();
+            data.Unit.State = VoxelDataState.Idle;
 
             voxel.ReadFrom(data);
             voxel.WriteDebugInfo();

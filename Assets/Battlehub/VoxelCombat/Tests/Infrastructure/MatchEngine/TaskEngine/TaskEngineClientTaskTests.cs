@@ -52,17 +52,99 @@ namespace Battlehub.VoxelCombat.Tests
             }
         }
 
-        protected IEnumerator Run(int MAX_TICKS = 100000)
+        private bool m_success;
+
+        protected IEnumerator Run()
         {
-            for(int i = 0; i < MAX_TICKS; ++i)
+            while(true)
             {
+                if(m_success)
+                {
+                    m_success = false;
+                    yield break;
+                }
                 yield return null;
             }
         }
 
         protected void EndTest()
         {
-            Assert.Pass();
+            m_success = true;
+        }
+
+        public IEnumerator TaskDefaultTest(
+           int playerId,
+           Func<TaskInputInfo, TaskInputInfo, TaskInfo> GetTestTaskInfo,
+           bool shouldTaskBeFailed,
+           Action<MapRoot> testStarted,
+           Action<TaskInfo> rootTaskCompleted,
+           Action<TaskInfo> childTaskCompleted,
+           int unitNumber,
+           string testEnv,
+           int playersCount = 2,
+           int botsCount = 0)
+        {
+            BeginTest(testEnv, playersCount, botsCount, () =>
+            {
+                MapRoot map = Dependencies.Map.Map;
+                testStarted(map);
+
+                IMatchEngineCli matchEngineCli = Dependencies.MatchEngine;
+                Coordinate[] coords = map.FindDataOfType((int)KnownVoxelTypes.Eater, playerId);
+                VoxelData voxel = map.Get(coords[unitNumber]);
+                TaskInfo unitIndexTask = TaskInfo.UnitOrAssetIndex(voxel.UnitOrAssetIndex);
+                TaskInfo playerIndexTask = TaskInfo.EvalExpression(ExpressionInfo.PrimitiveVal(playerId));
+                TaskInputInfo unitIndexInput = new TaskInputInfo
+                {
+                    OutputIndex = 0,
+                    OutputTask = unitIndexTask
+                };
+                TaskInputInfo playerIndexInput = new TaskInputInfo
+                {
+                    OutputIndex = 0,
+                    OutputTask = playerIndexTask
+                };
+
+                TaskInfo testTaskInfo = GetTestTaskInfo(unitIndexInput, playerIndexInput);
+                TaskInfo rootTask = TaskInfo.Procedure(
+                    playerIndexTask,
+                    unitIndexTask,
+                    testTaskInfo,
+                    TaskInfo.Return(ExpressionInfo.TaskStatus(testTaskInfo)));
+                rootTask.SetParents();
+                rootTask.Initialize(playerId);
+
+                ITaskEngine taskEngine = matchEngineCli.GetClientTaskEngine(playerId);
+                TaskEngineEvent<TaskInfo> taskStateChanged = null;
+                taskStateChanged = taskInfo =>
+                {
+                    if (taskInfo.State == TaskState.Completed)
+                    {
+                        if (taskInfo.TaskId == rootTask.TaskId)
+                        {
+                            Assert.AreEqual(shouldTaskBeFailed, taskInfo.IsFailed, taskInfo.ToString());
+                            taskEngine.TaskStateChanged -= taskStateChanged;
+                            rootTaskCompleted(taskInfo);
+                            EndTest();
+                        }
+                        else
+                        {
+                            if (childTaskCompleted != null)
+                            {
+                                childTaskCompleted(taskInfo);
+                            }
+                        }
+                    }
+                    else if (taskInfo.State != TaskState.Idle)
+                    {
+                        Assert.AreEqual(TaskState.Active, taskInfo.State, taskInfo.ToString());
+                    }
+                };
+                taskEngine.TaskStateChanged += taskStateChanged;
+                taskEngine.SubmitTask(rootTask);
+            });
+
+            yield return Run();
         }
     }
 
@@ -74,7 +156,7 @@ namespace Battlehub.VoxelCombat.Tests
         protected readonly string TestEnv0 = "test_env_0";
         protected readonly string TestEnv1 = "test_env_1";
 
-       
+        
 
         [UnityTest]
         public IEnumerator InitTestLag()
@@ -84,10 +166,7 @@ namespace Battlehub.VoxelCombat.Tests
                 EndTest();
             }, 10);
 
-            while (true)
-            {
-                yield return null;
-            }
+            yield return Run();
         }
 
         [UnityTest]
@@ -98,10 +177,7 @@ namespace Battlehub.VoxelCombat.Tests
             });
 
 
-            while (true)
-            {
-                yield return null;
-            }   
+            yield return Run();
         }
 
         [UnityTest]
@@ -409,10 +485,7 @@ namespace Battlehub.VoxelCombat.Tests
             });
 
 
-            while (true)
-            {
-                yield return null;
-            }
+            yield return Run();
         }
 
         [UnityTest]
@@ -507,10 +580,7 @@ namespace Battlehub.VoxelCombat.Tests
                 taskEngine.SubmitTask(rootTask);
             });
 
-            while (true)
-            {
-                yield return null;
-            }
+            yield return Run();
         }
 
         [UnityTest]
@@ -553,10 +623,7 @@ namespace Battlehub.VoxelCombat.Tests
 
                 taskEngine.SubmitTask(taskInfo);
             });
-            while (true)
-            {
-                yield return null;
-            }
+            yield return Run();
         }
 
 
@@ -606,14 +673,7 @@ namespace Battlehub.VoxelCombat.Tests
                 matchEngineCli.Submit(playerId, new TaskCmd(SerializedTask.FromTaskInfo(taskInfo)));
             });
 
-            while (true)
-            {
-                yield return null;
-            }
+            yield return Run();
         }
-
-        
-
-       
     }
 }

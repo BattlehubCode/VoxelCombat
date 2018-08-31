@@ -77,10 +77,6 @@ namespace Battlehub.VoxelCombat
                 Bug3Repro);
         }
 
-      
-
-      
-
         public IEnumerator TaskTest(
             int playerId,
             Func<TaskInputInfo, TaskInputInfo, TaskInfo> GetTestTaskInfo,
@@ -151,11 +147,7 @@ namespace Battlehub.VoxelCombat
                 taskEngine.SubmitTask(rootTask);
             });
 
-
-            while (true)
-            {
-                yield return null;
-            }
+            yield return Run();
         }
     }
 }

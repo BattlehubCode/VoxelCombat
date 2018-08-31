@@ -379,7 +379,7 @@ namespace Battlehub.VoxelCombat
             MovementCmd coordinateCmd = (MovementCmd)cmd;
             Coordinate[] cmdCoordinates = coordinateCmd.Coordinates;
 
-            if (cmdCoordinates.Length != 1)
+            if (cmdCoordinates == null || cmdCoordinates.Length != 1)
             {
                 RaiseCmdFailed(cmd, CmdResultCode.Fail_InvalidArguments);
                 return;
@@ -627,7 +627,7 @@ namespace Battlehub.VoxelCombat
 
         protected bool ValidatePath(Coordinate[] path)
         {
-            if (path.Length < 2)
+            if (path == null || path.Length < 2)
             {
                 return false;
             }

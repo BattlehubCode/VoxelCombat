@@ -356,7 +356,7 @@ namespace Battlehub.VoxelCombat
 
         private void UpdateUI(bool animate)
         {
-            if(VoxelData.Unit.State == VoxelDataState.Mutating)
+            if(VoxelData.Unit == null || VoxelData.Unit.State == VoxelDataState.Mutating)
             {
                 return;
             }

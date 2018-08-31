@@ -332,17 +332,17 @@ namespace Battlehub.VoxelCombat
                     IMatchPlayerView player = taskEngine.MatchEngine.GetPlayerView(playerId);
                     IMatchUnitAssetView unit = player.GetUnitOrAsset(unitId);
 
-                    OnEvaluating(player, unit, taskEngine, callback);
+                    OnEvaluating(expression, player, unit, taskEngine, callback);
                 });
             });
         }
 
-        protected abstract void OnEvaluating(IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback);
+        protected abstract void OnEvaluating(ExpressionInfo expression, IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback);
     }
 
     public class UnitExistsExpression : UnitExpression
     {
-        protected override void OnEvaluating(IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
+        protected override void OnEvaluating(ExpressionInfo expression, IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
         {
             callback(unit != null);
         }
@@ -350,7 +350,7 @@ namespace Battlehub.VoxelCombat
 
     public class UnitCoordinateExpression : UnitExpression
     {
-        protected override void OnEvaluating(IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
+        protected override void OnEvaluating(ExpressionInfo expression, IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
         {
             callback(unit.DataController.Coordinate);
         }
@@ -358,7 +358,7 @@ namespace Battlehub.VoxelCombat
 
     public class UnitStateExpression : UnitExpression
     {
-        protected override void OnEvaluating(IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
+        protected override void OnEvaluating(ExpressionInfo expression, IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
         {
             VoxelDataState state = unit.DataController.GetVoxelDataState();
             callback(state);   
@@ -367,21 +367,35 @@ namespace Battlehub.VoxelCombat
 
     public class UnitCanGrowImmediateExpression : UnitExpression
     {
-        protected override void OnEvaluating(IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
+        protected override void OnEvaluating(ExpressionInfo expression, IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
         {
             CmdResultCode can = unit.DataController.CanGrowImmediate();
             callback(can);
         }
     }
 
-    public class UnitCanSplit4Expression : UnitExpression
+    public class UnitCanSplit4ImmediateExpression : UnitExpression
     {
-        protected override void OnEvaluating(IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
+        protected override void OnEvaluating(ExpressionInfo expression, IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
         {
             CmdResultCode can = unit.DataController.CanSplit4Immediate();
             callback(can);
         }
     }
+
+    public class UnitCanConvertImmediateExpression : UnitExpression
+    {
+        protected override void OnEvaluating(ExpressionInfo expression, IMatchPlayerView player, IMatchUnitAssetView unit, ITaskEngine taskEngine, Action<object> callback)
+        {
+            ExpressionInfo target = expression.Children[2];
+            taskEngine.GetExpression(target.Code).Evaluate(target, taskEngine, targetType =>
+            {
+                CmdResultCode can = unit.DataController.CanConvertImmediate((int)targetType);
+                callback(can);
+            });           
+        }
+    }
+
 
     public class TaskSuccededExpression : IExpression
     {
@@ -389,6 +403,15 @@ namespace Battlehub.VoxelCombat
         {
             TaskInfo taskInfo = (TaskInfo)expression.Value;
             callback(!taskInfo.IsFailed);
+        }
+    }
+
+    public class TaskFailedExpression : IExpression
+    {
+        public void Evaluate(ExpressionInfo expression, ITaskEngine taskEngine, Action<object> callback)
+        {
+            TaskInfo taskInfo = (TaskInfo)expression.Value;
+            callback(taskInfo.IsFailed);
         }
     }
 

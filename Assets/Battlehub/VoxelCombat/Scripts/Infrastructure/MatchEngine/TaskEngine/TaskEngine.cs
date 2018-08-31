@@ -377,9 +377,11 @@ namespace Battlehub.VoxelCombat
                 { ExpressionCode.UnitState, new UnitStateExpression() },
                 { ExpressionCode.UnitCoordinate, new UnitCoordinateExpression() },
                 { ExpressionCode.UnitCanGrow, new UnitCanGrowImmediateExpression() },
-                { ExpressionCode.UnitCanSplit4, new UnitCanSplit4Expression()},
+                { ExpressionCode.UnitCanSplit4, new UnitCanSplit4ImmediateExpression()},
+                { ExpressionCode.UnitCanConvert, new UnitCanConvertImmediateExpression() },
                 { ExpressionCode.TaskStatusCode, new TaskStatusExpression() },
                 { ExpressionCode.TaskSucceded, new TaskSuccededExpression() },
+                { ExpressionCode.TaskFailed, new TaskFailedExpression() },
                 { ExpressionCode.CmdSucceded, new CmdSuccededExpression() },
                 { ExpressionCode.CmdHardFailed, new CmdHardFailedExpression() },
                 { ExpressionCode.CmdResultCode, new CmdResultCodeExpression() },
@@ -701,7 +703,7 @@ namespace Battlehub.VoxelCombat
             TaskBase task;
             if (taskInfo.TaskType == TaskType.Command)
             {
-                Debug.Assert(taskInfo.Cmd != null && taskInfo.Cmd.Code != CmdCode.Nop);
+               // Debug.Assert(taskInfo.Cmd != null && taskInfo.Cmd.Code != CmdCode.Nop);
 
                 if (taskInfo.Expression != null)
                 {
@@ -709,7 +711,7 @@ namespace Battlehub.VoxelCombat
                 }
                 else
                 {
-                    if (taskInfo.Cmd.Code == CmdCode.Move)
+                    if (taskInfo.Cmd != null && taskInfo.Cmd.Code == CmdCode.Move)
                     {
                         task = m_cmdMoveTaskPool.Acquire();
                     }
