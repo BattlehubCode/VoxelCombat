@@ -117,20 +117,26 @@ namespace Battlehub.VoxelCombat
             //{
             //    return;
             //}
-
             if (m_gameState.IsPauseStateChanging)
             {
                 return;
             }
 
+
             
             if (m_inputManager.GetButtonDown(InputAction.Back, LocalPlayerIndex, false, false))
             {
-                if (!m_gameState.IsContextActionInProgress(LocalPlayerIndex))
+                if (m_gameState.IsContextActionInProgress(LocalPlayerIndex))
+                {
+                    m_gameState.IsContextActionInProgress(LocalPlayerIndex, false);
+                    return;
+                }
+
+                if (!m_gameState.IsActionsMenuOpened(LocalPlayerIndex))
                 {
                     m_gameState.IsMenuOpened(LocalPlayerIndex, !m_gameState.IsMenuOpened(LocalPlayerIndex));
                     m_menuPanel.SetIsOpened(!m_menuPanel.IsOpened);
-                }
+                }   
             }
 
             if (m_gameState.IsMenuOpened(LocalPlayerIndex))

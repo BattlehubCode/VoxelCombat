@@ -84,23 +84,25 @@ namespace Battlehub.VoxelCombat
         {
             base.AwakeOverride();
 
-            m_tex = new Texture2D(TEX_SIZE, TEX_SIZE, TextureFormat.ARGB32, false, true);
-            m_tex.filterMode = FilterMode.Point;
-
-            m_flippedTex = new Texture2D(TEX_SIZE, TEX_SIZE, TextureFormat.ARGB32, false, true);
-            m_flippedTex.filterMode = FilterMode.Point;
-            for (int i = 0; i < TEX_SIZE; i++)
+            if(!m_isPreview)
             {
-                for (int j = 0; j < TEX_SIZE; j++)
-                {
-                    m_tex.SetPixel(i, j, new Color(1, 1, 1, 0));
-                    m_flippedTex.SetPixel(i, j, new Color(1, 1, 1, 0));
-                }
-            }
+                m_tex = new Texture2D(TEX_SIZE, TEX_SIZE, TextureFormat.ARGB32, false, true);
+                m_tex.filterMode = FilterMode.Point;
 
-            m_flippedTex.Apply(false);
-            m_tex.Apply(false);
-            //m_primaryMaterial.mainTexture = m_tex;
+                m_flippedTex = new Texture2D(TEX_SIZE, TEX_SIZE, TextureFormat.ARGB32, false, true);
+                m_flippedTex.filterMode = FilterMode.Point;
+                for (int i = 0; i < TEX_SIZE; i++)
+                {
+                    for (int j = 0; j < TEX_SIZE; j++)
+                    {
+                        m_tex.SetPixel(i, j, new Color(1, 1, 1, 0));
+                        m_flippedTex.SetPixel(i, j, new Color(1, 1, 1, 0));
+                    }
+                }
+
+                m_flippedTex.Apply(false);
+                m_tex.Apply(false);
+            }
         }
 
         protected override void OnDestroyOveride()

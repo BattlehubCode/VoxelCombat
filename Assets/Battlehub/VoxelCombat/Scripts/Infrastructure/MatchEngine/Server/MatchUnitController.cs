@@ -709,6 +709,55 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+    public class PreviewUnitController : MatchUnitControllerBase
+    {
+        public PreviewUnitController(IVoxelDataController dataController)
+            :base(dataController)
+        {
+        }
+
+        protected override void OnSetCommand(Cmd cmd)
+        {
+            switch (cmd.Code)
+            {
+                    case CmdCode.Cancel:
+                    {
+                        if (State != VoxelDataState.Moving) //This if is required to prevent fast-movement using cancel cmd
+                        {
+                            m_ticksBeforeNextCommand = 0;
+                        }
+                        GoToIdleState();
+                        OnInstantCmd(VoxelDataState.Busy, CmdCode.Nop, cmd, 0, 0);
+                    }
+                    break;
+            }
+        }
+
+        protected override Cmd OnTick(long tick) //Tick should be able return several commands
+        {
+            if ((State & VoxelDataState.Busy) == VoxelDataState.Busy)
+            {
+                if (m_commandsQueue.Count > 0)
+                {
+                    Cmd cmd = m_commandsQueue.Dequeue();
+                    m_ticksBeforeNextCommand = cmd.Duration;
+
+                    switch (cmd.Code)
+                    {
+                        case CmdCode.Cancel:
+                            {
+                                RaiseCmdExecuted();
+                                return cmd;
+                            }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+    }
+
     public class SpawnerUnitController : MatchUnitControllerBase
     {
         public SpawnerUnitController(IVoxelDataController dataController) 

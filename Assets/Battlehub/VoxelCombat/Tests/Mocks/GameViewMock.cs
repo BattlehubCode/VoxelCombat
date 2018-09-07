@@ -60,6 +60,11 @@ namespace Battlehub.VoxelCombat.Tests
             throw new NotImplementedException();
         }
 
+        public ILocationPicker GetLocationPicker(int index)
+        {
+            throw new NotImplementedException();
+        }
+
         public void Initialize(int viewportsCount, bool isOn)
         {
             

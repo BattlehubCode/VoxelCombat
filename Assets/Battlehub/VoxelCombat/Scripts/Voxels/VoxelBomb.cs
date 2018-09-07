@@ -5,7 +5,12 @@ namespace Battlehub.VoxelCombat
     {
         public override int Type
         {
-            get { return (int)KnownVoxelTypes.Bomb; }
+            get
+            {
+                return m_isPreview ?
+                  (int)KnownVoxelTypes.BombPreview :
+                  (int)KnownVoxelTypes.Bomb;
+            }
         }
 
         public override void Explode(float delay, int health)

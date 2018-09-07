@@ -420,9 +420,29 @@ namespace Battlehub.VoxelCombat
 
     public class TaskInputInfo
     {
-        public TaskInfo Scope;
-        public TaskInfo OutputTask;
-        public int OutputIndex;
+        public TaskInputInfo ExtensionSocket;
+
+        private TaskInfo m_scope;
+        private TaskInfo m_output;
+        private int m_outputIndex;
+
+        public TaskInfo Scope
+        {
+            get { return ExtensionSocket.m_scope; }
+            set { ExtensionSocket.m_scope = value; }
+
+        }
+        public TaskInfo OutputTask
+        {
+            get { return ExtensionSocket.m_output; }
+            set { ExtensionSocket.m_output = value; }
+        }
+
+        public int OutputIndex
+        {
+            get { return ExtensionSocket.m_outputIndex; }
+            set { ExtensionSocket.m_outputIndex = value; }
+        }
 
         public void SetScope()
         {
@@ -431,17 +451,19 @@ namespace Battlehub.VoxelCombat
 
         public TaskInputInfo()
         {
-
+            ExtensionSocket = this;
         }
 
         public TaskInputInfo(TaskInfo task, int outputIndex)
         {
+            ExtensionSocket = this;
             OutputTask = task;
             OutputIndex = outputIndex;
         }
 
         public TaskInputInfo(TaskInputInfo taskInput)
         {
+            ExtensionSocket = this;
             Scope = taskInput.Scope;
             OutputTask = taskInput.OutputTask;
             OutputIndex = taskInput.OutputIndex;
@@ -452,6 +474,8 @@ namespace Battlehub.VoxelCombat
     {
         EatGrowSplit4,
         ConvertTo,
+
+       
     }
 
     [ProtoContract]
@@ -534,6 +558,7 @@ namespace Battlehub.VoxelCombat
                     serializedTask.Inputs.ToDictionary(s => s.Address, s => new Pair<SerializedTaskInput, TaskInputInfo> { Serialized = s }) :
                     new Dictionary<int, Pair<SerializedTaskInput, TaskInputInfo>>();
 
+           
                 Dictionary<int, Pair<SerializedExpression, ExpressionInfo>> expressions =
                     serializedTask.Expressions != null ?
                     serializedTask.Expressions.ToDictionary(s => s.Address, s => new Pair<SerializedExpression, ExpressionInfo> { Serialized = s }) :
@@ -1068,7 +1093,6 @@ namespace Battlehub.VoxelCombat
 
         [ProtoMember(4)]
         public int OutputIndex;
-
     }
 
     public class TaskInfo
@@ -1304,6 +1328,8 @@ namespace Battlehub.VoxelCombat
             }
             return null;
         }
+
+   
 
         public override string ToString()
         {

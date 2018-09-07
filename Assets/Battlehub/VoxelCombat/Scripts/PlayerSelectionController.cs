@@ -127,7 +127,7 @@ namespace Battlehub.VoxelCombat
 
         private void Update()
         {
-            if (m_gameState.IsContextActionInProgress(LocalPlayerIndex))
+            if (m_gameState.IsActionsMenuOpened(LocalPlayerIndex))
             {
                 if (!m_cameraController.IsInputEnabled)
                 {
@@ -137,6 +137,15 @@ namespace Battlehub.VoxelCombat
             }
 
             if (m_gameState.IsMenuOpened(LocalPlayerIndex))
+            {
+                if(!m_cameraController.IsInputEnabled)
+                {
+                    m_cameraController.IsInputEnabled = true;
+                }
+                return;
+            }
+
+            if (m_gameState.IsContextActionInProgress(LocalPlayerIndex))
             {
                 if(!m_cameraController.IsInputEnabled)
                 {

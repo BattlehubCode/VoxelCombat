@@ -272,6 +272,47 @@ namespace Battlehub.VoxelCombat
 
     }
 
+    public class PreviewUnitControllerCli : MatchUnitControllerBaseCli
+    {
+        public PreviewUnitControllerCli(IVoxelDataController dataController)
+            :base(dataController)
+        {
+
+        }
+
+        protected override void OnExecuteCommand(Cmd cmd)
+        {
+            if (cmd.Code == CmdCode.Composite)
+            {
+                CompositeCmd compositeCmd = (CompositeCmd)cmd;
+                for (int i = 0; i < compositeCmd.Commands.Length; ++i)
+                {
+                    ExecuteCommand(compositeCmd.Commands[i]);
+                }
+            }
+            else
+            {
+                ExecuteCommand(cmd);
+            }
+        }
+
+        private void ExecuteCommand(Cmd cmd)
+        {
+            if (cmd.Code == CmdCode.Cancel)
+            {
+                OnCancel(cmd);
+            }
+        }
+
+        protected virtual void OnCancel(Cmd cmd)
+        {
+            if (m_controlledVoxel != null)
+            {
+                m_controlledVoxel.OnCancel();
+            }
+        }
+    }
+
     public class SpawnerUnitControllerCli : MatchUnitControllerBaseCli
     {
         

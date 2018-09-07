@@ -549,7 +549,7 @@ namespace Battlehub.VoxelCombat
             Rect rect = m_viewport.Camera.pixelRect;
             m_camPixelRect = rect;
 
-            if(!m_gameState.IsMenuOpened(LocalPlayerIndex) && !m_gameState.IsContextActionInProgress(LocalPlayerIndex))
+            if(!m_gameState.IsMenuOpened(LocalPlayerIndex) && !m_gameState.IsActionsMenuOpened(LocalPlayerIndex) && !m_gameState.IsContextActionInProgress(LocalPlayerIndex))
             {
                 VirtualMousePosition = m_camPixelRect.center;
             } 
@@ -762,7 +762,7 @@ namespace Battlehub.VoxelCombat
             float cursorX = m_inputManager.GetAxisRaw(InputAction.CursorX, LocalPlayerIndex, false, false);
             float cursorY = m_inputManager.GetAxisRaw(InputAction.CursorY, LocalPlayerIndex, false, false);
 
-            if (m_gameState.IsContextActionInProgress(LocalPlayerIndex) ||
+            if (m_gameState.IsActionsMenuOpened(LocalPlayerIndex) ||
                 m_gameState.IsMenuOpened(LocalPlayerIndex) ||
                 m_gameState.IsPaused || m_gameState.IsPauseStateChanging ||
                 m_camPixelRect.size == Vector2.zero ||

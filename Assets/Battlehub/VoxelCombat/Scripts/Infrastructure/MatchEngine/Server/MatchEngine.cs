@@ -17,6 +17,11 @@ namespace Battlehub.VoxelCombat
         public const int ExecuteTask = 8;
         public const int Cancel = 10;
 
+        public const int CreateJob = 12;
+        public const int DestroyJob = 13;
+        public const int AssignJob = 14;
+        public const int ResignJob = 15;
+        
         public const int BeginSplit = 19;
         public const int Split = 20;
         public const int BeginSplit4 = 23;
@@ -26,6 +31,7 @@ namespace Battlehub.VoxelCombat
         public const int BeginDiminish = 27;
         public const int Diminish = 28;
         // public const int Automatic = 40;
+        
 
         public const int BeginConvert = 51;
         public const int Convert = 50;
@@ -457,6 +463,29 @@ namespace Battlehub.VoxelCombat
             throw new NotImplementedException();
         }
     }
+
+    [ProtoContract]
+    public class Job
+    {
+        [ProtoMember(1)]
+        public List<long> Units;
+
+        [ProtoMember(2)]
+        public List<long> Targets;
+
+        [ProtoMember(3)]
+        public List<TaskTemplateType> TaskTemplates;
+
+        [ProtoMember(4)]
+        public List<SerializedTask[]> Parameters;
+    }
+
+    [ProtoContract]
+    public class JobCmd : Cmd
+    {
+
+    }
+
 
     [ProtoContract]
     public class ClientRequest 

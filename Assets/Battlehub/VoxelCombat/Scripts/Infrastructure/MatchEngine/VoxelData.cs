@@ -670,6 +670,13 @@ namespace Battlehub.VoxelCombat
     }
 
     [ProtoContract]
+    public class PreviewChain
+    {
+        [ProtoMember(1)]
+        public VoxelData[] Data;
+    }
+
+    [ProtoContract]
     public class MapCell
     {
         [ProtoMember(1)]
@@ -688,6 +695,9 @@ namespace Battlehub.VoxelCombat
         public MapCell SiblingPCol;
         public MapCell SiblingMRow;
         public MapCell SiblingMCol;
+
+        [ProtoMember(4)]
+        public PreviewChain PreviewChain;
 
         //For rendering
         public int Usages;
@@ -2015,6 +2025,16 @@ namespace Battlehub.VoxelCombat
             });
         }
 
+        private void Acquire(MapCell cell, VoxelData data)
+        {
+            MapPos mappos = cell.GetPosition();
+            Voxel voxel = m_factory.Acquire(data.Type);
+            voxel.transform.position = Map.GetWorldPosition(mappos, data.Weight);
+            voxel.ReadFrom(data);
+            voxel.WriteDebugInfo();
+            data.VoxelRef = voxel;
+        }
+
         private void TurnOn(MapCell cell)
         {
             if(cell.Usages == 0)
@@ -2024,15 +2044,26 @@ namespace Battlehub.VoxelCombat
                 {
                     if (data.VoxelRef == null)
                     {
-                        MapPos mappos = cell.GetPosition();
-                        Voxel voxel = m_factory.Acquire(data.Type);
-                        voxel.transform.position = Map.GetWorldPosition(mappos, data.Weight);
-                        voxel.ReadFrom(data);
-                        voxel.WriteDebugInfo();
-
-                        data.VoxelRef = voxel;
+                        Acquire(cell, data);
                     }
                     data = data.Next;
+                }
+
+                PreviewChain previewChain = cell.PreviewChain;
+                if(previewChain != null && previewChain.Data != null)
+                {
+                    for(int i = 0; i < previewChain.Data.Length; ++i)
+                    {
+                        VoxelData previewData = previewChain.Data[i];
+                        while(previewData != null)
+                        {
+                            if(previewData.VoxelRef == null)
+                            {
+                                Acquire(cell, previewData);
+                            }
+                            previewData = previewData.Next;
+                        }
+                    }
                 }
             }
            
@@ -2048,6 +2079,7 @@ namespace Battlehub.VoxelCombat
             cell.Usages++;
         }
 
+     
         private void TurnOff(MapCell cell)
         {
             cell.Usages--;
@@ -2062,6 +2094,24 @@ namespace Battlehub.VoxelCombat
                         data.VoxelRef = null;
                     }
                     data = data.Next;
+                }
+
+                PreviewChain previewChain = cell.PreviewChain;
+                if (previewChain != null && previewChain.Data != null)
+                {
+                    for (int i = 0; i < previewChain.Data.Length; ++i)
+                    {
+                        VoxelData previewData = previewChain.Data[i];
+                        while (previewData != null)
+                        {
+                            if (previewData.VoxelRef != null)
+                            {
+                                m_factory.Release(previewData.VoxelRef);
+                                previewData.VoxelRef = null;
+                            }
+                            previewData = previewData.Next;
+                        }
+                    }
                 }
             }
 

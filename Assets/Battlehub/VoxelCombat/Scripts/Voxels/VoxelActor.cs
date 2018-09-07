@@ -281,7 +281,6 @@ namespace Battlehub.VoxelCombat
 
         protected override void AwakeOverride()
         {
-            
             m_weight = GameConstants.MinVoxelActorWeight;
       
             m_animationState = VoxelActorState.Idle;

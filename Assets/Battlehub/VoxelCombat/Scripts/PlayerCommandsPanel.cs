@@ -138,7 +138,7 @@ namespace Battlehub.VoxelCombat
                         m_eventSystem.SetSelectedGameObjectOnLateUpdate(null);
                     }
 
-                    m_gameState.IsContextActionInProgress(LocalPlayerIndex, m_isOpen);
+                    m_gameState.IsActionsMenuOpened(LocalPlayerIndex, m_isOpen);
                 }
             }
         }
@@ -180,7 +180,7 @@ namespace Battlehub.VoxelCombat
             m_selection = Dependencies.UnitSelection;
             m_eventSystemMananger = Dependencies.EventSystemManager;
 
-            m_gameState.ContextAction += OnContextAction;
+            m_gameState.ActionsMenu += OnActionsMenu;
             m_autoCommandsPanel.Action += OnAutoCommandsPanelAction;
 
             m_cancelBtn.onClick.AddListener(OnCancel);
@@ -228,7 +228,7 @@ namespace Battlehub.VoxelCombat
         {
             if(m_gameState != null)
             {
-                m_gameState.ContextAction -= OnContextAction;
+                m_gameState.ActionsMenu -= OnActionsMenu;
             }
 
             if(m_autoCommandsPanel != null)
@@ -324,9 +324,9 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void OnContextAction(int playerIndex)
+        private void OnActionsMenu(int playerIndex)
         {
-            if(!m_gameState.IsContextActionInProgress(playerIndex))
+            if(!m_gameState.IsActionsMenuOpened(playerIndex))
             {
                 if (IsAutoCommandsOpen)
                 {

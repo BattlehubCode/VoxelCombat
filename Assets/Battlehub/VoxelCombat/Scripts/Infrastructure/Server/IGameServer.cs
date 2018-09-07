@@ -478,11 +478,17 @@ namespace Battlehub.VoxelCombat
     {
         //VoxelTypes of lower levels should have smaller value !!!!!!!
 
+        GroundPreview = 0,
         Ground = 1,
-        Spawner = 50,
 
+        SpawnerPreview = 49,
+        Spawner = 50,
+        
         Eatable = 100,
+
+        BombPreview = 899,
         Bomb = 900,
+        
         Eater = 1000,
     }
 

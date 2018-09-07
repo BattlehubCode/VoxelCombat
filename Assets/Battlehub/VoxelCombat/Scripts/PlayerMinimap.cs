@@ -67,7 +67,7 @@ namespace Battlehub.VoxelCombat
             m_scaler = GetComponentInParent<CanvasScaler>();
        
             m_gameState.Menu += OnMenu;
-            m_gameState.ContextAction += OnContextAction;
+            m_gameState.ActionsMenu += OnActionsMenu;
             
             m_rtChangeListener = m_selectableMinimap.GetComponent<RectTransformChangeListener>();
             m_rtChangeListener.RectTransformChanged += OnMinimapRectTransformChanged;
@@ -110,7 +110,7 @@ namespace Battlehub.VoxelCombat
             if (m_gameState != null)
             {
                 m_gameState.Menu -= OnMenu;
-                m_gameState.ContextAction -= OnContextAction;
+                m_gameState.ActionsMenu -= OnActionsMenu;
             }
 
             if(m_rtChangeListener != null)
@@ -127,7 +127,7 @@ namespace Battlehub.VoxelCombat
 
         private void Update()
         {
-            if (m_gameState.IsContextActionInProgress(m_viewport.LocalPlayerIndex))
+            if (m_gameState.IsActionsMenuOpened(m_viewport.LocalPlayerIndex))
             {
                 return;
             }
@@ -354,7 +354,7 @@ namespace Battlehub.VoxelCombat
             StartCoroutine(Fit());
         }
 
-        private void OnContextAction(int localPlayerIndex)
+        private void OnActionsMenu(int localPlayerIndex)
         {
             UpdateVisibility();
         }
@@ -366,7 +366,7 @@ namespace Battlehub.VoxelCombat
 
         private void UpdateVisibility()
         {
-            if (m_gameState.IsContextActionInProgress(m_viewport.LocalPlayerIndex) || m_gameState.IsMenuOpened(m_viewport.LocalPlayerIndex))
+            if (m_gameState.IsActionsMenuOpened(m_viewport.LocalPlayerIndex) || m_gameState.IsMenuOpened(m_viewport.LocalPlayerIndex))
             {
                 m_root.SetActive(false);
                 m_gotFocus = false;

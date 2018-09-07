@@ -54,7 +54,6 @@ namespace Battlehub.VoxelCombat
                 m_navigation = FindObjectOfType<Navigation>();
                 m_eventSystemManager = FindObjectOfType<EventSystemManager>();
                 m_notification = FindObjectOfType<Notification>();
-                m_locationPicker = FindObjectOfType<LocationPicker>();
 
                 UnitSelection[] selection = FindObjectsOfType<UnitSelection>();
                 if (selection.Length > 0)
@@ -136,17 +135,10 @@ namespace Battlehub.VoxelCombat
             m_unitSelection = null;
             m_targetSelection = null;
             m_eventSystemManager = null;
-            m_locationPicker = null;
             m_gState = null;
 
             //Don't do it serializers are always required. no need to cleanup
             //m_serializersPool = null;
-        }
-
-        private static ILocationPicker m_locationPicker;
-        public static ILocationPicker LocationPicker
-        {
-            get { return m_locationPicker; }
         }
 
         private static Pool<ProtobufSerializer> m_serializersPool;

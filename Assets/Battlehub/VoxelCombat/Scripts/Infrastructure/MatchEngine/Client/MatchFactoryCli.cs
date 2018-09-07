@@ -35,6 +35,12 @@ namespace Battlehub.VoxelCombat
             {
                 return new SpawnerUnitControllerCli(CreateVoxelDataController(map, coordinate, type, playerIndex, allAbilities));
             }
+            else if(type == (int)KnownVoxelTypes.GroundPreview ||
+                    type == (int)KnownVoxelTypes.SpawnerPreview ||
+                    type == (int)KnownVoxelTypes.BombPreview)
+            {
+                return new PreviewUnitControllerCli(CreateVoxelDataController(map, coordinate, type, playerIndex, allAbilities));
+            }
             else
             {
                 throw new System.NotSupportedException(string.Format("type {0} is not supported"));

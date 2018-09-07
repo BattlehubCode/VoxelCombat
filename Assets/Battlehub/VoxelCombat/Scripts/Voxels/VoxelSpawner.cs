@@ -42,7 +42,12 @@ namespace Battlehub.VoxelCombat
 
         public override int Type
         {
-            get { return (int)KnownVoxelTypes.Spawner; }
+            get
+            {
+                return m_isPreview ?
+                    (int)KnownVoxelTypes.SpawnerPreview :
+                    (int)KnownVoxelTypes.Spawner;
+            }
         }
 
         protected override void SetMaterials(Material primary, Material secondary)

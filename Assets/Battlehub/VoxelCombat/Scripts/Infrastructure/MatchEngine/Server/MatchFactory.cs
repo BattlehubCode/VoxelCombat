@@ -86,6 +86,12 @@ namespace Battlehub.VoxelCombat
             {
                 return new SpawnerUnitController(dataController);
             }
+            else if(type == (int)KnownVoxelTypes.GroundPreview || 
+                    type == (int)KnownVoxelTypes.SpawnerPreview ||
+                    type == (int)KnownVoxelTypes.BombPreview)
+            {
+                return new PreviewUnitController(dataController);
+            }
             else
             {
                 throw new System.NotSupportedException(string.Format("Type {0} is not supported", type));

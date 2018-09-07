@@ -21,6 +21,10 @@ namespace Battlehub.VoxelCombat
         bool IsContextActionInProgress(int localPlayerIndex);
         void IsContextActionInProgress(int localPlayerIndex, bool value);
 
+        event VoxelGameStateChangedHandler<int> ActionsMenu;
+        bool IsActionsMenuOpened(int localPlayerIndex);
+        void IsActionsMenuOpened(int localPlayerIndex, bool value);
+
         event VoxelGameStateChangedHandler<int> Menu;
         bool IsMenuOpened(int localPlayerIndex);
         void IsMenuOpened(int localPlayerIndex, bool value);
@@ -133,6 +137,7 @@ namespace Battlehub.VoxelCombat
         public event VoxelGameStateChangedHandler<int> PlayerDefeated;
         public event VoxelGameStateChangedHandler Completed;
         public event VoxelGameStateChangedHandler<int> ContextAction;
+        public event VoxelGameStateChangedHandler<int> ActionsMenu;
         public event VoxelGameStateChangedHandler<int> Menu;
             
         private bool m_isStarted;
@@ -177,12 +182,26 @@ namespace Battlehub.VoxelCombat
             get { return m_localPlayers.Length; }
         }
 
+        private bool[] m_isActionsMenuOpened;
+        public bool IsActionsMenuOpened(int index)
+        {
+            return m_isActionsMenuOpened[index];
+        }
+
+        public void IsActionsMenuOpened(int index, bool value)
+        {
+            m_isActionsMenuOpened[index] = value;
+            if(ActionsMenu != null)
+            {
+                ActionsMenu(index);
+            }
+        }
+
         private bool[] m_isContextActionInProgress;
         public bool IsContextActionInProgress(int index)
         {
             return m_isContextActionInProgress[index];
         }
-
         public void IsContextActionInProgress(int index, bool value)
         {
             m_isContextActionInProgress[index] = value;
@@ -193,7 +212,6 @@ namespace Battlehub.VoxelCombat
         }
 
         private bool[] m_isMenuOpened;
-
         public bool IsMenuOpened(int index)
         {
             return m_isMenuOpened[index];
@@ -537,16 +555,18 @@ namespace Battlehub.VoxelCombat
             if (IsReplay)
             {
                 m_localPlayers = new[] { Guid.Empty };
-                m_isContextActionInProgress = new bool[m_localPlayers.Length];
+                m_isActionsMenuOpened = new bool[m_localPlayers.Length];
                 m_isMenuOpened = new bool[m_localPlayers.Length];
+                m_isContextActionInProgress = new bool[m_localPlayers.Length];
 
                 m_gameView.Initialize(1, true);
             }
             else
             {
                 m_localPlayers = localPlayers;
-                m_isContextActionInProgress = new bool[m_localPlayers.Length];
+                m_isActionsMenuOpened = new bool[m_localPlayers.Length];
                 m_isMenuOpened = new bool[m_localPlayers.Length];
+                m_isContextActionInProgress = new bool[m_localPlayers.Length];
 
                 m_gameView.Initialize(m_localPlayers.Length, true);
             }

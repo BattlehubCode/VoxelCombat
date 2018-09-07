@@ -70,8 +70,7 @@ namespace Battlehub.VoxelCombat
             m_inputManager = Dependencies.InputManager;
             m_map = Dependencies.Map;
             m_gameState = Dependencies.GameState;
-            m_locationPicker = Dependencies.LocationPicker;
-
+          
             if (m_commandsPanel != null)
             {
                 m_commandsPanel.Move += OnMove;
@@ -121,6 +120,8 @@ namespace Battlehub.VoxelCombat
 
             m_cameraController = Dependencies.GameView.GetCameraController(LocalPlayerIndex);
 
+            m_locationPicker = Dependencies.GameView.GetLocationPicker(LocalPlayerIndex);
+
             m_playersBot = MatchFactoryCli.CreateBotController(m_gameState.GetPlayer(playerIndex), m_engine.GetClientTaskEngine(playerIndex));
             m_playersBot.Init();
 
@@ -136,7 +137,12 @@ namespace Battlehub.VoxelCombat
         private bool m_wasAButtonDown;
         private void Update()
         {
-            if (m_gameState.IsContextActionInProgress(LocalPlayerIndex))
+            if (m_gameState.IsActionsMenuOpened(LocalPlayerIndex))
+            {
+                return;
+            }
+
+            if(m_gameState.IsContextActionInProgress(LocalPlayerIndex))
             {
                 return;
             }
@@ -328,12 +334,12 @@ namespace Battlehub.VoxelCombat
             long[] selectedUnitIds = m_unitSelection.GetSelection(playerIndex, playerIndex);
             Coordinate[] coordinates = new Coordinate[selectedUnitIds.Length];
 
-            PickLocations(targetType, unitIndex, playerIndex, selectedUnitIds, coordinates, voxelData => voxelData.Weight, () =>
+            PickLocations(targetType, unitIndex, playerIndex, selectedUnitIds, coordinates, () =>
             {
                 for(int i = 0; i < selectedUnitIds.Length; ++i)
                 {
                     long unitId = selectedUnitIds[i];
-
+                    Debug.Log("Locations picked");
                     //Search for path and move (move to closest location if path was not found);
                     //Execute as task until cancelled.
                     //Highlight group of walls only during placement phase
@@ -342,33 +348,38 @@ namespace Battlehub.VoxelCombat
             });   
         }
 
-        private void PickLocations(int targetType, int unitIndex, int playerIndex, long[] selecteUnitIds, Coordinate[] coordinates, Func<VoxelData, int> getTargetWeight, Action callback)
+        private void PickLocations(int targetType, int unitIndex, int playerIndex, long[] selecteUnitIds, Coordinate[] coordinates, Action callback)
         {
             if(unitIndex >= selecteUnitIds.Length)
             {
+                m_locationPicker.EndPickLocation();
                 callback();
                 return;
             }
 
             long unitId = selecteUnitIds[unitIndex];
-            IVoxelDataController dc = m_gameState.GetVoxelDataController(playerIndex, unitIndex);
+            IVoxelDataController dc = m_gameState.GetVoxelDataController(playerIndex, unitId);
             if(dc != null)
             {
-                m_locationPicker.Pick(dc.ControlledData, targetType, getTargetWeight(dc.ControlledData), (error, coordinate) =>
+                m_locationPicker.PickLocationToConvert(dc.ControlledData, targetType, args =>
                 {
-                    if(!error)
+                    if(args.Status == LocationPickerArgs.PickStatus.Picked)
                     {
-                        coordinates[unitIndex] = coordinate;
+                        coordinates[unitIndex] = args.Coordinate;
                     }
 
                     unitIndex++;
-                    PickLocations(targetType, unitIndex, playerIndex, selecteUnitIds, coordinates, getTargetWeight, callback);
+
+                    if(args.Status != LocationPickerArgs.PickStatus.Cancelled)
+                    {
+                        PickLocations(targetType, unitIndex, playerIndex, selecteUnitIds, coordinates, callback);
+                    }
                 });
             }
             else
             {
                 unitIndex++;
-                PickLocations(targetType, unitIndex, playerIndex, selecteUnitIds, coordinates, getTargetWeight, callback);
+                PickLocations(targetType, unitIndex, playerIndex, selecteUnitIds, coordinates, callback);
             }
         }
 

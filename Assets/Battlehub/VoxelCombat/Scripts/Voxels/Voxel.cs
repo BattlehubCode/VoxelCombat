@@ -210,11 +210,13 @@ namespace Battlehub.VoxelCombat
             }
         }
 
+        [SerializeField]
+        protected bool m_isPreview;
+
         public abstract int Type
         {
             get;
         }
-
 
         private VoxelData m_voxelData;
         public VoxelData VoxelData
@@ -282,7 +284,6 @@ namespace Battlehub.VoxelCombat
             get { return enabled; }
             set { enabled = value; }
         }
-
 
         private void Awake()
         {
@@ -542,9 +543,11 @@ namespace Battlehub.VoxelCombat
                     if(m_uiPrefab != null)
                     {
                         VoxelUI ui = Instantiate(m_uiPrefab, transform, false);
-
                         int localPlayerIndex = m_gameState.PlayerToLocalIndex(playerIndex);
-                        ui.gameObject.layer = GameConstants.PlayerLayers[localPlayerIndex];
+                        foreach(Transform t in ui.GetComponentsInChildren<Transform>(true))
+                        {
+                            t.gameObject.layer = GameConstants.PlayerLayers[localPlayerIndex];
+                        }
                         ui.LocalPlayerIndex = localPlayerIndex;
                         if (m_ui == null)
                         {

@@ -113,12 +113,17 @@ namespace Battlehub.VoxelCombat
 
         private void Update()
         {
-            if (m_gameState.IsContextActionInProgress(LocalPlayerIndex))
+            if (m_gameState.IsActionsMenuOpened(LocalPlayerIndex))
             {
                 return;
             }
 
             if (m_gameState.IsMenuOpened(LocalPlayerIndex))
+            {
+                return;
+            }
+
+            if (m_gameState.IsContextActionInProgress(LocalPlayerIndex))
             {
                 return;
             }

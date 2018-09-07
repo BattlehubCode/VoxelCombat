@@ -33,6 +33,8 @@ namespace Battlehub.VoxelCombat
         IVirtualMouse GetVirtualMouse(int index);
 
         ITargetSelectionController GetTargetSelectionController(int index);
+
+        ILocationPicker GetLocationPicker(int index);
     }
 
     public class GameView : MonoBehaviour, IGameView
@@ -309,6 +311,15 @@ namespace Battlehub.VoxelCombat
                 return null;
             }
             return m_gameViewports[index].GetComponent<TargetSelectionController>();
+        }
+
+        public ILocationPicker GetLocationPicker(int index)
+        {
+            if (index < 0 || m_gameViewports.Length <= index)
+            {
+                return null;
+            }
+            return m_gameViewports[index].GetComponent<LocationPicker>();
         }
     }
 }

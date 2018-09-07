@@ -47,8 +47,11 @@ namespace Battlehub.VoxelCombat
                 localScale.z = scale - 0.5f;
                 Root.localScale = localScale;
 
-                float colliderSize = m_collider.size.y * scale / (scale - 0.5f);
-                m_collider.size = new Vector3(colliderSize, m_collider.size.y, colliderSize);
+                if(m_collider != null)
+                {
+                    float colliderSize = m_collider.size.y * scale / (scale - 0.5f);
+                    m_collider.size = new Vector3(colliderSize, m_collider.size.y, colliderSize);
+                }
             }
         }
 
@@ -77,7 +80,9 @@ namespace Battlehub.VoxelCombat
 
         public override int Type
         {
-            get { return (int)KnownVoxelTypes.Ground; }
+            get { return m_isPreview ? 
+                    (int)KnownVoxelTypes.GroundPreview : 
+                    (int)KnownVoxelTypes.Ground; }
         }
 
         protected override void AwakeOverride()
@@ -111,10 +116,12 @@ namespace Battlehub.VoxelCombat
                 m_filter.sharedMesh = m_wall1;
             }
 
-
-            Material[] materials = m_renderer.sharedMaterials;
-            materials[0] = m_primaryMaterial;
-            m_renderer.sharedMaterials = materials;
+            if(!m_isPreview)
+            {
+                Material[] materials = m_renderer.sharedMaterials;
+                materials[0] = m_primaryMaterial;
+                m_renderer.sharedMaterials = materials;
+            }
         }
 
         protected override void ReadRotation(VoxelData data)

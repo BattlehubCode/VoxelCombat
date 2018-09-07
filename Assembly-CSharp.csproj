@@ -245,6 +245,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelBomb.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelDigestingBehavior.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelEater.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelPreview.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelSpawner.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Voxels\VoxelStateMachineBehavior.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Tests\Infrastructure\MatchEngine\TaskEngine\ConvertToWallTests.cs" />
@@ -431,6 +432,7 @@
     <Compile Include="Assets\ReorderableInspector\EditScriptableAttribute.cs" />
     <Compile Include="Assets\ReorderableInspector\ReorderableAttribute.cs" />
     <None Include="Assets\PostProcessing\Resources\Shaders\DepthOfField.shader" />
+    <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\Preview.shader" />
     <None Include="Assets\Battlehub\VoxelCombat\Materials\Shaders\ToonBasicOutlineCutout.shader" />
     <None Include="Assets\PostProcessing\Resources\Shaders\MotionBlur.cginc" />
     <None Include="Assets\PostProcessing\Resources\Shaders\Fog.shader" />

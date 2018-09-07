@@ -166,8 +166,8 @@ namespace Battlehub.VoxelCombat
     public interface IBotSubmitTask
     {
         void RegisterTask(TaskTemplateType type, SerializedTask taskInfo);
-        void SubmitTask(float time, TaskTemplateType type, IMatchUnitAssetView unit, params Func<TaskInputInfo, TaskInputInfo, TaskInfo>[] defines);
-
+        //void SubmitTask(float time, TaskTemplateType type, IMatchUnitAssetView unit, params Func<TaskInputInfo, TaskInputInfo, TaskInfo>[] defines);
+        void SubmitTask(float time, TaskTemplateType type, IMatchUnitAssetView unit, params TaskInfo[] defines);
 
         //Group task will be executed using following algorithm.
         //Each unit will be assigned with its own task. 
@@ -272,8 +272,7 @@ namespace Battlehub.VoxelCombat
                             TaskInfo.Return(ExpressionInfo.TaskStatus(coreTaskInfo))
                         );
                     })
-
-                }
+                },
             };
 
             public readonly Dictionary<long, RunningTaskInfo> TaskIdToTask = new Dictionary<long, RunningTaskInfo>();
@@ -454,9 +453,9 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        void IBotSubmitTask.SubmitTask(float time, TaskTemplateType type, IMatchUnitAssetView unit, params Func<TaskInputInfo, TaskInputInfo, TaskInfo>[] defines)
+        void IBotSubmitTask.SubmitTask(float time, TaskTemplateType type, IMatchUnitAssetView unit, params TaskInfo[] paramters)
         {
-            if(m_state.BusyUnits[(KnownVoxelTypes)unit.Data.Type].ContainsKey(unit.Id))
+            if (m_state.BusyUnits[(KnownVoxelTypes)unit.Data.Type].ContainsKey(unit.Id))
             {
                 throw new InvalidOperationException("unit " + unit.Id + " of type  " + (KnownVoxelTypes)unit.Data.Type + " is busy");
             }
@@ -467,23 +466,25 @@ namespace Battlehub.VoxelCombat
             taskInfo.Children[0] = unitIdTask;
             taskInfo.Children[1] = playerIdTask;
 
-            int argsLength = defines != null ? defines.Length : 0;
+            int argsLength = paramters != null ? paramters.Length : 0;
             TaskInfo rootTask = taskInfo.Children[2 + argsLength];
-            if(rootTask == null || taskInfo.Children[2 + argsLength - 1] != null)
+            if (rootTask == null || taskInfo.Children[2 + argsLength - 1] != null)
             {
                 throw new ArgumentException("wrong number of arguments for task template: " + type, "type");
             }
             rootTask.Inputs[0].OutputTask = unitIdTask;
             rootTask.Inputs[1].OutputTask = playerIdTask;
 
-            if (defines != null)
+            if (paramters != null)
             {
-                for(int i = 0; i < defines.Length; ++i)
+                for (int i = 0; i < paramters.Length; ++i)
                 {
-                    TaskInfo define = defines[i](rootTask.Inputs[0], rootTask.Inputs[1]);
+                    TaskInfo define = paramters[i];
+                    define.Inputs[0].ExtensionSocket = rootTask.Inputs[0];
+                    define.Inputs[1].ExtensionSocket = rootTask.Inputs[1];
                     taskInfo.Children[2 + i] = define;
-                    taskInfo.Children[2 + defines.Length].Inputs[2 + i].OutputTask = define;
-                }                
+                    taskInfo.Children[2 + paramters.Length].Inputs[2 + i].OutputTask = define;
+                }
             }
 
             taskInfo.SetParents();
@@ -492,7 +493,7 @@ namespace Battlehub.VoxelCombat
             m_state.FreeUnits[(KnownVoxelTypes)unit.Data.Type].Remove(unit.Id);
             m_state.BusyUnits[(KnownVoxelTypes)unit.Data.Type].Add(unit.Id, unit);
 
-          
+
             m_taskEngine.SubmitTask(taskInfo);
 
             RunningTaskInfo runningTaskInfo = new RunningTaskInfo(type, unit, taskInfo.TaskId, time);
