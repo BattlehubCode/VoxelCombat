@@ -15,7 +15,7 @@ namespace Battlehub.VoxelCombat
 
         private Material m_debugMaterial;
 
-        private IJob m_job;
+        private IBackgroundWorker m_job;
         private IProgressIndicator m_progressIndicator;
         private bool m_isBusy;
 

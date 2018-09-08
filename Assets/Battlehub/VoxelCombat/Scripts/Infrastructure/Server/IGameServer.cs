@@ -147,23 +147,23 @@ namespace Battlehub.VoxelCombat
     public class SerializedTaskTemplatesArray
     {
         [ProtoMember(1)]
-        public SerializedTaskTemplate[] Templates;
+        public SerializedNamedTaskLaunchInfo[] Templates;
 
         public SerializedTaskTemplatesArray()
         {
         }
 
-        public SerializedTaskTemplatesArray(SerializedTaskTemplate[] templates)
+        public SerializedTaskTemplatesArray(SerializedNamedTaskLaunchInfo[] templates)
         {
             Templates = templates;
         }
 
-        public static implicit operator SerializedTaskTemplate[] (SerializedTaskTemplatesArray templates)
+        public static implicit operator SerializedNamedTaskLaunchInfo[] (SerializedTaskTemplatesArray templates)
         {
             return templates.Templates;
         }
 
-        public static implicit operator SerializedTaskTemplatesArray(SerializedTaskTemplate[] templates)
+        public static implicit operator SerializedTaskTemplatesArray(SerializedNamedTaskLaunchInfo[] templates)
         {
             return new SerializedTaskTemplatesArray(templates);
         }
@@ -195,7 +195,7 @@ namespace Battlehub.VoxelCombat
     [ProtoInclude(33, typeof(RemoteArg<ClientRequest>))]
     [ProtoInclude(34, typeof(RemoteArg<SerializedTaskArray[]>))]
     [ProtoInclude(35, typeof(RemoteArg<SerializedTaskTemplatesArray[]>))]
-    [ProtoInclude(37, typeof(RemoteArg<SerializedTaskTemplate>))]
+    [ProtoInclude(37, typeof(RemoteArg<SerializedNamedTaskLaunchInfo>))]
     public class RemoteArg
     {
         public virtual object Value
@@ -1279,9 +1279,9 @@ namespace Battlehub.VoxelCombat
 
         void GetReplay(Guid clientId, ServerEventHandler<ReplayData, Room> callback);
 
-        void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<SerializedTask[], SerializedTaskTemplate[]> callback);
+        void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<SerializedTask[], SerializedNamedTaskLaunchInfo[]> callback);
 
-        void SaveTaskTemplate(Guid clientId, Guid playerId, SerializedTask taskTemplate, SerializedTaskTemplate templateInfo, ServerEventHandler callback);
+        void SaveTaskTemplate(Guid clientId, Guid playerId, SerializedTask taskTemplate, SerializedNamedTaskLaunchInfo templateInfo, ServerEventHandler callback);
 
     }
 

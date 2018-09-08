@@ -110,17 +110,17 @@ namespace Battlehub.VoxelCombat
             Call(rpc, (error, result) => callback(error, result.Get<ReplayData>(0), result.Get<Room>(1)));
         }
 
-        public void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<SerializedTask[], SerializedTaskTemplate[]> callback)
+        public void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<SerializedTask[], SerializedNamedTaskLaunchInfo[]> callback)
         {
             RemoteCall rpc = new RemoteCall(
                 RemoteCall.Proc.GetTaskTemplates,
                 clientId,
                 RemoteArg.Create(playerId));
 
-            Call(rpc, (error, result) => callback(error, result.Get<SerializedTask[]>(0), result.Get<SerializedTaskTemplate[]>(1)));
+            Call(rpc, (error, result) => callback(error, result.Get<SerializedTask[]>(0), result.Get<SerializedNamedTaskLaunchInfo[]>(1)));
         }
 
-        public void SaveTaskTemplate(Guid clientId, Guid playerId, SerializedTask taskTemplate, SerializedTaskTemplate TaskTemplateData, ServerEventHandler callback)
+        public void SaveTaskTemplate(Guid clientId, Guid playerId, SerializedTask taskTemplate, SerializedNamedTaskLaunchInfo TaskTemplateData, ServerEventHandler callback)
         {
             RemoteCall rpc = new RemoteCall(
                 RemoteCall.Proc.SaveTaskTemplate,

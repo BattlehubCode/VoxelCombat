@@ -11,7 +11,7 @@ namespace Battlehub.VoxelCombat.Tests
         public event EventHandler Loaded;
         public event EventHandler Saved;
 
-        private IJob m_job;
+        private IBackgroundWorker m_job;
         private IProgressIndicator m_progressIndicator;
         private bool m_isBusy;
 

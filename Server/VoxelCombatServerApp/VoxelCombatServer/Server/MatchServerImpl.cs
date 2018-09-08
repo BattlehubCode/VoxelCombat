@@ -281,7 +281,7 @@ namespace Battlehub.VoxelCombat
         private readonly Dictionary<Guid, Guid> m_playerToClientId;
         private Dictionary<Guid, VoxelAbilities[]> m_abilities;
         private Dictionary<Guid, SerializedTask[]> m_taskTemplates;
-        private Dictionary<Guid, SerializedTaskTemplate[]> m_taskTemplatesInfo;
+        private Dictionary<Guid, SerializedNamedTaskLaunchInfo[]> m_taskTemplatesInfo;
 
         private IBotController[] m_bots = new IBotController[0];
         private Room m_room;
@@ -364,7 +364,7 @@ namespace Battlehub.VoxelCombat
 
             m_abilities = new Dictionary<Guid, VoxelAbilities[]>();
             m_taskTemplates = new Dictionary<Guid, SerializedTask[]>();
-            m_taskTemplatesInfo = new Dictionary<Guid, SerializedTaskTemplate[]>();
+            m_taskTemplatesInfo = new Dictionary<Guid, SerializedNamedTaskLaunchInfo[]>();
             for (int i = 0; i < m_room.Players.Count; ++i)
             {
                 m_abilities.Add(m_room.Players[i], CreateDefaultAbilities());
@@ -421,9 +421,9 @@ namespace Battlehub.VoxelCombat
             return taskTemplates.ToArray();
         }
 
-        private SerializedTaskTemplate[] CreateDefaultTaskTemplateInfo()
+        private SerializedNamedTaskLaunchInfo[] CreateDefaultTaskTemplateInfo()
         {
-            return new[] { new SerializedTaskTemplate { Name = "Eat Grow Split4", Col = 2, Row = 2 } };
+            return new[] { new SerializedNamedTaskLaunchInfo { Name = "Eat Grow Split4", Col = 2, Row = 2 } };
         }
 
         public bool IsLocal(Guid clientId, Guid playerId)
@@ -1187,7 +1187,7 @@ namespace Battlehub.VoxelCombat
                 m_replay.Tick(m_engine, m_tick);
                 
                 CommandsBundle commands;
-                if (m_engine.Tick(out commands))
+                if (m_engine.Tick(m_tick, out commands))
                 {
                     commands.Tick = m_tick;
                     if (Tick != null)
@@ -1236,12 +1236,12 @@ namespace Battlehub.VoxelCombat
             };
         }
 
-        public void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<SerializedTask[], SerializedTaskTemplate[]> callback)
+        public void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<SerializedTask[], SerializedNamedTaskLaunchInfo[]> callback)
         {
             throw new NotImplementedException();
         }
 
-        public void SaveTaskTemplate(Guid clientId, Guid playerId, SerializedTask taskTemplate, SerializedTaskTemplate templateInfo, ServerEventHandler callback)
+        public void SaveTaskTemplate(Guid clientId, Guid playerId, SerializedTask taskTemplate, SerializedNamedTaskLaunchInfo templateInfo, ServerEventHandler callback)
         {
             throw new NotImplementedException();
         }

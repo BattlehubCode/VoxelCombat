@@ -130,13 +130,13 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Effects\ParticleEffect.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Effects\VoxelDestruction.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\GameConstants.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\BackgroundWorker.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\BoxSelection.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\CursorHelper.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\DontDestroyOnLoadManager.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\GLCamera.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\GLRenderer.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\GridRenderer.cs" />
-    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\Job.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\Reflection.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\Serializer.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Helpers\TriggerHandlers.cs" />

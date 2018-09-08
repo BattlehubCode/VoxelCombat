@@ -97,6 +97,18 @@ namespace Battlehub.VoxelCombat
         {
             get;
         }
+
+        Assignment Assignment
+        {
+            get;
+            set;
+        }
+
+        List<Assignment> TargetForAssignments
+        {
+            get;
+            set;
+        }
     }
 
     public interface IBotStartegy
@@ -109,7 +121,6 @@ namespace Battlehub.VoxelCombat
         void Think(float time, IBotSubmitTask bot);
     }
 
-    
 
     public class DefaultStrategy : IBotStartegy
     {

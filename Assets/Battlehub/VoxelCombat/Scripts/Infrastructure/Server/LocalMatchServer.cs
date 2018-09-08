@@ -101,7 +101,7 @@ namespace Battlehub.VoxelCombat
         }
 
         private IGlobalState m_gState;
-        private IJob m_job;
+        private IBackgroundWorker m_job;
         private IMatchEngine m_engine;
         private IReplaySystem m_replay;
         private ProtobufSerializer m_serializer;
@@ -118,7 +118,7 @@ namespace Battlehub.VoxelCombat
         private Dictionary<Guid, Player> m_players;
         private Dictionary<Guid, VoxelAbilities[]> m_abilities;
         private Dictionary<Guid, SerializedTask[]> m_tasks;
-        private Dictionary<Guid, SerializedTaskTemplate[]> m_serializedTaskTemplates;
+        private Dictionary<Guid, SerializedNamedTaskLaunchInfo[]> m_serializedTaskTemplates;
 
         private Guid m_botAuthority;
         private IBotController[] m_bots;
@@ -238,7 +238,7 @@ namespace Battlehub.VoxelCombat
 
             m_abilities = new Dictionary<Guid, VoxelAbilities[]>();
             m_tasks = new Dictionary<Guid, SerializedTask[]>();
-            m_serializedTaskTemplates = new Dictionary<Guid, SerializedTaskTemplate[]>();
+            m_serializedTaskTemplates = new Dictionary<Guid, SerializedNamedTaskLaunchInfo[]>();
             for (int i = 0; i < m_room.Players.Count; ++i)
             {
                 m_abilities.Add(m_room.Players[i], CreateDefaultAbilities());
@@ -321,9 +321,9 @@ namespace Battlehub.VoxelCombat
             return taskTemplates.ToArray();
         }
 
-        private SerializedTaskTemplate[] CreateDefaultTaskTemplateData()
+        private SerializedNamedTaskLaunchInfo[] CreateDefaultTaskTemplateData()
         {
-            return new[] { new SerializedTaskTemplate { Name = "Eat Grow Split4", Col = 2, Row = 2, Type = TaskTemplateType.EatGrowSplit4 } };
+            return new[] { new SerializedNamedTaskLaunchInfo { Name = "Eat Grow Split4", Col = 2, Row = 2, Type = TaskTemplateType.EatGrowSplit4 } };
         }
 
         public bool IsLocal(Guid clientId, Guid playerId)
@@ -701,7 +701,7 @@ namespace Battlehub.VoxelCombat
         }
 
 
-        public void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<SerializedTask[], SerializedTaskTemplate[]> callback)
+        public void GetTaskTemplates(Guid clientId, Guid playerId, ServerEventHandler<SerializedTask[], SerializedNamedTaskLaunchInfo[]> callback)
         {
             Error error = new Error(StatusCode.OK);
             if (!m_initialized)
@@ -723,7 +723,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void SaveTaskTemplate(Guid clientId, Guid playerId, SerializedTask taskTemplate, SerializedTaskTemplate TaskTemplateData, ServerEventHandler callback)
+        public void SaveTaskTemplate(Guid clientId, Guid playerId, SerializedTask taskTemplate, SerializedNamedTaskLaunchInfo TaskTemplateData, ServerEventHandler callback)
         {
             Error error = new Error(StatusCode.OK);
             if (!m_initialized)
@@ -743,10 +743,10 @@ namespace Battlehub.VoxelCombat
                     Array.Resize(ref templates, templates.Length + 1);
                 }
 
-                SerializedTaskTemplate[] templateInfos;
+                SerializedNamedTaskLaunchInfo[] templateInfos;
                 if (!m_serializedTaskTemplates.TryGetValue(playerId, out templateInfos))
                 {
-                    templateInfos = new SerializedTaskTemplate[1];
+                    templateInfos = new SerializedNamedTaskLaunchInfo[1];
                 }
                 else
                 {

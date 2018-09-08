@@ -17,10 +17,8 @@ namespace Battlehub.VoxelCombat
         public const int ExecuteTask = 8;
         public const int Cancel = 10;
 
-        public const int CreateJob = 12;
-        public const int DestroyJob = 13;
-        public const int AssignJob = 14;
-        public const int ResignJob = 15;
+        public const int CreateAssignment = 12;
+        public const int RemoveAssignment = 13;
         
         public const int BeginSplit = 19;
         public const int Split = 20;
@@ -388,6 +386,7 @@ namespace Battlehub.VoxelCombat
     [ProtoInclude(52, typeof(CompositeCmd))]
     [ProtoInclude(53, typeof(TargetCmd))]
     [ProtoInclude(54, typeof(TaskCmd))]
+    //[ProtoInclude(55, typeof(GroupAssignmentCmd))]
     public class Cmd
     {
         [ProtoMember(1)]
@@ -464,28 +463,24 @@ namespace Battlehub.VoxelCombat
         }
     }
 
-    [ProtoContract]
-    public class Job
-    {
-        [ProtoMember(1)]
-        public List<long> Units;
 
-        [ProtoMember(2)]
-        public List<long> Targets;
+    //Use composite command to create group assignment for multiple units at once
+    //[ProtoContract]
+    //public class GroupAssignmentCmd : Cmd
+    //{
+    //    [ProtoMember(1)]
+    //    public Guid GroupId;
 
-        [ProtoMember(3)]
-        public List<TaskTemplateType> TaskTemplates;
+    //    //When unit become/(stop to be) a target it should be notified using cmd with corresponding code?
+    //    [ProtoMember(2)]
+    //    public long TargetId;
 
-        [ProtoMember(4)]
-        public List<SerializedTask[]> Parameters;
-    }
+    //    [ProtoMember(3)]
+    //    public bool HasTarget;
 
-    [ProtoContract]
-    public class JobCmd : Cmd
-    {
-
-    }
-
+    //    [ProtoMember(4)]
+    //    public SerializedTaskLaunchInfo TaskTemplate;
+    //}
 
     [ProtoContract]
     public class ClientRequest 
@@ -727,6 +722,8 @@ namespace Battlehub.VoxelCombat
         }
     }
 
+
+
     public interface IMatchEngine : IMatchView
     {
         event Action<int, Cmd> OnSubmitted;
@@ -756,30 +753,26 @@ namespace Battlehub.VoxelCombat
         void GrantBotCtrl(int playerIndex);
 
         void DenyBotCtrl(int playerIndex);
+
     }
 
     public class MatchEngine : IMatchEngine
     {
         public event Action<int, Cmd> OnSubmitted;
 
-        private ProtobufSerializer m_serializer;
-
-
-        private bool m_hasNewCommands;
-        //private const bool EnableLog = true;
-        //public event Action<int, Cmd> OnSubmitted;
         private readonly Dictionary<Guid, IMatchPlayerController> m_idToPlayers = new Dictionary<Guid, IMatchPlayerController>();
         private readonly IMatchPlayerController[] m_players;
-        //private readonly Guid[] m_playerGuids;
-        //private readonly List<float> m_rtt = new List<float>();
+
+        private bool m_hasNewCommands;
         private readonly CommandsBundle m_serverCommands = new CommandsBundle()
         {
             ClientRequests = new List<ClientRequest>(),
             TasksStateInfo = new List<TaskStateInfo>()
         };
 
-        private MapRoot m_map;
+        private ProtobufSerializer m_serializer;
 
+        private MapRoot m_map;
         public MapRoot Map
         {
             get { return m_map; }
@@ -797,13 +790,9 @@ namespace Battlehub.VoxelCombat
         public MatchEngine(MapRoot map, int playersCount)
         {
             m_serializer = new ProtobufSerializer();
-            
-
             m_map = map;
 
             m_players = new IMatchPlayerController[playersCount];
-            //m_playerGuids = new Guid[playersCount];
-
             m_map.SetPlayerCount(playersCount);
 
             m_taskEngines = new ITaskEngine[playersCount];
@@ -827,6 +816,10 @@ namespace Battlehub.VoxelCombat
         {
             for (int i = 0; i < m_players.Length; ++i)
             {
+                IMatchPlayerController player = m_players[i];
+                player.AssetRemoved -= OnAssetRemoved;
+                player.UnitRemoved -= OnUnitRemoved;
+
                 ITaskEngine taskEngine = m_taskEngines[i];
                 taskEngine.TaskStateChanged -= OnTaskStateChanged;
                 taskEngine.ClientRequest -= OnClientRequest;
@@ -865,6 +858,8 @@ namespace Battlehub.VoxelCombat
         public void RegisterPlayer(Guid playerId, int playerIndex, Dictionary<int, VoxelAbilities>[] allAbilities)
         {
             IMatchPlayerController player = MatchFactory.CreatePlayerController(this, playerIndex, allAbilities);
+            player.AssetRemoved += OnAssetRemoved;
+            player.UnitRemoved += OnUnitRemoved;
 
             m_idToPlayers.Add(playerId, player);
             m_players[playerIndex] = player;
@@ -1067,6 +1062,34 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
+        public void OnUnitRemoved(IMatchUnitAssetView unit)
+        {
+            IMatchPlayerController player = m_players[unit.Data.Owner];
+            if(unit.Assignment != null)
+            {
+                player.RemoveAssignment(unit);
+            }
+
+            if(unit.TargetForAssignments != null)
+            {
+                player.RemoveTargetFromAssignments(unit);
+            }
+        }
+
+        private void OnAssetRemoved(IMatchUnitAssetView asset)
+        {
+            IMatchPlayerController player = m_players[asset.Data.Owner];
+            if (asset.Assignment != null)
+            {
+                player.RemoveAssignment(asset);
+            }
+
+            if (asset.TargetForAssignments != null)
+            {
+                player.RemoveTargetFromAssignments(asset);
+            }
+        }
+ 
         public void GrantBotCtrl(int playerIndex)
         {
             OnClientRequest(new ClientRequest

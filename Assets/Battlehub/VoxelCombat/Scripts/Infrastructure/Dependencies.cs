@@ -67,7 +67,7 @@ namespace Battlehub.VoxelCombat
                 }
             }
 
-            m_job = FindObjectOfType<Job>();
+            m_job = FindObjectOfType<BackgroundWorker>();
             m_settings = FindObjectOfType<GlobalSettings>();
             m_matchEngine = FindObjectOfType<MatchEngineCli>();
             m_remoteMatchServer = FindObjectOfType<RemoteMatchServer>();
@@ -315,8 +315,8 @@ namespace Battlehub.VoxelCombat
             get { return m_progress; }
         }
 
-        private static IJob m_job;
-        public static IJob Job
+        private static IBackgroundWorker m_job;
+        public static IBackgroundWorker Job
         {
             get { return m_job; }
         }

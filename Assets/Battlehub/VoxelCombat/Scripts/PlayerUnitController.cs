@@ -126,7 +126,7 @@ namespace Battlehub.VoxelCombat
             m_playersBot.Init();
 
             SerializedTask[] taskTemplates = m_gameState.GetTaskTemplates(playerIndex);
-            SerializedTaskTemplate[] taskTemplatesData = m_gameState.GetTaskTemplateData(playerIndex);
+            SerializedNamedTaskLaunchInfo[] taskTemplatesData = m_gameState.GetTaskTemplateData(playerIndex);
             for(int i = 0; i < taskTemplates.Length; ++i)
             {
                 TaskTemplateType coreTaskType = taskTemplatesData[i].Type;
@@ -224,10 +224,10 @@ namespace Battlehub.VoxelCombat
         private void OnAuto(int action)
         {
             int playerIndex = m_gameState.LocalToPlayerIndex(m_localPlayerIndex);
-            SerializedTaskTemplate[] templatesInfo = m_gameState.GetTaskTemplateData(playerIndex);
+            SerializedNamedTaskLaunchInfo[] templatesInfo = m_gameState.GetTaskTemplateData(playerIndex);
             for(int i = 0; i < templatesInfo.Length; ++i)
             {
-                SerializedTaskTemplate templateInfo = templatesInfo[i];
+                SerializedNamedTaskLaunchInfo templateInfo = templatesInfo[i];
                 int index = templateInfo.Index;
                 if(index == action)
                 {

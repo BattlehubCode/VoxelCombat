@@ -88,7 +88,7 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// Impossible in current state, operation repeat won't fix it
         /// </summary>
-        Fail_InvalidOperation = (1 << 4) | HardFail,
+        Fail_Interrupted = (1 << 4) | HardFail,
 
         /// <summary>
         /// Wrong operation arguments
@@ -103,12 +103,12 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// Min weight reached
         /// </summary>
-        Fail_MinWeight = (1 << 7) | Fail_InvalidOperation,
+        Fail_MinWeight = (1 << 7) | Fail_Interrupted,
 
         /// <summary>
         /// Max weight reached
         /// </summary>
-        Fail_MaxWeight = (1 << 8) | Fail_InvalidOperation,
+        Fail_MaxWeight = (1 << 8) | Fail_Interrupted,
 
         /*Soft Fail*/
         /// <summary>

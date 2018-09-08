@@ -6,16 +6,16 @@ using UnityEngine;
 
 namespace Battlehub.VoxelCombat
 {
-    public interface IJob
+    public interface IBackgroundWorker
     {
         void Submit(Func<object> job, Action<object> completed);
 
         void CancelAll();
     }
 
-    public class Job : MonoBehaviour, IJob
+    public class BackgroundWorker : MonoBehaviour, IBackgroundWorker
     {
-        public class JobContainer
+        public class WorkItem
         {
             public object Lock = new object();
 
@@ -27,7 +27,7 @@ namespace Battlehub.VoxelCombat
 
             private object m_result;
 
-            public JobContainer(Func<object> job, Action<object> completed)
+            public WorkItem(Func<object> job, Action<object> completed)
             {
                 m_job = job;
                 m_completed = completed;
@@ -46,11 +46,6 @@ namespace Battlehub.VoxelCombat
             public void Run()
             {
                 ThreadPool.QueueUserWorkItem(ThreadFunc);
-
-                //return () =>
-                //{
-                //    m_result = null;
-                //};
             }
 
             public void RaiseCompleted()
@@ -60,36 +55,36 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private List<JobContainer> m_jobs = new List<JobContainer>();
+        private List<WorkItem> m_toDoList = new List<WorkItem>();
         
         public void Submit(Func<object> job, Action<object> completed)
         {
-            JobContainer jc = new JobContainer(job, completed);
-            m_jobs.Add(jc);
-            jc.Run();
+            WorkItem work = new WorkItem(job, completed);
+            m_toDoList.Add(work);
+            work.Run();
         }
 
         public void CancelAll()
         {
-            m_jobs.Clear();
+            m_toDoList.Clear();
         }
 
         private void Update()
         {
-            for(int i = m_jobs.Count - 1; i >= 0; --i)
+            for(int i = m_toDoList.Count - 1; i >= 0; --i)
             {
-                JobContainer jc = m_jobs[i];
-                lock(jc.Lock)
+                WorkItem work = m_toDoList[i];
+                lock(work.Lock)
                 {
-                    if(jc.IsCompleted)
+                    if(work.IsCompleted)
                     {
                         try
                         {
-                            jc.RaiseCompleted();
+                            work.RaiseCompleted();
                         }
                         finally
                         {
-                            m_jobs.RemoveAt(i);
+                            m_toDoList.RemoveAt(i);
                         }
                     }
                 }

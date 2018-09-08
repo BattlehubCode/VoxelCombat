@@ -473,13 +473,12 @@ namespace Battlehub.VoxelCombat
     public enum TaskTemplateType
     {
         EatGrowSplit4,
-        ConvertTo,
-
-       
+        ConvertTo, 
     }
 
+    
     [ProtoContract]
-    public class SerializedTaskTemplate
+    public class SerializedNamedTaskLaunchInfo : SerializedTaskLaunchInfo
     {
         [ProtoMember(1)]
         public string Name;
@@ -490,13 +489,21 @@ namespace Battlehub.VoxelCombat
         [ProtoMember(3)]
         public int Col;
 
-        [ProtoMember(4)]
-        public TaskTemplateType Type;
-
         public int Index
         {
             get { return Row * 5 + Col; }
         }
+    }
+
+    [ProtoContract]
+    [ProtoInclude(1, typeof(SerializedNamedTaskLaunchInfo))]
+    public class SerializedTaskLaunchInfo
+    {
+        [ProtoMember(4)]
+        public TaskTemplateType Type;
+
+        [ProtoMember(5)]
+        public SerializedTask[] Parameters;
     }
 
     [ProtoContract]

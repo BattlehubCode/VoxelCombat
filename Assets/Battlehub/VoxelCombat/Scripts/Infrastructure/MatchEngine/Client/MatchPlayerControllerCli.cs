@@ -88,6 +88,18 @@ namespace Battlehub.VoxelCombat
             get { return null; }
         }
 
+        public Assignment Assignment
+        {
+            get;
+            set;
+        }
+
+        public List<Assignment> TargetForAssignments
+        {
+            get;
+            set;
+        }
+
         public MatchAssetCli(VoxelData data, VoxelAbilities abilities, MapCell cell)
         {
             m_voxelData = data;

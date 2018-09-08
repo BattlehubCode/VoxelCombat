@@ -40,7 +40,7 @@ namespace Battlehub.VoxelCombat
             get { return Dependencies.MatchServer; }
         }
         
-        private IJob Job
+        private IBackgroundWorker Job
         {
             get { return Dependencies.Job; }
         }

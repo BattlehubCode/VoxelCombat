@@ -98,6 +98,18 @@ namespace Battlehub.VoxelCombat
             get { return m_dataController.ControlledData; }
         }
 
+        public Assignment Assignment
+        {
+            get;
+            set;
+        }
+
+        public List<Assignment> TargetForAssignments
+        {
+            get;
+            set;
+        }
+
         public MatchUnitControllerBaseCli(IVoxelDataController dataController)
         {
             m_dataController = dataController;

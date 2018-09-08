@@ -107,7 +107,7 @@ namespace Battlehub.VoxelCombat
 
         SerializedTask[] GetTaskTemplates(int playerIndex);
 
-        SerializedTaskTemplate[] GetTaskTemplateData(int playerIndex);
+        SerializedNamedTaskLaunchInfo[] GetTaskTemplateData(int playerIndex);
     }
 
     public class PlayerStats
@@ -305,7 +305,7 @@ namespace Battlehub.VoxelCombat
         private Dictionary<int, VoxelAbilities>[] m_voxelAbilities;
         private IMatchPlayerControllerCli[] m_playerControllers;
         private SerializedTask[][] m_taskTemplates;
-        private SerializedTaskTemplate[][] m_TaskTemplateData;
+        private SerializedNamedTaskLaunchInfo[][] m_TaskTemplateData;
         private Room m_room;
 
         private int m_matchEngineReconnectAttempts = GameConstants.ReconnectAttemptsCount;
@@ -988,7 +988,7 @@ namespace Battlehub.VoxelCombat
             return m_taskTemplates[playerIndex];
         }
 
-        public SerializedTaskTemplate[] GetTaskTemplateData(int playerIndex)
+        public SerializedNamedTaskLaunchInfo[] GetTaskTemplateData(int playerIndex)
         {
             return m_TaskTemplateData[playerIndex];
         }
