@@ -250,6 +250,10 @@ namespace Battlehub.VoxelCombat
 
         void SetHealth(int health, Action<VoxelData> dieCallback = null);
 
+        CmdResultCode CanCreatePreview(int type, Coordinate coordinate);
+
+        CmdResultCode CreatePreview(int type, Coordinate coordinate);
+
         IVoxelDataController Clone();
 
         
@@ -1661,6 +1665,68 @@ namespace Battlehub.VoxelCombat
                     dieCallback(ControlledData);
                 }
             }
+        }
+
+        public CmdResultCode CanCreatePreview(int type, Coordinate coord)
+        {
+            if((type & (int)KnownVoxelTypes.Preview) == 0)
+            {
+                return CmdResultCode.Fail_InvalidArguments;
+            }
+
+            int mapSize = m_map.GetMapSizeWith(coord.Weight);
+            if(coord.Col < 0 || coord.Row < 0 || coord.Col >= mapSize || coord.Row >= mapSize)
+            {
+                return CmdResultCode.Fail_InvalidLocation;
+            }
+
+            VoxelData voxelData = m_map.Get(coord);
+            if(voxelData == null)
+            {
+                return CmdResultCode.Success;
+            }
+
+            if(!VoxelData.IsControllableUnit(voxelData.Type))
+            {
+                return CmdResultCode.Fail_InvalidLocation;
+            }
+
+            MapCell cell = m_map.Get(coord.Row, coord.Col, coord.Weight);
+            if(cell.HasDescendantsWithVoxelData(descendant => !VoxelData.IsControllableUnit(descendant.Type)))
+            {
+                return CmdResultCode.Fail_InvalidLocation;
+            }
+            return CmdResultCode.Success;
+        }
+
+        public CmdResultCode CreatePreview(int type, Coordinate coord)
+        {
+            CmdResultCode result = CanCreatePreview(type, coord);
+            if (result != CmdResultCode.Success)
+            {
+                return result;
+            }
+            
+            int previewForType = type & ~((int)KnownVoxelTypes.Preview);
+            VoxelAbilities abilities = m_allAbilities[PlayerIndex][previewForType];
+
+            VoxelData voxelData = new VoxelData();
+            voxelData.Altitude = coord.Altitude;
+            voxelData.Weight = coord.Weight;
+            voxelData.Type = type;
+            voxelData.Owner = m_controlledData.Owner;           
+            voxelData.Health = 1;
+            voxelData.Height = abilities.EvaluateHeight(coord.Weight);
+            voxelData.Dir = m_controlledData.Dir;
+            voxelData.Unit = new VoxelUnitData
+            {
+                State = VoxelDataState.Idle
+            };
+
+            MapCell cell = m_map.Get(coord.Row, coord.Col, coord.Weight);
+            cell.AppendVoxelData(voxelData);
+
+            return result;
         }
 
         private bool CanExpandDescendants(MapCell cell)

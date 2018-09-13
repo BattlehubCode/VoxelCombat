@@ -17,8 +17,7 @@ namespace Battlehub.VoxelCombat
         public const int ExecuteTask = 8;
         public const int Cancel = 10;
 
-        public const int CreateAssignment = 12;
-        public const int RemoveAssignment = 13;
+        public const int AddAssignment = 12;
         
         public const int BeginSplit = 19;
         public const int Split = 20;
@@ -465,22 +464,34 @@ namespace Battlehub.VoxelCombat
 
 
     //Use composite command to create group assignment for multiple units at once
-    //[ProtoContract]
-    //public class GroupAssignmentCmd : Cmd
-    //{
-    //    [ProtoMember(1)]
-    //    public Guid GroupId;
+    [ProtoContract]
+    public class AddAssignmentCmd : Cmd
+    {
+        [ProtoMember(1)]
+        public Guid GroupId;
 
-    //    //When unit become/(stop to be) a target it should be notified using cmd with corresponding code?
-    //    [ProtoMember(2)]
-    //    public long TargetId;
+        [ProtoMember(2)]
+        public SerializedTaskLaunchInfo TaskLaunchInfo;
 
-    //    [ProtoMember(3)]
-    //    public bool HasTarget;
+        [ProtoMember(3)]
+        public bool HasTarget;
 
-    //    [ProtoMember(4)]
-    //    public SerializedTaskLaunchInfo TaskTemplate;
-    //}
+        [ProtoMember(4)]
+        public int TargetPlayerIndex;
+
+        //When unit become/(stop to be) a target it should be notified using cmd with corresponding code?
+        [ProtoMember(5)]
+        public long TargetId;
+
+        [ProtoMember(6)]
+        public bool CreatePreview;
+
+        [ProtoMember(7)]
+        public int PreviewType;
+
+        [ProtoMember(8)]
+        public Coordinate PreviewCoordinate;
+    }
 
     [ProtoContract]
     public class ClientRequest 
@@ -734,6 +745,8 @@ namespace Battlehub.VoxelCombat
 
         ITaskRunner GetTaskRunner(int playerIndex);
 
+        IMatchPlayerController GetPlayerController(int playerIndex);
+
         IMatchUnitController GetUnitController(int playerIndex, long unitIndex);
 
         IMatchUnitAssetView GetAsset(int playerIndex, long unitIndex);
@@ -817,9 +830,7 @@ namespace Battlehub.VoxelCombat
             for (int i = 0; i < m_players.Length; ++i)
             {
                 IMatchPlayerController player = m_players[i];
-                player.AssetRemoved -= OnAssetRemoved;
-                player.UnitRemoved -= OnUnitRemoved;
-
+       
                 ITaskEngine taskEngine = m_taskEngines[i];
                 taskEngine.TaskStateChanged -= OnTaskStateChanged;
                 taskEngine.ClientRequest -= OnClientRequest;
@@ -845,6 +856,11 @@ namespace Battlehub.VoxelCombat
             return m_taskRunners[playerIndex];
         }
 
+        public IMatchPlayerController GetPlayerController(int playerIndex)
+        {
+            return m_players[playerIndex];
+        }
+
         public IMatchUnitController GetUnitController(int playerIndex, long unitIndex)
         {
             return m_players[playerIndex].GetUnitController(unitIndex);
@@ -858,8 +874,6 @@ namespace Battlehub.VoxelCombat
         public void RegisterPlayer(Guid playerId, int playerIndex, Dictionary<int, VoxelAbilities>[] allAbilities)
         {
             IMatchPlayerController player = MatchFactory.CreatePlayerController(this, playerIndex, allAbilities);
-            player.AssetRemoved += OnAssetRemoved;
-            player.UnitRemoved += OnUnitRemoved;
 
             m_idToPlayers.Add(playerId, player);
             m_players[playerIndex] = player;
@@ -1062,34 +1076,6 @@ namespace Battlehub.VoxelCombat
             return false;
         }
 
-        public void OnUnitRemoved(IMatchUnitAssetView unit)
-        {
-            IMatchPlayerController player = m_players[unit.Data.Owner];
-            if(unit.Assignment != null)
-            {
-                player.RemoveAssignment(unit);
-            }
-
-            if(unit.TargetForAssignments != null)
-            {
-                player.RemoveTargetFromAssignments(unit);
-            }
-        }
-
-        private void OnAssetRemoved(IMatchUnitAssetView asset)
-        {
-            IMatchPlayerController player = m_players[asset.Data.Owner];
-            if (asset.Assignment != null)
-            {
-                player.RemoveAssignment(asset);
-            }
-
-            if (asset.TargetForAssignments != null)
-            {
-                player.RemoveTargetFromAssignments(asset);
-            }
-        }
- 
         public void GrantBotCtrl(int playerIndex)
         {
             OnClientRequest(new ClientRequest

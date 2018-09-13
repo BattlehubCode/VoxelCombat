@@ -17,6 +17,7 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
+
         IMatchPlayerView GetPlayerView(int index);
         IMatchPlayerView GetPlayerView(Guid guid);
 
@@ -60,6 +61,12 @@ namespace Battlehub.VoxelCombat
 
   
         System.Collections.IEnumerable Assets
+        {
+            get;
+        }
+
+
+        IAssignmentsController AssignmentsController
         {
             get;
         }

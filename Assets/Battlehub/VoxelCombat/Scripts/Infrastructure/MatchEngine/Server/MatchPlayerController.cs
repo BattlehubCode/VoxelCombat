@@ -18,7 +18,7 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
-
+ 
         void Submit(Cmd command);
 
         bool Tick(long tick, out CommandsArray commands);
@@ -32,29 +32,6 @@ namespace Battlehub.VoxelCombat
         void RemoveAssets(IList<VoxelData> removeAssets);
 
         void DestroyAllUnitsAndAssets();
-
-        void AddAssignment(Guid groupId, long unitId, SerializedTaskLaunchInfo taskLaunchInfo, bool hasTarget = false, int targetPlayerIndex = -1, long targetId = 0);
-
-        /// <summary>
-        /// Remove unit from assignment. Do not remove if assignment has target
-        /// </summary>
-        /// <param name="unitId"></param>
-        void RemoveUnitFromAssignment(IMatchUnitAssetView unit);
-
-
-        /// <summary>
-        /// Remove target from assignment. Do not remove if assignment has unit
-        /// </summary>
-        /// <param name="targetId"></param>
-        void RemoveTargetFromAssignments(IMatchUnitAssetView unitOrAsset);
-
-        /// <summary>
-        /// Remove assignment. Unconditional
-        /// </summary>
-        /// <param name="unitId"></param>
-        void RemoveAssignment(IMatchUnitAssetView unit);
-
-        void RemoveAssignmentGroup(Guid groupId);
     }
 
 
@@ -163,8 +140,6 @@ namespace Battlehub.VoxelCombat
         private IMatchUnitController[] m_units;
         private CommandsArray m_commandBuffer;
 
-        private readonly Dictionary<Guid, List<Assignment>> m_groupIdToAssignments = new Dictionary<Guid, List<Assignment>>();
-  
         private bool m_isPlayerLeftRoom = false;
         private bool m_isPlayerInRoom = true;
         public bool IsPlayerInRoom
@@ -176,6 +151,12 @@ namespace Battlehub.VoxelCombat
         public bool HasControllableUnits
         {
             get { return m_controllableUnitsCount > 0; }
+        }
+
+        private IAssignmentsController m_assignmentController;
+        public IAssignmentsController AssignmentsController
+        {
+            get { return m_assignmentController; }
         }
 
         int IMatchPlayerView.Index
@@ -207,6 +188,10 @@ namespace Battlehub.VoxelCombat
         {
             get { return m_idToAsset.Values; }
         }
+
+
+
+        
 
         public MatchPlayerController(IMatchEngine engine, int playerIndex, Dictionary<int, VoxelAbilities>[] allAbilities)
         {
@@ -258,7 +243,7 @@ namespace Battlehub.VoxelCombat
             {
                 m_identity++;
             }
-           
+
             if (AssetCreated != null)
             {
                 AssetCreated(asset);
@@ -272,15 +257,25 @@ namespace Battlehub.VoxelCombat
                 return;
             }
 
-            long id; 
+            long id;
 
-            if(m_voxelDataToId.TryGetValue(data, out id))
+            if (m_voxelDataToId.TryGetValue(data, out id))
             {
                 m_voxelDataToId.Remove(data);
 
                 IMatchUnitAssetView asset = m_idToAsset[id];
 
                 m_idToAsset.Remove(id);
+
+                if (asset.Assignment != null)
+                {
+                    AssignmentsController.RemoveAssignment(asset);
+                }
+
+                if (asset.TargetForAssignments != null)
+                {
+                    AssignmentsController.RemoveTargetFromAssignments(asset);
+                }
 
                 if (AssetRemoved != null)
                 {
@@ -304,7 +299,7 @@ namespace Battlehub.VoxelCombat
             {
                 m_identity++;
             }
-            
+
             if (UnitCreated != null)
             {
                 UnitCreated(unit);
@@ -324,7 +319,17 @@ namespace Battlehub.VoxelCombat
                 m_idToUnit.Remove(unitController.Id);
                 unitsChanged = true;
 
-                if(UnitRemoved != null)
+                if (unitController.Assignment != null)
+                {
+                    AssignmentsController.RemoveAssignment(unitController);
+                }
+
+                if (unitController.TargetForAssignments != null)
+                {
+                    AssignmentsController.RemoveTargetFromAssignments(unitController);
+                }
+
+                if (UnitRemoved != null)
                 {
                     UnitRemoved(unitController);
                 }
@@ -439,7 +444,7 @@ namespace Battlehub.VoxelCombat
                         unitsChanged = PostprocessCmd(unitsChanged, unitController, cmd);
                     }
                 }
-              
+
 
                 if (!unitController.IsAlive)
                 {
@@ -454,14 +459,14 @@ namespace Battlehub.VoxelCombat
             }
 
             commands = m_commandBuffer;
-                        
+
             return isChanged;
         }
 
 
         private bool PostprocessCmd(bool unitsChanged, IMatchUnitController unitController, Cmd cmd)
         {
-            if(cmd.IsFailed)
+            if (cmd.IsFailed)
             {
                 return unitsChanged;
             }
@@ -488,7 +493,7 @@ namespace Battlehub.VoxelCombat
 
                 if (voxelData != null)
                 {
-                    if(VoxelData.IsUnit(voxelData.Type))
+                    if (VoxelData.IsUnit(voxelData.Type))
                     {
                         CreateUnitController(voxelData, unitController.DataController.Coordinate);
                         unitsChanged = true;
@@ -499,7 +504,20 @@ namespace Battlehub.VoxelCombat
                     }
                 }
             }
+            else if (cmd.Code == CmdCode.AddAssignment)
+            {
+                AddAssignmentCmd addCmd = (AddAssignmentCmd)cmd;
+                if (addCmd.CreatePreview)
+                {
+                    Coordinate coord = addCmd.PreviewCoordinate;
+                    MapCell cell = m_engine.Map.Get(coord.Row, coord.Col, coord.Weight);
+                    VoxelData voxelData = cell.GetPreviewAt(m_playerIndex, coord.Altitude);
+                    Debug.Assert(voxelData != null);
+                    CreateUnitController(voxelData, coord);
+                }
 
+                m_assignmentController.AddAssignment(addCmd.GroupId, addCmd.UnitIndex, addCmd.TaskLaunchInfo, addCmd.HasTarget, addCmd.TargetPlayerIndex, addCmd.TargetId);
+            }
 
             return unitsChanged;
         }
@@ -507,7 +525,7 @@ namespace Battlehub.VoxelCombat
         public IMatchUnitController GetUnitController(long index)
         {
             IMatchUnitController result;
-            if(m_idToUnit.TryGetValue(index, out result))
+            if (m_idToUnit.TryGetValue(index, out result))
             {
                 return result;
             }
@@ -517,7 +535,7 @@ namespace Battlehub.VoxelCombat
         public MatchAsset GetAsset(long index)
         {
             MatchAsset result;
-            if(m_idToAsset.TryGetValue(index, out result))
+            if (m_idToAsset.TryGetValue(index, out result))
             {
                 return result;
             }
@@ -528,6 +546,8 @@ namespace Battlehub.VoxelCombat
         public void ConnectWith(IMatchPlayerController[] playerControllers)
         {
             m_otherPlayerControllers = playerControllers.Where(ctrl => ((object)ctrl) != this).ToArray();
+
+            m_assignmentController = new AssignmentsController(m_playerIndex, playerControllers);
         }
 
         public void CreateAssets(IList<VoxelDataCellPair> createAssets)
@@ -557,7 +577,7 @@ namespace Battlehub.VoxelCombat
         IMatchUnitAssetView IMatchPlayerView.GetUnit(long id)
         {
             IMatchUnitController unit;
-            if(m_idToUnit.TryGetValue(id, out unit))
+            if (m_idToUnit.TryGetValue(id, out unit))
             {
                 return unit;
             }
@@ -566,7 +586,7 @@ namespace Battlehub.VoxelCombat
         IMatchUnitAssetView IMatchPlayerView.GetAsset(long id)
         {
             MatchAsset asset;
-            if(m_idToAsset.TryGetValue(id, out asset))
+            if (m_idToAsset.TryGetValue(id, out asset))
             {
                 return asset;
             }
@@ -589,10 +609,10 @@ namespace Battlehub.VoxelCombat
 
         public void DestroyAllUnitsAndAssets()
         {
-            for(int i = 0; i < m_units.Length; ++i)
+            for (int i = 0; i < m_units.Length; ++i)
             {
                 IMatchUnitController unit = m_units[i];
-                if(!unit.IsAlive)
+                if (!unit.IsAlive)
                 {
                     continue;
                 }
@@ -605,7 +625,7 @@ namespace Battlehub.VoxelCombat
             m_units = new IMatchUnitController[0];
 
             long[] assetIds = m_idToAsset.Keys.ToArray();
-            for(int i = 0; i < assetIds.Length; ++i)
+            for (int i = 0; i < assetIds.Length; ++i)
             {
                 long assetId = assetIds[i];
                 MatchAsset asset = m_idToAsset[assetId];
@@ -614,187 +634,6 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void AddAssignment(Guid groupId, long unitId, SerializedTaskLaunchInfo taskLaunchInfo, bool hasTarget = false, int targetPlayerIndex = -1, long targetId = 0)
-        {
-            IMatchPlayerView targetPlayerView = null;
-            IMatchUnitAssetView targetUnitOrAsset = null;
-            if (hasTarget)
-            {
-                targetPlayerView = m_engine.GetPlayerView(targetPlayerIndex);
-                targetUnitOrAsset = targetPlayerView.GetUnitOrAsset(targetId);
-                if(targetUnitOrAsset == null || !targetUnitOrAsset.IsAlive)
-                {
-                    hasTarget = false;
-                    targetId = 0;
-                    targetPlayerIndex = -1;
-                }
-            }
-
-            IMatchUnitAssetView unit = m_idToUnit[unitId];
-
-            Assignment assignment = new Assignment
-            {
-                GroupId = groupId,
-                UnitId = unitId,
-                HasUnit = true,
-                TaskLaunchInfo = taskLaunchInfo,
-                TargetPlayerIndex = targetPlayerIndex,
-                TargetId = targetId,
-                HasTarget = hasTarget
-            };
-
-            if(unit.Assignment != null)
-            {
-                RemoveUnitFromAssignment(unit);
-            }
-
-            unit.Assignment = assignment;
-            if(hasTarget)
-            {
-                if(targetUnitOrAsset.TargetForAssignments == null)
-                {
-                    targetUnitOrAsset.TargetForAssignments = new List<Assignment>();
-                }
-                targetUnitOrAsset.TargetForAssignments.Add(assignment);
-            }
-
-            List<Assignment> group;
-            if(!m_groupIdToAssignments.TryGetValue(groupId, out group))
-            {
-                group = new List<Assignment>();
-                m_groupIdToAssignments.Add(groupId, group);
-            }
-
-            group.Add(assignment);
-        }
-
-        public void RemoveUnitFromAssignment(IMatchUnitAssetView unit)
-        {
-            Assignment assignment = unit.Assignment;
-            if (assignment == null)
-            {
-                return;
-            }
-            unit.Assignment = null;
-
-            assignment.HasUnit = false;
-            assignment.UnitId = 0;
-
-            if(!assignment.HasTarget)
-            {
-                List<Assignment> groupAssignments;
-                if(m_groupIdToAssignments.TryGetValue(assignment.GroupId, out groupAssignments))
-                {
-                    groupAssignments.Remove(assignment);
-                    if(groupAssignments.Count == 0)
-                    {
-                        m_groupIdToAssignments.Remove(assignment.GroupId);
-                    }
-                }
-            }
-        }
-
-        public void RemoveTargetFromAssignments(IMatchUnitAssetView unitOrAsset)
-        {
-            List<Assignment> targetForAssignments = unitOrAsset.TargetForAssignments;
-            if(targetForAssignments == null)
-            {
-                return;
-            }
-            unitOrAsset.TargetForAssignments = null;
-
-            for(int i = 0; i < targetForAssignments.Count; ++i)
-            {
-                Assignment assignment = targetForAssignments[i];
-                assignment.HasTarget = false;
-                assignment.TargetId = 0;
-                assignment.TargetPlayerIndex = -1;
-
-                if(!assignment.HasUnit)
-                {
-                    List<Assignment> groupAssignments;
-                    if (m_groupIdToAssignments.TryGetValue(assignment.GroupId, out groupAssignments))
-                    {
-                        groupAssignments.Remove(assignment);
-                        if (groupAssignments.Count == 0)
-                        {
-                            m_groupIdToAssignments.Remove(assignment.GroupId);
-                        }
-                    }
-                }
-            }
-        }
-
-        public void RemoveAssignment(IMatchUnitAssetView unit)
-        {
-            Assignment assignment = unit.Assignment;
-            if (assignment == null)
-            {
-                return;
-            }
-            RemoveAssignment(assignment);
-        }
-
-        private void RemoveAssignment(Assignment assignment)
-        {
-            if(assignment.HasUnit)
-            {
-                IMatchPlayerView playerView = m_engine.GetPlayerView(m_playerIndex);
-                IMatchUnitAssetView unitOrAsset = playerView.GetUnitOrAsset(assignment.UnitId);
-                if(unitOrAsset != null)
-                {
-                    unitOrAsset.Assignment = null;
-                }
-            }
-
-            assignment.HasUnit = false;
-            assignment.UnitId = 0;
-
-            if (assignment.HasTarget)
-            {
-                IMatchPlayerView targetPlayerView = m_engine.GetPlayerView(assignment.TargetPlayerIndex);
-                IMatchUnitAssetView targetUnitOrAsset = targetPlayerView.GetUnitOrAsset(assignment.TargetId);
-                if (targetUnitOrAsset != null && targetUnitOrAsset.TargetForAssignments != null)
-                {
-                    targetUnitOrAsset.TargetForAssignments.Remove(assignment);
-                    if(targetUnitOrAsset.TargetForAssignments.Count == 0)
-                    {
-                        targetUnitOrAsset.TargetForAssignments = null;
-                    }
-                }
-
-                assignment.HasTarget = false;
-                assignment.TargetId = 0;
-                assignment.TargetPlayerIndex = -1;
-            }
-
-            List<Assignment> groupAssignments;
-            if (m_groupIdToAssignments.TryGetValue(assignment.GroupId, out groupAssignments))
-            {
-                groupAssignments.Remove(assignment);
-                if (groupAssignments.Count == 0)
-                {
-                    m_groupIdToAssignments.Remove(assignment.GroupId);
-                }
-            }
-        }
-
-        public void RemoveAssignmentGroup(Guid groupId)
-        {
-            List<Assignment> assignments;
-            if(!m_groupIdToAssignments.TryGetValue(groupId, out assignments))
-            {
-                return;
-            }
-
-            assignments = assignments.ToList();
-            for(int i = assignments.Count - 1; i >= 0; --i)
-            {
-                Assignment assignment = assignments[i];
-                RemoveAssignment(assignment);
-            }
-        }
     }
-
 }
 

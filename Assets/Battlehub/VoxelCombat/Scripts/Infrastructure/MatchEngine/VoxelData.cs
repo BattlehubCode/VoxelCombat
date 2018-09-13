@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
 
 using ProtoBuf;
@@ -673,7 +674,10 @@ namespace Battlehub.VoxelCombat
     public class PreviewChain
     {
         [ProtoMember(1)]
-        public VoxelData[] Data;
+        public VoxelData[] First;
+
+        [ProtoMember(2)]
+        public VoxelData[] Last;
     }
 
     [ProtoContract]
@@ -781,9 +785,67 @@ namespace Battlehub.VoxelCombat
             return null;
         }
 
+        public VoxelData GetPreviewAt(int playerIndex, int altitude)
+        {
+            if(PreviewChain == null || PreviewChain.First == null || PreviewChain.First.Length <= playerIndex)
+            {
+                return null;
+            }
+
+            VoxelData next = PreviewChain.First[playerIndex];
+            while(next != null)
+            {
+                if (next.Altitude == altitude && next.Height > 0)
+                {
+                    return next;
+                }
+                next = next.Next;
+            }
+            return null;
+        }
+
         public void AppendVoxelData(VoxelData voxelData)
         {
-            if(First == null)
+            if ((voxelData.Type & (int)KnownVoxelTypes.Preview) != 0)
+            {
+                if (PreviewChain == null)
+                {
+                    PreviewChain = new PreviewChain
+                    {
+                        First = new VoxelData[voxelData.Owner + 1],
+                        Last = new VoxelData[voxelData.Owner + 1]
+                    };
+                }
+                else if(PreviewChain.First.Length <= voxelData.Owner)
+                {
+                    Array.Resize(ref PreviewChain.First, voxelData.Owner + 1);
+                    Array.Resize(ref PreviewChain.Last, voxelData.Owner + 1);
+                }
+
+                if(PreviewChain.First[voxelData.Owner] == null)
+                {
+                    PreviewChain.First[voxelData.Owner] = voxelData;
+                    PreviewChain.Last[voxelData.Owner] = voxelData;
+
+                    MapCell parent = Parent;
+                    while (parent != null)
+                    {
+                        if (parent.PreviewChain != null && parent.PreviewChain.Last.Length >= voxelData.Owner && parent.PreviewChain.Last[voxelData.Owner] != null)
+                        {
+                            PreviewChain.First[voxelData.Owner].Prev = parent.PreviewChain.Last[voxelData.Owner];
+                            break;
+                        }
+
+                        parent = parent.Parent;
+                    }
+                }
+                else
+                {
+                    PreviewChain.First[voxelData.Owner].Append(voxelData);
+                    PreviewChain.Last[voxelData.Owner] = voxelData;
+                }
+            }
+            else if (First == null)
             {
                 First = voxelData;
                 Last = voxelData;
@@ -809,6 +871,11 @@ namespace Battlehub.VoxelCombat
 
         public void RemoveVoxelDataAndDecreaseHeight(VoxelData data)
         {
+            if ((data.Type & (int)KnownVoxelTypes.Preview) != 0)
+            {
+                throw new NotImplementedException();
+            }
+
             int height = data.Height;
             VoxelData next = data.Next;
 
@@ -836,19 +903,43 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void RemoveVoxeData(VoxelData dataToRemove)
+        public void RemoveVoxeData(VoxelData data)
         {
-            if (First == null)
+          
+            if ((data.Type & (int)KnownVoxelTypes.Preview) != 0)
             {
-                return;
-            }
+                if(PreviewChain == null || PreviewChain.First == null)
+                {
+                    return;
+                }
 
-            if (First == dataToRemove)
+                if (PreviewChain.First[data.Owner] == data)
+                {
+                    PreviewChain.First[data.Owner] = data.Next;
+                    if (PreviewChain.First[data.Owner] != null)
+                    {
+                        PreviewChain.First[data.Owner].Prev = data.Prev;
+                    }
+                    else
+                    {
+                        PreviewChain.Last[data.Owner] = null;
+                    }
+                    if (PreviewChain.Last.All(lastData => lastData == null))
+                    {
+                        PreviewChain = null;
+                    }
+                }
+                else
+                {
+                    Remove(data);
+                }
+            }
+            else if (First == data)
             {
-                First = dataToRemove.Next;
+                First = data.Next;
                 if (First != null)
                 {
-                    First.Prev = dataToRemove.Prev;
+                    First.Prev = data.Prev;
                 }
                 else
                 {
@@ -857,7 +948,12 @@ namespace Battlehub.VoxelCombat
             }
             else
             {
-                Remove(dataToRemove);
+                if (First == null)
+                {
+                    return;
+                }
+
+                Remove(data);
             }
         }
 
@@ -2050,11 +2146,11 @@ namespace Battlehub.VoxelCombat
                 }
 
                 PreviewChain previewChain = cell.PreviewChain;
-                if(previewChain != null && previewChain.Data != null)
+                if(previewChain != null && previewChain.First != null)
                 {
-                    for(int i = 0; i < previewChain.Data.Length; ++i)
+                    for(int i = 0; i < previewChain.First.Length; ++i)
                     {
-                        VoxelData previewData = previewChain.Data[i];
+                        VoxelData previewData = previewChain.First[i];
                         while(previewData != null)
                         {
                             if(previewData.VoxelRef == null)
@@ -2097,11 +2193,11 @@ namespace Battlehub.VoxelCombat
                 }
 
                 PreviewChain previewChain = cell.PreviewChain;
-                if (previewChain != null && previewChain.Data != null)
+                if (previewChain != null && previewChain.First != null)
                 {
-                    for (int i = 0; i < previewChain.Data.Length; ++i)
+                    for (int i = 0; i < previewChain.First.Length; ++i)
                     {
-                        VoxelData previewData = previewChain.Data[i];
+                        VoxelData previewData = previewChain.First[i];
                         while (previewData != null)
                         {
                             if (previewData.VoxelRef != null)

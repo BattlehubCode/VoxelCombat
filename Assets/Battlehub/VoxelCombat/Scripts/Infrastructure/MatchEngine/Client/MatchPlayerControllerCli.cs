@@ -221,7 +221,7 @@ namespace Battlehub.VoxelCombat
         private IUnitSelection m_targetSelection;
         private IVoxelMinimapRenderer m_minimap;
         private IVoxelGame m_gameState;
-
+        
         private int m_playerIndex = -1;
         private bool m_isLocalPlayer;
 
@@ -278,6 +278,12 @@ namespace Battlehub.VoxelCombat
         IEnumerable IMatchPlayerView.Assets
         {
             get { return m_idToAsset.Values; }
+        }
+
+        private IAssignmentsController m_assignmentsController;
+        public IAssignmentsController AssignmentsController
+        {
+            get { return m_assignmentsController; }
         }
 
         private void Awake()
@@ -410,6 +416,17 @@ namespace Battlehub.VoxelCombat
                 }
 
                 m_idToAsset.Remove(id);
+
+                if (asset.Assignment != null)
+                {
+                    AssignmentsController.RemoveAssignment(asset);
+                }
+
+                if (asset.TargetForAssignments != null)
+                {
+                    AssignmentsController.RemoveTargetFromAssignments(asset);
+                }
+
                 if (AssetRemoved != null)
                 {
                     AssetRemoved(asset);
@@ -471,7 +488,17 @@ namespace Battlehub.VoxelCombat
             //Does not needed because all nessesary actions and event unsubscription performed in OnVoxelRefReset event handler
             //MatchFactoryCli.DestroyUnitController(unitController);
 
-            if(UnitRemoved != null)
+            if (unitController.Assignment != null)
+            {
+                AssignmentsController.RemoveAssignment(unitController);
+            }
+
+            if (unitController.TargetForAssignments != null)
+            {
+                AssignmentsController.RemoveTargetFromAssignments(unitController);
+            }
+
+            if (UnitRemoved != null)
             {
                 UnitRemoved(unitController);
             }
@@ -910,6 +937,8 @@ namespace Battlehub.VoxelCombat
         public void ConnectWith(IMatchPlayerControllerCli[] playerControllers)
         {
             m_otherPlayerControllers = playerControllers.Where(ctrl => ((object)ctrl) != this).ToArray();
+
+            m_assignmentsController = new AssignmentsController(m_playerIndex, playerControllers);
         }
 
         public void CreateAssets(IList<VoxelDataCellPair> createAssets)

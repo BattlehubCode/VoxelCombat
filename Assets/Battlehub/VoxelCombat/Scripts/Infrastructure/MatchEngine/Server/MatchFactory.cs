@@ -86,9 +86,7 @@ namespace Battlehub.VoxelCombat
             {
                 return new SpawnerUnitController(dataController);
             }
-            else if(type == (int)KnownVoxelTypes.GroundPreview || 
-                    type == (int)KnownVoxelTypes.SpawnerPreview ||
-                    type == (int)KnownVoxelTypes.BombPreview)
+            else if((type & (int)KnownVoxelTypes.Preview) != 0)
             {
                 return new PreviewUnitController(dataController);
             }

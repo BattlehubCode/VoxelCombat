@@ -95,7 +95,7 @@ namespace Battlehub.VoxelCombat
             set;
         }
 
-        public List<Assignment> TargetForAssignments
+        public virtual List<Assignment> TargetForAssignments
         {
             get;
             set;
@@ -123,8 +123,7 @@ namespace Battlehub.VoxelCombat
           
             if (cmd.Code != CmdCode.LeaveRoom)
             {
-                if(cmd.Code == CmdCode.CreateAssignment ||
-                   cmd.Code == CmdCode.RemoveAssignment)
+                if(cmd.Code == CmdCode.AddAssignment)
                 {
                     m_commandsQueue.Enqueue(cmd);
                 }
@@ -285,6 +284,7 @@ namespace Battlehub.VoxelCombat
     {
         protected readonly IPathFinder m_pathFinder;
         private readonly IMatchEngine m_engine;
+        private readonly IMatchPlayerController m_playerController;
 
         private int m_failedMoveAttempts;
         private int m_maxFailedMoveAttempts = 3;
@@ -294,6 +294,7 @@ namespace Battlehub.VoxelCombat
         {
             m_engine = engine;
             m_pathFinder = m_engine.GetPathFinder(dataController.PlayerIndex);
+            m_playerController = m_engine.GetPlayerController(dataController.PlayerIndex);
         }
 
         protected override void OnSetCommand(Cmd cmd)
@@ -592,11 +593,33 @@ namespace Battlehub.VoxelCombat
                             RaiseCmdExecuted();
                             return changeCmd;
                         }
-                        case CmdCode.Cancel:
+                        case CmdCode.AddAssignment:
+                        {
+                            AddAssignmentCmd addCmd  = (AddAssignmentCmd)cmd;
+                            if(addCmd.CreatePreview)
+                            {
+                                CmdResultCode result = m_dataController.CreatePreview(addCmd.PreviewType, addCmd.PreviewCoordinate);
+                                if(result == CmdResultCode.Success)
+                                {
+                                    RaiseCmdExecuted();
+                                }
+                                else
+                                {
+                                    RaiseCmdFailed(cmd, result);
+                                }
+                            }
+                            else
                             {
                                 RaiseCmdExecuted();
-                                return cmd;
                             }
+                            return cmd;
+                        }
+                        case CmdCode.Cancel:
+                        {
+                            m_playerController.AssignmentsController.RemoveAssignment(this);
+                            RaiseCmdExecuted();
+                            return cmd;
+                        }
 
                     }
                 }
@@ -726,9 +749,27 @@ namespace Battlehub.VoxelCombat
 
     public class PreviewUnitController : MatchUnitControllerBase
     {
+        public override List<Assignment> TargetForAssignments
+        {
+            get { return base.TargetForAssignments; }
+            set
+            {
+                if(base.TargetForAssignments != null)
+                {
+                    if(value == null)
+                    {
+                        m_dataController.SetHealth(0);
+                    }
+
+                    base.TargetForAssignments = value;
+                }                
+            }
+        }
+
         public PreviewUnitController(IVoxelDataController dataController)
             :base(dataController)
         {
+        
         }
 
         protected override void OnSetCommand(Cmd cmd)
@@ -761,6 +802,7 @@ namespace Battlehub.VoxelCombat
                     {
                         case CmdCode.Cancel:
                             {
+                                m_dataController.SetHealth(0);
                                 RaiseCmdExecuted();
                                 return cmd;
                             }

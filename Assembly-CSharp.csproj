@@ -155,6 +155,7 @@
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\InControlKeyboardProfile.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\IVoxelInputManager.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Log.cs" />
+    <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\AssignmentsController.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\BotController.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Client\CommandsQueue.cs" />
     <Compile Include="Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Client\MatchEngineCli.cs" />
