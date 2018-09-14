@@ -17,7 +17,7 @@ namespace Battlehub.VoxelCombat
         public const int ExecuteTask = 8;
         public const int Cancel = 10;
 
-        public const int AddAssignment = 12;
+        public const int CreateAssignment = 12;
         
         public const int BeginSplit = 19;
         public const int Split = 20;
@@ -385,7 +385,7 @@ namespace Battlehub.VoxelCombat
     [ProtoInclude(52, typeof(CompositeCmd))]
     [ProtoInclude(53, typeof(TargetCmd))]
     [ProtoInclude(54, typeof(TaskCmd))]
-    //[ProtoInclude(55, typeof(GroupAssignmentCmd))]
+    [ProtoInclude(55, typeof(CreateAssignmentCmd))]
     public class Cmd
     {
         [ProtoMember(1)]
@@ -465,7 +465,7 @@ namespace Battlehub.VoxelCombat
 
     //Use composite command to create group assignment for multiple units at once
     [ProtoContract]
-    public class AddAssignmentCmd : Cmd
+    public class CreateAssignmentCmd : Cmd
     {
         [ProtoMember(1)]
         public Guid GroupId;
@@ -491,6 +491,16 @@ namespace Battlehub.VoxelCombat
 
         [ProtoMember(8)]
         public Coordinate PreviewCoordinate;
+
+        public CreateAssignmentCmd() : base(CmdCode.CreateAssignment)
+        {
+
+        }
+
+        public CreateAssignmentCmd(long unitIndex) : base(CmdCode.CreateAssignment, unitIndex)
+        {
+            
+        }
     }
 
     [ProtoContract]

@@ -64,6 +64,9 @@
     <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\Log.cs">
       <Link>Log.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\AssignmentsController.cs">
+      <Link>MatchEngine\AssignmentsController.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\Assets\Battlehub\VoxelCombat\Scripts\Infrastructure\MatchEngine\Bot\BotController.cs">
       <Link>MatchEngine\Bot\BotController.cs</Link>
     </Compile>

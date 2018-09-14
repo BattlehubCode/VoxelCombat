@@ -599,7 +599,7 @@ namespace Battlehub.VoxelCombat
     public delegate void ServerEventHandler<TSender, TPayload, TExtra, TExtra2>(Error error, TSender sender, TPayload payload, TExtra extra, TExtra2 extra2);
     public delegate void ServerEventHandler<TSender, TPayload, TExtra, TExtra2, TExtra3, TExtra4>(Error error, TSender sender, TPayload payload, TExtra extra, TExtra2 extra2, TExtra3 extra3, TExtra4 extra4);
     public delegate void ServerEventHandler<TSender, TPayload, TExtra, TExtra2, TExtra3, TExtra4, Textra5>(Error error, TSender sender, TPayload payload, TExtra extra, TExtra2 extra2, TExtra3 extra3, TExtra4 extra4, Textra5 extra5);
-
+    public delegate void ServerEventHandler<TSender, TPayload, TExtra, TExtra2, TExtra3, TExtra4, Textra5, TExtra6>(Error error, TSender sender, TPayload payload, TExtra extra, TExtra2 extra2, TExtra3 extra3, TExtra4 extra4, Textra5 extra5, TExtra6 extra6);
 
     public static class EnumExtensions
     {
@@ -714,6 +714,32 @@ namespace Battlehub.VoxelCombat
             Arg4 = arg4;
             Arg5 = arg5;
             Arg6 = arg6;
+        }
+    }
+
+    public class ServerEventArgs<T1, T2, T3, T4, T5, T6, T7> : ServerEventArgs
+    {
+        public T1 Arg;
+        public T2 Arg2;
+        public T3 Arg3;
+        public T4 Arg4;
+        public T5 Arg5;
+        public T6 Arg6;
+        public T7 Arg7;
+
+        public ServerEventArgs()
+        {
+        }
+
+        public ServerEventArgs(T1 arg, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
+        {
+            Arg = arg;
+            Arg2 = arg2;
+            Arg3 = arg3;
+            Arg4 = arg4;
+            Arg5 = arg5;
+            Arg6 = arg6;
+            Arg7 = arg7;
         }
     }
 
@@ -1215,7 +1241,7 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// Raised when match started and all players called ReadyToPlay method 
         /// </summary>
-        event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room>> ReadyToPlayAll;
+        event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[],  Room>> ReadyToPlayAll;
 
         //event ServerEventHandler<Guid[], Room> LeftRoom;  This event will be raised using Tick command
 
@@ -1230,12 +1256,12 @@ namespace Battlehub.VoxelCombat
         /// </summary>
         /// <param name="clientId"></param>
         /// <param name="callback"></param>
-        void GetState(Guid clientId, ServerEventHandler<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> callback);
+        void GetState(Guid clientId, ServerEventHandler<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room, MapRoot> callback);
 #else
         /// <summary>
         /// Raised when match started and all players called ReadyToPlay method 
         /// </summary>
-        event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> ReadyToPlayAll;
+        event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room> ReadyToPlayAll;
 
         //event ServerEventHandler<Guid[], Room> LeftRoom;  This event will be raised using Tick command
 
@@ -1245,7 +1271,7 @@ namespace Battlehub.VoxelCombat
 
         event ServerEventHandler<bool> Paused;
 
-        void GetState(Guid clientId, ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> callback);
+        void GetState(Guid clientId, ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room, MapRoot> callback);
 #endif
         void Activate();
 

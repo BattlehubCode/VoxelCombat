@@ -531,7 +531,7 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        private void OnEngineStarted(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] voxelAbilities, SerializedTaskArray[] taskTemplates, SerializedTaskTemplatesArray[] taskTemplatesInfo, Room room)
+        private void OnEngineStarted(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] voxelAbilities, SerializedTaskArray[] taskTemplates, SerializedTaskTemplatesArray[] taskTemplatesInfo, AssignmentGroupArray[] assignmentGroups, Room room)
         {
             m_room = room;
 
@@ -581,6 +581,10 @@ namespace Battlehub.VoxelCombat
             for (int i = 0; i < m_playerControllers.Length; ++i)
             {
                 m_playerControllers[i].ConnectWith(m_playerControllers);
+                if(assignmentGroups[i].Groups != null)
+                {
+                    m_playerControllers[i].AssignmentsController.SetGroups(assignmentGroups[i].Groups);
+                }   
             }
 
             m_playerStats = new PlayerStats[m_players.Length];
@@ -638,12 +642,20 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void OnReconnected(Error error, Player[] payload, Guid[] extra1, VoxelAbilitiesArray[] extra2, SerializedTaskArray[] extra3, SerializedTaskTemplatesArray[] extra4, Room extra5, MapRoot mapRoot)
+        private void OnReconnected(Error error, Player[] payload, Guid[] extra1, VoxelAbilitiesArray[] extra2, SerializedTaskArray[] extra3, SerializedTaskTemplatesArray[] extra4, AssignmentGroupArray[] assignmentGroups, Room extra5, MapRoot mapRoot)
         {
             m_notification.Close();
             m_voxelMap.IsOn = false;
             m_voxelMap.Load(mapRoot);
             m_voxelMap.IsOn = true;
+
+            for (int i = 0; i < m_playerControllers.Length; ++i)
+            {
+                if (assignmentGroups[i].Groups != null)
+                {
+                    m_playerControllers[i].AssignmentsController.SetGroups(assignmentGroups[i].Groups);
+                }
+            }
         }
 
         private void OnReconnectFailed(Error error)

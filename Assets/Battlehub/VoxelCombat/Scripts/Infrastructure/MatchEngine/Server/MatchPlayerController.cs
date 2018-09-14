@@ -107,16 +107,6 @@ namespace Battlehub.VoxelCombat
         }
     }
 
-    public class Assignment
-    {
-        public Guid GroupId;
-        public long UnitId;
-        public bool HasUnit;
-        public int  TargetPlayerIndex;
-        public long TargetId;
-        public bool HasTarget;
-        public SerializedTaskLaunchInfo TaskLaunchInfo;
-    }
 
     public class MatchPlayerController : IMatchPlayerController
     {
@@ -504,9 +494,9 @@ namespace Battlehub.VoxelCombat
                     }
                 }
             }
-            else if (cmd.Code == CmdCode.AddAssignment)
+            else if (cmd.Code == CmdCode.CreateAssignment)
             {
-                AddAssignmentCmd addCmd = (AddAssignmentCmd)cmd;
+                CreateAssignmentCmd addCmd = (CreateAssignmentCmd)cmd;
                 if (addCmd.CreatePreview)
                 {
                     Coordinate coord = addCmd.PreviewCoordinate;
@@ -514,9 +504,13 @@ namespace Battlehub.VoxelCombat
                     VoxelData voxelData = cell.GetPreviewAt(m_playerIndex, coord.Altitude);
                     Debug.Assert(voxelData != null);
                     CreateUnitController(voxelData, coord);
+
+                    addCmd.HasTarget = true;
+                    addCmd.TargetId = voxelData.UnitOrAssetIndex;
+                    addCmd.TargetPlayerIndex = voxelData.Owner;
                 }
 
-                m_assignmentController.AddAssignment(addCmd.GroupId, addCmd.UnitIndex, addCmd.TaskLaunchInfo, addCmd.HasTarget, addCmd.TargetPlayerIndex, addCmd.TargetId);
+                m_assignmentController.CreateAssignment(addCmd.GroupId, addCmd.UnitIndex, addCmd.TaskLaunchInfo, addCmd.HasTarget, addCmd.TargetPlayerIndex, addCmd.TargetId);
             }
 
             return unitsChanged;

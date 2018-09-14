@@ -334,12 +334,35 @@ namespace Battlehub.VoxelCombat
             long[] selectedUnitIds = m_unitSelection.GetSelection(playerIndex, playerIndex);
             Coordinate[] coordinates = new Coordinate[selectedUnitIds.Length];
 
+            Guid assignmentGroup = Guid.NewGuid();
+
             PickLocations(targetType, unitIndex, playerIndex, selectedUnitIds, coordinates, () =>
             {
                 for(int i = 0; i < selectedUnitIds.Length; ++i)
                 {
                     long unitId = selectedUnitIds[i];
-                    Debug.Log("Locations picked");
+
+                    CreateAssignmentCmd cmd = new CreateAssignmentCmd(unitId);
+                    cmd.GroupId = assignmentGroup;
+                    cmd.CreatePreview = true;
+                    cmd.UnitIndex = unitIndex;
+                    cmd.PreviewCoordinate = coordinates[i];
+                    cmd.PreviewType = targetType | (int)KnownVoxelTypes.Preview;
+                    cmd.TaskLaunchInfo = new SerializedTaskLaunchInfo
+                    {
+                        Type = TaskTemplateType.ConvertTo,
+                        Parameters = new[]
+                        {
+                            SerializedTask.FromTaskInfo(TaskInfo.DefineConvertCmd(targetType)),
+                            SerializedTask.FromTaskInfo(TaskInfo.DefineCanConvertExpr(targetType)),
+                            SerializedTask.FromTaskInfo(TaskInfo.Define(coordinates[i]))   
+                        }
+                    };
+
+                    m_engine.GetClientTaskEngine(playerIndex).SubmitTask(callback);
+
+
+                    //m_engine.GetClientTaskEngine(playerIndex).SubmitTask(
                     //Search for path and move (move to closest location if path was not found);
                     //Execute as task until cancelled.
                     //Highlight group of walls only during placement phase

@@ -79,7 +79,7 @@ namespace Battlehub.VoxelCombat
 
     public class LocalMatchServer : MonoBehaviour, IMatchServer
     {
-        public event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> ReadyToPlayAll;
+        public event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room> ReadyToPlayAll;
         
         public event ServerEventHandler<CommandsBundle> Tick;
         public event ServerEventHandler<RTTInfo> Ping;
@@ -562,7 +562,7 @@ namespace Battlehub.VoxelCombat
             VoxelAbilitiesArray[] abilities;
             SerializedTaskArray[] serializedTasks;
             SerializedTaskTemplatesArray[] serializedTaskTemplates;
-
+            AssignmentGroupArray[] assignmentGroups;
             if (m_room != null)
             {
                 error.Code = StatusCode.OK;
@@ -574,6 +574,7 @@ namespace Battlehub.VoxelCombat
                 abilities = new VoxelAbilitiesArray[m_room.Players.Count];
                 serializedTasks = new SerializedTaskArray[m_room.Players.Count];
                 serializedTaskTemplates = new SerializedTaskTemplatesArray[m_room.Players.Count];
+                assignmentGroups = new AssignmentGroupArray[m_room.Players.Count];
                 for (int i = 0; i < m_room.Players.Count; ++i)
                 {
                     Player player = m_players[m_room.Players[i]];
@@ -582,6 +583,10 @@ namespace Battlehub.VoxelCombat
                     abilities[i] = m_abilities[m_room.Players[i]];
                     serializedTasks[i] = m_tasks[m_room.Players[i]];
                     serializedTaskTemplates[i] = m_serializedTaskTemplates[m_room.Players[i]];
+                    assignmentGroups[i] = new AssignmentGroupArray
+                    {
+                        Groups = new AssignmentGroup[0]
+                    };
                     if (player.IsActiveBot)
                     {
                         bots.Add(MatchFactory.CreateBotController(player, m_engine.GetTaskEngine(i)));
@@ -598,9 +603,10 @@ namespace Battlehub.VoxelCombat
                 abilities = new VoxelAbilitiesArray[0];
                 serializedTasks = new SerializedTaskArray[0];
                 serializedTaskTemplates = new SerializedTaskTemplatesArray[0];
+                assignmentGroups = new AssignmentGroupArray[0];
             }
 
-            RaiseReadyToPlayAll(error, players, abilities, serializedTasks, serializedTaskTemplates);
+            RaiseReadyToPlayAll(error, players, abilities, serializedTasks, serializedTaskTemplates, assignmentGroups);
             for (int i = 0; i < players.Length; ++i)
             {
                 if (players[i].IsActiveBot)
@@ -611,7 +617,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void RaiseReadyToPlayAll(Error error, Player[] players, VoxelAbilitiesArray[] abilities, SerializedTaskArray[] serializedTasks, SerializedTaskTemplatesArray[] serializedTaskTemplates)
+        private void RaiseReadyToPlayAll(Error error, Player[] players, VoxelAbilitiesArray[] abilities, SerializedTaskArray[] serializedTasks, SerializedTaskTemplatesArray[] serializedTaskTemplates, AssignmentGroupArray[] assignmentGroups)
         {
             m_job.Submit(() =>
             {
@@ -626,12 +632,12 @@ namespace Battlehub.VoxelCombat
                     m_prevTickTime = Time.realtimeSinceStartup;
                     m_initialized = true;
 
-                    ReadyToPlayAll(error, players, m_loggedInPlayers.ToArray(), abilities, serializedTasks, serializedTaskTemplates, m_room);
+                    ReadyToPlayAll(error, players, m_loggedInPlayers.ToArray(), abilities, serializedTasks, serializedTaskTemplates, assignmentGroups, m_room);
                 }
             });
         }
 
-        public void GetState(Guid clientId, ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> callback)
+        public void GetState(Guid clientId, ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room, MapRoot> callback)
         {
             throw new NotSupportedException("This method does not makes sense for LocalMatchServer");
         }

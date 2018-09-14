@@ -67,9 +67,9 @@ namespace Battlehub.VoxelCombat
             Broadcast(RemoteEvent.Evt.ChatMessage, error, args, RemoteArg.Create(args.Arg));
         }
 
-        private void OnReadyToPlayAll(Error error, ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> args)
+        private void OnReadyToPlayAll(Error error, ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room> args)
         {
-            Room room = args.Arg6;
+            Room room = args.Arg7;
             if (room.Mode == GameMode.Replay)
             {
                 Send(RemoteEvent.Evt.ReadyToPlayAll, error, room.CreatorClientId,
@@ -78,7 +78,8 @@ namespace Battlehub.VoxelCombat
                         RemoteArg.Create(args.Arg3),
                         RemoteArg.Create(args.Arg4),
                         RemoteArg.Create(args.Arg5),
-                        RemoteArg.Create(args.Arg6));
+                        RemoteArg.Create(args.Arg6),
+                        RemoteArg.Create(args.Arg7));
             }
             else
             {
@@ -94,7 +95,8 @@ namespace Battlehub.VoxelCombat
                         RemoteArg.Create(args.Arg3),
                         RemoteArg.Create(args.Arg4),
                         RemoteArg.Create(args.Arg5),
-                        RemoteArg.Create(args.Arg6));
+                        RemoteArg.Create(args.Arg6),
+                        RemoteArg.Create(args.Arg7));
                 }
             }
         }
@@ -218,9 +220,9 @@ namespace Battlehub.VoxelCombat
                 case RemoteCall.Proc.GetState:
                     {
 
-                        m_matchServer.GetState(rpc.ClientId, (error, arg, arg2, arg3, arg4, arg5, arg6, arg7) =>
+                        m_matchServer.GetState(rpc.ClientId, (error, arg, arg2, arg3, arg4, arg5, arg6, arg7, arg8) =>
                         {
-                            Room room = arg6;
+                            Room room = arg7;
                             if (room.Mode == GameMode.Replay)
                             {
                                 Return(sender, request,
@@ -231,7 +233,8 @@ namespace Battlehub.VoxelCombat
                                     RemoteArg.Create(arg4),
                                     RemoteArg.Create(arg5),
                                     RemoteArg.Create(arg6),
-                                    RemoteArg.Create(arg7));
+                                    RemoteArg.Create(arg7),
+                                    RemoteArg.Create(arg8));
                             }
                             else
                             {
@@ -252,7 +255,8 @@ namespace Battlehub.VoxelCombat
                                         RemoteArg.Create(arg4),
                                         RemoteArg.Create(arg5),
                                         RemoteArg.Create(arg6),
-                                        RemoteArg.Create(arg7));
+                                        RemoteArg.Create(arg7),
+                                        RemoteArg.Create(arg8));
                                 }
                             }
 

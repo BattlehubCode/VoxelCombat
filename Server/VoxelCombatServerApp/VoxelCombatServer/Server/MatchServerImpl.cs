@@ -231,12 +231,12 @@ namespace Battlehub.VoxelCombat
             ConnectionStateChanged(new Error(), new ValueChangedArgs<bool>(false, false));
         }
 
-        private ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> m_readyToPlayAllArgs = new ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room>();
+        private ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room> m_readyToPlayAllArgs = new ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room>();
         private readonly ServerEventArgs<CommandsBundle> m_tickArgs = new ServerEventArgs<CommandsBundle>();
         private readonly ServerEventArgs<RTTInfo> m_pingArgs = new ServerEventArgs<RTTInfo>();
         private readonly ServerEventArgs<bool> m_pausedArgs = new ServerEventArgs<bool>();
 
-        public event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room>> ReadyToPlayAll;
+        public event ServerEventHandler<ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room>> ReadyToPlayAll;
         public event ServerEventHandler<ServerEventArgs<CommandsBundle>> Tick;
         public event ServerEventHandler<ServerEventArgs<RTTInfo>> Ping;
         public event ServerEventHandler<ServerEventArgs<bool>> Paused;
@@ -840,13 +840,14 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room>
+        private ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room>
             GetReadyToPlayAllArgs(Error error)
         {
             Player[] players;
             VoxelAbilitiesArray[] abilities;
             SerializedTaskArray[] taskInfo;
             SerializedTaskTemplatesArray[] taskTemplateInfo;
+            AssignmentGroupArray[] assignmentGroupArray;
             if (m_room != null)
             {
                 enabled = true;
@@ -862,6 +863,7 @@ namespace Battlehub.VoxelCombat
                 abilities = new VoxelAbilitiesArray[m_players.Count];
                 taskInfo = new SerializedTaskArray[m_players.Count];
                 taskTemplateInfo = new SerializedTaskTemplatesArray[m_players.Count];
+                assignmentGroupArray = new AssignmentGroupArray[players.Length];
                 for (int i = 0; i < m_players.Count; ++i)
                 {
                     Player player = m_players[m_room.Players[i]];
@@ -870,7 +872,10 @@ namespace Battlehub.VoxelCombat
                     abilities[i] = m_abilities[m_room.Players[i]];
                     taskInfo[i] = m_taskTemplates[m_room.Players[i]];
                     taskTemplateInfo[i] = m_taskTemplatesInfo[m_room.Players[i]];
-
+                    assignmentGroupArray[i] = new AssignmentGroupArray
+                    {
+                        Groups = m_engine.GetPlayerView(i).AssignmentsController.GetGroups()
+                    };
                     if (player.IsBot && player.BotType != BotType.Replay)
                     {
                         bots.Add(MatchFactory.CreateBotController(player, m_engine.GetTaskEngine(i)));
@@ -887,33 +892,35 @@ namespace Battlehub.VoxelCombat
                 abilities = new VoxelAbilitiesArray[0];
                 taskInfo = new SerializedTaskArray[0];
                 taskTemplateInfo = new SerializedTaskTemplatesArray[0];
+                assignmentGroupArray = new AssignmentGroupArray[0];
             }
 
 
-            var readyToPlayAllArgs = new ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room>();
+            var readyToPlayAllArgs = new ServerEventArgs<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room>();
             readyToPlayAllArgs.Arg = players;
             readyToPlayAllArgs.Arg2 = m_clientIdToPlayers;
             readyToPlayAllArgs.Arg3 = abilities;
             readyToPlayAllArgs.Arg4 = taskInfo;
             readyToPlayAllArgs.Arg5 = taskTemplateInfo;
-            readyToPlayAllArgs.Arg6 = m_room;
+            readyToPlayAllArgs.Arg6 = assignmentGroupArray;
+            readyToPlayAllArgs.Arg7 = m_room;
             readyToPlayAllArgs.Except = Guid.Empty;
             return readyToPlayAllArgs;
         }
 
-        public void GetState(Guid clientId, ServerEventHandler<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> callback)
+        public void GetState(Guid clientId, ServerEventHandler<Player[], Dictionary<Guid, Dictionary<Guid, Player>>, VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room, MapRoot> callback)
         {
             Error error = new Error(StatusCode.OK);
             if (!m_clientIdToPlayers.ContainsKey(clientId))
             {
                 error.Code = StatusCode.NotRegistered;
-                callback(error, null, null, null, null, null, null, null);
+                callback(error, null, null, null, null, null, null, null, null);
                 return;
             }
 
 
             m_readyToPlayAllArgs = GetReadyToPlayAllArgs(error);
-            callback(error, m_readyToPlayAllArgs.Arg, m_readyToPlayAllArgs.Arg2, m_readyToPlayAllArgs.Arg3, m_readyToPlayAllArgs.Arg4, m_readyToPlayAllArgs.Arg5, m_readyToPlayAllArgs.Arg6, m_engine.Map);
+            callback(error, m_readyToPlayAllArgs.Arg, m_readyToPlayAllArgs.Arg2, m_readyToPlayAllArgs.Arg3, m_readyToPlayAllArgs.Arg4, m_readyToPlayAllArgs.Arg5, m_readyToPlayAllArgs.Arg6, m_readyToPlayAllArgs.Arg7, m_engine.Map);
         }
 
         public void Pause(Guid clientId, bool pause, ServerEventHandler callback)

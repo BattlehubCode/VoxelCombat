@@ -717,6 +717,9 @@ namespace Battlehub.VoxelCombat
                     case CmdCode.SetHealth:
                         OnSetHealth(cmd);
                         break;
+                    case CmdCode.CreateAssignment:
+                        OnAddAssignment(cmd);
+                        break;
                     case CmdCode.Cancel:
                         OnCancel(cmd);
                         break;
@@ -1011,6 +1014,26 @@ namespace Battlehub.VoxelCombat
             if (m_controlledVoxel != null)
             {
                 m_controlledVoxel.Health = changeCmd.IntParams[0];
+            }
+        }
+
+        protected virtual void OnAddAssignment(Cmd cmd)
+        {
+            CreateAssignmentCmd addCmd = (CreateAssignmentCmd)cmd;
+            if (addCmd.CreatePreview)
+            {
+                CmdResultCode noFail = m_dataController.CreatePreview(addCmd.PreviewType, addCmd.PreviewCoordinate);
+                if (noFail != CmdResultCode.Success)
+                    throw new InvalidOperationException();
+
+                Coordinate coordinate = addCmd.PreviewCoordinate;
+                //Voxel cloneActor = null;
+                if (m_voxelMap.IsVisible(coordinate.MapPos, coordinate.Weight))
+                {
+                    Debug.Assert(m_controlledVoxel.Owner == addCmd.TargetPlayerIndex);
+                    VoxelData voxelData = m_voxelMap.Map.GetPreview(addCmd.TargetPlayerIndex, coordinate);
+                    AcquireVoxel(voxelData, coordinate.MapPos, coordinate.Weight);
+                }
             }
         }
 

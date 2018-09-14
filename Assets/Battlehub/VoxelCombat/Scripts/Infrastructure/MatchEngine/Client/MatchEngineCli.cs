@@ -13,6 +13,7 @@ namespace Battlehub.VoxelCombat
     public delegate void MatchEngineCliEvent<T, V, W, X, Y>(Error error, T payload, V extra1, W extra2, X extra3, Y extra4);
     public delegate void MatchEngineCliEvent<S, T, V, W, X, Y>(Error error, S payload, T extra1, V extra2, W extra3, X extra4, Y extra5);
     public delegate void MatchEngineCliEvent<S, T, V, W, X, Y, Z>(Error error, S payload, T extra1, V extra2, W extra3, X extra4, Y extra5, Z extra6);
+    public delegate void MatchEngineCliEvent<T1, T2, T3, T4, T5, T6, T7, T8>(Error error, T1 payload, T2 extra1, T3 extra2, T4 extra3, T5 extra4, T6 extra5, T7 extra6, T8 extra7);
 
 
     public interface IMatchEngineCli
@@ -21,7 +22,7 @@ namespace Battlehub.VoxelCombat
         /// <summary>
         /// All Players, Local Players, Abilities, Room
         /// </summary>
-        event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> Started;
+        event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room> Started;
 
         event MatchEngineCliEvent<RTTInfo> Ping;
         /// <summary>
@@ -32,7 +33,7 @@ namespace Battlehub.VoxelCombat
         event MatchEngineCliEvent Stopped;
         event MatchEngineCliEvent<bool> Paused;
 
-        event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> Reconnected;
+        event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room, MapRoot> Reconnected;
         event MatchEngineCliEvent ReconnectFailed;
 
         long Tick
@@ -59,7 +60,7 @@ namespace Battlehub.VoxelCombat
         private RTTInfo m_rttInfo = new RTTInfo { RTT = 0, RTTMax = 0 };       
 
         public event MatchEngineCliEvent ReadyToStart;
-        public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> Started;
+        public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room> Started;
         public event MatchEngineCliEvent<RTTInfo> Ping;
 
         public event MatchEngineCliEvent<long, CommandsBundle> ExecuteCommands;
@@ -67,7 +68,7 @@ namespace Battlehub.VoxelCombat
         public event MatchEngineCliEvent Stopped;
         public event MatchEngineCliEvent<bool> Paused;
 
-        public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> Reconnected;
+        public event MatchEngineCliEvent<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room, MapRoot> Reconnected;
         public event MatchEngineCliEvent ReconnectFailed;
 
         private IMatchServer m_matchServer;
@@ -508,7 +509,7 @@ namespace Battlehub.VoxelCombat
             m_cmdQueue.Enqueue(payload);
         }
 
-        private void OnReadyToPlayAll(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] abilities, SerializedTaskArray[] taskTemplates, SerializedTaskTemplatesArray[] TaskTemplateData, Room room)
+        private void OnReadyToPlayAll(Error error, Player[] players, Guid[] localPlayers, VoxelAbilitiesArray[] abilities, SerializedTaskArray[] taskTemplates, SerializedTaskTemplatesArray[] TaskTemplateData, AssignmentGroupArray[] assignmentGroups, Room room)
         { 
             if (m_matchServer.HasError(error))
             {
@@ -558,7 +559,7 @@ namespace Battlehub.VoxelCombat
 
             if (Started != null)
             {
-                Started(new Error(StatusCode.OK), players, localPlayers, abilities, taskTemplates, TaskTemplateData, room);
+                Started(new Error(StatusCode.OK), players, localPlayers, abilities, taskTemplates, TaskTemplateData, assignmentGroups, room);
             }
 
             enabled = true; //update method will be called
@@ -628,7 +629,7 @@ namespace Battlehub.VoxelCombat
                 if (m_isInitialized)
                 {
 
-                    m_matchServer.GetState(m_gSettings.ClientId, (getStateError, players, localPlayers, abilities, tasks, taskTemplates, room, mapRoot) =>
+                    m_matchServer.GetState(m_gSettings.ClientId, (getStateError, players, localPlayers, abilities, tasks, taskTemplates, assignmentGroups, room, mapRoot) =>
                     {
                         if(m_matchServer.HasError(getStateError))
                         {
@@ -638,7 +639,7 @@ namespace Battlehub.VoxelCombat
 
                         if(Reconnected != null)
                         {
-                            Reconnected(getStateError, players, localPlayers, abilities, tasks, taskTemplates, room, mapRoot);
+                            Reconnected(getStateError, players, localPlayers, abilities, tasks, taskTemplates, assignmentGroups, room, mapRoot);
                         }
 
                         enabled = true;

@@ -504,6 +504,24 @@ namespace Battlehub.VoxelCombat
 
         [ProtoMember(5)]
         public SerializedTask[] Parameters;
+
+        private TaskInfo[] m_deserializedParameters;
+        public TaskInfo[] DeserializedParameters
+        {
+            get
+            {
+                if(m_deserializedParameters == null && Parameters != null)
+                {
+                    m_deserializedParameters = new TaskInfo[Parameters.Length];
+
+                    for(int i = 0; i < Parameters.Length; ++i)
+                    {
+                        m_deserializedParameters[i] = SerializedTask.ToTaskInfo(Parameters[i]);
+                    }   
+                }
+                return m_deserializedParameters;
+            }
+        }
     }
 
     [ProtoContract]
@@ -1118,6 +1136,7 @@ namespace Battlehub.VoxelCombat
         public TaskInputInfo[] Inputs;
         public int OutputsCount;
         public int PlayerIndex = -1;
+
 #if DEBUG_OUTPUT
         public string DebugString;
 #endif
@@ -2033,51 +2052,42 @@ namespace Battlehub.VoxelCombat
             return eatSplitGrow;
         }
 
-        //public static TaskInfo MoveAndConvertToUntilSucces(Coordinate targetCoordinate, int targetType, int iterations = int.MaxValue)
-        //{
-        //    TaskInputInfo unitIndexInput = new TaskInputInfo();
-        //    TaskInputInfo playerIndexInput = new TaskInputInfo();
-        //    TaskInfo task = MoveAndConvertToUntilSucces(unitIndexInput, playerIndexInput, targetCoordinate, targetType);
-        //    task.Inputs = new[] { unitIndexInput, playerIndexInput };
-        //    return task;
-        //}
-
-        //public static TaskInfo MoveAndConvertToUntilSucces(TaskInputInfo unitIndexInput, TaskInputInfo playerIndexInput, Coordinate targetCoordinate, int targetType, int iterations = int.MaxValue)
-        //{
-        //    TaskInfo defineGoalTask = EvalExpression(ExpressionInfo.Val(new[] { targetCoordinate }));
-        //    TaskInfo moveAndConvertTo = MoveToAndRunTask(unitIndexInput, playerIndexInput, new TaskInputInfo(defineGoalTask, 0), targetType);
-        //    TaskInfo task = Procedure
-        //    (
-        //        defineGoalTask,
-        //        Repeat(iterations,
-        //            moveAndConvertTo,
-        //            Branch(ExpressionInfo.TaskSucceded(moveAndConvertTo),
-        //                Return(ExpressionInfo.TaskStatus(moveAndConvertTo))),
-        //            MoveToRandomLocation(unitIndexInput)
-        //        ),
-        //        Return(ExpressionInfo.PrimitiveVal(TaskFailed))
-        //    );
-        //    return task;
-        //}
-
-        public static TaskInfo Define(TaskInputInfo unitIndexInput, TaskInfo playerIndexInput, Coordinate coordinate)
+        public static TaskInfo Define(Coordinate coordinate)
         {
-            return EvalExpression(ExpressionInfo.Val(new[] { coordinate }));
+            TaskInputInfo unitIndexInput = new TaskInputInfo();
+            TaskInputInfo playerIndexInput = new TaskInputInfo();
+
+            TaskInfo taskInfo = EvalExpression(ExpressionInfo.Val(new[] { coordinate }));
+            taskInfo.Inputs = new[] { unitIndexInput, playerIndexInput };
+
+            return taskInfo;
         }
 
-        public static TaskInfo DefineConvertCmd(TaskInputInfo unitIndexInput, TaskInfo playerIndexInput, int targetType)
+        public static TaskInfo DefineConvertCmd(int targetType)
         {
-            return EvalExpression(ExpressionInfo.Val(new ChangeParamsCmd(CmdCode.Convert) { IntParams = new[] { targetType } }));
+            TaskInputInfo unitIndexInput = new TaskInputInfo();
+            TaskInputInfo playerIndexInput = new TaskInputInfo();
+
+            TaskInfo taskInfo = EvalExpression(ExpressionInfo.Val(new ChangeParamsCmd(CmdCode.Convert) { IntParams = new[] { targetType } }));
+            taskInfo.Inputs = new[] { unitIndexInput, playerIndexInput };
+
+            return taskInfo;
         }
 
-        public static TaskInfo DefineCanConvertExpr(TaskInputInfo unitIndexInput, TaskInfo playerIndexInput, int targetType)
+        public static TaskInfo DefineCanConvertExpr( int targetType)
         {
+            TaskInputInfo unitIndexInput = new TaskInputInfo();
+            TaskInputInfo playerIndexInput = new TaskInputInfo();
+
             ExpressionInfo canConvert = ExpressionInfo.UnitCanConvert(
                 ExpressionInfo.Val(unitIndexInput),
                 ExpressionInfo.Val(playerIndexInput),
                 ExpressionInfo.PrimitiveVal(targetType));
 
-            return EvalExpression(ExpressionInfo.Val(canConvert));
+            TaskInfo taskInfo = EvalExpression(ExpressionInfo.Val(canConvert));
+            taskInfo.Inputs = new[] { unitIndexInput, playerIndexInput };
+
+            return taskInfo;
         }
 
         public static TaskInfo MoveAndConvertTo(Coordinate targetCoordinate, int targetType)

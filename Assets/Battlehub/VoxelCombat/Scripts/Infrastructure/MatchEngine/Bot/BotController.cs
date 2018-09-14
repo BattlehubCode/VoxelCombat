@@ -128,6 +128,69 @@ namespace Battlehub.VoxelCombat
         void Think(float time, IBotSubmitTask bot);
     }
 
+    public class BaseStrategy : IBotStartegy
+    {
+        private BotController.State m_state;
+        private ILogger m_logger;
+
+        public BaseStrategy(BotController.State state)
+        {
+            m_state = state;
+            m_logger = Dependencies.Logger;
+        }
+
+        public virtual void OnAssetCreated(IMatchUnitAssetView asset)
+        {
+        }
+
+        public virtual void OnAssetRemoved(IMatchUnitAssetView asset)
+        {
+        }
+
+        public virtual void OnUnitCreated(IMatchUnitAssetView unit)
+        {
+        }
+
+        public virtual void OnUnitRemoved(IMatchUnitAssetView unit, RunningTaskInfo activeTask, TaskInfo taskInfo)
+        {
+        }
+
+        public void OnTaskCompleted(IMatchUnitAssetView unit, RunningTaskInfo completedTask, TaskInfo taskInfo)
+        {
+            m_logger.LogFormat("Unit {0} task {1} {2} with status {3}", unit.Id, completedTask.TaskId, taskInfo.State, taskInfo.IsFailed ? "failed" : "succeded");
+        }
+
+
+        public void Think(float time, IBotSubmitTask bot)
+        {
+            Dictionary<long, IMatchUnitAssetView> freeEaters = m_state.FreeUnits[KnownVoxelTypes.Eater];
+            if (freeEaters.Count > 0)
+            {
+                List<IMatchUnitAssetView> selectedUnits = null;
+                foreach (IMatchUnitAssetView freeEater in freeEaters.Values)
+                {
+                    if(freeEater.Assignment != null)
+                    {
+                        if(selectedUnits == null)
+                        {
+                            selectedUnits = new List<IMatchUnitAssetView>();
+                        }
+
+                        selectedUnits.Add(freeEater);
+                    }
+                }
+
+                if(selectedUnits != null)
+                {
+                    for (int i = 0; i < selectedUnits.Count; ++i)
+                    {
+                        IMatchUnitAssetView unit = selectedUnits[i];
+                        bot.SubmitTask(time, unit, unit.Assignment.TaskLaunchInfo.Type, unit.Assignment.TaskLaunchInfo.DeserializedParameters);
+                    }
+                }
+            }
+        }
+    }
 
     public class DefaultStrategy : IBotStartegy
     {
@@ -175,7 +238,7 @@ namespace Battlehub.VoxelCombat
                 for(int i = 0; i < selectedUnits.Count; ++i)
                 {
                     IMatchUnitAssetView unit = selectedUnits[i];
-                    bot.SubmitTask(time, TaskTemplateType.EatGrowSplit4, unit);
+                    bot.SubmitTask(time, unit, TaskTemplateType.EatGrowSplit4);
                 }
             }
         }
@@ -185,7 +248,9 @@ namespace Battlehub.VoxelCombat
     {
         void RegisterTask(TaskTemplateType type, SerializedTask taskInfo);
         //void SubmitTask(float time, TaskTemplateType type, IMatchUnitAssetView unit, params Func<TaskInputInfo, TaskInputInfo, TaskInfo>[] defines);
-        void SubmitTask(float time, TaskTemplateType type, IMatchUnitAssetView unit, params TaskInfo[] defines);
+        void SubmitTask(float time,  IMatchUnitAssetView unit, TaskTemplateType type, params TaskInfo[] defines);
+
+        void SubmitAssignment(float time, IMatchUnitAssetView unit, Guid guid, Coordinate coordinate, TaskTemplateType type, params TaskInfo[] defines);
 
         //Group task will be executed using following algorithm.
         //Each unit will be assigned with its own task. 
@@ -206,17 +271,8 @@ namespace Battlehub.VoxelCombat
         void Destroy();
     }
 
-
-    public class RunningTaskGroup
-    {
-        public readonly RunningTaskInfo[] Tasks;
-
-        //public RunningTaskGroup(Runnit)
-    }
-
     public class RunningTaskInfo
     {
-        
         public readonly TaskTemplateType Type;
         public readonly IMatchUnitAssetView Target;
         public readonly long TaskId;
@@ -471,7 +527,7 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        void IBotSubmitTask.SubmitTask(float time, TaskTemplateType type, IMatchUnitAssetView unit, params TaskInfo[] paramters)
+        void IBotSubmitTask.SubmitTask(float time,  IMatchUnitAssetView unit, TaskTemplateType type, params TaskInfo[] parameters)
         {
             if (m_state.BusyUnits[(KnownVoxelTypes)unit.Data.Type].ContainsKey(unit.Id))
             {
@@ -484,7 +540,7 @@ namespace Battlehub.VoxelCombat
             taskInfo.Children[0] = unitIdTask;
             taskInfo.Children[1] = playerIdTask;
 
-            int argsLength = paramters != null ? paramters.Length : 0;
+            int argsLength = parameters != null ? parameters.Length : 0;
             TaskInfo rootTask = taskInfo.Children[2 + argsLength];
             if (rootTask == null || taskInfo.Children[2 + argsLength - 1] != null)
             {
@@ -493,15 +549,15 @@ namespace Battlehub.VoxelCombat
             rootTask.Inputs[0].OutputTask = unitIdTask;
             rootTask.Inputs[1].OutputTask = playerIdTask;
 
-            if (paramters != null)
+            if (parameters != null)
             {
-                for (int i = 0; i < paramters.Length; ++i)
+                for (int i = 0; i < parameters.Length; ++i)
                 {
-                    TaskInfo define = paramters[i];
+                    TaskInfo define = parameters[i];
                     define.Inputs[0].ExtensionSocket = rootTask.Inputs[0];
                     define.Inputs[1].ExtensionSocket = rootTask.Inputs[1];
                     taskInfo.Children[2 + i] = define;
-                    taskInfo.Children[2 + paramters.Length].Inputs[2 + i].OutputTask = define;
+                    taskInfo.Children[2 + parameters.Length].Inputs[2 + i].OutputTask = define;
                 }
             }
 
@@ -511,12 +567,20 @@ namespace Battlehub.VoxelCombat
             m_state.FreeUnits[(KnownVoxelTypes)unit.Data.Type].Remove(unit.Id);
             m_state.BusyUnits[(KnownVoxelTypes)unit.Data.Type].Add(unit.Id, unit);
 
-
             m_taskEngine.SubmitTask(taskInfo);
 
             RunningTaskInfo runningTaskInfo = new RunningTaskInfo(type, unit, taskInfo.TaskId, time);
             m_state.TaskIdToTask.Add(taskInfo.TaskId, runningTaskInfo);
             m_state.UnitIdToTask.Add(unit.Id, runningTaskInfo);
+        }
+
+        public void SubmitAssignment(float time, IMatchUnitAssetView unit, Guid guid, Coordinate coordinate, TaskTemplateType type, params TaskInfo[] defines)
+        {
+            //Assignment ass;
+            //ass.
+            //m_taskEngine.MatchEngine.Submit()
+
+
         }
 
         private const float m_thinkInterval = 0.25f;

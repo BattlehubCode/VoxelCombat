@@ -123,7 +123,7 @@ namespace Battlehub.VoxelCombat
           
             if (cmd.Code != CmdCode.LeaveRoom)
             {
-                if(cmd.Code == CmdCode.AddAssignment)
+                if(cmd.Code == CmdCode.CreateAssignment)
                 {
                     m_commandsQueue.Enqueue(cmd);
                 }
@@ -593,9 +593,9 @@ namespace Battlehub.VoxelCombat
                             RaiseCmdExecuted();
                             return changeCmd;
                         }
-                        case CmdCode.AddAssignment:
+                        case CmdCode.CreateAssignment:
                         {
-                            AddAssignmentCmd addCmd  = (AddAssignmentCmd)cmd;
+                            CreateAssignmentCmd addCmd  = (CreateAssignmentCmd)cmd;
                             if(addCmd.CreatePreview)
                             {
                                 CmdResultCode result = m_dataController.CreatePreview(addCmd.PreviewType, addCmd.PreviewCoordinate);

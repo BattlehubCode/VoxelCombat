@@ -1500,6 +1500,16 @@ namespace Battlehub.VoxelCombat
             return cell.GetVoxelDataAt(coord.Altitude);
         }
 
+        public VoxelData GetPreview(int playerIndex, Coordinate coord)
+        {
+            MapCell cell = Get(coord.Row, coord.Col, coord.Weight);
+            if(cell == null)
+            {
+                return null;
+            }
+            return cell.GetPreviewAt(playerIndex, coord.Altitude);
+        }
+
         private MapCell Get(int i, int j, int withWeight, MapCell currentParent, int currentWeight)
         {
             if (withWeight == currentWeight)

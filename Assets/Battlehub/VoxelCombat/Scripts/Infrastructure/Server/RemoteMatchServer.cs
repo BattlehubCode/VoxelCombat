@@ -7,7 +7,7 @@ namespace Battlehub.VoxelCombat
     {
         public event ServerEventHandler<bool> Paused;
         public event ServerEventHandler<RTTInfo> Ping;
-        public event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room> ReadyToPlayAll;
+        public event ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room> ReadyToPlayAll;
         public event ServerEventHandler<CommandsBundle> Tick;
 
         protected override string ServerUrl
@@ -67,7 +67,8 @@ namespace Battlehub.VoxelCombat
                             evt.Get<VoxelAbilitiesArray[]>(2),
                             evt.Get<SerializedTaskArray[]>(3),
                             evt.Get<SerializedTaskTemplatesArray[]>(4),
-                            evt.Get<Room>(5));
+                            evt.Get<AssignmentGroupArray[]>(5),
+                            evt.Get<Room>(6));
                     }
                     break;
                 default:
@@ -132,7 +133,7 @@ namespace Battlehub.VoxelCombat
             Call(rpc, (error, result) => callback(error));
         }
 
-        public void GetState(Guid clientId, ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], Room, MapRoot> callback)
+        public void GetState(Guid clientId, ServerEventHandler<Player[], Guid[], VoxelAbilitiesArray[], SerializedTaskArray[], SerializedTaskTemplatesArray[], AssignmentGroupArray[], Room, MapRoot> callback)
         {
             RemoteCall rpc = new RemoteCall(
                 RemoteCall.Proc.GetState,
@@ -146,8 +147,9 @@ namespace Battlehub.VoxelCombat
                     result.Get<VoxelAbilitiesArray[]>(2),
                     result.Get<SerializedTaskArray[]>(3),
                     result.Get<SerializedTaskTemplatesArray[]>(4),
-                    result.Get<Room>(5),
-                    result.Get<MapRoot>(6));
+                    result.Get<AssignmentGroupArray[]>(5),
+                    result.Get<Room>(6),
+                    result.Get<MapRoot>(7));
             });
         }
 

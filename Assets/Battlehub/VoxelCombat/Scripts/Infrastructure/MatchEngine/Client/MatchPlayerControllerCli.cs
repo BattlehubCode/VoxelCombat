@@ -792,6 +792,22 @@ namespace Battlehub.VoxelCombat
                     }                   
                 }
             }
+            else if (cmd.Code == CmdCode.CreateAssignment)
+            {
+                CreateAssignmentCmd addCmd = (CreateAssignmentCmd)cmd;
+                if (addCmd.CreatePreview)
+                {
+                    Coordinate coord = addCmd.PreviewCoordinate;
+                    MapCell cell = m_voxelMap.Map.Get(coord.Row, coord.Col, coord.Weight);
+                    VoxelData voxelData = cell.GetPreviewAt(m_playerIndex, coord.Altitude);
+                    Debug.Assert(voxelData != null);
+
+                    spawnedUnitsList.Add(m_identity);
+                    CreateUnitController(voxelData, coord);
+                }
+
+                AssignmentsController.CreateAssignment(addCmd.GroupId, addCmd.UnitIndex, addCmd.TaskLaunchInfo, addCmd.HasTarget, addCmd.TargetPlayerIndex, addCmd.TargetId);
+            }
 
             return spawnedUnitsList;
         }

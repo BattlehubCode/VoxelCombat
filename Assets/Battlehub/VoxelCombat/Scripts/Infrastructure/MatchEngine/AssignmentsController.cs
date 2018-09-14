@@ -1,20 +1,65 @@
-﻿using System;
-using System.Collections;
+﻿using ProtoBuf;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace Battlehub.VoxelCombat
 {
+    [ProtoContract]
+    public class Assignment
+    {
+        [ProtoMember(1)]
+        public Guid GroupId;
+
+        [ProtoMember(2)]
+        public long UnitId;
+
+        [ProtoMember(3)]
+        public bool HasUnit;
+
+        [ProtoMember(4)]
+        public int TargetPlayerIndex;
+
+        [ProtoMember(5)]
+        public long TargetId;
+
+        [ProtoMember(6)]
+        public bool HasTarget;
+
+        [ProtoMember(7)]
+        public SerializedTaskLaunchInfo TaskLaunchInfo;
+    }
+
+    [ProtoContract]
+    public class AssignmentGroup
+    {
+        [ProtoMember(1)]
+        public Guid GroupId;
+
+        [ProtoMember(2)]
+        public List<Assignment> Assignments;
+    }
+
+    [ProtoContract]
+    public class AssignmentGroupArray
+    {
+        [ProtoMember(1)]
+        public AssignmentGroup[] Groups;
+    }
+
     public interface IAssignmentsController
     {
-        void AddAssignment(Guid groupId, long unitId, SerializedTaskLaunchInfo taskLaunchInfo, bool hasTarget = false, int targetPlayerIndex = -1, long targetId = 0);
+        AssignmentGroup[] GetGroups();
+
+        void SetGroups(AssignmentGroup[] groups);
+
+        void CreateAssignment(Guid groupId, long unitId, SerializedTaskLaunchInfo taskLaunchInfo, bool hasTarget = false, int targetPlayerIndex = -1, long targetId = 0);
 
         /// <summary>
         /// Remove unit from assignment. Do not remove if assignment has target
         /// </summary>
         /// <param name="unitId"></param>
-        void RemoveUnitFromAssignment(IMatchUnitAssetView unit);
+        //void RemoveUnitFromAssignment(IMatchUnitAssetView unit);
 
 
         /// <summary>
@@ -29,12 +74,12 @@ namespace Battlehub.VoxelCombat
         /// <param name="unitId"></param>
         void RemoveAssignment(IMatchUnitAssetView unit);
 
-        void RemoveAssignmentGroup(Guid groupId);
+        //void RemoveAssignmentGroup(Guid groupId);
     }
 
     public class AssignmentsController : IAssignmentsController
     {
-        private readonly Dictionary<Guid, List<Assignment>> m_groupIdToAssignments = new Dictionary<Guid, List<Assignment>>();
+        private Dictionary<Guid, AssignmentGroup> m_groupIdToAssignments = new Dictionary<Guid, AssignmentGroup>();
 
         private IMatchPlayerView[] m_players;
 
@@ -46,7 +91,17 @@ namespace Battlehub.VoxelCombat
             m_players = players;
         }
 
-        public void AddAssignment(Guid groupId, long unitId, SerializedTaskLaunchInfo taskLaunchInfo, bool hasTarget = false, int targetPlayerIndex = -1, long targetId = 0)
+        public AssignmentGroup[] GetGroups()
+        {
+            return m_groupIdToAssignments.Values.ToArray();
+        }
+
+        public void SetGroups(AssignmentGroup[] groups)
+        {
+            m_groupIdToAssignments = groups.ToDictionary(g => g.GroupId);
+        }
+
+        public void CreateAssignment(Guid groupId, long unitId, SerializedTaskLaunchInfo taskLaunchInfo, bool hasTarget = false, int targetPlayerIndex = -1, long targetId = 0)
         {
             IMatchPlayerView targetPlayerView = null;
             IMatchUnitAssetView targetUnitOrAsset = null;
@@ -90,14 +145,15 @@ namespace Battlehub.VoxelCombat
                 targetUnitOrAsset.TargetForAssignments.Add(assignment);
             }
 
-            List<Assignment> group;
+            AssignmentGroup group;
             if (!m_groupIdToAssignments.TryGetValue(groupId, out group))
             {
-                group = new List<Assignment>();
+                group = new AssignmentGroup { GroupId = groupId, Assignments = new List<Assignment>() };
+
                 m_groupIdToAssignments.Add(groupId, group);
             }
 
-            group.Add(assignment);
+            group.Assignments.Add(assignment);
         }
 
         public void RemoveUnitFromAssignment(IMatchUnitAssetView unit)
@@ -114,11 +170,11 @@ namespace Battlehub.VoxelCombat
 
             if (!assignment.HasTarget)
             {
-                List<Assignment> groupAssignments;
-                if (m_groupIdToAssignments.TryGetValue(assignment.GroupId, out groupAssignments))
+                AssignmentGroup group;
+                if (m_groupIdToAssignments.TryGetValue(assignment.GroupId, out group))
                 {
-                    groupAssignments.Remove(assignment);
-                    if (groupAssignments.Count == 0)
+                    group.Assignments.Remove(assignment);
+                    if (group.Assignments.Count == 0)
                     {
                         m_groupIdToAssignments.Remove(assignment.GroupId);
                     }
@@ -144,11 +200,11 @@ namespace Battlehub.VoxelCombat
 
                 if (!assignment.HasUnit)
                 {
-                    List<Assignment> groupAssignments;
-                    if (m_groupIdToAssignments.TryGetValue(assignment.GroupId, out groupAssignments))
+                    AssignmentGroup group;
+                    if (m_groupIdToAssignments.TryGetValue(assignment.GroupId, out group))
                     {
-                        groupAssignments.Remove(assignment);
-                        if (groupAssignments.Count == 0)
+                        group.Assignments.Remove(assignment);
+                        if (group.Assignments.Count == 0)
                         {
                             m_groupIdToAssignments.Remove(assignment.GroupId);
                         }
@@ -202,17 +258,18 @@ namespace Battlehub.VoxelCombat
                 assignment.TargetPlayerIndex = -1;
             }
 
-            List<Assignment> groupAssignments;
-            if (m_groupIdToAssignments.TryGetValue(assignment.GroupId, out groupAssignments))
+            AssignmentGroup group;
+            if (m_groupIdToAssignments.TryGetValue(assignment.GroupId, out group))
             {
-                groupAssignments.Remove(assignment);
-                if (groupAssignments.Count == 0)
+                group.Assignments.Remove(assignment);
+                if (group.Assignments.Count == 0)
                 {
                     m_groupIdToAssignments.Remove(assignment.GroupId);
                 }
             }
         }
 
+        /*
         public void RemoveAssignmentGroup(Guid groupId)
         {
             List<Assignment> assignments;
@@ -228,5 +285,6 @@ namespace Battlehub.VoxelCombat
                 RemoveAssignment(assignment);
             }
         }
+        */
     }
 }
