@@ -324,7 +324,17 @@ namespace Battlehub.VoxelCombat
             m_allAbilities = allAbilities;
             m_abilities = m_allAbilities[playerIndex][type];
 
-            m_controlledData = m_map.Get(coordinate);
+            if(VoxelData.IsPreview(type))
+            {
+                m_controlledData = m_map.GetPreview(playerIndex, coordinate);
+            }
+            else
+            {
+                m_controlledData = m_map.Get(coordinate);
+            }
+
+            Debug.Assert(m_controlledData.Owner == playerIndex);
+
             if(m_controlledData.Unit == null)
             {
                 m_controlledData.Unit = new VoxelUnitData();

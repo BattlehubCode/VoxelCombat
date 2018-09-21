@@ -802,6 +802,11 @@ namespace Battlehub.VoxelCombat
                     VoxelData voxelData = cell.GetPreviewAt(m_playerIndex, coord.Altitude);
                     Debug.Assert(voxelData != null);
 
+                    if (spawnedUnitsList == null)
+                    {
+                        spawnedUnitsList = new List<long>();
+                    }
+
                     spawnedUnitsList.Add(m_identity);
                     CreateUnitController(voxelData, coord);
                 }

@@ -8,6 +8,16 @@ namespace Battlehub.VoxelCombat.Tests
     {
         private static ProtobufSerializer m_protobufSerializer = new ProtobufSerializer();
         [Test]
+        public void CoordinateArrayDeepClone()
+        {
+            Coordinate[] coord = new[] { new Coordinate(1, 2, 3, 4) };
+
+            coord = m_protobufSerializer.DeepClone(coord);
+
+            Assert.AreEqual(1, coord.Length);
+        }
+        
+        [Test]
         public void ExpressionSerializationDeserialization()
         {
             ExpressionInfo expression = new ExpressionInfo();

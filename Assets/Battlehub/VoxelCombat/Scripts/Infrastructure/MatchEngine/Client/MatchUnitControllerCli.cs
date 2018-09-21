@@ -39,7 +39,7 @@ namespace Battlehub.VoxelCombat
     {
         protected readonly IVoxelMap m_voxelMap;
         protected readonly IVoxelFactory m_voxelFactory;
-       
+        protected readonly IVoxelGame m_game;
         protected readonly IVoxelDataController m_dataController;
         protected Voxel m_controlledVoxel;
         private ulong m_selection;
@@ -123,6 +123,7 @@ namespace Battlehub.VoxelCombat
 
             m_voxelMap = Dependencies.Map;
             m_voxelFactory = Dependencies.VoxelFactory;
+            m_game = Dependencies.GameState;
         }
 
         public void Destroy()
@@ -1042,6 +1043,9 @@ namespace Battlehub.VoxelCombat
             if(m_controlledVoxel != null)
             {
                 m_controlledVoxel.OnCancel();
+
+                IMatchPlayerView player = m_game.GetPlayerView(m_controlledVoxel.Owner);
+                player.AssignmentsController.RemoveAssignment(this);
             }
         }
 

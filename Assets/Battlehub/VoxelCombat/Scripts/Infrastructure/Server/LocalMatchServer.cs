@@ -449,7 +449,7 @@ namespace Battlehub.VoxelCombat
 
         public void Submit(Guid clientId, int playerIndex, Cmd cmd, ServerEventHandler<Cmd> callback)
         {
-            cmd = m_serializer.DeepClone(cmd);
+            cmd = m_serializer.DeepClone(cmd); 
 
             Error error = new Error();
             error.Code = StatusCode.OK;
@@ -589,7 +589,7 @@ namespace Battlehub.VoxelCombat
                     };
                     if (player.IsActiveBot)
                     {
-                        bots.Add(MatchFactory.CreateBotController(player, m_engine.GetTaskEngine(i)));
+                        bots.Add(MatchFactory.CreateBotController(player, m_engine.GetTaskEngine(i), new DefaultStrategy()));
                     }
                 }
 

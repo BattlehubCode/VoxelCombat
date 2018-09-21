@@ -123,14 +123,7 @@ namespace Battlehub.VoxelCombat
           
             if (cmd.Code != CmdCode.LeaveRoom)
             {
-                if(cmd.Code == CmdCode.CreateAssignment)
-                {
-                    m_commandsQueue.Enqueue(cmd);
-                }
-                else
-                {
-                    OnSetCommand(cmd);
-                }
+                OnSetCommand(cmd);
             }
         }
 
@@ -284,8 +277,7 @@ namespace Battlehub.VoxelCombat
     {
         protected readonly IPathFinder m_pathFinder;
         private readonly IMatchEngine m_engine;
-        private readonly IMatchPlayerController m_playerController;
-
+     
         private int m_failedMoveAttempts;
         private int m_maxFailedMoveAttempts = 3;
 
@@ -294,7 +286,6 @@ namespace Battlehub.VoxelCombat
         {
             m_engine = engine;
             m_pathFinder = m_engine.GetPathFinder(dataController.PlayerIndex);
-            m_playerController = m_engine.GetPlayerController(dataController.PlayerIndex);
         }
 
         protected override void OnSetCommand(Cmd cmd)
@@ -321,6 +312,9 @@ namespace Battlehub.VoxelCombat
                     break;
                 case CmdCode.SetHealth:
                     OnInstantCmd(VoxelDataState.Mutating, CmdCode.BeginSetHealth, cmd, 0, 0);
+                    break;
+                case CmdCode.CreateAssignment:
+                    OnInstantCmd(VoxelDataState.Busy, CmdCode.Nop, cmd, 0, 0);
                     break;
                 case CmdCode.Cancel:
                     {
@@ -616,7 +610,8 @@ namespace Battlehub.VoxelCombat
                         }
                         case CmdCode.Cancel:
                         {
-                            m_playerController.AssignmentsController.RemoveAssignment(this);
+                            IMatchPlayerController playerController = m_engine.GetPlayerController(m_dataController.PlayerIndex);
+                            playerController.AssignmentsController.RemoveAssignment(this);
                             RaiseCmdExecuted();
                             return cmd;
                         }
@@ -754,7 +749,7 @@ namespace Battlehub.VoxelCombat
             get { return base.TargetForAssignments; }
             set
             {
-                if(base.TargetForAssignments != null)
+                if(base.TargetForAssignments != value)
                 {
                     if(value == null)
                     {

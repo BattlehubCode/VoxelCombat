@@ -91,6 +91,7 @@ namespace Battlehub.VoxelCombat
                 try
                 {
                     model.Add(type, true);
+                   // model.Add(type.MakeArrayType(), true).UseConstructor = false;
                 }
                 catch(Exception  e)
                 {
@@ -114,7 +115,8 @@ namespace Battlehub.VoxelCombat
                 typeof(string),
                 typeof(float),
                 typeof(double),
-                typeof(decimal) };
+                typeof(decimal),
+                typeof(Coordinate[])};
 
             foreach (Type type in primitiveTypes)
             {
@@ -123,6 +125,7 @@ namespace Battlehub.VoxelCombat
                     continue;
                 }
                 model.Add(typeof(PrimitiveContract<>).MakeGenericType(type), true);
+                //model.Add(typeof(PrimitiveContract<>).MakeGenericType(type).MakeArrayType(), true).UseConstructor = false;
             }
         }
     }

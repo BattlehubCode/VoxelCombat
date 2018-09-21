@@ -88,9 +88,9 @@ namespace Battlehub.VoxelCombat
             pathFinder.Destroy();
         }
 
-        public static IBotController CreateBotController(Player player, ITaskEngine taskEngine)
+        public static IBotController CreateBotController(Player player, ITaskEngine taskEngine, IBotStrategy strategy)
         {
-            return new BotController(player, taskEngine);
+            return new BotController(player, taskEngine, strategy);
         }
 
         public static void DestroyBotController(IBotController botController)

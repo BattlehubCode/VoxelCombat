@@ -46,6 +46,7 @@ namespace Battlehub.VoxelCombat
 
         void GenerateIdentitifers(TaskInfo taskInfo);
 
+        bool IsTaskActive(long taskId);
         /// <summary>
         /// Submit task to task engine. Side effect generates and assignes taskid
         /// </summary>
@@ -419,6 +420,11 @@ namespace Battlehub.VoxelCombat
             m_cmdExpressionTaskPool = new TaskPool<ExecuteCmdTaskWithExpression>(taskPoolSize);
             m_cmdMoveTaskPool = new TaskPool<ExecuteMoveTask>(taskPoolSize);
             m_cmdGenericTaskPool = new TaskPool<ExecuteCmdTask>(taskPoolSize);
+        }
+
+        public bool IsTaskActive(long taskId)
+        {
+            return m_idToActiveTask.ContainsKey(taskId);
         }
 
         public void SubmitTask(TaskInfo taskInfo)

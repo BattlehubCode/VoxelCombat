@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -122,7 +123,7 @@ namespace Battlehub.VoxelCombat
 
             m_locationPicker = Dependencies.GameView.GetLocationPicker(LocalPlayerIndex);
 
-            m_playersBot = MatchFactoryCli.CreateBotController(m_gameState.GetPlayer(playerIndex), m_engine.GetClientTaskEngine(playerIndex));
+            m_playersBot = MatchFactoryCli.CreateBotController(m_gameState.GetPlayer(playerIndex), m_engine.GetClientTaskEngine(playerIndex), new PlayerStrategy());
             m_playersBot.Init();
 
             SerializedTask[] taskTemplates = m_gameState.GetTaskTemplates(playerIndex);
@@ -137,6 +138,8 @@ namespace Battlehub.VoxelCombat
         private bool m_wasAButtonDown;
         private void Update()
         {
+            m_playersBot.Update(Time.realtimeSinceStartup);
+
             if (m_gameState.IsActionsMenuOpened(LocalPlayerIndex))
             {
                 return;
@@ -245,7 +248,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        private void SubmitTaskToClientTaskEngine(TaskTemplateType templateType)
+        private void SubmitTaskToClientTaskEngine(TaskTemplateType templateType, params TaskInfo[] defines)
         {
             m_playersBot.Init();
             int playerIndex = m_gameState.LocalToPlayerIndex(m_localPlayerIndex);
@@ -253,7 +256,7 @@ namespace Battlehub.VoxelCombat
             long[] selection = m_unitSelection.GetSelection(playerIndex, playerIndex);
             for (int i = 0; i < selection.Length; ++i)
             {
-                m_playersBot.SubmitTask(Time.realtimeSinceStartup, templateType, playerView.GetUnit(selection[i]));
+                m_playersBot.SubmitTask(Time.realtimeSinceStartup, playerView.GetUnit(selection[i]), templateType, defines);
             }
         }
 
@@ -328,84 +331,75 @@ namespace Battlehub.VoxelCombat
         
         private void OnWall()
         {
+            StartCoroutine(CoWall());
+        }
+
+        private IEnumerator CoWall()
+        {
             int targetType = (int)KnownVoxelTypes.Ground;
-            int unitIndex = 0;
             int playerIndex = m_gameState.LocalToPlayerIndex(m_localPlayerIndex);
             long[] selectedUnitIds = m_unitSelection.GetSelection(playerIndex, playerIndex);
-            Coordinate[] coordinates = new Coordinate[selectedUnitIds.Length];
-
+            
             Guid assignmentGroup = Guid.NewGuid();
 
-            PickLocations(targetType, unitIndex, playerIndex, selectedUnitIds, coordinates, () =>
+            ITaskEngine taskEngine = m_engine.GetClientTaskEngine(playerIndex);
+
+            for (int i = 0; i < selectedUnitIds.Length; ++i)
             {
-                for(int i = 0; i < selectedUnitIds.Length; ++i)
+                long unitId = selectedUnitIds[i];
+                IMatchUnitAssetView unit = m_gameState.GetPlayerView(playerIndex).GetUnitOrAsset(unitId);
+                if (unit == null || !unit.IsAlive)
                 {
-                    long unitId = selectedUnitIds[i];
-
-                    CreateAssignmentCmd cmd = new CreateAssignmentCmd(unitId);
-                    cmd.GroupId = assignmentGroup;
-                    cmd.CreatePreview = true;
-                    cmd.UnitIndex = unitIndex;
-                    cmd.PreviewCoordinate = coordinates[i];
-                    cmd.PreviewType = targetType | (int)KnownVoxelTypes.Preview;
-                    cmd.TaskLaunchInfo = new SerializedTaskLaunchInfo
-                    {
-                        Type = TaskTemplateType.ConvertTo,
-                        Parameters = new[]
-                        {
-                            SerializedTask.FromTaskInfo(TaskInfo.DefineConvertCmd(targetType)),
-                            SerializedTask.FromTaskInfo(TaskInfo.DefineCanConvertExpr(targetType)),
-                            SerializedTask.FromTaskInfo(TaskInfo.Define(coordinates[i]))   
-                        }
-                    };
-
-                    m_engine.GetClientTaskEngine(playerIndex).SubmitTask(callback);
-
-
-                    //m_engine.GetClientTaskEngine(playerIndex).SubmitTask(
-                    //Search for path and move (move to closest location if path was not found);
-                    //Execute as task until cancelled.
-                    //Highlight group of walls only during placement phase
-                    //Automatically cancel task if selected location is occupied.
+                    continue;
                 }
-            });   
-        }
 
-        private void PickLocations(int targetType, int unitIndex, int playerIndex, long[] selecteUnitIds, Coordinate[] coordinates, Action callback)
-        {
-            if(unitIndex >= selecteUnitIds.Length)
-            {
-                m_locationPicker.EndPickLocation();
-                callback();
-                return;
-            }
-
-            long unitId = selecteUnitIds[unitIndex];
-            IVoxelDataController dc = m_gameState.GetVoxelDataController(playerIndex, unitId);
-            if(dc != null)
-            {
-                m_locationPicker.PickLocationToConvert(dc.ControlledData, targetType, args =>
+                bool nextLocationPicked = false;
+                Coordinate coordinate = new Coordinate();
+                LocationPickerArgs.PickStatus status = LocationPickerArgs.PickStatus.Cancelled;
+                m_locationPicker.PickLocationToConvert(unit.Data, targetType, pickedArgs =>
                 {
-                    if(args.Status == LocationPickerArgs.PickStatus.Picked)
-                    {
-                        coordinates[unitIndex] = args.Coordinate;
-                    }
-
-                    unitIndex++;
-
-                    if(args.Status != LocationPickerArgs.PickStatus.Cancelled)
-                    {
-                        PickLocations(targetType, unitIndex, playerIndex, selecteUnitIds, coordinates, callback);
-                    }
+                    coordinate = pickedArgs.Coordinate;
+                    status = pickedArgs.Status;
+                    nextLocationPicked = true;
                 });
-            }
-            else
-            {
-                unitIndex++;
-                PickLocations(targetType, unitIndex, playerIndex, selecteUnitIds, coordinates, callback);
+
+                while (!nextLocationPicked)
+                {
+                    yield return new WaitForEndOfFrame();
+                }
+
+                if (status == LocationPickerArgs.PickStatus.Cancelled)
+                {
+                    yield break;
+                }
+
+                if (status == LocationPickerArgs.PickStatus.Failed)
+                {
+                    i--;
+                    continue;
+                }
+
+                TaskInfo taskInfo = m_playersBot.SubmitAssignment(Time.realtimeSinceStartup, assignmentGroup, unit, targetType | (int)KnownVoxelTypes.Preview, coordinate,
+                       TaskTemplateType.ConvertTo,
+                       TaskInfo.DefineConvertCmd(targetType),
+                       TaskInfo.DefineCanConvertExpr(targetType),
+                       TaskInfo.Define(coordinate)
+                       );
+
+                while (taskEngine.IsTaskActive(taskInfo.TaskId))
+                {
+                    yield return new WaitForEndOfFrame();
+                }
+
+                if (taskInfo.IsFailed)
+                {
+                    i--;
+                    continue;
+                }
+
+                m_locationPicker.EndPickLocation();
             }
         }
-
 
         private void ConvertUnitTo(int type)
         {

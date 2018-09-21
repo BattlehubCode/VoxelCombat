@@ -247,9 +247,14 @@ namespace Battlehub.VoxelCombat
                     targetUnitOrAsset.TargetForAssignments.Remove(assignment);
                     if (targetUnitOrAsset.TargetForAssignments.Count == 0)
                     {
-                        targetUnitOrAsset.TargetForAssignments = null;
 
+                        targetUnitOrAsset.TargetForAssignments = null;
                         //destroy preview here
+                        if (VoxelData.IsPreview(targetUnitOrAsset.Data.Type))
+                        {
+                            targetUnitOrAsset.DataController.SetHealth(0);
+                        }
+                        
                     }
                 }
 

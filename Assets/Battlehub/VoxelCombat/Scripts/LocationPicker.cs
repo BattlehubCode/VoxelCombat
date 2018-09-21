@@ -45,9 +45,6 @@ namespace Battlehub.VoxelCombat
         [SerializeField]
         private Material m_previewMaterial;
 
-        [SerializeField]
-        private Voxel[] m_previewPrefabs;
-
         private IVoxelGame m_game;
         private IUnitSelection m_selection;
         private IGameViewport m_viewport;
@@ -55,18 +52,17 @@ namespace Battlehub.VoxelCombat
         private IVoxelInputManager m_inputManager;
         private IVoxelMap m_map;
 
-        private Dictionary<int, Voxel> m_typeToPreview;
-
         private int m_targetWeight;
         private VoxelData m_voxelData;
         private Voxel m_preview;
         private readonly List<Voxel> m_previews = new List<Voxel>();
-        //private Dictionary<MapCell, List<Coordinate>>
+        private IVoxelFactory m_factory;
         
         private Action<LocationPickerArgs> m_callback;
 
         private void Awake()
         {
+            m_factory = Dependencies.VoxelFactory;
             m_game = Dependencies.GameState;
             m_game.ContextAction += OnContextAction;
 
@@ -77,49 +73,8 @@ namespace Battlehub.VoxelCombat
 
             m_selection = Dependencies.UnitSelection;
             m_selection.SelectionChanged += OnSelectionChanged;
-
-            m_typeToPreview = new Dictionary<int, Voxel>();
-
-            GameObject previewRoot = new GameObject();
-            previewRoot.name = "Previews";
-            previewRoot.transform.SetParent(transform, false);
-            
-            for (int i = 0; i < m_previewPrefabs.Length; ++i)
-            {
-                Voxel prefab = m_previewPrefabs[i];
-                bool isActive = prefab.gameObject.activeSelf;
-                prefab.gameObject.SetActive(false);
-
-                Voxel instance = Instantiate(prefab);
-                instance.name = prefab.name;
-                instance.transform.SetParent(previewRoot.transform, false);
-
-                foreach(Component component in instance.GetComponentsInChildren<Component>(true))
-                {
-                    if(component is Transform || component is Voxel || component is Renderer || component is MeshFilter || component is Canvas || component is CanvasRenderer)
-                    {
-                        continue;
-                    }
-
-                    Destroy(component);
-                }
-
-                instance.enabled = false;
-                Renderer[] renderers = instance.GetComponentsInChildren<Renderer>(true);
-                foreach(Renderer renderer in renderers)
-                {
-                    Material[] materials = renderer.sharedMaterials;
-                    for(int j = 0; j < renderer.sharedMaterials.Length; ++j)
-                    {
-                        materials[j] = m_previewMaterial;
-                    }
-                    renderer.sharedMaterials = materials;
-                }
-
-                m_typeToPreview.Add(instance.Type, instance);
-                prefab.gameObject.SetActive(isActive);
-            }
-
+        
+       
             enabled = false;
         }
 
@@ -250,14 +205,10 @@ namespace Battlehub.VoxelCombat
             m_targetWeight = unit.Weight;
             m_callback = callback;
 
-            Voxel prefab = m_typeToPreview[targetType];
-            Voxel voxel = Instantiate(prefab);
-            voxel.Weight = m_targetWeight;
-            voxel.Height = 1 << m_targetWeight;
-           
-            voxel.name = prefab.name + " Preview";
-            voxel.gameObject.SetActive(true);
-            m_preview = voxel;
+            Voxel preview = m_factory.Acquire(targetType | (int)KnownVoxelTypes.Preview);
+            preview.Weight = m_targetWeight;
+            preview.Height = 1 << m_targetWeight;
+            m_preview = preview;
 
             m_game.IsContextActionInProgress(m_viewport.LocalPlayerIndex, true);
 
@@ -269,7 +220,8 @@ namespace Battlehub.VoxelCombat
             Cleanup();
             for (int i = 0; i < m_previews.Count; ++i)
             {
-                Destroy(m_previews[i].gameObject);
+                Voxel voxel = m_previews[i];
+                m_factory.Release(voxel);
             }
             m_previews.Clear();
             m_game.IsContextActionInProgress(m_viewport.LocalPlayerIndex, false);
@@ -282,9 +234,11 @@ namespace Battlehub.VoxelCombat
             m_callback = null;
             if(m_preview != null)
             {
-                Destroy(m_preview.gameObject);
+                m_factory.Release(m_preview);
+                m_previews.Remove(m_preview);
+                m_preview = null;
             }
-            m_preview = null;
+            
         }
     }
 

@@ -546,6 +546,9 @@ namespace Battlehub.VoxelCombat
             m_unit = m_taskEngine.MatchEngine.GetPlayerView(m_taskInfo.PlayerIndex).GetUnit(unitIndex);
             if(m_unit == null || waypoints == null || waypoints.Length == 0)
             {
+#if !SERVER
+                UnityEngine.Debug.LogWarning("no waypoints task failed");
+#endif
                 m_taskInfo.StatusCode = TaskInfo.TaskFailed;
                 m_taskInfo.State = TaskState.Completed;
             }

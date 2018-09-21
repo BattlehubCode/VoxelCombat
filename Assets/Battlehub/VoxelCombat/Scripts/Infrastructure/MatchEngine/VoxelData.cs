@@ -433,6 +433,10 @@ namespace Battlehub.VoxelCombat
                 type == (int)KnownVoxelTypes.Eater ||
                 type == (int)KnownVoxelTypes.Bomb;                
         }
+        public static bool IsPreview(int type)
+        {
+            return (type & (int)KnownVoxelTypes.Preview) != 0;
+        }
 
 
         /// <summary>

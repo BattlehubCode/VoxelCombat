@@ -366,7 +366,7 @@ namespace Battlehub.VoxelCombat
                         Player player = m_game.GetPlayer(i);
                         if (player.IsActiveBot)
                         {
-                            IBotController bot = MatchFactoryCli.CreateBotController(player, m_taskEngines[i]);
+                            IBotController bot = MatchFactoryCli.CreateBotController(player, m_taskEngines[i], new DefaultStrategy());
                             bot.Init();
                             m_bots[i] = bot;
                         }

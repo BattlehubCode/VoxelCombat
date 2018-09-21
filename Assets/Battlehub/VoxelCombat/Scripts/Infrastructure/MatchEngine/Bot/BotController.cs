@@ -118,8 +118,12 @@ namespace Battlehub.VoxelCombat
         }
     }
 
-    public interface IBotStartegy
+    public interface IBotStrategy
     {
+        BotController.State State
+        {
+            set;
+        }
         void OnAssetCreated(IMatchUnitAssetView asset);
         void OnUnitCreated(IMatchUnitAssetView asset);
         void OnAssetRemoved(IMatchUnitAssetView unit);
@@ -128,14 +132,18 @@ namespace Battlehub.VoxelCombat
         void Think(float time, IBotSubmitTask bot);
     }
 
-    public class BaseStrategy : IBotStartegy
+    public class BaseStrategy : IBotStrategy
     {
-        private BotController.State m_state;
-        private ILogger m_logger;
+        protected ILogger m_logger;
 
-        public BaseStrategy(BotController.State state)
+        protected BotController.State m_state;
+        public BotController.State State
         {
-            m_state = state;
+            set { m_state = value; }
+        }
+
+        public BaseStrategy()
+        {
             m_logger = Dependencies.Logger;
         }
 
@@ -155,13 +163,13 @@ namespace Battlehub.VoxelCombat
         {
         }
 
-        public void OnTaskCompleted(IMatchUnitAssetView unit, RunningTaskInfo completedTask, TaskInfo taskInfo)
+        public virtual void OnTaskCompleted(IMatchUnitAssetView unit, RunningTaskInfo completedTask, TaskInfo taskInfo)
         {
             m_logger.LogFormat("Unit {0} task {1} {2} with status {3}", unit.Id, completedTask.TaskId, taskInfo.State, taskInfo.IsFailed ? "failed" : "succeded");
         }
 
 
-        public void Think(float time, IBotSubmitTask bot)
+        public virtual void Think(float time, IBotSubmitTask bot)
         {
             Dictionary<long, IMatchUnitAssetView> freeEaters = m_state.FreeUnits[KnownVoxelTypes.Eater];
             if (freeEaters.Count > 0)
@@ -192,40 +200,27 @@ namespace Battlehub.VoxelCombat
         }
     }
 
-    public class DefaultStrategy : IBotStartegy
+    public class PlayerStrategy : BaseStrategy
     {
-        private BotController.State m_state;
-        private ILogger m_logger;
+    
+    }
 
-        public DefaultStrategy(BotController.State state)
+    public class DefaultStrategy : BaseStrategy
+    {
+        public DefaultStrategy() 
         {
-            m_state = state;
             m_logger = Dependencies.Logger;
         }
 
-        public void OnAssetCreated(IMatchUnitAssetView asset)
-        {
-        }
-
-        public void OnAssetRemoved(IMatchUnitAssetView asset)
-        {
-        }
-
-        public void OnUnitCreated(IMatchUnitAssetView unit)
-        {
-        }
-
-        public void OnUnitRemoved(IMatchUnitAssetView unit, RunningTaskInfo activeTask, TaskInfo taskInfo)
-        {
-        }
-
-        public void OnTaskCompleted(IMatchUnitAssetView unit, RunningTaskInfo completedTask, TaskInfo taskInfo)
+        public override void OnTaskCompleted(IMatchUnitAssetView unit, RunningTaskInfo completedTask, TaskInfo taskInfo)
         {
             m_logger.LogFormat("Unit {0} task {1} {2} with status {3}", unit.Id, completedTask.TaskId, taskInfo.State, taskInfo.IsFailed ? "failed" : "succeded");
         }
 
-        public void Think(float time, IBotSubmitTask bot)
+        public override void Think(float time, IBotSubmitTask bot)
         {
+            base.Think(time, bot);
+
             Dictionary<long, IMatchUnitAssetView> freeEaters = m_state.FreeUnits[KnownVoxelTypes.Eater];
             if (freeEaters.Count > 0)
             {
@@ -248,9 +243,8 @@ namespace Battlehub.VoxelCombat
     {
         void RegisterTask(TaskTemplateType type, SerializedTask taskInfo);
         //void SubmitTask(float time, TaskTemplateType type, IMatchUnitAssetView unit, params Func<TaskInputInfo, TaskInputInfo, TaskInfo>[] defines);
-        void SubmitTask(float time,  IMatchUnitAssetView unit, TaskTemplateType type, params TaskInfo[] defines);
-
-        void SubmitAssignment(float time, IMatchUnitAssetView unit, Guid guid, Coordinate coordinate, TaskTemplateType type, params TaskInfo[] defines);
+        TaskInfo SubmitTask(float time,  IMatchUnitAssetView unit, TaskTemplateType type, params TaskInfo[] defines);
+        TaskInfo SubmitAssignment(float time, Guid groupId, IMatchUnitAssetView unit, int previewType, Coordinate previewCoordinate, TaskTemplateType type, params TaskInfo[] defines);
 
         //Group task will be executed using following algorithm.
         //Each unit will be assigned with its own task. 
@@ -359,15 +353,16 @@ namespace Battlehub.VoxelCombat
         private readonly ITaskEngine m_taskEngine;
         private readonly IMatchPlayerView m_playerView;
         private readonly State m_state;
-        private readonly IBotStartegy m_strategy;
+        private readonly IBotStrategy m_strategy;
 
-        public BotController(Player player, ITaskEngine taskEngine)
+        public BotController(Player player, ITaskEngine taskEngine, IBotStrategy strategy)
         {
             m_log = Dependencies.Logger;
 
             m_state = new State();
 
-            m_strategy = new DefaultStrategy(m_state);
+            m_strategy = strategy;
+            m_strategy.State = m_state;
 
             m_taskEngine = taskEngine;
             m_playerView = m_taskEngine.MatchEngine.GetPlayerView(player.Id);
@@ -502,13 +497,27 @@ namespace Battlehub.VoxelCombat
                             m_state.FreeUnits[(KnownVoxelTypes)unit.Data.Type].Add(unit.Id, unit);
                         }  
                     }
-
-                    m_state.TaskTemplates[completedTask.Type].Release(taskInfo);
+                    
+                 
+                    TaskInfoPool pool;
+                    if(m_state.TaskTemplates.TryGetValue(completedTask.Type, out pool))
+                    {
+                        if (taskInfo.Children != null)
+                        {
+                            for (int i = 0; i < taskInfo.Children.Length - 2; ++i)
+                            {
+                                taskInfo.Children[i] = null;
+                            }
+                        }
+                        pool.Release(taskInfo);
+                    }
+                    
                     m_state.TaskIdToTask.Remove(taskInfo.TaskId);
                     m_state.UnitIdToTask.Remove(unit.Id);
                     m_strategy.OnTaskCompleted(unit, completedTask, taskInfo);
                 }
-            }  
+            } 
+            
         }
 
         void IBotSubmitTask.RegisterTask(TaskTemplateType type, SerializedTask serializedTask)
@@ -527,7 +536,7 @@ namespace Battlehub.VoxelCombat
             });
         }
 
-        void IBotSubmitTask.SubmitTask(float time,  IMatchUnitAssetView unit, TaskTemplateType type, params TaskInfo[] parameters)
+        TaskInfo IBotSubmitTask.SubmitTask(float time,  IMatchUnitAssetView unit, TaskTemplateType type, params TaskInfo[] parameters)
         {
             if (m_state.BusyUnits[(KnownVoxelTypes)unit.Data.Type].ContainsKey(unit.Id))
             {
@@ -542,7 +551,7 @@ namespace Battlehub.VoxelCombat
 
             int argsLength = parameters != null ? parameters.Length : 0;
             TaskInfo rootTask = taskInfo.Children[2 + argsLength];
-            if (rootTask == null || taskInfo.Children[2 + argsLength - 1] != null)
+            if (rootTask == null || taskInfo.Children.Length <= argsLength + 1 || taskInfo.Children[argsLength + 1] != null)
             {
                 throw new ArgumentException("wrong number of arguments for task template: " + type, "type");
             }
@@ -572,15 +581,43 @@ namespace Battlehub.VoxelCombat
             RunningTaskInfo runningTaskInfo = new RunningTaskInfo(type, unit, taskInfo.TaskId, time);
             m_state.TaskIdToTask.Add(taskInfo.TaskId, runningTaskInfo);
             m_state.UnitIdToTask.Add(unit.Id, runningTaskInfo);
+
+            return taskInfo;
         }
 
-        public void SubmitAssignment(float time, IMatchUnitAssetView unit, Guid guid, Coordinate coordinate, TaskTemplateType type, params TaskInfo[] defines)
+        public TaskInfo SubmitAssignment(float time, Guid groupId, IMatchUnitAssetView unit, int previewType, Coordinate previewCoordinate, TaskTemplateType type, params TaskInfo[] defines)
         {
-            //Assignment ass;
-            //ass.
-            //m_taskEngine.MatchEngine.Submit()
+            if (m_state.BusyUnits[(KnownVoxelTypes)unit.Data.Type].ContainsKey(unit.Id))
+            {
+                throw new InvalidOperationException("unit " + unit.Id + " of type  " + (KnownVoxelTypes)unit.Data.Type + " is busy");
+            }
 
+            TaskInfo taskInfo = TaskInfo.Command(new CreateAssignmentCmd(unit.Id)
+            {
+                CreatePreview = true,
+                PreviewType = previewType,
+                PreviewCoordinate = previewCoordinate,
+                GroupId = groupId,
+                TaskLaunchInfo = new SerializedTaskLaunchInfo
+                {
+                    Type = type,
+                    DeserializedParameters = defines
+                },
+            });
 
+            taskInfo.SetParents();
+            taskInfo.Initialize(m_playerView.Index);
+
+            m_state.FreeUnits[(KnownVoxelTypes)unit.Data.Type].Remove(unit.Id);
+            m_state.BusyUnits[(KnownVoxelTypes)unit.Data.Type].Add(unit.Id, unit);
+
+            m_taskEngine.SubmitTask(taskInfo);
+
+            RunningTaskInfo runningTaskInfo = new RunningTaskInfo(TaskTemplateType.None, unit, taskInfo.TaskId, time);
+            m_state.TaskIdToTask.Add(taskInfo.TaskId, runningTaskInfo);
+            m_state.UnitIdToTask.Add(unit.Id, runningTaskInfo);
+
+            return taskInfo;
         }
 
         private const float m_thinkInterval = 0.25f;

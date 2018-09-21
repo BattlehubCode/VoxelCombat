@@ -472,6 +472,7 @@ namespace Battlehub.VoxelCombat
 
     public enum TaskTemplateType
     {
+        None,
         EatGrowSplit4,
         ConvertTo, 
     }
@@ -520,6 +521,25 @@ namespace Battlehub.VoxelCombat
                     }   
                 }
                 return m_deserializedParameters;
+            }
+            set
+            {
+                if(value == null)
+                {
+                    Parameters = null;
+                    m_deserializedParameters = null;
+                }
+                else
+                {
+                    m_deserializedParameters = value;
+                    Parameters = new SerializedTask[m_deserializedParameters.Length];
+                    for (int i = 0; i < m_deserializedParameters.Length; ++i)
+                    {
+                        TaskInfo parameter = m_deserializedParameters[i];
+                        Parameters[i] = SerializedTask.FromTaskInfo(parameter);
+                    }
+                }
+                
             }
         }
     }
@@ -783,6 +803,18 @@ namespace Battlehub.VoxelCombat
                     expressionInfo.Value = valueInput.Info;
                 }
             }
+            else if(expression.Serialized.ValueType == SerializedExpression.ExpressionValueType.Expression)
+            {
+                if(expression.Serialized.ValueAddress > 0)
+                {
+                    Pair<SerializedExpression, ExpressionInfo> valueExpression = expressions[expression.Serialized.ValueAddress];
+                    if(valueExpression.Info == null)
+                    {
+                        Compose(valueExpression, tasks, inputs, expressions);
+                    }
+                    expressionInfo.Value = valueExpression.Info;
+                }
+            }
             else
             {
                 expressionInfo.Value = expression.Serialized.Value;
@@ -953,6 +985,22 @@ namespace Battlehub.VoxelCombat
                     Decompose(ref address, taskInputInfo, tasks, inputs, expressions);
                 }
             }
+            else if(expression.Value is ExpressionInfo)
+            {
+                ExpressionInfo expressionInfo = (ExpressionInfo)expression.Value;
+                serializedExpression.ValueType = SerializedExpression.ExpressionValueType.Expression;
+
+                SerializedExpression serializedExpressionValue;
+                if(expressions.TryGetValue(expressionInfo, out serializedExpressionValue))
+                {
+                    serializedExpression.ValueAddress = serializedExpressionValue.Address;
+                }
+                else
+                {
+                    serializedExpression.ValueAddress = address;
+                    Decompose(ref address, expressionInfo, tasks, inputs, expressions);
+                }
+            }
             else
             {
                 serializedExpression.ValueType = SerializedExpression.ExpressionValueType.Value;
@@ -1082,7 +1130,8 @@ namespace Battlehub.VoxelCombat
         {
             Value,
             Task,
-            TaskInput
+            TaskInput,
+            Expression,
         }
 
         [ProtoMember(1)]
@@ -1665,6 +1714,13 @@ namespace Battlehub.VoxelCombat
             };
         }
 
+        public static TaskInfo Command(Cmd cmd)
+        {
+            return new TaskInfo(TaskType.Command)
+            {
+                Cmd = cmd
+            };
+        }
 
         public static TaskInfo Convert(TaskInputInfo unitIndexInput, int type)
         {
@@ -2057,7 +2113,7 @@ namespace Battlehub.VoxelCombat
             TaskInputInfo unitIndexInput = new TaskInputInfo();
             TaskInputInfo playerIndexInput = new TaskInputInfo();
 
-            TaskInfo taskInfo = EvalExpression(ExpressionInfo.Val(new[] { coordinate }));
+            TaskInfo taskInfo = EvalExpression(ExpressionInfo.PrimitiveVal(new[] { coordinate }));
             taskInfo.Inputs = new[] { unitIndexInput, playerIndexInput };
 
             return taskInfo;
