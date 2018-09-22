@@ -611,7 +611,7 @@ namespace Battlehub.VoxelCombat
                         case CmdCode.Cancel:
                         {
                             IMatchPlayerController playerController = m_engine.GetPlayerController(m_dataController.PlayerIndex);
-                            playerController.AssignmentsController.RemoveAssignment(this);
+                            playerController.AssignmentsController.RemoveAssignment(this, null);
                             RaiseCmdExecuted();
                             return cmd;
                         }

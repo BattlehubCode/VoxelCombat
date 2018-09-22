@@ -66,13 +66,13 @@ namespace Battlehub.VoxelCombat
         /// Remove target from assignment. Do not remove if assignment has unit
         /// </summary>
         /// <param name="targetId"></param>
-        void RemoveTargetFromAssignments(IMatchUnitAssetView unitOrAsset);
+        void RemoveTargetFromAssignments(IMatchUnitAssetView unitOrAsset, Action<VoxelData> dieCallback);
 
         /// <summary>
         /// Remove assignment. Unconditional
         /// </summary>
         /// <param name="unitId"></param>
-        void RemoveAssignment(IMatchUnitAssetView unit);
+        void RemoveAssignment(IMatchUnitAssetView unit, Action<VoxelData> dieCallback);
 
         //void RemoveAssignmentGroup(Guid groupId);
     }
@@ -156,7 +156,7 @@ namespace Battlehub.VoxelCombat
             group.Assignments.Add(assignment);
         }
 
-        public void RemoveUnitFromAssignment(IMatchUnitAssetView unit)
+        private void RemoveUnitFromAssignment(IMatchUnitAssetView unit)
         {
             Assignment assignment = unit.Assignment;
             if (assignment == null)
@@ -182,7 +182,7 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void RemoveTargetFromAssignments(IMatchUnitAssetView unitOrAsset)
+        public void RemoveTargetFromAssignments(IMatchUnitAssetView unitOrAsset, Action<VoxelData> dieCallback)
         {
             List<Assignment> targetForAssignments = unitOrAsset.TargetForAssignments;
             if (targetForAssignments == null)
@@ -190,6 +190,15 @@ namespace Battlehub.VoxelCombat
                 return;
             }
             unitOrAsset.TargetForAssignments = null;
+            //destroy preview here
+            if (VoxelData.IsPreview(unitOrAsset.Data.Type))
+            {
+                unitOrAsset.DataController.SetHealth(0);
+                if(dieCallback != null)
+                {
+                    dieCallback(unitOrAsset.Data);
+                }
+            }
 
             for (int i = 0; i < targetForAssignments.Count; ++i)
             {
@@ -213,17 +222,17 @@ namespace Battlehub.VoxelCombat
             }
         }
 
-        public void RemoveAssignment(IMatchUnitAssetView unit)
+        public void RemoveAssignment(IMatchUnitAssetView unit, Action<VoxelData> dieCallback)
         {
             Assignment assignment = unit.Assignment;
             if (assignment == null)
             {
                 return;
             }
-            RemoveAssignment(assignment);
+            RemoveAssignment(assignment, dieCallback);
         }
 
-        private void RemoveAssignment(Assignment assignment)
+        private void RemoveAssignment(Assignment assignment, Action<VoxelData> dieCallback)
         {
             if (assignment.HasUnit)
             {
@@ -253,6 +262,10 @@ namespace Battlehub.VoxelCombat
                         if (VoxelData.IsPreview(targetUnitOrAsset.Data.Type))
                         {
                             targetUnitOrAsset.DataController.SetHealth(0);
+                            if(dieCallback != null)
+                            {
+                                dieCallback(targetUnitOrAsset.Data);
+                            }
                         }
                         
                     }

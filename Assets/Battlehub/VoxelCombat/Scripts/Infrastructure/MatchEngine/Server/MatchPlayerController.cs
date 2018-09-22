@@ -259,12 +259,12 @@ namespace Battlehub.VoxelCombat
 
                 if (asset.Assignment != null)
                 {
-                    AssignmentsController.RemoveAssignment(asset);
+                    AssignmentsController.RemoveAssignment(asset, null);
                 }
 
                 if (asset.TargetForAssignments != null)
                 {
-                    AssignmentsController.RemoveTargetFromAssignments(asset);
+                    AssignmentsController.RemoveTargetFromAssignments(asset, null);
                 }
 
                 if (AssetRemoved != null)
@@ -311,12 +311,12 @@ namespace Battlehub.VoxelCombat
 
                 if (unitController.Assignment != null)
                 {
-                    AssignmentsController.RemoveAssignment(unitController);
+                    AssignmentsController.RemoveAssignment(unitController, null);
                 }
 
                 if (unitController.TargetForAssignments != null)
                 {
-                    AssignmentsController.RemoveTargetFromAssignments(unitController);
+                    AssignmentsController.RemoveTargetFromAssignments(unitController, null);
                 }
 
                 if (UnitRemoved != null)

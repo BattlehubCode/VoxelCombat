@@ -105,6 +105,7 @@ namespace Battlehub.VoxelCombat
             get;
         }
 
+
         Assignment Assignment
         {
             get;

@@ -293,13 +293,13 @@ namespace Battlehub.VoxelCombat
         private void Start()
         {
             m_settings = Dependencies.Settings;
+            m_gameState = Dependencies.GameState;
+            m_voxelFactory = Dependencies.VoxelFactory;
+            m_effectFactory = Dependencies.EffectFactory;
 
             OnDebugModeChanged();
             m_settings.DebugModeChanged += OnDebugModeChanged;
 
-            m_gameState = Dependencies.GameState;
-            m_voxelFactory = Dependencies.VoxelFactory;
-            m_effectFactory = Dependencies.EffectFactory;
             m_materialsCache = Dependencies.MaterialsCache;
             SetMaterials
             (
@@ -698,21 +698,25 @@ namespace Battlehub.VoxelCombat
 
         public virtual void Assimlate(float delay)
         {
-            m_voxelFactory.Release(this);
+            Dependencies.VoxelFactory.Release(this);
         }
 
         public virtual void Smash(float delay, int health)
         {
-            m_voxelFactory.Release(this);
+            Dependencies.VoxelFactory.Release(this);
         }
 
         public virtual void Explode(float delay, int health)
         {
-            m_voxelFactory.Release(this);
+            Dependencies.VoxelFactory.Release(this);
         }
 
         protected void InstantiateParticleEffect(ParticleEffectType type, float delay, int health)
         {
+            if(EffectFactory == null)
+            {
+                return;
+            }
             ParticleEffect effect = EffectFactory.Acquire(type);
             effect.transform.position = transform.position;
             effect.Data = m_voxelData;
@@ -779,7 +783,19 @@ namespace Battlehub.VoxelCombat
         /// <param name="animate"></param>
         public virtual void Kill()
         {
-            m_voxelFactory.Release(this);
+            if(m_voxelFactory == null)
+            {
+                m_voxelFactory = Dependencies.VoxelFactory;
+                if(m_voxelFactory != null)
+                {
+                    m_voxelFactory.Release(this);
+                }
+            }
+            else
+            {
+                m_voxelFactory.Release(this);
+            }
+            
         }
 
         public virtual void Freeze()

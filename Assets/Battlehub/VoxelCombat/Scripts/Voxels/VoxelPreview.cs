@@ -56,6 +56,7 @@ namespace Battlehub.VoxelCombat
 
         private void OnAquired(Voxel sender)
         {
+            m_voxel.enabled = false;
             SetMaterials();
         }        
     }

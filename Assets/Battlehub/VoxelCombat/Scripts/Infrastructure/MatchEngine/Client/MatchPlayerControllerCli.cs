@@ -419,12 +419,12 @@ namespace Battlehub.VoxelCombat
 
                 if (asset.Assignment != null)
                 {
-                    AssignmentsController.RemoveAssignment(asset);
+                    AssignmentsController.RemoveAssignment(asset, DieCallback);
                 }
 
                 if (asset.TargetForAssignments != null)
                 {
-                    AssignmentsController.RemoveTargetFromAssignments(asset);
+                    AssignmentsController.RemoveTargetFromAssignments(asset, DieCallback);
                 }
 
                 if (AssetRemoved != null)
@@ -490,12 +490,12 @@ namespace Battlehub.VoxelCombat
 
             if (unitController.Assignment != null)
             {
-                AssignmentsController.RemoveAssignment(unitController);
+                AssignmentsController.RemoveAssignment(unitController, DieCallback);
             }
 
             if (unitController.TargetForAssignments != null)
             {
-                AssignmentsController.RemoveTargetFromAssignments(unitController);
+                AssignmentsController.RemoveTargetFromAssignments(unitController, DieCallback);
             }
 
             if (UnitRemoved != null)
@@ -983,6 +983,14 @@ namespace Battlehub.VoxelCombat
                 {
                     RemoveAsset(data);
                 }
+            }
+        }
+
+        protected void DieCallback(VoxelData voxelData)
+        {
+            if (voxelData.VoxelRef != null && voxelData.VoxelRef.IsAcquired)
+            {
+                voxelData.VoxelRef.Kill();
             }
         }
 

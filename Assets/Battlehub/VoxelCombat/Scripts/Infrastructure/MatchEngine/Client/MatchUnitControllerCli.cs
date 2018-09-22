@@ -319,6 +319,7 @@ namespace Battlehub.VoxelCombat
 
         protected virtual void OnCancel(Cmd cmd)
         {
+            m_dataController.SetHealth(0);
             if (m_controlledVoxel != null)
             {
                 m_controlledVoxel.OnCancel();
@@ -1045,7 +1046,7 @@ namespace Battlehub.VoxelCombat
                 m_controlledVoxel.OnCancel();
 
                 IMatchPlayerView player = m_game.GetPlayerView(m_controlledVoxel.Owner);
-                player.AssignmentsController.RemoveAssignment(this);
+                player.AssignmentsController.RemoveAssignment(this, DieCallback);
             }
         }
 
